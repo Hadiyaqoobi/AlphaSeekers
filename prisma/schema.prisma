@@ -1,0 +1,269 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  STUDENT
+  TEACHER
+  ADMIN
+}
+
+enum UserLanguage {
+  FA
+  EN
+}
+
+enum ClassStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum EnrollmentStatus {
+  ACTIVE
+  DROPPED
+}
+
+enum MeetLinkStatus {
+  GENERATED
+  PENDING
+  FAILED
+}
+
+enum OpportunityType {
+  SCHOLARSHIP
+  JOB
+  INTERNSHIP
+  GRANT
+}
+
+enum NotificationChannel {
+  WHATSAPP
+  TELEGRAM
+  WEB_PUSH
+  EMAIL
+  PLATFORM
+}
+
+enum NotificationStatus {
+  SENT
+  FAILED
+  PENDING
+}
+
+enum SchedulerJobStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+model User {
+  id                    String                @id @default(cuid())
+  name                  String
+  email                 String                @unique
+  phone                 String?
+  passwordHash          String?
+  role                  UserRole
+  timezone              String                @default("Asia/Kabul")
+  language              UserLanguage          @default(FA)
+  approvedAt            DateTime?
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+
+  teachingClasses       Class[]               @relation("ClassTeacher")
+  enrollments           Enrollment[]
+  attendance            Attendance[]
+  availabilitySlots     TeacherAvailability[]
+  uploadedMaterials     Material[]            @relation("MaterialUploader")
+  notifications         Notification[]
+  webinarRegistrations  WebinarRegistration[]
+  googleAccountLink     GoogleAccountLink?
+  telegramChatId        String?
+  pushSubscription      String?
+  notificationPrefs     String?               // JSON: { telegram: bool, webPush: bool, email: bool }
+}
+
+model Class {
+  id                    String                @id @default(cuid())
+  name                  String
+  subjectCategory       String
+  description           String
+  teacherId             String
+  maxStudents           Int
+  durationMinutes       Int                   @default(60)
+  schedulePreference    String?
+  language              String                @default("Dari")
+  registrationFormUrl   String?
+  published             Boolean               @default(true)
+  status                ClassStatus           @default(ACTIVE)
+  termId                String?
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+
+  teacher               User                  @relation("ClassTeacher", fields: [teacherId], references: [id])
+  sessions              Session[]
+  enrollments           Enrollment[]
+  materials             Material[]
+}
+
+model Session {
+  id                    String                @id @default(cuid())
+  classId               String
+  startTime             DateTime
+  endTime               DateTime
+  meetLink              String?
+  meetLinkStatus        MeetLinkStatus        @default(PENDING)
+  cancelled             Boolean               @default(false)
+  createdAt             DateTime              @default(now())
+
+  class                 Class                 @relation(fields: [classId], references: [id], onDelete: Cascade)
+  attendance            Attendance[]
+  materials             Material[]
+}
+
+model Enrollment {
+  id                    String                @id @default(cuid())
+  studentId             String
+  classId               String
+  enrolledAt            DateTime              @default(now())
+  status                EnrollmentStatus      @default(ACTIVE)
+
+  student               User                  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  class                 Class                 @relation(fields: [classId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, classId])
+}
+
+model Attendance {
+  id                    String                @id @default(cuid())
+  sessionId             String
+  studentId             String
+  attended              Boolean               @default(false)
+  joinedAt              DateTime?
+
+  session               Session               @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  student               User                  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, studentId])
+}
+
+model TeacherAvailability {
+  id                    String                @id @default(cuid())
+  teacherId             String
+  dayOfWeek             Int
+  startTimeUTC          DateTime
+  endTimeUTC            DateTime
+
+  teacher               User                  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  @@index([teacherId, dayOfWeek])
+}
+
+model Material {
+  id                    String                @id @default(cuid())
+  classId               String
+  title                 String
+  fileUrl               String
+  fileSize              Int
+  uploadedBy            String
+  sessionId             String?
+  createdAt             DateTime              @default(now())
+
+  class                 Class                 @relation(fields: [classId], references: [id], onDelete: Cascade)
+  uploader              User                  @relation("MaterialUploader", fields: [uploadedBy], references: [id])
+  session               Session?              @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+}
+
+model Opportunity {
+  id                    String                @id @default(cuid())
+  title                 String
+  type                  OpportunityType
+  description           String
+  deadline              DateTime
+  externalUrl           String
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+}
+
+model LibraryResource {
+  id                    String                @id @default(cuid())
+  title                 String
+  author                String?
+  category              String
+  fileUrl               String?
+  externalUrl           String?
+  fileSize              Int?
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+}
+
+model Webinar {
+  id                    String                @id @default(cuid())
+  title                 String
+  description           String
+  startsAt              DateTime
+  meetLink              String
+  language              String                @default("Dari")
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+
+  registrations         WebinarRegistration[]
+}
+
+model WebinarRegistration {
+  id                    String                @id @default(cuid())
+  webinarId             String
+  userId                String
+  registeredAt          DateTime              @default(now())
+
+  webinar               Webinar               @relation(fields: [webinarId], references: [id], onDelete: Cascade)
+  user                  User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([webinarId, userId])
+}
+
+model Notification {
+  id                    String                @id @default(cuid())
+  userId                String
+  dedupeKey             String?
+  channel               NotificationChannel
+  content               String
+  status                NotificationStatus    @default(PENDING)
+  sentAt                DateTime?
+  createdAt             DateTime              @default(now())
+
+  user                  User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@unique([dedupeKey, channel])
+}
+
+model SchedulerJob {
+  id                    String                @id @default(cuid())
+  status                SchedulerJobStatus    @default(PENDING)
+  processedCount        Int                   @default(0)
+  totalCount            Int                   @default(0)
+  lastRunAt             DateTime?
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+}
+
+model GoogleAccountLink {
+  id                    String                @id @default(cuid())
+  userId                String                @unique
+  googleEmail           String?
+  refreshToken          String
+  accessToken           String?
+  scope                 String?
+  expiryDate            DateTime?
+  calendarId            String                @default("primary")
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+
+  user                  User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+}

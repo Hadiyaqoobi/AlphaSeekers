@@ -1,0 +1,1031 @@
+
+
+
+
+
+ALPHASEEKERS
+Empowering Afghan Girls Through Free Education
+
+
+
+Business Requirements Document (BRD)
+&
+Functional Requirements Document (FRD)
+
+
+Optimized for Low-Bandwidth Afghanistan • 100% Free-Tier Infrastructure
+Version 2.0 — February 2026
+
+
+
+
+Prepared by: Nexus Science (Technical Consultant)
+CONFIDENTIAL
+
+PART 1: BUSINESS REQUIREMENTS DOCUMENT (BRD)
+1. Executive Summary
+1.1 Problem Statement
+AlphaSeekers is an online learning network providing free education exclusively to Afghan girls in Afghanistan. In a context where girls face severe restrictions on formal education, AlphaSeekers is a lifeline: live, volunteer-taught classes in languages, arts, and professional skills delivered over the internet.
+
+In its first year, AlphaSeekers grew to approximately 500 students across 28 classes using WhatsApp groups and manually-created Google Meet links. Administrators individually schedule classes, create Meet links, and distribute them through WhatsApp. This manual approach is unsustainable as the network scales toward 50 classes in Year 2.
+
+Afghanistan’s internet infrastructure presents unique and critical challenges that must drive every technical decision: connections average 2G–3G speeds (often under 1 Mbps), mobile data is expensive relative to income, power outages are frequent, and virtually all students access the internet through low-end Android phones. The platform must be built specifically for these constraints—not adapted after the fact.
+
+1.2 Proposed Solution
+Build an ultra-lightweight, production-level web platform that centralizes class management, auto-schedules classes from teacher availability, generates Google Meet links, and distributes notifications via WhatsApp. The entire infrastructure must run on free-tier services (Vercel, Neon, etc.) to maintain zero hosting cost for this non-profit operation. The platform must deliver a usable experience on 2G connections with total page weights under 200KB.
+
+1.3 Mission
+AlphaSeekers exists to empower Afghan girls through education when formal schooling is denied to them. Every technical decision must be evaluated through one lens: does it make education more accessible to a girl in Kabul, Herat, or Mazar-i-Sharif with a slow phone, expensive data, and unreliable power?
+
+1.4 Target Users
+	•	Students: Afghan girls (ages 14–25) in Afghanistan seeking free education. Mobile-only, slow internet, limited data plans, low-end Android devices.
+	•	Teachers: Volunteer educators (Afghan diaspora and international supporters) who donate their time. Mix of mobile and laptop users with generally better connectivity.
+	•	Administrators: AlphaSeekers team members managing operations. Laptop users with moderate connectivity.
+
+1.5 Business Model
+Non-profit, 100% free for all users. Funded by volunteer effort. Platform must operate at zero or near-zero cost using free-tier cloud services. No paid subscriptions, no ads, no monetization. Future funding via grants and donations if the platform proves impact.
+
+
+2. Afghanistan Internet Context (Critical)
+This section is the foundation for all technical decisions. Every feature, every design choice, and every architecture decision must account for these realities.
+
+2.1 Network Conditions
+Factor
+Reality in Afghanistan
+Design Implication
+Average speed
+0.5–2 Mbps on mobile (2G/3G)
+Total page weight < 200KB; no heavy JS frameworks
+Data cost
+~$5/GB (expensive relative to income)
+Every KB matters; compress everything; no unnecessary assets
+Connection stability
+Frequent drops, timeouts, DNS failures
+Retry logic everywhere; optimistic UI; offline-capable states
+Power
+Regular outages (2–8 hours/day in many areas)
+Auto-save form state; resume sessions; no long-running processes
+Devices
+Low-end Android (1–2GB RAM)
+Minimal JS; no heavy animations; server-side rendering priority
+Browser
+Chrome on Android (overwhelmingly)
+Target Chrome Android; no need for Safari/Firefox optimization
+
+2.2 Non-Negotiable Technical Constraints
+	•	Initial page load must work on 2G: < 200KB total transfer, < 3 seconds on 500Kbps
+	•	No client-side JavaScript bundle > 50KB gzipped. Server-render everything possible.
+	•	All images must be WebP, compressed, lazy-loaded, with explicit width/height (no layout shift)
+	•	API responses must be < 10KB JSON. Paginate aggressively (10 items/page max).
+	•	Every form must auto-save state to localStorage. If connection drops mid-submit, data is preserved.
+	•	Every API call must have retry logic with exponential backoff (3 retries, 1s/2s/4s delays).
+	•	Offline-first class schedule: cache the student’s schedule locally so they can view it without internet.
+	•	No web fonts. Use system font stack: -apple-system, Segoe UI, Roboto, sans-serif.
+	•	No animations, transitions, or visual effects that consume CPU/GPU on low-end devices.
+	•	WhatsApp is the primary notification channel (not email—many students don’t check email).
+
+2.3 Dari/Pashto Language & RTL Support
+	•	Platform UI must support RTL (right-to-left) layout for Dari and Pashto speaking users.
+	•	Class content may be delivered in various languages, but the platform chrome should be in Dari with English fallback.
+	•	Text must render correctly in both RTL and LTR contexts (e.g., English class name inside Dari UI).
+
+
+3. Free-Tier Infrastructure Strategy
+AlphaSeekers must operate at zero hosting cost. This section maps every infrastructure need to a free-tier service and documents the limitations that the platform must work within.
+
+3.1 Infrastructure Stack
+Layer
+Service
+Free Tier Limits
+Risk / Limitation
+Hosting
+Vercel (Hobby)
+100GB bandwidth/mo, 10s function timeout, 1 concurrent build
+10s serverless timeout limits complex operations; bandwidth sufficient for ~500 users
+Database
+Neon (Free)
+0.5GB storage, 1 compute branch, auto-suspend after 5 min idle
+Cold starts add 1–3s on first request after idle; 0.5GB sufficient for class/user data
+Auth
+Supabase Auth OR NextAuth.js
+Supabase: 50K MAU free; NextAuth: unlimited (self-hosted)
+NextAuth preferred—no external dependency, no Supabase cold start
+File Storage
+Vercel Blob OR Cloudflare R2
+Vercel Blob: 1GB free; R2: 10GB free
+Cloudflare R2 preferred for library PDFs; Vercel Blob for small uploads
+WhatsApp API
+Twilio free trial OR WhatsApp Cloud API
+Twilio: $15 trial credit; Cloud API: 1,000 free messages/mo
+1,000 msg/mo may be tight at 500 students; batch reminders wisely
+Email (backup)
+Resend
+3,000 emails/mo free
+Sufficient for backup notifications and admin alerts
+Meet Links
+Google Meet (via Calendar API)
+Free with Google Workspace for Nonprofits
+Requires nonprofit verification; manual fallback if API quota hit
+DNS/CDN
+Cloudflare
+Unlimited free
+Global CDN helps Afghanistan latency; always use
+Monitoring
+Vercel Analytics + Sentry free tier
+Vercel: basic; Sentry: 5K events/mo
+Sufficient for 500-user scale
+
+3.2 Total Monthly Cost
+Item
+Cost
+Notes
+Vercel Hobby
+$0
+Hosting + serverless functions
+Neon Free
+$0
+PostgreSQL database
+Cloudflare R2
+$0
+File storage (up to 10GB)
+Cloudflare DNS/CDN
+$0
+CDN + DNS
+Resend
+$0
+Backup email (3K/mo)
+WhatsApp Cloud API
+$0
+1,000 conversations/mo free
+Google Workspace for Nonprofits
+$0
+Meet + Calendar API
+TOTAL
+$0/month
+All free-tier services
+
+3.3 Free-Tier Risk Mitigations
+Risk
+Impact
+Mitigation
+Neon cold start (1–3s after idle)
+Slow first page load after inactivity
+Use Vercel cron to ping DB every 4 min; cache frequently-accessed data at edge
+Vercel 10s function timeout
+Long operations fail
+Keep all API routes < 5s; move heavy work to background (Vercel Cron or QStash free tier)
+WhatsApp 1,000 msg/mo limit
+Cannot notify all students
+Batch class reminders (1 msg per class, not per student); use in-platform + email overflow
+Vercel 100GB bandwidth
+Could hit limit with growth
+Aggressive caching; Cloudflare CDN fronts all static assets; images on R2 (not Vercel)
+Neon 0.5GB storage limit
+DB fills up over time
+Archive old sessions quarterly; keep only active term data; materials stored in R2 not DB
+Service discontinues free tier
+Platform goes offline
+All services have standard PostgreSQL/S3 APIs—portable to any alternative within days
+
+
+4. Market Context
+4.1 Comparable Platforms
+Platform
+Strengths
+Why AlphaSeekers Is Different
+Khan Academy
+Free, structured
+No live classes; not optimized for Afghanistan’s internet; no community
+Coursera/edX
+University-level
+Not free; requires fast internet; not community-driven
+WhatsApp Groups (current)
+Accessible, familiar
+No scheduling, no library, no class management, chaotic at 28+ classes
+Rumie Learn
+Offline-capable, low-bandwidth
+Pre-recorded content only; no live instruction; limited subjects
+
+4.2 Scale & Growth
+Metric
+Year 1 (Actual)
+Year 2 (Target)
+Year 3 (Vision)
+Online Classes
+28
+50
+100+
+Online Students
+~500
+500+
+1,000+
+Offline Classes
+0
+Pilot (TBD)
+Established
+Subjects
+13
+25+
+40+
+Visual Python
+Not started
+Founder learning phase
+Team program for girls
+
+
+5. Four Programs
+5.1 Online Classes (Core — MVP)
+The heart of AlphaSeekers. Live classes delivered via Google Meet, managed through the platform. Currently 28 classes across 13 subjects scaling to 50 in Year 2.
+
+Current subjects (2025): English, Korean, Chinese, Spanish, Arabic, German, Anatomy, Journalism, Writing, Painting, Public Speaking, Handwriting, Photoshop.
+
+Classes are delivered via Google Meet and coordinated through WhatsApp. The platform replaces the manual coordination while keeping Meet and WhatsApp as the actual delivery and communication channels that students already know.
+
+5.2 Informative Webinars
+Drop-in events on career development, mental health, technology. No enrollment or progress tracking—lighter than classes. Registration + Meet link distribution only.
+
+5.3 Sharing Opportunities
+Curated feed of scholarships, internships, and grants relevant to Afghan girls. Admin-posted, student-browsable with filters by type and deadline.
+
+5.4 Library & Reading Books
+Digital library of free reading materials, e-books, and educational resources. Stored on Cloudflare R2 (free, fast CDN). Searchable by subject and category. Must support PDF downloads for offline reading.
+
+
+6. Future Plans (Post-MVP)
+6.1 Visual Python Learning Application
+A structured Visual Python curriculum as a scholarship and teamwork program for girls. The approach is intentionally phased: the founder and a friend will first learn the curriculum themselves, documenting the process—time required per day, learning curve, experiences. Only after completing the curriculum and understanding the journey will they design a stable program for other girls. The team will then collaborate on building projects and potentially providing online job opportunities. This is the key long-term differentiator alongside classes.
+
+6.2 Offline Classes
+In preparation. AlphaSeekers has strong access to teachers and students for in-person delivery. Team structure and systems are being planned (may take several months). The platform should be designed to eventually support offline class management but this is not in MVP scope.
+
+6.3 Website Articles
+Blog/article section for educational content, student success stories, and community news. Post-MVP feature.
+
+
+7. Success Criteria
+7.1 Launch Criteria (MVP)
+	•	Students can browse classes and enroll on a 2G connection in under 5 seconds
+	•	Teachers can set availability and the system auto-generates schedules + Meet links
+	•	Admins can create/manage classes, teachers, and students from one dashboard
+	•	Google Meet links auto-created and distributed via WhatsApp
+	•	All four program sections accessible (classes, webinars, opportunities, library)
+	•	Platform works on low-end Android phones with Chrome
+	•	Total page weight < 200KB on any page
+	•	Entire infrastructure runs on $0/month free-tier services
+
+7.2 Growth Criteria (6 months post-launch)
+	•	50 active classes with auto-scheduling operational
+	•	70%+ student adoption rate (active logins vs enrolled students)
+	•	Admin scheduling workload reduced by 80%
+	•	Still within free-tier limits of all services
+
+
+8. Risk Register
+Risk
+Likelihood
+Impact
+Mitigation
+Internet outages in Afghanistan
+Very High
+High
+Offline schedule cache; WhatsApp as primary channel (works on minimal data); PDF downloads for library
+Free-tier service limits exceeded
+Medium
+High
+Monitor usage; R2 for files; aggressive caching; design to stay within limits at 500 users
+Neon DB cold start latency
+High
+Medium
+Vercel cron ping every 4 min; edge caching for public pages; loading skeleton UI
+WhatsApp message limits
+Medium
+Medium
+Batch messages per class (not per student); prioritize class reminders; email overflow
+Google Meet API quota limits
+Low
+Medium
+Free Workspace for Nonprofits has generous limits; manual fallback for admin
+Students prefer WhatsApp over platform
+High
+Medium
+Send everything via WhatsApp with deep links back to platform; gradual migration
+Low teacher tech adoption
+Medium
+High
+Simple availability UI; WhatsApp-first notifications; minimal required platform actions
+Vercel 10s function timeout
+Medium
+Medium
+Optimize all routes < 5s; move scheduling to cron jobs; no real-time heavy computation
+Power outages mid-form
+High
+Low
+Auto-save all form state to localStorage; resume on reconnect
+Government internet restrictions
+Medium
+High
+Platform is educational, non-political; use Cloudflare for CDN/protection; no sensitive content
+
+
+PART 2: FUNCTIONAL REQUIREMENTS DOCUMENT (FRD)
+1. User Personas
+1.1 Fatima (Student)
+Age: 17 | Location: Kabul, Afghanistan | Device: Samsung Galaxy A03 (2GB RAM, Android 12)
+Internet: Shared family mobile data, 3G connection averaging 0.8 Mbps. Data costs ~$5/GB.
+Background: Cannot attend formal school. Takes English and Painting classes through AlphaSeekers. WhatsApp is her primary app. Has never used a web platform for education before.
+Goals: Find and join classes easily on her phone, get WhatsApp reminders so she never misses class, download materials to read offline.
+Frustrations: Pages that take forever to load. Apps that eat her data. Missing classes because the Meet link came late in WhatsApp.
+Technical reality: She will abandon any page that takes more than 5 seconds. She cannot download large files. She needs everything to work in Dari with RTL layout.
+
+1.2 Mariam (Teacher)
+Age: 26 | Location: Kabul, Afghanistan (diaspora) | Device: Laptop + Android phone
+Internet: Home WiFi, ~5 Mbps. Reliable but not fast.
+Background: Volunteer Korean language teacher. Works a day job, teaches 2 evenings/week. Needs scheduling to be automatic.
+Goals: Set available times once, have everything auto-scheduled, share materials, see who attended.
+Frustrations: Creating Meet links manually, reminding students via WhatsApp, not knowing attendance.
+
+1.3 Sara (Administrator)
+Age: 24 | Location: Remote | Device: Laptop
+Background: AlphaSeekers team member managing 28+ classes. Currently juggles spreadsheets, WhatsApp groups, and manual Meet link creation for every class.
+Goals: One dashboard for all operations. Publish opportunities. Manage library. Zero manual scheduling.
+Frustrations: Coordinating 28 classes across time zones manually is unsustainable. No visibility into attendance or student engagement.
+
+
+2. User Story Map
+Build P0 across ALL columns first (horizontal slice). This ensures the complete user journey works at a basic level before adding depth.
+
+Priority
+Browse & Enroll
+Schedule & Join
+Learn & Track
+Manage (Admin)
+P0
+Must Have
+US-01: Browse classes
+US-02: Enroll in class
+US-03: Teacher availability
+US-04: Auto-schedule + Meet
+US-06: Join via Meet link
+US-07: Class materials
+US-09: Admin dashboard
+US-10: Class CRUD
+P1
+Should Have
+US-11: Search & filter
+US-12: Webinar listing
+US-05: WhatsApp reminders
+US-08: Offline schedule cache
+US-13: Attendance tracking
+US-14: Student progress
+US-15: Opportunities
+US-16: Library mgmt
+P2
+Nice to Have
+US-17: Student profile
+US-18: Smart reminders
+US-19: Certificates
+US-20: Analytics
+P3
+Future
+Visual Python program
+Offline class mgmt
+Article publishing
+Multi-org support
+
+
+3. Epics & User Stories
+Epic 1: Class Discovery & Enrollment
+US-01: Browse Class Catalog
+Priority: P0
+Epic: Class Discovery
+Sessions: 2 sessions
+
+As an Afghan girl student, I want to browse available classes on my phone even on slow internet, so that I can find classes to learn new skills.
+
+Happy Path:
+	•	GIVEN I visit the AlphaSeekers platform on my Android phone (2G/3G)
+	•	WHEN the Classes page loads
+	•	THEN I see class cards organized by category (Languages, Arts, Professional Skills)
+	•	AND each card shows: title, teacher name, schedule, language, enrolled count
+	•	AND the TOTAL page transfer is < 150KB (HTML + minimal CSS + data)
+	•	AND the page renders in < 3 seconds on a 500Kbps connection
+	•	AND the layout is RTL-compatible for Dari/Pashto UI
+
+Failure / Edge Path:
+	•	WHEN API fails or times out: Show cached class list from localStorage (if previously loaded) with a ‘Retry’ button and ‘Last updated: [time]’ indicator
+	•	WHEN connection drops mid-load: Partial content renders with skeleton placeholders; auto-retries 3x with exponential backoff
+	•	WHEN no classes exist: Friendly message in Dari and English
+
+Edge Cases:
+	•	What if student has only 2G? Server-side rendered HTML with zero client JS for initial view; progressive enhancement only
+	•	What if 50+ classes? Server-side pagination (10/page); no infinite scroll (saves data)
+
+Acceptance Criteria:
+	•	Page loads < 3 seconds on simulated 500Kbps (Chrome DevTools throttle test)
+	•	Total transfer < 150KB verified in Network tab
+	•	Classes display correctly in RTL mode
+	•	Cached fallback works when server is unreachable
+	•	Pagination works and loads next page < 2 seconds
+Proof Method: Chrome DevTools Network throttle test at 500Kbps; verify transfer size; test RTL layout; disconnect network and verify cached fallback
+
+US-02: Student Enrollment
+Priority: P0
+Epic: Class Discovery
+Sessions: 2 sessions
+
+As a student, I want to enroll in a class with one tap, so that I receive the Meet link and class schedule on WhatsApp.
+
+Happy Path:
+	•	GIVEN I am logged in and viewing a class detail page
+	•	WHEN I tap ‘Enroll’
+	•	THEN I see immediate optimistic UI (‘Enrolled!’ with checkmark) while the API call completes in the background
+	•	AND within 2 minutes I receive a WhatsApp message with: class schedule, next session date/time, and Meet link
+	•	AND the class appears in my ‘My Classes’ tab
+
+Failure / Edge Path:
+	•	WHEN API call fails: Optimistic UI reverts; ‘Enrollment failed—tap to retry’ appears; form data preserved
+	•	WHEN WhatsApp delivery fails: Fallback to in-platform notification + email
+	•	WHEN connection drops during enrollment: Request queued in localStorage; auto-retries when connection returns
+
+Edge Cases:
+	•	What if student double-taps? Enrollment is idempotent; server rejects duplicate
+	•	What if student wants to unenroll? Unenroll option in ‘My Classes’
+
+Acceptance Criteria:
+	•	Enrollment completes (student in roster) verified via API
+	•	WhatsApp notification delivered within 2 minutes
+	•	Optimistic UI shows instantly even on slow connection
+	•	Offline enrollment queued and processed on reconnect
+Proof Method: Tap enroll on throttled connection; verify optimistic UI; verify API roster update; verify WhatsApp delivery log
+
+Epic 2: Scheduling & Google Meet Integration
+US-03: Teacher Sets Availability
+Priority: P0
+Epic: Scheduling
+Sessions: 3 sessions
+
+As a teacher, I want to set my weekly available time slots, so that the system auto-schedules my classes without me creating Meet links.
+
+Happy Path:
+	•	GIVEN I am logged in as a teacher
+	•	WHEN I navigate to My Availability
+	•	THEN I see a simple weekly grid (tap to toggle 30-min slots)
+	•	AND I can set recurring availability (e.g., every Tuesday 6–8 PM)
+	•	AND times display in my local timezone
+	•	AND I tap Save to store my availability
+
+Failure / Edge Path:
+	•	WHEN save fails: ‘Could not save—tap to retry’; changes preserved in form
+	•	WHEN teacher changes mid-term: Affected upcoming sessions flagged for admin review
+
+Edge Cases:
+	•	Timezone difference between teacher and students? All times stored UTC; displayed in local timezone per user
+
+Acceptance Criteria:
+	•	Availability persists across sessions (reload and verify)
+	•	Changes flag affected scheduled sessions
+	•	Grid is tap-friendly on mobile (min 44px touch targets)
+Proof Method: Set availability; reload; verify persisted; change a slot mid-term; verify admin gets flag
+
+US-04: Auto-Schedule Classes with Google Meet
+Priority: P0
+Epic: Scheduling
+Sessions: 5 sessions
+
+As an admin, I want the system to auto-generate class schedules and Meet links from teacher availability, so that I stop spending hours on manual coordination.
+
+Happy Path:
+	•	GIVEN a teacher has set availability and is assigned to a class
+	•	WHEN the auto-scheduler runs (Vercel Cron job, daily at midnight UTC)
+	•	THEN the system creates class sessions for the upcoming week
+	•	AND generates Google Meet links via Calendar API
+	•	AND stores schedule + links in the database
+	•	AND triggers WhatsApp notifications to enrolled students
+
+Failure / Edge Path:
+	•	WHEN Google Meet API fails: Sessions created without links; admin alerted to add manually; retried next cron run
+	•	WHEN Vercel Cron times out (10s limit): Scheduler processes classes in batches across multiple cron invocations (10 classes per run, every 5 min until done)
+	•	WHEN teacher double-booked: System prevents overlap; alerts admin
+	•	WHEN Neon DB is cold: First cron invocation warms the DB; actual scheduling on second invocation
+
+Edge Cases:
+	•	What if class has no students yet? Schedule created anyway (ready when students enroll)
+	•	50 classes won’t process in one 10s function? Batch processing across multiple cron calls
+
+Acceptance Criteria:
+	•	Sessions appear in admin dashboard with Meet links
+	•	Meet links are valid (verified by opening in browser)
+	•	Students receive WhatsApp with correct schedule and link
+	•	No teacher double-booking
+	•	Scheduler completes 50 classes within 30 minutes (across batched cron runs)
+	•	Entire scheduling pipeline stays within Vercel 10s function timeout per invocation
+Proof Method: Trigger scheduler; verify Meet links in DB; verify WhatsApp logs; test with 50 classes across batched cron runs
+
+US-05: WhatsApp Class Reminders
+Priority: P1
+Epic: Scheduling
+Sessions: 3 sessions
+
+As a student, I want to get a WhatsApp reminder before my class with the Meet link, so that I never miss a session.
+
+Happy Path:
+	•	GIVEN I am enrolled and have provided my WhatsApp number
+	•	WHEN a class starts in 1 hour
+	•	THEN I receive: ‘Your [Class Name] starts in 1 hour! Join: [Meet Link]’ with date, time, teacher name
+	•	AND the message is in Dari (with English class name preserved)
+
+Failure / Edge Path:
+	•	WHEN WhatsApp fails: Retry once, then send email, then show in-platform banner
+	•	WHEN 1,000 msg/mo limit is near: Consolidate into per-class group messages instead of individual messages
+
+Acceptance Criteria:
+	•	Message delivered 1 hour before class (WhatsApp delivery log)
+	•	Correct class name, time (student’s timezone), and Meet link
+	•	Fallback chain works: WhatsApp → email → in-platform
+	•	Monthly message count stays within free tier
+Proof Method: Enroll in class; trigger reminder; verify WhatsApp delivery; test fallback by disabling WhatsApp API
+
+Epic 3: Class Experience
+US-06: Join Class via Meet Link
+Priority: P0
+Epic: Class Experience
+Sessions: 1 session
+
+As a student, I want to tap one button to join my live class, so that I don’t waste data navigating to find the link.
+
+Happy Path:
+	•	GIVEN my class starts within 15 minutes
+	•	WHEN I open AlphaSeekers on my phone
+	•	THEN I see a prominent ‘Join Now’ banner at the top of my dashboard for my upcoming class
+	•	AND tapping it opens Google Meet directly (no intermediate pages)
+	•	AND the same link was sent in my WhatsApp reminder (either path works)
+
+Failure / Edge Path:
+	•	WHEN Meet link is expired/invalid: Error message in Dari + English with ‘Contact admin’ link
+	•	WHEN class was cancelled: Cancellation notice shown before join attempt
+
+Acceptance Criteria:
+	•	Join button opens Meet directly (one tap from dashboard)
+	•	Works from both platform and WhatsApp link
+	•	Cancelled classes show cancellation notice
+Proof Method: Open dashboard near class time; verify Join Now banner; tap and verify Meet opens
+
+US-07: Access & Download Class Materials
+Priority: P0
+Epic: Class Experience
+Sessions: 2 sessions
+
+As a student, I want to download class materials as PDFs to read offline, so that I can study even when I have no internet.
+
+Happy Path:
+	•	GIVEN I am enrolled in a class
+	•	WHEN I navigate to the class materials section
+	•	THEN I see uploaded files with their size displayed (so I know before downloading)
+	•	AND I can tap to download PDFs for offline reading
+	•	AND materials are served from Cloudflare R2 CDN (fast, free, no bandwidth cost on Vercel)
+
+Failure / Edge Path:
+	•	WHEN download fails: Resume-capable download link (HTTP range requests); retry button
+	•	WHEN no materials uploaded: ‘No materials yet’ (not an error)
+
+Edge Cases:
+	•	What if file is large? Teacher upload limited to 5MB per file; compression applied server-side
+
+Acceptance Criteria:
+	•	Materials display with file sizes shown
+	•	PDFs download successfully on 3G (tested with 2MB file)
+	•	Files served from R2 (verify CDN headers, not Vercel bandwidth)
+	•	Teacher can upload files via simple form (max 5MB)
+Proof Method: Teacher uploads material; student downloads on throttled connection; verify R2 CDN headers
+
+US-08: Offline Schedule Cache
+Priority: P1
+Epic: Class Experience
+Sessions: 2 sessions
+
+As a student, I want to see my class schedule even when I have no internet, so that I know when my next class is during a power outage.
+
+Happy Path:
+	•	GIVEN I have previously loaded my schedule
+	•	WHEN I open AlphaSeekers without internet
+	•	THEN I see my cached schedule with class names, times, and Meet links
+	•	AND a banner says ‘Offline — showing last saved schedule from [date/time]’
+	•	AND I can still tap the Meet link (it opens Meet app if installed)
+
+Failure / Edge Path:
+	•	WHEN cache is empty (first visit ever with no internet): ‘Connect to internet to load your schedule’
+	•	WHEN cache is stale (>7 days): Warning: ‘Schedule may have changed—connect to update’
+
+Acceptance Criteria:
+	•	Schedule visible offline (verified by toggling airplane mode)
+	•	Cache updates automatically when online
+	•	Stale cache shows warning after 7 days
+	•	Service worker registered and caching schedule data
+Proof Method: Load schedule online; toggle airplane mode; verify schedule still visible with offline banner
+
+Epic 4: Administration
+US-09: Admin Dashboard
+Priority: P0
+Epic: Administration
+Sessions: 3 sessions
+
+As an admin, I want one dashboard showing all classes, teachers, students, and today’s sessions, so that I can stop managing from spreadsheets.
+
+Happy Path:
+	•	GIVEN I am logged in as admin
+	•	WHEN I open the Admin Dashboard
+	•	THEN I see: total classes, total students, total teachers, today’s sessions
+	•	AND today’s sessions show teacher name, student count, Meet link status (generated/pending/failed)
+	•	AND I can click into any class, teacher, or student for details
+
+Failure / Edge Path:
+	•	WHEN data fails to load: Individual cards show error + retry; other cards still render
+	•	WHEN Neon is cold-starting: Loading skeleton shown for 1–3s; auto-refreshes once data arrives
+
+Acceptance Criteria:
+	•	Dashboard loads < 3 seconds (admin likely has better internet)
+	•	Summary counts match database (verified via direct DB query)
+	•	Click-through to detail pages works
+	•	Today’s sessions correctly listed with Meet link status
+Proof Method: Admin login; verify dashboard data vs DB; click through to details; test with Neon cold start
+
+US-10: Class CRUD
+Priority: P0
+Epic: Administration
+Sessions: 3 sessions
+
+As an admin, I want to create, edit, and archive classes, so that I can manage all 50 classes from the platform.
+
+Happy Path:
+	•	GIVEN I am logged in as admin
+	•	WHEN I click ‘Create Class’
+	•	THEN I fill in: class name, subject, description, assigned teacher, max students, schedule preference
+	•	AND the class is created and visible in the catalog
+	•	AND if teacher has availability set, auto-scheduler picks it up on next cron run
+
+Failure / Edge Path:
+	•	WHEN required fields missing: Inline validation errors
+	•	WHEN assigned teacher has no availability: Warning shown; class created but unscheduled
+
+Acceptance Criteria:
+	•	Admin can create class with all required fields
+	•	Class appears in public catalog
+	•	Admin can edit class details
+	•	Admin can archive (soft-delete) a class
+	•	Validation prevents creation without required fields
+Proof Method: Create class; verify in catalog API; edit; verify changes; archive; verify hidden from catalog
+
+US-15: Opportunity Posting
+Priority: P1
+Epic: Administration
+Sessions: 2 sessions
+
+As an admin, I want to post scholarships and opportunities, so that students can discover relevant opportunities on the platform.
+
+Happy Path:
+	•	GIVEN I am logged in as admin
+	•	WHEN I create a new opportunity (title, type, description, deadline, external link)
+	•	THEN it is published and visible on the student-facing Opportunities page
+	•	AND students can filter by type (scholarship/job/internship/grant) and deadline
+
+Failure / Edge Path:
+	•	WHEN form fails: Error + retry; auto-saved draft
+
+Acceptance Criteria:
+	•	Opportunity visible on student page after publishing
+	•	Filters work correctly
+	•	Expired opportunities show ‘Expired’ badge and sort to bottom
+Proof Method: Create opportunity; verify on student page; test filters; verify expiry behavior
+
+US-16: Library Management
+Priority: P1
+Epic: Administration
+Sessions: 2 sessions
+
+As an admin, I want to add books and resources to the digital library stored on free cloud storage, so that students can download and read offline.
+
+Happy Path:
+	•	GIVEN I am logged in as admin
+	•	WHEN I add a resource (title, author, category, file upload to Cloudflare R2 or external URL)
+	•	THEN it is published and searchable in the student library
+	•	AND PDFs are served via R2 CDN for fast, free downloads
+
+Failure / Edge Path:
+	•	WHEN upload fails: Error + retry; metadata preserved
+	•	WHEN R2 is unreachable: Fallback to direct URL if provided
+
+Acceptance Criteria:
+	•	Resources appear with correct metadata
+	•	Students can search by title, author, subject
+	•	PDFs download from R2 CDN (verify headers)
+	•	File upload limited to 5MB with validation
+Proof Method: Upload resource; student searches and downloads; verify R2 CDN delivery
+
+
+4. Non-Functional Requirements
+4.1 Performance (Afghanistan-Optimized)
+Metric
+Target
+How We Achieve It
+Initial page load (2G/3G)
+< 3 seconds on 500Kbps
+SSR with zero/minimal client JS; system fonts; no images above fold
+Total page weight
+< 200KB per page
+Server-rendered HTML; CSS < 20KB; JS < 50KB gzipped; no web fonts
+API response size
+< 10KB JSON
+Paginate 10 items/page; return only needed fields; gzip compression
+API response time
+< 500ms (warm DB)
+Neon warm; simple queries; edge caching for public data
+Time to interactive
+< 5 seconds on 500Kbps
+Progressive enhancement; HTML works without JS
+Image sizes
+< 30KB each
+WebP format; server-side compression; lazy loading with dimensions set
+Largest Contentful Paint
+< 2.5 seconds
+No hero images; text-first design; inline critical CSS
+
+4.2 Security
+	•	Authentication: Email + password with JWT tokens (via NextAuth.js); role-based access (student, teacher, admin)
+	•	All traffic over HTTPS (Cloudflare handles SSL termination)
+	•	API routes protected by role middleware; students cannot access admin/teacher endpoints
+	•	No personal data (phone numbers, full names) exposed in public API responses
+	•	WhatsApp numbers stored encrypted; only used for notification delivery
+	•	Rate limiting on auth endpoints (prevent brute force)
+
+4.3 Reliability & Resilience
+	•	Uptime target: 99% (Vercel has 99.99% SLA even on free tier)
+	•	Database: Neon handles backups automatically; 7-day point-in-time recovery on free tier
+	•	Graceful degradation: If Google Meet API fails, platform still works for browsing, enrollment, and materials
+	•	Retry logic on ALL external API calls (3 retries, exponential backoff: 1s, 2s, 4s)
+	•	Circuit breaker pattern: After 5 consecutive failures, stop calling failing service for 5 minutes
+	•	Notification chain: WhatsApp → Email → In-platform banner (never silently fail)
+
+4.4 Accessibility & Mobile
+	•	Mobile-first responsive design (tested on 360px width—common low-end Android screen)
+	•	RTL layout support for Dari and Pashto (CSS logical properties: margin-inline-start, etc.)
+	•	System font stack only: -apple-system, Segoe UI, Roboto, sans-serif (zero font downloads)
+	•	Minimum touch target size: 44x44px (per WCAG guidelines)
+	•	No animations, transitions, or hover-dependent interactions
+	•	Color contrast meets WCAG AA (4.5:1 minimum for text)
+	•	Works on Android 10+ with Chrome (the dominant browser in Afghanistan)
+	•	Progressive Web App (PWA) manifest for add-to-home-screen on Android
+
+4.5 Internationalization (i18n)
+	•	Default UI language: Dari (with English fallback)
+	•	All user-facing strings externalized for translation (next-intl or similar lightweight i18n)
+	•	RTL/LTR layout switches automatically based on language
+	•	Date/time displayed in user’s timezone (stored UTC in database)
+	•	Class names and descriptions may be in any language (mixed-direction text handled)
+
+
+5. Technical Architecture
+5.1 Stack Decisions
+Layer
+Choice
+Why (Afghanistan + Free Tier Context)
+Framework
+Next.js 14 (App Router)
+SSR for fast loading on slow internet; Vercel Hobby deploys free; React ecosystem
+Database
+Neon PostgreSQL (Free)
+Serverless Postgres; 0.5GB free; auto-suspend saves resources; standard SQL
+ORM
+Prisma
+Type-safe queries; works great with Neon; schema migrations built-in
+Auth
+NextAuth.js (Auth.js)
+Self-hosted (no external dependency); free; JWT sessions (no DB session lookups)
+File Storage
+Cloudflare R2 (Free)
+10GB free; S3-compatible; global CDN; doesn’t consume Vercel bandwidth
+CDN
+Cloudflare (Free)
+Global edge network; Afghanistan PoPs; DDoS protection; DNS; SSL
+WhatsApp
+WhatsApp Cloud API (Meta)
+1,000 free conversations/mo; official API; reliable
+Email Backup
+Resend (Free)
+3,000 emails/mo free; simple API; transactional emails only
+Meet Links
+Google Calendar API
+Free via Workspace for Nonprofits; creates Meet links automatically
+Styling
+Tailwind CSS
+Small bundle (purged CSS < 10KB); utility-first; mobile-first; RTL support
+Cron Jobs
+Vercel Cron (Free)
+Daily scheduling triggers; 1 cron job on Hobby plan; use for auto-scheduler
+Monitoring
+Vercel Analytics + Sentry (Free)
+Basic web vitals; error tracking; sufficient for 500-user scale
+i18n
+next-intl (lightweight)
+Dari/English; RTL/LTR; small bundle impact; Next.js native integration
+
+5.2 Architecture Principles
+	•	Server-first: Render HTML on the server. Client JS only for interactivity (enrollment, forms, schedule cache).
+	•	Progressive enhancement: Every page must work with JS disabled (core reading/browsing). JS enhances with optimistic UI, caching.
+	•	Edge caching: Public pages (class catalog, opportunities, library) cached at Cloudflare edge. Reduces Vercel function invocations.
+	•	Offline-capable: Service worker caches student schedule + class materials list. Full offline reading of downloaded PDFs.
+	•	API minimalism: Every API route returns only the fields the client needs. No ‘select *’. No nested objects unless necessary.
+	•	Batched operations: Auto-scheduler processes 10 classes per cron invocation to stay within 10s timeout. Runs every 5 min until complete.
+
+
+6. Core Data Models
+Entity
+Key Fields
+Notes
+User
+id, name, email, phone, role, timezone, language, createdAt
+Phone for WhatsApp; role: student/teacher/admin
+Class
+id, name, subjectCategory, description, teacherId, maxStudents, status, termId
+Status: active/archived; belongs to teacher
+Session
+id, classId, startTime, endTime, meetLink, meetLinkStatus, createdAt
+meetLinkStatus: generated/pending/failed
+Enrollment
+id, studentId, classId, enrolledAt, status
+Status: active/dropped; unique(studentId, classId)
+Attendance
+id, sessionId, studentId, attended, joinedAt
+Boolean attended; optional joinedAt timestamp
+TeacherAvailability
+id, teacherId, dayOfWeek, startTimeUTC, endTimeUTC
+Stored in UTC; displayed in local timezone
+Material
+id, classId, title, fileUrl, fileSize, uploadedBy, sessionId
+fileUrl points to R2; fileSize displayed to student
+Opportunity
+id, title, type, description, deadline, externalUrl, createdAt
+Type: scholarship/job/internship/grant
+LibraryResource
+id, title, author, category, fileUrl, externalUrl, fileSize
+fileUrl on R2; externalUrl for external resources
+Notification
+id, userId, channel, content, status, sentAt
+Channel: whatsapp/email/platform; status: sent/failed/pending
+SchedulerJob
+id, status, processedCount, totalCount, lastRunAt
+Tracks batched cron job progress across invocations
+
+
+7. Build Plan
+Phase 1: Foundation (Est. 5 sessions — 1 week)
+	•	Next.js 14 project setup + Tailwind (purged) + Prisma + Neon connection
+	•	Database schema + migrations for all core entities
+	•	NextAuth.js authentication (email/password, JWT, role middleware)
+	•	Cloudflare DNS + CDN setup in front of Vercel
+	•	Responsive layout shell with RTL support + Dari/English i18n
+	•	Neon warm-up cron job (ping every 4 min to prevent cold starts)
+Checkpoint: Can register, login, and see empty role-based dashboard. Page loads < 200KB.
+
+Phase 2: Core Classes (Est. 8 sessions — 2 weeks)
+	•	Server-rendered class catalog page (browse, filter, paginate 10/page)
+	•	Class detail page with enrollment (optimistic UI)
+	•	Teacher availability grid (weekly slots, timezone-aware)
+	•	Admin class CRUD (create, edit, archive)
+	•	Auto-scheduler engine (batched Vercel Cron, 10 classes per invocation)
+Checkpoint: Full class lifecycle works. Catalog loads < 3s on simulated 500Kbps.
+
+Phase 3: Integrations (Est. 6 sessions — 1.5 weeks)
+	•	Google Calendar API integration → auto-create Meet links
+	•	WhatsApp Cloud API integration → enrollment confirmation + class reminders
+	•	Email fallback via Resend
+	•	Notification delivery chain: WhatsApp → email → in-platform
+	•	Cloudflare R2 setup for file storage (materials + library)
+Checkpoint: Classes auto-generate Meet links; students get WhatsApp notifications.
+
+Phase 4: Secondary Programs (Est. 5 sessions — 1 week)
+	•	Webinar listing + registration page
+	•	Opportunities posting + browsing (filters, deadlines)
+	•	Library management + student search/download
+	•	Class materials upload (teacher) + download (student) via R2
+Checkpoint: All four programs accessible and functional.
+
+Phase 5: Offline & Polish (Est. 4 sessions — 1 week)
+	•	Service worker: cache student schedule + class list for offline access
+	•	localStorage auto-save for all forms
+	•	Performance audit: every page < 200KB, < 3s on 500Kbps
+	•	RTL layout audit across all pages
+	•	Error handling audit (no silent failures; all catch blocks verified)
+	•	Security audit (auth, data exposure, rate limiting)
+
+Phase 6: Deploy & Launch (Est. 2 sessions — 2 days)
+	•	Vercel production deployment + environment variables
+	•	Cloudflare production DNS + SSL + caching rules
+	•	Neon production database + verify backup/recovery
+	•	WhatsApp Business verification + template approval
+	•	Google Workspace for Nonprofits verification
+	•	Smoke test from Afghanistan (VPN or real user test)
+Checkpoint: Live, accessible, $0/month, < 200KB pages, WhatsApp working.
+
+Total Estimated Effort
+Phase
+Sessions
+Duration
+Phase 1: Foundation
+5
+1 week
+Phase 2: Core Classes
+8
+2 weeks
+Phase 3: Integrations
+6
+1.5 weeks
+Phase 4: Secondary Programs
+5
+1 week
+Phase 5: Offline & Polish
+4
+1 week
+Phase 6: Deploy & Launch
+2
+2 days
+TOTAL
+30 sessions
+~7 weeks
+
+
+8. Free-Tier Constraints Quick Reference
+This section maps every platform feature against the free-tier limits it touches, so the development team can proactively design within constraints.
+
+Feature
+Services Touched
+Limit Concern
+Design Decision
+Class catalog page
+Vercel (SSR) + Neon
+Neon cold start
+Cache at Cloudflare edge; cron ping Neon every 4 min
+Student enrollment
+Vercel (API) + Neon + WhatsApp
+WhatsApp 1K msg/mo
+Batch enrollment confirmations; count monthly usage
+Auto-scheduler
+Vercel Cron + Neon + Google API
+10s function timeout
+Process 10 classes per cron run; batch across invocations
+Class materials
+R2 + Vercel (upload API)
+R2 10GB storage
+5MB max per file; archive old materials quarterly
+Library PDFs
+R2 CDN
+R2 10GB storage
+Prioritize links over uploads; compress PDFs before storing
+WhatsApp reminders
+WhatsApp Cloud API
+1K conversations/mo
+1 reminder per class (not per student); group messages
+File uploads
+Vercel API + R2
+Vercel 4.5MB body limit
+Client-side direct upload to R2 via presigned URL
+Offline cache
+Service Worker (client)
+Device storage
+Cache schedule + class list only; not full materials
+
+
+9. Glossary
+Term
+Definition
+AlphaSeekers
+Non-profit online learning network providing free education to Afghan girls in Afghanistan
+Auto-Scheduler
+Vercel Cron-based system that creates class sessions and Meet links from teacher availability
+Neon
+Serverless PostgreSQL database with a free tier (0.5GB storage, auto-suspend after 5 min idle)
+Vercel
+Hosting platform with free Hobby tier (100GB bandwidth/mo, 10s serverless function timeout)
+Cloudflare R2
+S3-compatible object storage with 10GB free tier and global CDN, used for files/PDFs
+Cold Start
+1–3 second delay when Neon wakes from idle; mitigated by cron pings
+SSR
+Server-Side Rendering: HTML generated on the server so pages load fast on slow connections
+RTL
+Right-To-Left: layout direction for Dari and Pashto languages
+Optimistic UI
+Showing success immediately while the API call completes in the background
+Progressive Enhancement
+Pages work with HTML only; JavaScript adds interactive features on top
+PWA
+Progressive Web App: installable on Android home screen for quick access
+P0/P1/P2/P3
+Priority: Must Have / Should Have / Nice to Have / Future
+MVP
+Minimum Viable Product: the first launchable version with all P0 features
+
+
+
+END OF DOCUMENT
+Built for Afghan girls. Built for slow internet. Built on free infrastructure.
+No code should be written until this BRD/FRD is reviewed and approved.

@@ -1,0 +1,433 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-base: #f8f9fa;
+  --bg-strong: #f1f3f5;
+
+  --ink-main: #1a1a2e;
+  --ink-soft: #4a5568;
+
+  --panel: #ffffff;
+  --panel-strong: #ffffff;
+  --line: #e8ecf1;
+
+  --brand: #059669;
+  --brand-deep: #047857;
+  --brand-light: #ecfdf5;
+  --accent: #0d9488;
+  --accent-warm: #d97706;
+  --success: #059669;
+  --danger: #dc2626;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.03);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
+
+  --radius-panel: 0.875rem;
+  --radius-btn: 0.625rem;
+
+  --font-latin: -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display-latin: -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-arabic: "Noto Sans Arabic", "Noto Naskh Arabic", Tahoma, Arial, sans-serif;
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  color: var(--ink-main);
+  background-color: var(--bg-base);
+  font-family: var(--font-latin), sans-serif;
+  line-height: 1.6;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: inherit;
+}
+
+:where(a, button, input, select, textarea):focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+[data-locale] {
+  --font-ui-body: var(--font-latin);
+  --font-ui-display: var(--font-display-latin);
+  font-family: var(--font-ui-body), sans-serif;
+}
+
+[data-locale="fa"] {
+  --font-ui-body: var(--font-arabic);
+  --font-ui-display: var(--font-arabic);
+}
+
+[data-locale] h1,
+[data-locale] h2,
+[data-locale] h3,
+[data-locale] h4,
+[data-locale] h5,
+[data-locale] h6,
+[data-locale] .font-display {
+  font-family: var(--font-ui-display), sans-serif;
+  letter-spacing: -0.02em;
+}
+
+[data-locale="fa"] h1,
+[data-locale="fa"] h2,
+[data-locale="fa"] h3,
+[data-locale="fa"] h4,
+[data-locale="fa"] h5,
+[data-locale="fa"] h6,
+[data-locale="fa"] .font-display {
+  letter-spacing: 0;
+}
+
+/* ---------- Layout ---------- */
+
+.page-shell {
+  width: 100%;
+  max-width: 1120px;
+  margin-inline: auto;
+  padding-inline: 1rem;
+}
+
+@media (min-width: 640px) {
+  .page-shell {
+    padding-inline: 1.5rem;
+  }
+}
+
+/* ---------- Panels ---------- */
+
+.panel {
+  border: 1px solid var(--line);
+  background: var(--panel);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow-sm);
+}
+
+.panel-strong {
+  background: var(--panel-strong);
+  box-shadow: var(--shadow-md);
+}
+
+.hero-panel {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+.stat-card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  background: #ffffff;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+
+.stat-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+/* ---------- Navigation ---------- */
+
+.nav-pill {
+  display: inline-flex;
+  min-height: 2.25rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-btn);
+  border: 1px solid transparent;
+  background: transparent;
+  padding-inline: 0.75rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+  text-decoration: none;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.nav-pill:hover {
+  background: rgba(5, 150, 105, 0.06);
+  color: var(--brand-deep);
+}
+
+/* ---------- Badges ---------- */
+
+.badge-pill {
+  display: inline-flex;
+  min-height: 1.5rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-btn);
+  border: 1px solid rgba(5, 150, 105, 0.2);
+  background: rgba(209, 250, 229, 0.5);
+  padding-inline: 0.5rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--brand-deep);
+}
+
+/* ---------- Buttons ---------- */
+
+.btn-primary,
+.btn-secondary,
+.btn-danger,
+.btn-muted {
+  display: inline-flex;
+  min-height: 2.5rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-btn);
+  padding-inline: 1rem;
+  font-size: 0.86rem;
+  font-weight: 600;
+  text-decoration: none;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--brand) 0%, var(--brand-deep) 100%);
+  color: #ffffff;
+  box-shadow: 0 1px 3px rgba(5, 150, 105, 0.3);
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, var(--brand-deep) 0%, #065f46 100%);
+  box-shadow: 0 2px 6px rgba(5, 150, 105, 0.35);
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background: #ffffff;
+  border-color: var(--line);
+  color: var(--ink-main);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-secondary:hover {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.btn-muted {
+  background: #f8fafc;
+  border-color: var(--line);
+  color: var(--ink-soft);
+}
+
+.btn-muted:hover {
+  background: #f1f5f9;
+}
+
+.btn-danger {
+  background: #ffffff;
+  border-color: rgba(220, 38, 38, 0.3);
+  color: var(--danger);
+}
+
+.btn-danger:hover {
+  background: #fef2f2;
+  border-color: rgba(220, 38, 38, 0.5);
+}
+
+.btn-primary:disabled,
+.btn-secondary:disabled,
+.btn-danger:disabled,
+.btn-muted:disabled {
+  opacity: 0.5;
+  pointer-events: none;
+  transform: none;
+  box-shadow: none;
+}
+
+/* ---------- Form Fields ---------- */
+
+.field,
+.area-field,
+.select-field {
+  width: 100%;
+  border-radius: var(--radius-btn);
+  border: 1px solid var(--line);
+  background: #ffffff;
+  color: var(--ink-main);
+  font-size: 0.9rem;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.field,
+.select-field {
+  min-height: 2.5rem;
+  padding-inline: 0.75rem;
+}
+
+.area-field {
+  min-height: 6rem;
+  padding: 0.625rem 0.75rem;
+  resize: vertical;
+}
+
+.field:focus,
+.area-field:focus,
+.select-field:focus {
+  outline: none;
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.12);
+}
+
+/* ---------- Typography ---------- */
+
+.section-kicker {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--brand);
+}
+
+[data-locale="fa"] .section-kicker {
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+/* ---------- Card Styles ---------- */
+
+.card-interactive {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  background: #ffffff;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.2s, border-color 0.2s, transform 0.2s;
+}
+
+.card-interactive:hover {
+  box-shadow: var(--shadow-md);
+  border-color: #cbd5e1;
+  transform: translateY(-2px);
+}
+
+/* ---------- Progress ---------- */
+
+.progress-track {
+  width: 100%;
+  height: 0.375rem;
+  border-radius: 9999px;
+  background: #e2e8f0;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, var(--brand) 0%, var(--accent) 100%);
+}
+
+/* ---------- Misc ---------- */
+
+.timeline-line {
+  border-inline-start: 2px solid #e2e8f0;
+  padding-inline-start: 0.75rem;
+}
+
+.faq-summary::-webkit-details-marker {
+  display: none;
+}
+
+.faq-details[open] .faq-chevron {
+  transform: rotate(180deg);
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* ---------- Hero gradient background ---------- */
+
+.hero-gradient {
+  background: linear-gradient(160deg, #ecfdf5 0%, #f0fdfa 40%, #f8f9fa 70%);
+  position: relative;
+}
+
+.hero-gradient::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(5, 150, 105, 0.06) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.hero-gradient::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle, rgba(13, 148, 136, 0.05) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+/* ---------- Section accent bar ---------- */
+
+.accent-bar {
+  width: 3rem;
+  height: 3px;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, var(--brand) 0%, var(--accent) 100%);
+}
+
+/* ---------- Dark section ---------- */
+
+.section-dark {
+  background: linear-gradient(160deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+}
+
+/* ---------- Stats grid ---------- */
+
+.stats-grid {
+  border-radius: var(--radius-panel);
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--line);
+}
+
+/* ---------- Auth page decoration ---------- */
+
+.auth-page {
+  position: relative;
+}
+
+.auth-page::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle, rgba(5, 150, 105, 0.08) 0%, transparent 70%);
+  pointer-events: none;
+}

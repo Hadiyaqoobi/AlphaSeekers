@@ -1,0 +1,870 @@
+{
+  "meta": {
+    "title": "الفاسیکرز",
+    "description": "آموزش رایگان برای دختران افغان"
+  },
+  "nav": {
+    "home": "خانه",
+    "programs": "برنامه‌ها",
+    "howItWorks": "چگونه کار می‌کند",
+    "classes": "صنف‌ها",
+    "webinars": "وبینارها",
+    "opportunities": "فرصت‌ها",
+    "library": "کتابخانه",
+    "dashboard": "داشبورد",
+    "profile": "پروفایل",
+    "teacher": "استاد",
+    "admin": "مدیریت",
+    "staff": "کارکنان",
+    "users": "کاربران",
+    "login": "ورود",
+    "register": "درخواست دسترسی",
+    "logout": "خروج",
+    "brandTagline": "آموزش رایگان برای دختران افغان",
+    "networkBadge": ""
+  },
+  "home": {
+    "eyebrow": "صنف‌های رایگان برای دختران افغان",
+    "title": "AlphaSeekers",
+    "subtitle": "صنف‌های آنلاین رایگان برای دختران افغان، با استادان داوطلب از سراسر جهان.",
+    "ctaClasses": "مشاهده صنف‌ها",
+    "ctaLogin": "ورود",
+    "ctaDashboard": "داشبورد زنده",
+    "ctaRegister": "درخواست دسترسی",
+    "ctaHowItWorks": "چگونه کار می‌کند",
+    "search": {
+      "kicker": "جستجو",
+      "title": "چه می‌خواهید یاد بگیرید؟",
+      "label": "جستجوی صنف‌ها",
+      "placeholder": "مثلاً: انگلیسی، Languages، Photoshop...",
+      "button": "جستجو",
+      "helper": "لینک ورود فقط بعد از تایید و ثبت‌نام قابل دیدن است.",
+      "quick": {
+        "languages": "زبان‌ها",
+        "skills": "مهارت‌ها",
+        "arts": "هنر",
+        "english": "انگلیسی"
+      }
+    },
+    "featured": {
+      "kicker": "منتخب",
+      "title": "صنف‌های محبوب",
+      "viewAll": "مشاهده همه صنف‌ها",
+      "empty": "هنوز صنفی موجود نیست.",
+      "cardKicker": "جلسات بعدی",
+      "learners": "دانش‌آموز",
+      "view": "بازکردن"
+    },
+    "programTiles": {
+      "kicker": "برنامه‌ها",
+      "title": "بخش‌های پلتفرم",
+      "cta": "شروع",
+      "classes": "صنف‌های زنده با زمان‌بندی براساس دسترسی استاد.",
+      "webinars": "جلسات آزاد برای آموزش، کار و سلامتی.",
+      "opportunities": "بورسیه، وظیفه، انترنشیپ و گرنت.",
+      "library": "دانلودهای کم‌حجم برای مطالعه آفلاین."
+    },
+    "workflow": {
+      "kicker": "روند",
+      "step1": {
+        "title": "درخواست دسترسی",
+        "body": "حساب بسازید. تایید مدیر پلتفرم را امن نگه می‌دارد."
+      },
+      "step2": {
+        "title": "ثبت‌نام و وصل شدن",
+        "body": "برای دیدن لینک و مواد صنف ثبت‌نام کنید. صنف‌های طولانی لینک را خودکار تغییر می‌دهند."
+      }
+    },
+    "pillars": {
+      "approvedOnly": "امن و خصوصی",
+      "lowBandwidth": "در اینترنت ضعیف هم کار می‌کند",
+      "bilingual": "FA + EN"
+    },
+    "preview": {
+      "scheduleKicker": "برنامه",
+      "scheduleTitle": "جلسات خودکار",
+      "scheduleChip": "هوشمند",
+      "scheduleBody": "استاد زمان‌های آزاد را تعیین می‌کند. پلتفرم صنف‌ها را زمان‌بندی می‌کند، لینک ویدیو می‌سازد و یادآوری می‌فرستد.",
+      "offlineChip": "آفلاین",
+      "offlineTitle": "مناسب اینترنت ضعیف",
+      "offlineBody": "صفحات سبک، برنامه ذخیره‌شده و مواد قابل دانلود برای زمان قطع اینترنت.",
+      "privateTitle": "به‌صورت پیش‌فرض خصوصی",
+      "privateChip": "امن",
+      "privateBody": "لینک ورود و مواد صنف فقط برای دانش‌آموز تاییدشده و ثبت‌نام‌شده و کارکنان صنف قابل دیدن است."
+    },
+    "howItWorks": {
+      "kicker": "جریان کار",
+      "title": "از درخواست تا آموزش",
+      "subtitle": "یک روند ساده که دسترسی را محافظت می‌کند و تجربه را روی موبایل سریع نگه می‌دارد.",
+      "steps": {
+        "request": {
+          "title": "درخواست دسترسی",
+          "body": "به عنوان دانش‌آموز یا استاد حساب بسازید. درخواست شما تا زمان تایید خصوصی می‌ماند."
+        },
+        "approval": {
+          "title": "تایید شوید",
+          "body": "مدیران حساب‌ها را تایید می‌کنند تا فقط دانش‌آموزان و استادان مطمئن وارد شوند."
+        },
+        "learn": {
+          "title": "وصل شوید و آفلاین مطالعه کنید",
+          "body": "ثبت‌نام کنید، لینک ورود را دریافت کنید و مواد را برای مطالعه در اینترنت ضعیف دانلود کنید."
+        }
+      }
+    },
+    "stats": {
+      "studentsLabel": "یادگیرنده‌گان",
+      "studentsValue": "۵۰۰+",
+      "studentsHint": "دانش‌آموز در سراسر افغانستان",
+      "liveClassesLabel": "صنف‌های زنده",
+      "liveClassesValue": "۲۸",
+      "liveClassesHint": "جلسات هفتگی با استادان داوطلب",
+      "programsLabel": "برنامه‌ها",
+      "programsValue": "۴",
+      "programsHint": "صنف‌ها، رویدادها، منابع و فرصت‌ها",
+      "designGoalLabel": "داوطلبان",
+      "designGoalValue": "۵۰+",
+      "designGoalHint": "استاد از ۱۲ کشور"
+    },
+    "compass": {
+      "kicker": "برنامه‌ها",
+      "title": "قطب‌نمای برنامه",
+      "openCatalog": "بازکردن فهرست کامل",
+      "classesTitle": "صنف‌های آنلاین",
+      "classesBody": "دسترسی استاد، زمان‌بندی خودکار، لینک‌های ویدیو و یادآوری‌ها را مدیریت می‌کند.",
+      "classesCta": "مشاهده صنف‌ها",
+      "joinNow": "همین حالا وصل شوید",
+      "webinarsTitle": "وبینارها و فرصت‌ها",
+      "webinarsBody": "جلسات آموزشی و سلامتی، همراه با بورسیه‌ها، گرنت‌ها و انترنشیپ‌ها.",
+      "webinarsCta": "وبینارها",
+      "opportunitiesCta": "فرصت‌ها",
+      "libraryTitle": "کتابخانه آمادهٔ آفلاین",
+      "libraryBody": "منابع کم‌حجم با لینک دانلود مستقیم تا در زمان قطع اینترنت هم ادامه بدهید.",
+      "libraryCta": "بازکردن کتابخانه"
+    },
+    "safety": {
+      "kicker": "امنیت",
+      "title": "برای دسترسی قابل اعتماد",
+      "subtitle": "ورود بر اساس تایید، دسترسی‌های نقش‌محور و لینک‌های محافظت‌شده تمرکز پلتفرم را روی آموزش نگه می‌دارد.",
+      "chip": "فقط تاییدشده",
+      "points": {
+        "approval": {
+          "title": "دانش‌آموزان و استادان تاییدشده",
+          "body": "حساب‌ها تا زمانی که مدیر تایید کند در حالت انتظار می‌مانند."
+        },
+        "privateLinks": {
+          "title": "لینک‌های خصوصی",
+          "body": "لینک ویدیو تا زمان تایید و ثبت‌نام دانش‌آموز پنهان می‌ماند."
+        },
+        "roles": {
+          "title": "نقش‌های واضح",
+          "body": "دانش‌آموز، استاد و مدیر دقیقاً همان دسترسی لازم را دارند."
+        },
+        "data": {
+          "title": "دیتای حداقلی",
+          "body": "اطلاعات را سبک و در حد زمان‌بندی و آموزش نگه می‌داریم."
+        }
+      }
+    },
+    "cta": {
+      "explorePrograms": "مشاهده برنامه‌ها",
+      "howItWorks": "چگونه کار می‌کند",
+      "kicker": "شروع",
+      "title": "درخواست دسترسی",
+      "body": "AlphaSeekers یک شبکه آموزشی محافظت‌شده است. برای شروع درخواست دسترسی بدهید.",
+      "buttonRegister": "درخواست دسترسی",
+      "buttonLogin": "ورود"
+    },
+    "programs": {
+      "kicker": "برنامه‌ها",
+      "title": "اینجا چه کارهایی می‌توانید بکنید",
+      "subtitle": "صنف‌های زنده، مواد درسی قابل دانلود و فرصت‌ها — همه رایگان.",
+      "cta": "درخواست دسترسی",
+      "ctaSignedIn": "ادامه",
+      "view": "مشاهده",
+      "cards": {
+        "classes": {
+          "kicker": "یادگیری زنده",
+          "body": "صنف‌های کوچک زنده با استادان داوطلب، با برنامه منظم."
+        },
+        "library": {
+          "kicker": "مطالعه آفلاین",
+          "body": "مواد درسی را دانلود کنید تا وقتی اینترنت قطع شد هم ادامه بدهید."
+        },
+        "webinars": {
+          "kicker": "رویدادها",
+          "body": "جلسات آزاد درباره کار، صحت و رشد شخصی."
+        },
+        "opportunities": {
+          "kicker": "فرصت‌ها",
+          "body": "بورسیه‌ها، انترنشیپ‌ها و گرنت‌های جمع‌آوری‌شده برای دانش‌آموزان افغان."
+        }
+      }
+    },
+    "how": {
+      "kicker": "چگونه کار می‌کند",
+      "title": "درخواست. دسترسی. یادگیری.",
+      "subtitle": "سه قدم برای شروع.",
+      "cta": "درخواست دسترسی",
+      "ctaSignedIn": "رفتن به داشبورد",
+      "steps": {
+        "one": {
+          "badge": "۰۱",
+          "title": "درخواست دسترسی",
+          "body": "به عنوان دانش‌آموز یا استاد حساب بسازید."
+        },
+        "two": {
+          "badge": "۰۲",
+          "title": "دسترسی بررسی می‌شود",
+          "body": "حساب شما قبل از ورود بررسی می‌شود. این کار جامعه را امن نگه می‌دارد."
+        },
+        "three": {
+          "badge": "۰۳",
+          "title": "شروع یادگیری",
+          "body": "صنف‌ها را ببینید، ثبت‌نام کنید و وقتی جلسه شروع شد وصل شوید."
+        }
+      }
+    },
+    "faq": {
+      "kicker": "سوالات",
+      "title": "امنیت، حریم خصوصی و دسترسی",
+      "subtitle": "سوالات رایج درباره نحوه کار AlphaSeekers.",
+      "items": {
+        "access": {
+          "q": "چه کسانی می‌توانند عضو شوند؟",
+          "a": "AlphaSeekers از دختران افغان برای آموزش رایگان حمایت می‌کند. دسترسی برای محافظت از دانش‌آموزان و استادان بررسی می‌شود."
+        },
+        "privacy": {
+          "q": "آیا معلومات من عمومی می‌شود؟",
+          "a": "خیر. پروفایل‌ها و جزئیات صنف‌ها عمومی نیست. دسترسی فقط برای حساب‌های تاییدشده است."
+        },
+        "cost": {
+          "q": "هزینه دارد؟",
+          "a": "خیر. AlphaSeekers برای یادگیرنده‌گان و استادان رایگان است."
+        },
+        "languages": {
+          "q": "کدام زبان‌ها پشتیبانی می‌شود؟",
+          "a": "رابط کاربری در دری و انگلیسی است. صنف‌ها ممکن است به زبان‌های مختلف تدریس شوند."
+        }
+      }
+    },
+    "footer": "AlphaSeekers توسط داوطلبان اداره می‌شود. همه صنف‌ها رایگان است."
+  },
+  "login": {
+    "eyebrow": "دسترسی",
+    "title": "ورود",
+    "subtitle": "برای ادامه وارد شوید",
+    "email": "ایمیل",
+    "password": "رمز عبور",
+    "submit": "ورود",
+    "error": "ایمیل یا رمز عبور نادرست است",
+    "pending": "حساب شما در حال بررسی است. لطفاً بعد از تایید دوباره تلاش کنید.",
+    "requestAccess": "درخواست دسترسی"
+  },
+  "register": {
+    "eyebrow": "درخواست دسترسی",
+    "title": "درخواست دسترسی",
+    "subtitle": "حساب بسازید. دسترسی قبل از ورود بررسی می‌شود.",
+    "name": "نام و تخلص",
+    "email": "ایمیل",
+    "password": "رمز عبور",
+    "phone": "شماره (اختیاری)",
+    "role": "نقش",
+    "student": "دانش‌آموز",
+    "teacher": "استاد",
+    "submit": "ارسال درخواست",
+    "error": "ثبت‌نام ناموفق بود"
+  },
+  "pending": {
+    "eyebrow": "دسترسی",
+    "title": "در انتظار تایید",
+    "body": "درخواست دسترسی شما دریافت شد. لطفاً بعد از تایید دوباره سر بزنید.",
+    "note": "برای محافظت از یادگیرنده‌گان، فقط حساب‌های تاییدشده می‌توانند وارد شوند.",
+    "goToLogin": "رفتن به صفحه ورود",
+    "home": "خانه"
+  },
+  "dashboard": {
+    "title": "داشبورد",
+    "welcome": "خوش آمدید",
+    "role": "نقش",
+    "cards": {
+      "classes": "صنف‌های فعال",
+      "students": "دانش‌آموزان",
+      "teachers": "استادان",
+      "today": "جلسات امروز"
+    },
+    "sections": {
+      "myClasses": "صنف‌های من",
+      "todaySessions": "جلسات امروز",
+      "latestNotifications": "آخرین اعلان‌ها"
+    },
+    "actions": {
+      "viewProfile": "مشاهده پروفایل",
+      "viewAll": "مشاهده همه"
+    },
+    "empty": {
+      "noEnrollments": "هنوز در هیچ صنفی ثبت‌نام نکرده‌اید.",
+      "noSessionsToday": "امروز جلسه‌ای نیست.",
+      "noNotifications": "هنوز اعلانی نیست.",
+      "noTeacherClasses": "هنوز صنفی تعیین نشده."
+    },
+    "labels": {
+      "meet": "Meet",
+      "pending": "در انتظار",
+      "nextSession": "جلسه بعدی"
+    }
+  },
+  "classes": {
+    "title": "صنف‌ها",
+    "subtitle": "صنف‌های موجود را ببینید و ثبت‌نام کنید",
+    "empty": "صنفی موجود نیست",
+    "searchPlaceholder": "جستجوی صنف‌ها",
+    "searchButton": "جستجو",
+    "teacher": "استاد",
+    "schedule": "زمان",
+    "language": "زبان",
+    "enrolled": "اشتراک",
+    "durationLabel": "مدت",
+    "minutesShort": "دقیقه",
+    "details": "جزئیات",
+    "total": "مجموع صنف‌ها",
+    "showing": "نمایش در این صفحه",
+    "currentPage": "صفحه جاری",
+    "sessionPending": "جلسه در انتظار",
+    "prev": "قبلی",
+    "next": "بعدی",
+    "pageLabel": "صفحه"
+  },
+  "classDetail": {
+    "backToClasses": "برگشت به صنف‌ها",
+    "teacher": "استاد",
+    "schedule": "زمان",
+    "language": "زبان",
+    "enrolled": "اشتراک",
+    "duration": "مدت",
+    "minutes": "دقیقه",
+    "multiSegmentNotice": "این صنف در چند بخش ویدیویی اجرا می‌شود و بین بخش‌ها ۱۰ دقیقه رخصتی است.",
+    "upcomingSessions": "جلسات آینده",
+    "meetStatus": "وضعیت Meet",
+    "openMeet": "بازکردن لینک Meet",
+    "joinAfterEnroll": "لینک بعد از ثبت‌نام/تایید فعال می‌شود.",
+    "meetPending": "لینک Meet در انتظار است",
+    "materialsTitle": "مواد درسی",
+    "materialsRestricted": "مواد درسی برای دانش‌آموزان ثبت‌نام‌شده و کارکنان صنف قابل دسترس است.",
+    "noMaterials": "هنوز ماده‌ای نیست.",
+    "download": "دانلود",
+    "studentsTitle": "دانش‌آموزان ثبت‌نام‌شده"
+  },
+  "sessionActions": {
+    "cancel": "لغو جلسه",
+    "confirmCancel": "تایید لغو؟",
+    "cancelled": "لغو شد"
+  },
+  "announcements": {
+    "title": "اطلاعیه‌ها",
+    "empty": "هنوز اطلاعیه‌ای نیست.",
+    "placeholder": "پیام برای تمام دانش‌آموزان صنف...",
+    "send": "ارسال به صنف",
+    "sent": "به تمام دانش‌آموزان ارسال شد",
+    "failed": "ارسال ناموفق بود"
+  },
+  "enroll": {
+    "enroll": "ثبت‌نام",
+    "enrolledTapToUnenroll": "ثبت‌نام شد (برای لغو لمس کنید)",
+    "enrollFailed": "ثبت‌نام ناموفق بود",
+    "unenrollFailed": "لغو ثبت‌نام ممکن نشد"
+  },
+  "materials": {
+    "title": "آپلود ماده",
+    "placeholders": {
+      "title": "عنوان",
+      "fileUrl": "لینک فایل",
+      "fileSize": "اندازه فایل (بایت)"
+    },
+    "save": "ذخیره ماده",
+    "uploaded": "ماده آپلود شد",
+    "uploadFailed": "آپلود ناموفق بود"
+  },
+  "upload": {
+    "selectFile": "انتخاب فایل",
+    "dragDrop": "یا بکشید و رها کنید",
+    "maxSize": "حداکثر ۵ مگابایت",
+    "uploading": "در حال آپلود...",
+    "uploadProgress": "{percent}% آپلود شد",
+    "uploadComplete": "آپلود کامل شد",
+    "uploadFailed": "آپلود ناموفق بود. دوباره تلاش کنید.",
+    "fileTooLarge": "فایل بیشتر از ۵ مگابایت است",
+    "invalidType": "نوع فایل مجاز نیست",
+    "dataCost": "~{cost} با نرخ $۱-۳/GB",
+    "upload": "آپلود",
+    "remove": "حذف",
+    "fileSelected": "فایل انتخاب شد"
+  },
+  "joinNow": {
+    "title": "همین حالا بپیوندید",
+    "inProgressAt": "در حال اجرا از {time}",
+    "startsAt": "شروع در {time}",
+    "openVideo": "بازکردن ویدیو",
+    "meetPending": "لینک Meet در انتظار است",
+    "nextSegment": "بخش بعدی در {time} شروع می‌شود. بین بخش‌ها ۱۰ دقیقه رخصتی است.",
+    "autoSwitchArmed": "تغییر خودکار آماده است."
+  },
+  "offlineSchedule": {
+    "loading": "در حال بارگذاری برنامه...",
+    "offlineNoCache": "آفلاین هستید و هنوز برنامه ذخیره نشده. یک بار آنلاین شوید تا برنامه ذخیره شود.",
+    "title": "برنامه من",
+    "offlineMode": "حالت آفلاین",
+    "offlineModeWithTime": "حالت آفلاین (آخرین ذخیره: {time})",
+    "updated": "به‌روزرسانی: {time}",
+    "staleWarning": "برنامه ذخیره‌شده بیشتر از {days} روز قدیمی است. برای به‌روزرسانی آنلاین شوید.",
+    "joinLink": "لینک ورود",
+    "meetPending": "لینک Meet در انتظار است"
+  },
+  "google": {
+    "title": "اتصال گوگل کلندر",
+    "noticeConnected": "حساب گوگل با موفقیت وصل شد.",
+    "noticeFailed": "اتصال گوگل ناموفق بود. دوباره تلاش کنید.",
+    "checking": "در حال بررسی اتصال...",
+    "connectedAs": "به عنوان {email} وصل است.",
+    "connectedAsOn": "به عنوان {email} در {time} وصل شد.",
+    "accountFallback": "حساب گوگل",
+    "notConnected": "وصل نیست. گوگل را وصل کنید تا زمان‌بندی بتواند رویدادهای تقویم و لینک‌های Meet را بسازد.",
+    "reconnect": "وصل کردن دوباره گوگل",
+    "connect": "وصل کردن گوگل"
+  },
+  "webinars": {
+    "title": "وبینارها",
+    "subtitle": "رویدادهای آزاد که بدون ثبت‌نام می‌توانید شرکت کنید.",
+    "openJoinLink": "بازکردن لینک ورود",
+    "registerPrompt": "برای دریافت لینک ورود ثبت‌نام کنید.",
+    "registeredBadge": "ثبت‌نام شد",
+    "registerButton": "ثبت‌نام",
+    "registeredStatus": "ثبت‌نام شد",
+    "registrationFailed": "ثبت‌نام ناموفق بود"
+  },
+  "opportunities": {
+    "title": "فرصت‌ها",
+    "subtitle": "بورسیه‌ها، وظایف، انترنشیپ و گرنت.",
+    "filters": {
+      "ALL": "همه",
+      "SCHOLARSHIP": "بورسیه",
+      "JOB": "وظیفه",
+      "INTERNSHIP": "انترنشیپ",
+      "GRANT": "گرنت"
+    },
+    "types": {
+      "SCHOLARSHIP": "بورسیه",
+      "JOB": "وظیفه",
+      "INTERNSHIP": "انترنشیپ",
+      "GRANT": "گرنت"
+    },
+    "expired": "منقضی",
+    "deadline": "آخرین مهلت",
+    "openOpportunity": "بازکردن فرصت"
+  },
+  "library": {
+    "title": "کتابخانه",
+    "subtitle": "مواد درسی قابل دانلود.",
+    "searchPlaceholder": "جستجو بر اساس عنوان، نویسنده، کتگوری",
+    "searchButton": "جستجو",
+    "unknownAuthor": "نویسنده نامعلوم",
+    "fileSizeUnavailable": "اندازه فایل موجود نیست",
+    "downloadPdf": "دانلود PDF",
+    "fileUnavailable": "فایل موجود نیست",
+    "openExternalLink": "بازکردن لینک بیرونی"
+  },
+  "error": {
+    "title": "مشکلی پیش آمد",
+    "body": "یک خطای غیرمنتظره رخ داد. لطفاً دوباره تلاش کنید.",
+    "retry": "تلاش دوباره",
+    "goHome": "رفتن به خانه"
+  },
+  "notFound": {
+    "title": "صفحه یافت نشد",
+    "body": "صفحه‌ای که به دنبال آن هستید وجود ندارد.",
+    "goHome": "رفتن به خانه"
+  },
+  "teacherClasses": {
+    "title": "صنف‌های من",
+    "subtitle": "صنف‌های تخصیص‌شده و جلسات اخیر",
+    "empty": "هنوز صنفی تخصیص نشده.",
+    "enrolledCount": "ثبت‌نام",
+    "sessions": "جلسات اخیر",
+    "noSessions": "هنوز جلسه‌ای نیست",
+    "markAttendance": "حاضری",
+    "viewSummary": "خلاصه",
+    "backToDashboard": "برگشت به داشبورد"
+  },
+  "telegram": {
+    "linkTitle": "اتصال تلگرام",
+    "linkDescription": "اعلان‌ها را فوری و رایگان در تلگرام دریافت کنید.",
+    "linkButton": "اتصال تلگرام",
+    "linked": "تلگرام وصل شد",
+    "unlink": "قطع اتصال"
+  },
+  "notificationPrefs": {
+    "title": "کانال‌های اعلان",
+    "description": "انتخاب کنید از کدام راه اعلان بگیرید.",
+    "telegram": "تلگرام",
+    "webPush": "اعلان مرورگر",
+    "email": "ایمیل"
+  },
+  "pushNotifications": {
+    "enable": "فعال‌سازی اعلان‌ها",
+    "enabled": "اعلان‌ها فعال شدند",
+    "denied": "اعلان‌ها مسدود شدند — تنظیمات مرورگر را بررسی کنید"
+  },
+  "attendance": {
+    "title": "حاضری جلسه",
+    "loading": "بارگذاری حاضری...",
+    "sessionNotFound": "جلسه یافت نشد.",
+    "noStudents": "هیچ دانش‌آموزی در این صنف ثبت‌نام نکرده.",
+    "student": "دانش‌آموز",
+    "email": "ایمیل",
+    "present": "حاضر",
+    "presentCount": "{count} / {total} حاضر",
+    "summaryTitle": "خلاصه حاضری",
+    "summaryStats": "{students} دانش‌آموز • {sessions} جلسه",
+    "attended": "حضور",
+    "rate": "نرخ",
+    "backToClass": "برگشت به صنف",
+    "backToStaff": "برگشت به کارکنان",
+    "myAttendance": "حاضری من",
+    "classAttendanceRate": "نرخ حاضری",
+    "overallRate": "حاضری کلی",
+    "noAttendanceData": "هنوز اطلاعات حاضری موجود نیست."
+  },
+  "profile": {
+    "title": "پروفایل",
+    "studentTitle": "پروفایل دانش‌آموز",
+    "notStudentBlurb": "آمار پروفایل فقط برای حساب‌های دانش‌آموز است. شما به عنوان {role} وارد شده‌اید.",
+    "minutesShort": "دقیقه",
+    "actions": {
+      "backToDashboard": "برگشت به داشبورد",
+      "openAvailability": "زمان‌های آزاد",
+      "browseMoreClasses": "مشاهده صنف‌های بیشتر",
+      "signOut": "خروج از حساب"
+    },
+    "stats": {
+      "activeClasses": "صنف‌های فعال",
+      "thisWeek": "این هفته",
+      "upcomingSessions": "جلسات آینده",
+      "materials": "مواد درسی",
+      "availableAcrossClasses": "در تمام صنف‌ها",
+      "alerts": "اعلان‌ها",
+      "latestNotificationRecords": "آخرین اعلان‌ها"
+    },
+    "progress": {
+      "title": "پیشرفت صنف‌ها",
+      "empty": "هنوز صنف فعالی ندارید.",
+      "progressPill": "{percent}% پیشرفت",
+      "sessionsSummary": "جلسات: {completed} تکمیل / {total} مجموع",
+      "materialsSummary": "مواد: {count}",
+      "next": "بعدی",
+      "nextPending": "جلسه بعدی در انتظار است"
+    },
+    "timeline": {
+      "title": "جدول زمانی آینده",
+      "empty": "جلسه آینده‌ای نیست.",
+      "meet": "Meet",
+      "openLink": "بازکردن لینک"
+    },
+    "notifications": {
+      "title": "اعلان‌های اخیر",
+      "empty": "اعلانی موجود نیست."
+    },
+    "opportunities": {
+      "title": "فرصت‌های پیشنهادی",
+      "empty": "در حال حاضر فرصت باز موجود نیست.",
+      "deadline": "آخرین مهلت",
+      "viewOpportunity": "مشاهده فرصت"
+    }
+  },
+  "adminForms": {
+    "createClass": "ایجاد صنف",
+    "className": "نام صنف",
+    "subjectCategory": "مضمون",
+    "description": "توضیحات",
+    "language": "زبان",
+    "maxStudents": "حداکثر دانش‌آموز",
+    "classDuration": "مدت صنف (دقیقه)",
+    "schedule": "زمان‌بندی (مثلاً سه‌شنبه ۶ عصر)",
+    "saving": "در حال ذخیره...",
+    "createClassBtn": "ایجاد صنف",
+    "createFailed": "ایجاد صنف ناموفق بود",
+    "classCreated": "صنف ایجاد شد",
+    "archive": "بایگانی",
+    "archiving": "در حال بایگانی...",
+    "pendingApprovals": "تاییدیه‌های در انتظار",
+    "approvalSubtitle": "دانش‌آموزان و استادان را قبل از ورود تایید کنید.",
+    "refresh": "بارگذاری مجدد",
+    "searchPlaceholder": "جستجو نام، ایمیل، شماره",
+    "search": "جستجو",
+    "loading": "بارگذاری...",
+    "noPending": "کاربر در انتظار نیست.",
+    "name": "نام",
+    "role": "نقش",
+    "email": "ایمیل",
+    "phone": "شماره",
+    "created": "تاریخ ثبت",
+    "action": "عمل",
+    "approve": "تایید",
+    "prev": "قبلی",
+    "next": "بعدی",
+    "pageInfo": "صفحه {current} / {total} ({count} در انتظار)",
+    "approvalFailed": "تایید ناموفق بود",
+    "approved": "تایید شد",
+    "loadFailed": "بارگذاری کاربران ناموفق بود"
+  },
+  "contentForms": {
+    "createWebinar": "ایجاد وبینار",
+    "title": "عنوان",
+    "description": "توضیحات",
+    "meetLink": "لینک Meet",
+    "startsAt": "زمان شروع",
+    "language": "زبان",
+    "publishWebinar": "انتشار وبینار",
+    "webinarPublished": "وبینار منتشر شد",
+    "failed": "ناموفق",
+    "addLibrary": "افزودن منبع به کتابخانه",
+    "author": "نویسنده",
+    "category": "کتگوری",
+    "fileUrl": "لینک فایل (R2)",
+    "fileSizeBytes": "اندازه فایل (بایت)",
+    "externalUrl": "لینک بیرونی (اختیاری)",
+    "addResource": "افزودن منبع",
+    "resourceAdded": "منبع کتابخانه اضافه شد",
+    "postOpportunity": "انتشار فرصت",
+    "type": "نوع",
+    "deadline": "آخرین مهلت",
+    "publish": "انتشار",
+    "opportunityPosted": "فرصت منتشر شد",
+    "scholarship": "بورسیه",
+    "job": "وظیفه",
+    "internship": "انترنشیپ",
+    "grant": "گرنت"
+  },
+  "teacherForms": {
+    "scheduling": "زمان‌بندی",
+    "title": "زمان‌های آزاد استاد",
+    "subtitle": "روزها و ساعت‌هایی را که برای تدریس آماده هستید انتخاب کنید.",
+    "sun": "یکشنبه",
+    "mon": "دوشنبه",
+    "tue": "سه‌شنبه",
+    "wed": "چهارشنبه",
+    "thu": "پنجشنبه",
+    "fri": "جمعه",
+    "sat": "شنبه",
+    "start": "شروع",
+    "end": "پایان",
+    "saving": "در حال ذخیره...",
+    "save": "ذخیره زمان‌های آزاد",
+    "saved": "زمان‌های آزاد ذخیره شد",
+    "saveFailed": "ذخیره ناموفق بود"
+  },
+  "staffForms": {
+    "classCreated": "صنف ایجاد شد!",
+    "classLiveMessage": "{name} فعال است. لینک‌های زیر را با دانش‌آموزان شریک کنید. دانش‌آموزان بعد از ثبت‌نام خودکار جدول زمانی و لینک Google Meet را دریافت می‌کنند.",
+    "registrationLinkLabel": "لینک ثبت‌نام — برای ثبت‌نام دانش‌آموزان شریک کنید",
+    "copied": "کپی شد!",
+    "copy": "کپی",
+    "meetLinkLabel": "لینک Google Meet (خودکار تولید شده)",
+    "firstSession": "جلسه اول: {time}",
+    "timelineLabel": "جدول زمانی صنف — دانش‌آموزان هنگام ثبت‌نام دریافت می‌کنند",
+    "meetReady": "Meet",
+    "pending": "در انتظار",
+    "googleFormLabel": "فورم گوگل (سوالات صنف)",
+    "createAnother": "ایجاد صنف دیگر",
+    "createClass": "ایجاد صنف",
+    "formSubtitle": "جزئیات را وارد کنید. لینک ثبت‌نام، زمان‌بندی جلسات و لینک Google Meet خودکار تولید می‌شود. دانش‌آموزان هنگام ثبت‌نام جدول زمانی صنف را دریافت می‌کنند.",
+    "classDetails": "جزئیات صنف",
+    "classNamePlaceholder": "نام صنف (مثلاً انگلیسی A2)",
+    "descriptionPlaceholder": "توضیح صنف — دانش‌آموزان چه یاد می‌گیرند؟",
+    "language": "زبان",
+    "lecturer": "استاد",
+    "schedule": "زمان‌بندی",
+    "weekly": "هفتگی",
+    "biweekly": "هر ۲ هفته",
+    "daily": "روزانه",
+    "durationPlaceholder": "مدت (دقیقه)",
+    "maxStudents": "حداکثر دانش‌آموز",
+    "preview": "پیش‌نمایش: {day} ساعت {time}، {frequency}، {duration} دقیقه هر جلسه",
+    "optionalExtras": "اختیاری — مواد و لینک‌ها",
+    "materialUrlPlaceholder": "لینک مواد/منابع (Google Drive و غیره)",
+    "formUrlPlaceholder": "لینک فورم گوگل برای سوالات خاص صنف",
+    "saving": "در حال ایجاد صنف و تولید لینک‌ها...",
+    "submitBtn": "ایجاد صنف ←",
+    "createFailed": "ایجاد صنف ناموفق بود",
+    "sun": "یکشنبه",
+    "mon": "دوشنبه",
+    "tue": "سه‌شنبه",
+    "wed": "چهارشنبه",
+    "thu": "پنجشنبه",
+    "fri": "جمعه",
+    "sat": "شنبه",
+    "languages": "زبان‌ها",
+    "english": "انگلیسی",
+    "stem": "STEM",
+    "artsDesign": "هنر و دیزاین",
+    "professionalSkills": "مهارت‌های حرفه‌ای",
+    "journalism": "ژورنالیزم",
+    "healthWellbeing": "صحت و سلامت",
+    "other": "سایر",
+    "existingTeacher": "استاد موجود",
+    "inviteNew": "دعوت استاد جدید",
+    "newTeacherNamePlaceholder": "نام کامل استاد",
+    "newTeacherEmailPlaceholder": "ایمیل آدرس استاد",
+    "inviteHint": "یک حساب جدید ساخته می‌شود و استاد اطلاعات ورود را از طریق ایمیل دریافت می‌کند."
+  },
+  "admin": {
+    "title": "مدیریت",
+    "controlPanel": "پنل کنترل مدیریت",
+    "controlPanelSubtitle": "ایجاد صنف‌ها، نظارت بر زمان‌بندی و مدیریت روند آموزش.",
+    "userApprovals": "تاییدیه‌های کاربران",
+    "dashboard": "داشبورد",
+    "recentClasses": "صنف‌های اخیر",
+    "name": "نام",
+    "teacher": "استاد",
+    "schedule": "زمان",
+    "duration": "مدت",
+    "enrolled": "ثبت‌نام",
+    "status": "وضعیت",
+    "actions": "اقدامات",
+    "view": "مشاهده",
+    "min": "دقیقه",
+    "userApprovalsTitle": "تاییدیه‌های کاربران",
+    "userApprovalsSubtitle": "استادان و دانش‌آموزان را برای دسترسی به پلتفرم تایید کنید.",
+    "backToAdmin": "برگشت به مدیریت",
+    "analytics": "تحلیل‌ها",
+    "teachers": "استادان",
+    "content": "محتوا"
+  },
+  "adminContent": {
+    "kicker": "محتوا",
+    "title": "مدیریت محتوا",
+    "subtitle": "وبینارها ایجاد کنید، فرصت‌ها نشر کنید و منابع کتابخانه اضافه کنید.",
+    "backToAdmin": "برگشت به مدیریت"
+  },
+  "adminTeachers": {
+    "kicker": "استادان",
+    "title": "فهرست استادان",
+    "subtitle": "مشاهده همه استادان، صنف‌ها و وضعیت در دسترس بودن.",
+    "backToAdmin": "برگشت به مدیریت",
+    "stats": {
+      "total": "مجموع استادان",
+      "withAvailability": "در دسترس تنظیم شده",
+      "noAvailability": "نیاز به تنظیم"
+    },
+    "needsSetup": "استادانی که نیاز به تنظیم دارند",
+    "needsSetupDesc": "این استادان هنوز زمان‌بندی در دسترس بودن خود را تنظیم نکرده‌اند. صنف‌ها نمی‌توانند بدون آن زمان‌بندی شوند.",
+    "pendingSetup": "بدون زمان‌بندی",
+    "allTeachers": "همه استادان",
+    "name": "نام",
+    "email": "ایمیل",
+    "classes": "صنف‌ها",
+    "students": "شاگردان",
+    "availability": "در دسترس بودن",
+    "approved": "تایید شده",
+    "slots": "بازه",
+    "notSet": "تنظیم نشده",
+    "pending": "در انتظار"
+  },
+  "adminClassDetail": {
+    "backToAdmin": "برگشت به مدیریت",
+    "teacher": "استاد",
+    "schedule": "زمان",
+    "enrolled": "ثبت‌نام",
+    "duration": "مدت",
+    "minutes": "دقیقه",
+    "stats": {
+      "enrolled": "ثبت‌نام شده",
+      "sessions": "جلسات",
+      "materials": "منابع",
+      "attendanceRate": "میانگین حضور"
+    },
+    "enrolledStudents": "شاگردان ثبت‌نام شده",
+    "total": "مجموع",
+    "noStudents": "هنوز شاگردی ثبت‌نام نکرده.",
+    "studentName": "نام",
+    "studentEmail": "ایمیل",
+    "enrolledAt": "تاریخ ثبت‌نام",
+    "attendanceLabel": "حضور",
+    "sessions": "جلسات",
+    "cancelled": "لغو شده",
+    "meetStatus": "وضعیت Meet",
+    "openMeet": "باز کردن Meet",
+    "materials": "منابع",
+    "download": "دانلود",
+    "editClass": "ویرایش صنف",
+    "cancelEdit": "لغو",
+    "editName": "نام جدید صنف (خالی بگذارید برای حفظ فعلی)",
+    "editDescription": "توضیحات جدید (خالی بگذارید برای حفظ فعلی)",
+    "editMaxStudents": "حداکثر شاگردان جدید (خالی بگذارید برای حفظ فعلی)",
+    "saveChanges": "ذخیره تغییرات",
+    "saved": "تغییرات ذخیره شد",
+    "saveFailed": "ذخیره ناموفق",
+    "exportCSV": "خروجی CSV"
+  },
+  "staff": {
+    "title": "کارکنان",
+    "dashboard": "داشبورد کارکنان",
+    "dashboardSubtitle": "ایجاد صنف‌ها، نظارت بر ثبت‌نام و مدیریت آموزش.",
+    "createClass": "+ ایجاد صنف",
+    "adminPanel": "پنل مدیریت",
+    "dashboardLink": "داشبورد",
+    "activeClasses": "صنف‌های فعال",
+    "teachers": "استادان",
+    "students": "دانش‌آموزان",
+    "recentClasses": "صنف‌های اخیر",
+    "newClass": "+ صنف جدید",
+    "name": "نام",
+    "teacher": "استاد",
+    "schedule": "زمان",
+    "duration": "مدت",
+    "enrolled": "ثبت‌نام",
+    "status": "وضعیت",
+    "actions": "اقدامات",
+    "view": "مشاهده",
+    "min": "دقیقه",
+    "createClassTitle": "ایجاد صنف",
+    "createClassSubtitle": "جزئیات را وارد کنید. پلتفرم زمان‌بندی، لینک Meet و لینک فورم ثبت‌نام را تولید می‌کند.",
+    "backToDashboard": "← برگشت به داشبورد"
+  },
+  "offline": {
+    "title": "شما آفلاین هستید",
+    "body": "برنامه شما ذخیره شده و قابل دسترس است. برای استفاده از تمام امکانات به اینترنت وصل شوید.",
+    "cachedSchedule": "مشاهده برنامه ذخیره‌شده",
+    "saveOffline": "ذخیره آفلاین",
+    "saving": "ذخیره...",
+    "savedOffline": "ذخیره شد",
+    "retryOffline": "تلاش دوباره"
+  },
+  "pwa": {
+    "installTitle": "نصب AlphaSeekers",
+    "installBody": "برای دسترسی آفلاین و بارگذاری سریع‌تر به صفحه اصلی اضافه کنید.",
+    "install": "نصب",
+    "dismiss": "رد کردن"
+  },
+  "dataCost": {
+    "estimate": "~{size}",
+    "costRange": "${min}–${max}",
+    "label": "{size} (~{cost} هزینه دیتا)"
+  },
+  "analytics": {
+    "title": "تحلیل‌ها",
+    "subtitle": "نمای کلی پلتفرم و آمار",
+    "totalUsers": "مجموع کاربران",
+    "activeClasses": "صنف‌های فعال",
+    "totalEnrollments": "مجموع ثبت‌نام‌ها",
+    "attendanceRate": "نرخ حاضری",
+    "usersByRole": "کاربران بر اساس نقش",
+    "usersByStatus": "کاربران بر اساس وضعیت",
+    "recentSignups": "ثبت‌نام‌های اخیر (۷ روز)",
+    "backToAdmin": "برگشت به مدیریت"
+  },
+  "teacherPage": {
+    "title": "استاد",
+    "availability": "زمان‌های آزاد",
+    "subtitle": "زمان‌های آزاد هفتگی را تعیین کنید. پلتفرم صنف‌های شما را خودکار زمان‌بندی می‌کند.",
+    "backToDashboard": "برگشت به داشبورد"
+  }
+}

@@ -1,0 +1,870 @@
+{
+  "meta": {
+    "title": "AlphaSeekers",
+    "description": "Free education for Afghan girls"
+  },
+  "nav": {
+    "home": "Home",
+    "programs": "Programs",
+    "howItWorks": "How it works",
+    "classes": "Classes",
+    "webinars": "Webinars",
+    "opportunities": "Opportunities",
+    "library": "Library",
+    "dashboard": "Dashboard",
+    "profile": "Profile",
+    "teacher": "Teacher",
+    "admin": "Admin",
+    "staff": "Staff",
+    "users": "Users",
+    "login": "Log in",
+    "register": "Request access",
+    "logout": "Log out",
+    "brandTagline": "Free education for Afghan girls",
+    "networkBadge": ""
+  },
+  "home": {
+    "eyebrow": "Free classes for Afghan girls",
+    "title": "AlphaSeekers",
+    "subtitle": "Free online classes for Afghan girls, run by volunteer teachers from around the world.",
+    "ctaClasses": "Browse classes",
+    "ctaLogin": "Log in",
+    "ctaDashboard": "Live dashboard",
+    "ctaRegister": "Request access",
+    "ctaHowItWorks": "How it works",
+    "search": {
+      "kicker": "Search",
+      "title": "What do you want to learn?",
+      "label": "Search classes",
+      "placeholder": "Try: English, Languages, Photoshop...",
+      "button": "Search",
+      "helper": "Join links stay private until you are approved and enrolled.",
+      "quick": {
+        "languages": "Languages",
+        "skills": "Skills",
+        "arts": "Arts",
+        "english": "English"
+      }
+    },
+    "featured": {
+      "kicker": "Featured",
+      "title": "Popular classes right now",
+      "viewAll": "View all classes",
+      "empty": "No classes available yet.",
+      "cardKicker": "Next sessions",
+      "learners": "learners",
+      "view": "Open"
+    },
+    "programTiles": {
+      "kicker": "Programs",
+      "title": "Explore the platform",
+      "cta": "Get started",
+      "classes": "Weekly live classes with teacher availability scheduling.",
+      "webinars": "Drop-in sessions for learning, careers, and wellbeing.",
+      "opportunities": "Scholarships, jobs, internships, and grants.",
+      "library": "Lightweight downloads for offline study."
+    },
+    "workflow": {
+      "kicker": "Workflow",
+      "step1": {
+        "title": "Request access",
+        "body": "Create an account. Admin approval keeps the platform safe."
+      },
+      "step2": {
+        "title": "Enroll and join",
+        "body": "Enroll to unlock class links and materials. Longer classes auto-switch links."
+      }
+    },
+    "pillars": {
+      "approvedOnly": "Safe and private",
+      "lowBandwidth": "Works on slow internet",
+      "bilingual": "FA + EN"
+    },
+    "preview": {
+      "scheduleKicker": "Schedule",
+      "scheduleTitle": "Automated sessions",
+      "scheduleChip": "Smart",
+      "scheduleBody": "Teachers set availability. The platform schedules classes, creates video links, and sends reminders.",
+      "offlineChip": "Offline",
+      "offlineTitle": "Low internet friendly",
+      "offlineBody": "Light pages, cached schedules, and downloadable materials for outages.",
+      "privateTitle": "Private by default",
+      "privateChip": "Safe",
+      "privateBody": "Join links and class materials are only visible to approved, enrolled students and staff."
+    },
+    "howItWorks": {
+      "kicker": "Workflow",
+      "title": "From request to learning",
+      "subtitle": "A simple flow that protects access and keeps the experience fast on mobile.",
+      "steps": {
+        "request": {
+          "title": "Request access",
+          "body": "Create an account as a student or teacher. Your request stays private until approved."
+        },
+        "approval": {
+          "title": "Get approved",
+          "body": "Admins approve accounts so only vetted students and teachers can enter the platform."
+        },
+        "learn": {
+          "title": "Join sessions and study offline",
+          "body": "Enroll, get the join link, and download materials for low-connectivity study."
+        }
+      }
+    },
+    "stats": {
+      "studentsLabel": "Learners reached",
+      "studentsValue": "500+",
+      "studentsHint": "Students across Afghanistan",
+      "liveClassesLabel": "Live classes",
+      "liveClassesValue": "28",
+      "liveClassesHint": "Weekly sessions with volunteer teachers",
+      "programsLabel": "Programs",
+      "programsValue": "4",
+      "programsHint": "Classes, events, resources, and opportunities",
+      "designGoalLabel": "Volunteers",
+      "designGoalValue": "50+",
+      "designGoalHint": "Teachers from 12 countries"
+    },
+    "compass": {
+      "kicker": "Programs",
+      "title": "Program compass",
+      "openCatalog": "Open full catalog",
+      "classesTitle": "Online classes",
+      "classesBody": "Teacher availability drives automated schedules, video links, and reminders.",
+      "classesCta": "Browse classes",
+      "joinNow": "Join now",
+      "webinarsTitle": "Webinars + opportunities",
+      "webinarsBody": "Career and wellbeing sessions, plus curated scholarships, grants, and internships.",
+      "webinarsCta": "Webinars",
+      "opportunitiesCta": "Opportunities",
+      "libraryTitle": "Offline-ready library",
+      "libraryBody": "Lightweight resources with direct download links so students can continue during outages.",
+      "libraryCta": "Open library"
+    },
+    "safety": {
+      "kicker": "Safety",
+      "title": "Built for trusted access",
+      "subtitle": "Approval-based entry, role permissions, and protected join links keep the platform focused on learning.",
+      "chip": "Approved only",
+      "points": {
+        "approval": {
+          "title": "Approved students and teachers",
+          "body": "Accounts stay pending until an admin approves them."
+        },
+        "privateLinks": {
+          "title": "Private join links",
+          "body": "Video links are hidden until a student is approved and enrolled."
+        },
+        "roles": {
+          "title": "Clear roles",
+          "body": "Students, teachers, and admins get exactly the permissions they need."
+        },
+        "data": {
+          "title": "Minimal data",
+          "body": "We keep data lightweight and focused on scheduling and learning."
+        }
+      }
+    },
+    "cta": {
+      "explorePrograms": "Explore programs",
+      "howItWorks": "How it works",
+      "kicker": "Start",
+      "title": "Request access",
+      "body": "AlphaSeekers is a protected learning network. Request access to get started.",
+      "buttonRegister": "Request access",
+      "buttonLogin": "Log in"
+    },
+    "programs": {
+      "kicker": "Programs",
+      "title": "What you can do here",
+      "subtitle": "Live classes, downloadable materials, and opportunities — all free.",
+      "cta": "Request access",
+      "ctaSignedIn": "Continue",
+      "view": "Explore",
+      "cards": {
+        "classes": {
+          "kicker": "Live learning",
+          "body": "Small live classes with volunteer teachers, on a regular schedule."
+        },
+        "library": {
+          "kicker": "Offline study",
+          "body": "Download study materials so you can keep learning when the internet goes out."
+        },
+        "webinars": {
+          "kicker": "Events",
+          "body": "Open sessions about careers, health, and personal growth."
+        },
+        "opportunities": {
+          "kicker": "Opportunities",
+          "body": "Scholarships, internships, and grants collected for Afghan students."
+        }
+      }
+    },
+    "how": {
+      "kicker": "How it works",
+      "title": "Request. Get access. Learn.",
+      "subtitle": "Three steps to get started.",
+      "cta": "Request access",
+      "ctaSignedIn": "Go to dashboard",
+      "steps": {
+        "one": {
+          "badge": "01",
+          "title": "Request access",
+          "body": "Create an account as a student or teacher."
+        },
+        "two": {
+          "badge": "02",
+          "title": "Access is reviewed",
+          "body": "Your account is reviewed before you can sign in. This keeps the community safe."
+        },
+        "three": {
+          "badge": "03",
+          "title": "Start learning",
+          "body": "Browse classes, enroll, and join sessions when they start."
+        }
+      }
+    },
+    "faq": {
+      "kicker": "FAQ",
+      "title": "Safety, privacy, and access",
+      "subtitle": "Common questions about how AlphaSeekers works.",
+      "items": {
+        "access": {
+          "q": "Who can join AlphaSeekers?",
+          "a": "AlphaSeekers supports Afghan girls seeking free education. Access is reviewed to protect students and teachers."
+        },
+        "privacy": {
+          "q": "Will my information be public?",
+          "a": "No. Profiles and class details are not public. You control what you share, and access is limited to approved accounts."
+        },
+        "cost": {
+          "q": "Does it cost anything?",
+          "a": "No. AlphaSeekers is free for learners and educators."
+        },
+        "languages": {
+          "q": "Which languages are supported?",
+          "a": "The platform UI is available in Dari and English. Classes may be taught in different languages."
+        }
+      }
+    },
+    "footer": "AlphaSeekers is run by volunteers. All classes are free."
+  },
+  "login": {
+    "eyebrow": "Access",
+    "title": "Log in",
+    "subtitle": "Sign in to continue",
+    "email": "Email",
+    "password": "Password",
+    "submit": "Log in",
+    "error": "Invalid email or password",
+    "pending": "Your account is pending review. Please check back after it is approved.",
+    "requestAccess": "Request access"
+  },
+  "register": {
+    "eyebrow": "Access request",
+    "title": "Request access",
+    "subtitle": "Create an account. Access is reviewed before you can sign in.",
+    "name": "Full name",
+    "email": "Email",
+    "password": "Password",
+    "phone": "Phone (optional)",
+    "role": "Role",
+    "student": "Student",
+    "teacher": "Teacher",
+    "submit": "Submit request",
+    "error": "Registration failed"
+  },
+  "pending": {
+    "eyebrow": "Access",
+    "title": "Pending approval",
+    "body": "Your access request was received. Please check back after your account is approved.",
+    "note": "To protect learners, only approved accounts can sign in.",
+    "goToLogin": "Go to login",
+    "home": "Home"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "welcome": "Welcome back",
+    "role": "Role",
+    "cards": {
+      "classes": "Active classes",
+      "students": "Students",
+      "teachers": "Teachers",
+      "today": "Today's sessions"
+    },
+    "sections": {
+      "myClasses": "My classes",
+      "todaySessions": "Today's sessions",
+      "latestNotifications": "Latest notifications"
+    },
+    "actions": {
+      "viewProfile": "View profile",
+      "viewAll": "View all"
+    },
+    "empty": {
+      "noEnrollments": "No active enrollments yet.",
+      "noSessionsToday": "No sessions today.",
+      "noNotifications": "No notifications yet.",
+      "noTeacherClasses": "No classes assigned yet."
+    },
+    "labels": {
+      "meet": "Meet",
+      "pending": "Pending",
+      "nextSession": "Next session"
+    }
+  },
+  "classes": {
+    "title": "Classes",
+    "subtitle": "Browse and enroll in available classes",
+    "empty": "No classes available",
+    "searchPlaceholder": "Search classes",
+    "searchButton": "Search",
+    "teacher": "Teacher",
+    "schedule": "Schedule",
+    "language": "Language",
+    "enrolled": "Enrolled",
+    "durationLabel": "Duration",
+    "minutesShort": "min",
+    "details": "Details",
+    "total": "Total classes",
+    "showing": "Showing on this page",
+    "currentPage": "Current page",
+    "sessionPending": "Session pending",
+    "prev": "Prev",
+    "next": "Next",
+    "pageLabel": "Page"
+  },
+  "classDetail": {
+    "backToClasses": "Back to classes",
+    "teacher": "Teacher",
+    "schedule": "Schedule",
+    "language": "Language",
+    "enrolled": "Enrolled",
+    "duration": "Duration",
+    "minutes": "minutes",
+    "multiSegmentNotice": "This class runs in multiple video segments with a 10-minute break between segments.",
+    "upcomingSessions": "Upcoming sessions",
+    "meetStatus": "Meet status",
+    "openMeet": "Open Meet link",
+    "joinAfterEnroll": "Join link available after enrollment/approval.",
+    "meetPending": "Meet link pending",
+    "materialsTitle": "Class materials",
+    "materialsRestricted": "Materials are available to enrolled students and class staff.",
+    "noMaterials": "No materials yet.",
+    "download": "Download",
+    "studentsTitle": "Enrolled students"
+  },
+  "sessionActions": {
+    "cancel": "Cancel session",
+    "confirmCancel": "Confirm cancel?",
+    "cancelled": "Cancelled"
+  },
+  "announcements": {
+    "title": "Announcements",
+    "empty": "No announcements yet.",
+    "placeholder": "Write a message to all enrolled students...",
+    "send": "Send to class",
+    "sent": "Sent to all students",
+    "failed": "Failed to send"
+  },
+  "enroll": {
+    "enroll": "Enroll",
+    "enrolledTapToUnenroll": "Enrolled (tap to unenroll)",
+    "enrollFailed": "Enrollment failed",
+    "unenrollFailed": "Unable to drop class"
+  },
+  "materials": {
+    "title": "Upload material",
+    "placeholders": {
+      "title": "Title",
+      "fileUrl": "File URL",
+      "fileSize": "File size in bytes"
+    },
+    "save": "Save material",
+    "uploaded": "Material uploaded",
+    "uploadFailed": "Upload failed"
+  },
+  "upload": {
+    "selectFile": "Select file",
+    "dragDrop": "or drag and drop",
+    "maxSize": "Max 5 MB",
+    "uploading": "Uploading...",
+    "uploadProgress": "{percent}% uploaded",
+    "uploadComplete": "Upload complete",
+    "uploadFailed": "Upload failed. Please try again.",
+    "fileTooLarge": "File exceeds 5 MB limit",
+    "invalidType": "File type not allowed",
+    "dataCost": "~{cost} at $1-3/GB",
+    "upload": "Upload",
+    "remove": "Remove",
+    "fileSelected": "File selected"
+  },
+  "joinNow": {
+    "title": "Join now",
+    "inProgressAt": "In progress since {time}",
+    "startsAt": "Starts at {time}",
+    "openVideo": "Open video",
+    "meetPending": "Meet link pending",
+    "nextSegment": "Next segment starts at {time}. 10-minute break in between.",
+    "autoSwitchArmed": "Auto-switch is armed."
+  },
+  "offlineSchedule": {
+    "loading": "Loading schedule...",
+    "offlineNoCache": "Offline and no schedule cache yet. Connect once to load schedule.",
+    "title": "My schedule",
+    "offlineMode": "Offline mode",
+    "offlineModeWithTime": "Offline mode (last saved {time})",
+    "updated": "Updated: {time}",
+    "staleWarning": "Schedule cache is older than {days} days. Connect to update.",
+    "joinLink": "Join link",
+    "meetPending": "Meet link pending"
+  },
+  "google": {
+    "title": "Google Calendar connection",
+    "noticeConnected": "Google account connected successfully.",
+    "noticeFailed": "Google connection failed. Please try again.",
+    "checking": "Checking connection...",
+    "connectedAs": "Connected as {email}.",
+    "connectedAsOn": "Connected as {email} on {time}.",
+    "accountFallback": "Google account",
+    "notConnected": "Not connected. Connect Google so scheduler can create real Calendar events and Meet links.",
+    "reconnect": "Reconnect Google",
+    "connect": "Connect Google"
+  },
+  "webinars": {
+    "title": "Webinars",
+    "subtitle": "Open events you can join without enrolling.",
+    "openJoinLink": "Open join link",
+    "registerPrompt": "Register to receive the join link.",
+    "registeredBadge": "Registered",
+    "registerButton": "Register",
+    "registeredStatus": "Registered",
+    "registrationFailed": "Registration failed"
+  },
+  "opportunities": {
+    "title": "Opportunities",
+    "subtitle": "Scholarships, jobs, internships, and grants.",
+    "filters": {
+      "ALL": "All",
+      "SCHOLARSHIP": "Scholarships",
+      "JOB": "Jobs",
+      "INTERNSHIP": "Internships",
+      "GRANT": "Grants"
+    },
+    "types": {
+      "SCHOLARSHIP": "Scholarship",
+      "JOB": "Job",
+      "INTERNSHIP": "Internship",
+      "GRANT": "Grant"
+    },
+    "expired": "Expired",
+    "deadline": "Deadline",
+    "openOpportunity": "Open opportunity"
+  },
+  "library": {
+    "title": "Library",
+    "subtitle": "Downloadable study materials.",
+    "searchPlaceholder": "Search title, author, category",
+    "searchButton": "Search",
+    "unknownAuthor": "Unknown author",
+    "fileSizeUnavailable": "File size unavailable",
+    "downloadPdf": "Download PDF",
+    "fileUnavailable": "File unavailable",
+    "openExternalLink": "Open external link"
+  },
+  "error": {
+    "title": "Something went wrong",
+    "body": "An unexpected error occurred. Please try again.",
+    "retry": "Try again",
+    "goHome": "Go home"
+  },
+  "notFound": {
+    "title": "Page not found",
+    "body": "The page you are looking for does not exist.",
+    "goHome": "Go home"
+  },
+  "teacherClasses": {
+    "title": "My Classes",
+    "subtitle": "Your assigned classes and recent sessions",
+    "empty": "No classes assigned yet.",
+    "enrolledCount": "Enrolled",
+    "sessions": "Recent sessions",
+    "noSessions": "No sessions yet",
+    "markAttendance": "Attendance",
+    "viewSummary": "Summary",
+    "backToDashboard": "Back to dashboard"
+  },
+  "telegram": {
+    "linkTitle": "Link Telegram",
+    "linkDescription": "Get instant notifications on Telegram — free and reliable.",
+    "linkButton": "Connect Telegram",
+    "linked": "Telegram connected",
+    "unlink": "Unlink"
+  },
+  "notificationPrefs": {
+    "title": "Notification channels",
+    "description": "Choose how you receive notifications.",
+    "telegram": "Telegram",
+    "webPush": "Push notifications",
+    "email": "Email"
+  },
+  "pushNotifications": {
+    "enable": "Enable push notifications",
+    "enabled": "Push notifications enabled",
+    "denied": "Notifications blocked — check browser settings"
+  },
+  "attendance": {
+    "title": "Session Attendance",
+    "loading": "Loading attendance...",
+    "sessionNotFound": "Session not found.",
+    "noStudents": "No students enrolled in this class.",
+    "student": "Student",
+    "email": "Email",
+    "present": "Present",
+    "presentCount": "{count} / {total} present",
+    "summaryTitle": "Attendance Summary",
+    "summaryStats": "{students} students • {sessions} sessions",
+    "attended": "Attended",
+    "rate": "Rate",
+    "backToClass": "Back to class",
+    "backToStaff": "Back to staff",
+    "myAttendance": "My Attendance",
+    "classAttendanceRate": "Attendance rate",
+    "overallRate": "Overall attendance",
+    "noAttendanceData": "No attendance data yet."
+  },
+  "profile": {
+    "title": "Profile",
+    "studentTitle": "Student profile",
+    "notStudentBlurb": "Student profile analytics are available for student accounts. You are logged in as {role}.",
+    "minutesShort": "min",
+    "actions": {
+      "backToDashboard": "Back to dashboard",
+      "openAvailability": "Open availability",
+      "browseMoreClasses": "Browse more classes",
+      "signOut": "Sign out"
+    },
+    "stats": {
+      "activeClasses": "Active classes",
+      "thisWeek": "This week",
+      "upcomingSessions": "Upcoming sessions",
+      "materials": "Materials",
+      "availableAcrossClasses": "Available across classes",
+      "alerts": "Alerts",
+      "latestNotificationRecords": "Latest notification records"
+    },
+    "progress": {
+      "title": "Class progress",
+      "empty": "No active classes yet.",
+      "progressPill": "{percent}% progress",
+      "sessionsSummary": "Sessions: {completed} complete / {total} total",
+      "materialsSummary": "Materials: {count}",
+      "next": "Next",
+      "nextPending": "Next session pending"
+    },
+    "timeline": {
+      "title": "Upcoming timeline",
+      "empty": "No upcoming sessions.",
+      "meet": "Meet",
+      "openLink": "Open link"
+    },
+    "notifications": {
+      "title": "Recent notifications",
+      "empty": "No notifications available."
+    },
+    "opportunities": {
+      "title": "Recommended opportunities",
+      "empty": "No open opportunities right now.",
+      "deadline": "Deadline",
+      "viewOpportunity": "View opportunity"
+    }
+  },
+  "adminForms": {
+    "createClass": "Create Class",
+    "className": "Class name",
+    "subjectCategory": "Subject category",
+    "description": "Description",
+    "language": "Language",
+    "maxStudents": "Max students",
+    "classDuration": "Class duration (minutes)",
+    "schedule": "Schedule (e.g. Tue 6:00 PM)",
+    "saving": "Saving...",
+    "createClassBtn": "Create class",
+    "createFailed": "Create class failed",
+    "classCreated": "Class created",
+    "archive": "Archive",
+    "archiving": "Archiving...",
+    "pendingApprovals": "Pending Approvals",
+    "approvalSubtitle": "Approve students and teachers before they can sign in.",
+    "refresh": "Refresh",
+    "searchPlaceholder": "Search name, email, phone",
+    "search": "Search",
+    "loading": "Loading...",
+    "noPending": "No pending users.",
+    "name": "Name",
+    "role": "Role",
+    "email": "Email",
+    "phone": "Phone",
+    "created": "Created",
+    "action": "Action",
+    "approve": "Approve",
+    "prev": "Prev",
+    "next": "Next",
+    "pageInfo": "Page {current} / {total} ({count} pending)",
+    "approvalFailed": "Approval failed",
+    "approved": "Approved",
+    "loadFailed": "Unable to load users"
+  },
+  "contentForms": {
+    "createWebinar": "Create Webinar",
+    "title": "Title",
+    "description": "Description",
+    "meetLink": "Meet link",
+    "startsAt": "Starts at",
+    "language": "Language",
+    "publishWebinar": "Publish webinar",
+    "webinarPublished": "Webinar published",
+    "failed": "Failed",
+    "addLibrary": "Add Library Resource",
+    "author": "Author",
+    "category": "Category",
+    "fileUrl": "File URL (R2)",
+    "fileSizeBytes": "File size in bytes",
+    "externalUrl": "External URL (optional)",
+    "addResource": "Add resource",
+    "resourceAdded": "Library resource added",
+    "postOpportunity": "Post Opportunity",
+    "type": "Type",
+    "deadline": "Deadline",
+    "publish": "Publish",
+    "opportunityPosted": "Opportunity posted",
+    "scholarship": "Scholarship",
+    "job": "Job",
+    "internship": "Internship",
+    "grant": "Grant"
+  },
+  "teacherForms": {
+    "scheduling": "Scheduling",
+    "title": "Teacher Availability",
+    "subtitle": "Select the days and times you are available to teach.",
+    "sun": "Sun",
+    "mon": "Mon",
+    "tue": "Tue",
+    "wed": "Wed",
+    "thu": "Thu",
+    "fri": "Fri",
+    "sat": "Sat",
+    "start": "Start",
+    "end": "End",
+    "saving": "Saving...",
+    "save": "Save availability",
+    "saved": "Availability saved",
+    "saveFailed": "Save failed"
+  },
+  "staffForms": {
+    "classCreated": "Class Created!",
+    "classLiveMessage": "{name} is now live. Share the links below with students. Once students register, they will automatically receive the class timeline and Google Meet link.",
+    "registrationLinkLabel": "Registration Link — share this to let students sign up",
+    "copied": "Copied!",
+    "copy": "Copy",
+    "meetLinkLabel": "Google Meet Link (auto-generated)",
+    "firstSession": "First session: {time}",
+    "timelineLabel": "Class Timeline — students receive this on enrollment",
+    "meetReady": "Meet",
+    "pending": "Pending",
+    "googleFormLabel": "Google Form (Class Questions)",
+    "createAnother": "Create Another Class",
+    "createClass": "Create Class",
+    "formSubtitle": "Fill in the details below. A registration link, session schedule, and Google Meet link are generated automatically. Students receive the class timeline when they register.",
+    "classDetails": "Class Details",
+    "classNamePlaceholder": "Class name (e.g. English A2)",
+    "descriptionPlaceholder": "Class description — what will students learn?",
+    "language": "Language",
+    "lecturer": "Lecturer",
+    "schedule": "Schedule",
+    "weekly": "Weekly",
+    "biweekly": "Every 2 weeks",
+    "daily": "Daily",
+    "durationPlaceholder": "Duration (min)",
+    "maxStudents": "Max students",
+    "preview": "Preview: {day} at {time}, {frequency}, {duration} min per session",
+    "optionalExtras": "Optional — Materials & Links",
+    "materialUrlPlaceholder": "Material/resource link (Google Drive, etc.)",
+    "formUrlPlaceholder": "Google Form URL for class-specific questions",
+    "saving": "Creating class & generating links...",
+    "submitBtn": "Create Class →",
+    "createFailed": "Failed to create class",
+    "sun": "Sun",
+    "mon": "Mon",
+    "tue": "Tue",
+    "wed": "Wed",
+    "thu": "Thu",
+    "fri": "Fri",
+    "sat": "Sat",
+    "languages": "Languages",
+    "english": "English",
+    "stem": "STEM",
+    "artsDesign": "Arts & Design",
+    "professionalSkills": "Professional Skills",
+    "journalism": "Journalism",
+    "healthWellbeing": "Health & Wellbeing",
+    "other": "Other",
+    "existingTeacher": "Existing Teacher",
+    "inviteNew": "Invite New",
+    "newTeacherNamePlaceholder": "Teacher's full name",
+    "newTeacherEmailPlaceholder": "Teacher's email address",
+    "inviteHint": "A new account will be created and the teacher will receive login details by email."
+  },
+  "admin": {
+    "title": "Admin",
+    "controlPanel": "Admin Control Panel",
+    "controlPanelSubtitle": "Create classes, monitor schedules, and manage the learning pipeline.",
+    "userApprovals": "User approvals",
+    "dashboard": "Dashboard",
+    "recentClasses": "Recent Classes",
+    "name": "Name",
+    "teacher": "Teacher",
+    "schedule": "Schedule",
+    "duration": "Duration",
+    "enrolled": "Enrolled",
+    "status": "Status",
+    "actions": "Actions",
+    "view": "View",
+    "min": "min",
+    "userApprovalsTitle": "User Approvals",
+    "userApprovalsSubtitle": "Approve teachers and students to grant access to the platform.",
+    "backToAdmin": "Back to admin",
+    "analytics": "Analytics",
+    "teachers": "Teachers",
+    "content": "Content"
+  },
+  "adminContent": {
+    "kicker": "Content",
+    "title": "Content Management",
+    "subtitle": "Create webinars, post opportunities, and add library resources.",
+    "backToAdmin": "Back to admin"
+  },
+  "adminTeachers": {
+    "kicker": "Teachers",
+    "title": "Teacher Roster",
+    "subtitle": "View all teachers, their class assignments, and availability status.",
+    "backToAdmin": "Back to admin",
+    "stats": {
+      "total": "Total teachers",
+      "withAvailability": "Availability set",
+      "noAvailability": "Needs setup"
+    },
+    "needsSetup": "Teachers needing setup",
+    "needsSetupDesc": "These teachers have not set their availability yet. Classes cannot be scheduled until availability is configured.",
+    "pendingSetup": "No availability",
+    "allTeachers": "All teachers",
+    "name": "Name",
+    "email": "Email",
+    "classes": "Classes",
+    "students": "Students",
+    "availability": "Availability",
+    "approved": "Approved",
+    "slots": "slots",
+    "notSet": "Not set",
+    "pending": "Pending"
+  },
+  "adminClassDetail": {
+    "backToAdmin": "Back to admin",
+    "teacher": "Teacher",
+    "schedule": "Schedule",
+    "enrolled": "Enrolled",
+    "duration": "Duration",
+    "minutes": "min",
+    "stats": {
+      "enrolled": "Enrolled",
+      "sessions": "Sessions",
+      "materials": "Materials",
+      "attendanceRate": "Avg attendance"
+    },
+    "enrolledStudents": "Enrolled students",
+    "total": "total",
+    "noStudents": "No students enrolled yet.",
+    "studentName": "Name",
+    "studentEmail": "Email",
+    "enrolledAt": "Enrolled",
+    "attendanceLabel": "Attendance",
+    "sessions": "Sessions",
+    "cancelled": "Cancelled",
+    "meetStatus": "Meet status",
+    "openMeet": "Open Meet",
+    "materials": "Materials",
+    "download": "Download",
+    "editClass": "Edit class",
+    "cancelEdit": "Cancel",
+    "editName": "New class name (leave empty to keep current)",
+    "editDescription": "New description (leave empty to keep current)",
+    "editMaxStudents": "New max students (leave empty to keep current)",
+    "saveChanges": "Save changes",
+    "saved": "Changes saved",
+    "saveFailed": "Save failed",
+    "exportCSV": "Export CSV"
+  },
+  "staff": {
+    "title": "Staff",
+    "dashboard": "Staff Dashboard",
+    "dashboardSubtitle": "Create classes, monitor enrollment, and manage learning.",
+    "createClass": "+ Create Class",
+    "adminPanel": "Admin Panel",
+    "dashboardLink": "Dashboard",
+    "activeClasses": "Active Classes",
+    "teachers": "Teachers",
+    "students": "Students",
+    "recentClasses": "Recent Classes",
+    "newClass": "+ New Class",
+    "name": "Name",
+    "teacher": "Teacher",
+    "schedule": "Schedule",
+    "duration": "Duration",
+    "enrolled": "Enrolled",
+    "status": "Status",
+    "actions": "Actions",
+    "view": "View",
+    "min": "min",
+    "createClassTitle": "Create a Class",
+    "createClassSubtitle": "Fill in the details. The platform will generate the schedule, Meet links, and registration form URL.",
+    "backToDashboard": "← Back to Dashboard"
+  },
+  "offline": {
+    "title": "You are offline",
+    "body": "Your schedule is cached and available. Connect to the internet to access all features.",
+    "cachedSchedule": "View cached schedule",
+    "saveOffline": "Save offline",
+    "saving": "Saving...",
+    "savedOffline": "Saved offline",
+    "retryOffline": "Retry save"
+  },
+  "pwa": {
+    "installTitle": "Install AlphaSeekers",
+    "installBody": "Add to home screen for offline access and faster loading.",
+    "install": "Install",
+    "dismiss": "Dismiss"
+  },
+  "dataCost": {
+    "estimate": "~{size}",
+    "costRange": "${min}–${max}",
+    "label": "{size} (~{cost} data cost)"
+  },
+  "analytics": {
+    "title": "Analytics",
+    "subtitle": "Platform overview and metrics",
+    "totalUsers": "Total users",
+    "activeClasses": "Active classes",
+    "totalEnrollments": "Total enrollments",
+    "attendanceRate": "Attendance rate",
+    "usersByRole": "Users by role",
+    "usersByStatus": "Users by status",
+    "recentSignups": "Recent signups (7 days)",
+    "backToAdmin": "Back to admin"
+  },
+  "teacherPage": {
+    "title": "Teacher",
+    "availability": "Availability",
+    "subtitle": "Set your weekly available time slots. The platform will auto-schedule your classes.",
+    "backToDashboard": "Back to dashboard"
+  }
+}
