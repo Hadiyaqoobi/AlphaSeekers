@@ -19,28 +19,80 @@ export default async function PendingApprovalPage({ params }: PendingApprovalPag
   }
 
   return (
-    <section className="mx-auto w-full max-w-xl space-y-4">
-      <header className="hero-panel p-5 sm:p-6">
-        <p className="section-kicker">{t("eyebrow")}</p>
-        <h1 className="mt-1 text-3xl font-black text-slate-900 sm:text-4xl">{t("title")}</h1>
-        <p className="mt-2 text-sm text-slate-700">
+    <section className="mx-auto flex min-h-[60vh] max-w-lg items-center justify-center px-6 py-16 lg:px-8">
+      <div className="w-full text-center">
+        {/* Animated Checkmark Circle */}
+        <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-emerald-50">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100">
+            <svg
+              className="h-8 w-8 text-emerald-600 animate-[pulse_3s_ease-in-out_infinite]"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </div>
+        </div>
+
+        {/* Kicker */}
+        <p className="mt-6 text-xs font-semibold uppercase tracking-widest text-emerald-600">
+          {t("eyebrow")}
+        </p>
+
+        {/* Title */}
+        <h1 className="mt-3 text-3xl font-bold tracking-tight text-gray-900">
+          {t("title")}
+        </h1>
+
+        {/* Body */}
+        <p className="mx-auto mt-4 max-w-sm text-base leading-relaxed text-gray-500">
           {t("body")}
         </p>
-      </header>
 
-      <section className="panel panel-strong space-y-3 p-5 sm:p-6">
-        <p className="text-sm text-slate-700">
-          {t("note")}
-        </p>
-        <div className="flex flex-wrap gap-2">
-          <Link className="btn-primary" href={`/${params.locale}/login`}>
+        {/* Note Card */}
+        <div className="mx-auto mt-8 max-w-sm rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+          <div className="flex items-start gap-3">
+            <svg
+              className="mt-0.5 h-5 w-5 shrink-0 text-emerald-500"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            <p className="text-left text-sm leading-relaxed text-gray-600">
+              {t("note")}
+            </p>
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+          <Link
+            className="inline-flex min-h-12 items-center rounded-xl bg-emerald-600 px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+            href={`/${params.locale}/login`}
+          >
             {t("goToLogin")}
           </Link>
-          <Link className="btn-secondary" href={`/${params.locale}`}>
+          <Link
+            className="inline-flex min-h-12 items-center rounded-xl border border-gray-200 bg-white px-6 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 hover:shadow-md"
+            href={`/${params.locale}`}
+          >
             {t("home")}
           </Link>
         </div>
-      </section>
+      </div>
     </section>
   );
 }

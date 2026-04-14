@@ -7,6 +7,7 @@ import { notFound } from "next/navigation";
 
 import { LocaleSwitcher } from "@/components/locale-switcher";
 import { LogoutButton } from "@/components/logout-button";
+import { MobileNav } from "@/components/public/mobile-nav";
 import { InstallPrompt } from "@/components/pwa/install-prompt";
 import { ServiceWorkerRegister } from "@/components/pwa/sw-register";
 import { routing } from "@/i18n/routing";
@@ -41,6 +42,7 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
         { href: `/${locale}/webinars`, label: t("webinars") },
         { href: `/${locale}/opportunities`, label: t("opportunities") },
         { href: `/${locale}/library`, label: t("library") },
+        { href: `/${locale}/study-assistant`, label: t("aiTutor") },
         { href: `/${locale}/dashboard`, label: t("dashboard") },
         { href: `/${locale}/profile`, label: t("profile") },
       ]
@@ -59,16 +61,22 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
       ? [
         { href: `/${locale}#programs`, label: t("programs") },
         { href: `/${locale}#how-it-works`, label: t("howItWorks") },
-        { href: `/${locale}/login`, label: t("login") },
-        { href: `/${locale}/register`, label: t("register") },
       ]
       : []),
   ];
 
+  const authItems = !user
+    ? [
+      { href: `/${locale}/login`, label: t("login"), variant: "link" as const },
+      { href: `/${locale}/register`, label: t("register"), variant: "primary" as const },
+    ]
+    : [];
+
   return (
     <NextIntlClientProvider locale={locale} messages={messages}>
       <div
-        className="min-h-screen bg-[#fafafa] text-slate-900"
+        className="min-h-screen text-slate-900"
+        style={{ backgroundColor: "var(--bg-base)" }}
         data-locale={locale}
         dir={isRtlLocale(typedLocale) ? "rtl" : "ltr"}
         lang={locale}
@@ -80,68 +88,29 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
           Skip to content
         </a>
 
+        <div id="layout-chrome">
         {/* Top accent line */}
-        <div className="h-0.5 bg-gradient-to-r from-emerald-600 via-teal-500 to-emerald-600" />
+        <div className="h-[3px] bg-gradient-to-r from-brand-500 via-highlight-500 to-accent-400" />
 
-        <header className="sticky top-0 z-50 w-full border-b border-slate-200/80 bg-white/95 backdrop-blur-sm">
-          <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4 sm:px-6">
-            <div className="flex items-center gap-6">
-              <Link className="flex items-center gap-2 text-lg font-bold text-slate-900" href={`/${locale}`}>
-                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-600 text-sm font-bold text-white shadow-sm">A</span>
-                <span>AlphaSeekers</span>
-              </Link>
+        {/* ───── FULL-WIDTH NAVBAR ───── */}
+        <header className="navbar-outer navbar-solid">
+          <div className="navbar-inner">
+            {/* Logo */}
+            <Link
+              className="flex items-center gap-3 text-lg font-bold text-slate-900 transition-opacity hover:opacity-80"
+              href={`/${locale}`}
+            >
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500 to-brand-600 text-sm font-bold text-white shadow-md shadow-brand-500/20">
+                A
+              </span>
+              <span className="hidden sm:inline font-display text-xl tracking-tight">AlphaSeekers</span>
+            </Link>
 
-              <nav className="hidden md:flex md:gap-0.5">
-                {navItems.filter(item => !item.href.includes('login') && !item.href.includes('register')).map((item) => (
-                  <Link
-                    className="rounded-md px-3 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:bg-emerald-50/60 hover:text-emerald-800"
-                    href={item.href}
-                    key={item.href}
-                  >
-                    {item.label}
-                  </Link>
-                ))}
-              </nav>
-            </div>
-
-            <div className="flex items-center gap-3">
-              {!user && (
-                <div className="hidden sm:flex sm:items-center sm:gap-3">
-                  <Link
-                    className="text-sm font-medium text-slate-600 transition-colors hover:text-emerald-700"
-                    href={`/${locale}/login`}
-                  >
-                    {t("login")}
-                  </Link>
-                  <Link
-                    className="btn-primary px-4 py-1.5 text-sm"
-                    href={`/${locale}/register`}
-                  >
-                    {t("register")}
-                  </Link>
-                </div>
-              )}
-              {user && (
-                <div className="hidden sm:flex sm:items-center sm:gap-3">
-                  <Link
-                    className="text-sm font-medium text-slate-700 transition-colors hover:text-emerald-700"
-                    href={`/${locale}/profile`}
-                  >
-                    {user.name}
-                  </Link>
-                  <LogoutButton callbackUrl={`/${locale}/login`} label={t("logout")} variant="nav" />
-                </div>
-              )}
-              <LocaleSwitcher currentLocale={typedLocale} />
-            </div>
-          </div>
-
-          {/* Mobile Nav */}
-          <div className="border-t border-slate-100 md:hidden">
-            <nav className="mx-auto flex max-w-5xl gap-1 overflow-x-auto px-4 py-2 no-scrollbar">
+            {/* Desktop Nav — centered */}
+            <nav className="hidden lg:flex lg:items-center lg:gap-1">
               {navItems.map((item) => (
                 <Link
-                  className="whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium text-slate-600 transition-colors active:bg-emerald-50"
+                  className="rounded-lg px-3.5 py-2.5 text-[0.9rem] font-medium text-slate-600 transition-all duration-200 hover:bg-brand-50 hover:text-brand-600"
                   href={item.href}
                   key={item.href}
                 >
@@ -149,8 +118,53 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
                 </Link>
               ))}
             </nav>
+
+            {/* Desktop Right Side */}
+            <div className="flex items-center gap-3">
+              {!user && (
+                <div className="hidden lg:flex lg:items-center lg:gap-3">
+                  <Link
+                    className="rounded-lg px-4 py-2.5 text-[0.9rem] font-medium text-slate-600 transition-all duration-200 hover:bg-slate-100 hover:text-slate-900"
+                    href={`/${locale}/login`}
+                  >
+                    {t("login")}
+                  </Link>
+                  <Link
+                    className="btn-primary px-6 py-2.5 text-sm"
+                    href={`/${locale}/register`}
+                  >
+                    {t("register")}
+                  </Link>
+                </div>
+              )}
+              {user && (
+                <div className="hidden lg:flex lg:items-center lg:gap-3">
+                  <Link
+                    className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-700 transition-all duration-200 hover:bg-slate-100 hover:text-brand-600"
+                    href={`/${locale}/profile`}
+                  >
+                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-100 text-xs font-bold text-brand-600">
+                      {user.name?.charAt(0)?.toUpperCase() ?? "U"}
+                    </span>
+                    {user.name}
+                  </Link>
+                  <LogoutButton callbackUrl={`/${locale}/login`} label={t("logout")} variant="nav" />
+                </div>
+              )}
+              <LocaleSwitcher currentLocale={typedLocale} />
+
+              {/* Mobile hamburger */}
+              <MobileNav
+                authItems={authItems}
+                navItems={navItems}
+                user={user ? { name: user.name ?? "User" } : null}
+                logoutCallbackUrl={`/${locale}/login`}
+                logoutLabel={user ? t("logout") : ""}
+              />
+            </div>
           </div>
         </header>
+        </div>
 
         <main id="main-content">{children}</main>
         <ServiceWorkerRegister />

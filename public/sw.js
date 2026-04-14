@@ -1,5 +1,5 @@
-const CACHE_NAME = "alphaseekers-v2";
-const STATIC_CACHE = "alphaseekers-static-v2";
+const CACHE_NAME = "alphaseekers-v3";
+const STATIC_CACHE = "alphaseekers-static-v3";
 const MATERIAL_CACHE = "alphaseekers-materials-v1";
 const OFFLINE_PAGE = "/fa/offline";
 

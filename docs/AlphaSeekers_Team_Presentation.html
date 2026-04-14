@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AlphaSeekers — Team Meeting</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', -apple-system, sans-serif; background: #0a0a0a; color: #ffffff; overflow: hidden; height: 100vh; width: 100vw; }
+  .slide { display: none; width: 100vw; height: 100vh; padding: 60px 80px; position: absolute; top: 0; left: 0; animation: fadeIn 0.4s ease; }
+  .slide.active { display: flex; flex-direction: column; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  .slide-title { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 40%, #0f3460 100%); justify-content: center; align-items: center; text-align: center; }
+  .slide-content { background: #0f1117; justify-content: flex-start; }
+  .slide-dark { background: linear-gradient(180deg, #1a1a2e 0%, #0f1117 100%); justify-content: flex-start; }
+  h1 { font-size: 64px; font-weight: 800; letter-spacing: -1px; line-height: 1.1; }
+  h2 { font-size: 42px; font-weight: 700; margin-bottom: 35px; letter-spacing: -0.5px; }
+  h3 { font-size: 28px; font-weight: 600; margin-bottom: 20px; }
+  p { font-size: 22px; line-height: 1.6; color: #b0b8c8; }
+  .subtitle { font-size: 24px; color: #a8a8b3; margin-top: 20px; font-weight: 300; letter-spacing: 4px; text-transform: uppercase; }
+  .accent { color: #e94560; }
+  .blue { color: #4da6ff; }
+  .green { color: #4ecca3; }
+  .gold { color: #ffd700; }
+  .tag { display: inline-block; background: rgba(233, 69, 96, 0.15); color: #e94560; padding: 6px 16px; border-radius: 20px; font-size: 14px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 25px; }
+  .tag-blue { display: inline-block; background: rgba(77, 166, 255, 0.15); color: #4da6ff; padding: 6px 16px; border-radius: 20px; font-size: 14px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 25px; }
+  .tag-green { display: inline-block; background: rgba(78, 204, 163, 0.15); color: #4ecca3; padding: 6px 16px; border-radius: 20px; font-size: 14px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 25px; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; flex: 1; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 25px; flex: 1; }
+  .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 20px; flex: 1; }
+  .card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 28px; transition: all 0.3s; }
+  .card:hover { background: rgba(255,255,255,0.07); border-color: rgba(233, 69, 96, 0.3); }
+  .card h3 { font-size: 20px; margin-bottom: 12px; }
+  .card p { font-size: 16px; line-height: 1.7; color: #8892a4; }
+  .card .icon { font-size: 36px; margin-bottom: 16px; display: block; }
+  .card-accent { border-left: 3px solid #e94560; }
+  .card-blue { border-left: 3px solid #4da6ff; }
+  .card-green { border-left: 3px solid #4ecca3; }
+  .card-gold { border-left: 3px solid #ffd700; }
+  .org-chart { display: flex; flex-direction: column; align-items: center; gap: 20px; flex: 1; justify-content: center; }
+  .org-box { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 16px 28px; text-align: center; min-width: 220px; }
+  .org-box.ceo { background: linear-gradient(135deg, rgba(233, 69, 96, 0.2), rgba(233, 69, 96, 0.05)); border-color: #e94560; }
+  .org-box.board { background: linear-gradient(135deg, rgba(77, 166, 255, 0.15), rgba(77, 166, 255, 0.05)); border-color: #4da6ff; }
+  .org-box h3 { font-size: 16px; margin-bottom: 4px; color: #fff; }
+  .org-box p { font-size: 13px; color: #8892a4; }
+  .org-row { display: flex; gap: 20px; justify-content: center; }
+  .connector { width: 2px; height: 20px; background: rgba(255,255,255,0.15); }
+  table { width: 100%; border-collapse: collapse; font-size: 16px; }
+  th { background: rgba(233, 69, 96, 0.15); color: #e94560; padding: 12px 16px; text-align: left; font-weight: 600; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
+  td { padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.06); color: #b0b8c8; }
+  tr:hover td { background: rgba(255,255,255,0.03); }
+  .stat-box { text-align: center; padding: 30px; }
+  .stat-number { font-size: 56px; font-weight: 800; }
+  .stat-label { font-size: 16px; color: #8892a4; margin-top: 8px; }
+  .discussion { background: rgba(78, 204, 163, 0.08); border: 2px dashed rgba(78, 204, 163, 0.3); border-radius: 12px; padding: 25px 30px; margin-top: 20px; }
+  .discussion h3 { color: #4ecca3; font-size: 18px; margin-bottom: 10px; }
+  .discussion p { font-size: 16px; color: #8892a4; }
+  .discussion ul { list-style: none; padding: 0; }
+  .discussion ul li { font-size: 16px; color: #b0b8c8; padding: 6px 0; padding-left: 24px; position: relative; }
+  .discussion ul li::before { content: "?"; position: absolute; left: 0; color: #4ecca3; font-weight: 700; font-size: 18px; }
+  .highlight-box { background: rgba(233, 69, 96, 0.08); border: 1px solid rgba(233, 69, 96, 0.2); border-radius: 12px; padding: 20px 25px; margin-top: 15px; }
+  .highlight-box p { font-size: 16px; color: #e94560; }
+  .timeline { display: flex; gap: 0; flex: 1; align-items: stretch; }
+  .timeline-item { flex: 1; padding: 25px; border-right: 1px solid rgba(255,255,255,0.08); display: flex; flex-direction: column; }
+  .timeline-item:last-child { border-right: none; }
+  .timeline-phase { font-size: 14px; color: #e94560; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px; }
+  .timeline-title { font-size: 22px; font-weight: 700; margin-bottom: 15px; }
+  .timeline-list { list-style: none; padding: 0; }
+  .timeline-list li { font-size: 15px; color: #8892a4; padding: 5px 0; padding-left: 18px; position: relative; line-height: 1.5; }
+  .timeline-list li::before { content: ""; position: absolute; left: 0; top: 13px; width: 6px; height: 6px; border-radius: 50%; background: #4ecca3; }
+  .nav { position: fixed; bottom: 30px; right: 40px; display: flex; gap: 10px; z-index: 100; }
+  .nav button { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; width: 50px; height: 50px; border-radius: 50%; font-size: 20px; cursor: pointer; transition: all 0.2s; }
+  .nav button:hover { background: rgba(233, 69, 96, 0.3); border-color: #e94560; }
+  .slide-counter { position: fixed; bottom: 40px; left: 40px; font-size: 14px; color: #555; z-index: 100; }
+  .progress-bar { position: fixed; top: 0; left: 0; height: 3px; background: linear-gradient(90deg, #e94560, #4da6ff); transition: width 0.3s; z-index: 100; }
+  @media print { .slide { display: flex !important; position: relative; page-break-after: always; height: 100vh; } .nav, .slide-counter, .progress-bar { display: none; } }
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<!-- ===== SLIDE 1: WELCOME ===== -->
+<div class="slide slide-title active" id="slide-1">
+  <div>
+    <h1 style="font-size: 72px;"><span class="accent">ALPHA</span>SEEKERS</h1>
+    <p class="subtitle" style="margin-top: 30px;">Team Check-In & Planning</p>
+    <p style="margin-top: 50px; font-size: 20px; color: #8892a4;">"Let's figure this out together."</p>
+  </div>
+</div>
+
+<!-- ===== SLIDE 2: WHY WE'RE HERE ===== -->
+<div class="slide slide-content" id="slide-2">
+  <div class="tag">Today's Conversation</div>
+  <h2>Why Are We <span class="accent">Here?</span></h2>
+  <p style="font-size: 20px; margin-bottom: 30px; color: #b0b8c8;">
+    Our platform is live. Now we need to get organized — not in a corporate way, but in a way that works for <em>us</em>. Today I want to hear from each of you.
+  </p>
+  <div class="grid-2" style="align-items: start;">
+    <div>
+      <div class="card card-accent" style="margin-bottom: 20px;">
+        <h3 style="color: #e94560;">What We'll Discuss</h3>
+        <p>Where we are today<br>How we want to work together<br>Who does what<br>How we stay accountable<br>Where we're heading</p>
+      </div>
+    </div>
+    <div>
+      <div class="card card-green">
+        <h3 style="color: #4ecca3;">What I Need From You</h3>
+        <p>Your honest feedback<br>Your availability — realistically<br>What you're excited about<br>What concerns you<br>Your commitment level</p>
+      </div>
+    </div>
+  </div>
+  <div class="discussion">
+    <h3>Before we go further...</h3>
+    <ul>
+      <li>How is everyone feeling about where we are?</li>
+      <li>Any initial thoughts or concerns you want to share?</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ===== SLIDE 3: WHAT WE BUILT ===== -->
+<div class="slide slide-dark" id="slide-3">
+  <div class="tag">Where We Are</div>
+  <h2>Look What We <span class="green">Built Together</span></h2>
+  <div class="grid-3" style="margin-top: 10px;">
+    <div class="stat-box">
+      <div class="stat-number accent">LIVE</div>
+      <div class="stat-label">Platform is online</div>
+      <p style="font-size: 14px; margin-top: 8px;">alphaseekers.onrender.com</p>
+    </div>
+    <div class="stat-box">
+      <div class="stat-number blue">4</div>
+      <div class="stat-label">Team Members</div>
+      <p style="font-size: 14px; margin-top: 8px;">That's us!</p>
+    </div>
+    <div class="stat-box">
+      <div class="stat-number green">2</div>
+      <div class="stat-label">Languages</div>
+      <p style="font-size: 14px; margin-top: 8px;">Dari + English</p>
+    </div>
+  </div>
+  <div class="grid-4" style="margin-top: 25px;">
+    <div class="card" style="text-align: center; padding: 20px;">
+      <span class="icon">📚</span>
+      <h3 style="font-size: 15px;">Classes & Google Meet</h3>
+    </div>
+    <div class="card" style="text-align: center; padding: 20px;">
+      <span class="icon">🔔</span>
+      <h3 style="font-size: 15px;">Notifications</h3>
+    </div>
+    <div class="card" style="text-align: center; padding: 20px;">
+      <span class="icon">🎓</span>
+      <h3 style="font-size: 15px;">Webinars & Library</h3>
+    </div>
+    <div class="card" style="text-align: center; padding: 20px;">
+      <span class="icon">📱</span>
+      <h3 style="font-size: 15px;">Works on Any Phone</h3>
+    </div>
+  </div>
+  <div class="discussion">
+    <h3>Quick check</h3>
+    <ul>
+      <li>Has everyone had a chance to explore the live platform?</li>
+      <li>What stood out to you? What needs work?</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ===== SLIDE 4: WE'RE NOT ALONE ===== -->
+<div class="slide slide-content" id="slide-4">
+  <div class="tag">Inspiration</div>
+  <h2>We're Not the <span class="accent">First</span></h2>
+  <p style="font-size: 18px; margin-bottom: 20px;">Every one of these started exactly where we are — small team, big dream:</p>
+  <div style="flex: 1; overflow: auto;">
+    <table>
+      <thead>
+        <tr>
+          <th>Organization</th>
+          <th>How They Started</th>
+          <th>Where They Are Now</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="color: #fff; font-weight: 600;">Khan Academy</td>
+          <td>4 people in 2010</td>
+          <td style="color: #4ecca3;">150M+ learners globally</td>
+        </tr>
+        <tr>
+          <td style="color: #fff; font-weight: 600;">SOLA (Afghan-founded)</td>
+          <td>One young Afghan woman in college</td>
+          <td style="color: #4ecca3;">25,000+ learners in Dari, Pashto, English</td>
+        </tr>
+        <tr>
+          <td style="color: #fff; font-weight: 600;">Afghan Institute of Learning</td>
+          <td>1 woman in 1995</td>
+          <td style="color: #4ecca3;">470 staff, 350,000 students/year</td>
+        </tr>
+        <tr>
+          <td style="color: #fff; font-weight: 600;">Room to Read</td>
+          <td>Building libraries in Nepal</td>
+          <td style="color: #4ecca3;">1,200 staff, 52 million children reached</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div style="margin-top: 20px; background: rgba(255,255,255,0.04); border-radius: 10px; padding: 18px 25px;">
+    <p style="font-size: 17px; color: #b0b8c8;">The point? <span style="color: #fff; font-weight: 600;">They all started where we are.</span> What made them succeed was not resources — it was a committed team that showed up consistently.</p>
+  </div>
+</div>
+
+<!-- ===== SLIDE 5: HOW WE WORK — PROPOSAL ===== -->
+<div class="slide slide-dark" id="slide-5">
+  <div class="tag-blue">Proposal — Let's Discuss</div>
+  <h2>How Should We <span class="blue">Work Together?</span></h2>
+  <p style="font-size: 18px; margin-bottom: 25px;">Here's a suggestion. But I want your input — what works for you?</p>
+  <div class="grid-3">
+    <div class="card card-accent" style="text-align: center;">
+      <span class="icon" style="font-size: 48px;">📋</span>
+      <h3 style="color: #e94560;">Weekly Planning<br>Meeting</h3>
+      <p style="font-size: 28px; font-weight: 800; color: #fff; margin: 12px 0;">30-45 min</p>
+      <p style="font-size: 14px;">Start of week<br>What are we working on this week?<br>Who is doing what?<br>Any blockers?</p>
+    </div>
+    <div class="card card-blue" style="text-align: center;">
+      <span class="icon" style="font-size: 48px;">🔄</span>
+      <h3 style="color: #4da6ff;">Mid-Week<br>Check-In</h3>
+      <p style="font-size: 28px; font-weight: 800; color: #fff; margin: 12px 0;">15-20 min</p>
+      <p style="font-size: 14px;">Quick sync<br>How is everyone doing?<br>Need help with anything?<br>On track?</p>
+    </div>
+    <div class="card card-green" style="text-align: center;">
+      <span class="icon" style="font-size: 48px;">📊</span>
+      <h3 style="color: #4ecca3;">Monthly<br>Review</h3>
+      <p style="font-size: 28px; font-weight: 800; color: #fff; margin: 12px 0;">1 hour</p>
+      <p style="font-size: 14px;">What did we accomplish?<br>What's next month's focus?<br>Student feedback<br>Celebrate wins</p>
+    </div>
+  </div>
+  <div class="discussion">
+    <h3>Let's talk about this</h3>
+    <ul>
+      <li>Does twice a week feel right, or would you prefer once a week?</li>
+      <li>What days and times work best for everyone?</li>
+      <li>Google Meet or another tool?</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ===== SLIDE 6: AGILE APPROACH ===== -->
+<div class="slide slide-content" id="slide-6">
+  <div class="tag">How It Works</div>
+  <h2>Our <span class="accent">Weekly Rhythm</span></h2>
+  <p style="font-size: 18px; margin-bottom: 20px;">Simple and practical — no corporate jargon, just getting things done:</p>
+  <div style="flex: 1;">
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 15%;">When</th>
+          <th style="width: 25%;">What</th>
+          <th>How It Works</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="color: #e94560; font-weight: 700;">Monday</td>
+          <td style="color: #fff; font-weight: 600;">Planning Meeting</td>
+          <td>Each person shares: (1) What I'll work on this week (2) What I need from others (3) Any problems I'm stuck on</td>
+        </tr>
+        <tr>
+          <td style="color: #4da6ff; font-weight: 700;">Wednesday</td>
+          <td style="color: #fff; font-weight: 600;">Quick Check-In</td>
+          <td>Quick round: Am I on track? Need help? Any updates? — Keep it short and focused</td>
+        </tr>
+        <tr>
+          <td style="color: #4ecca3; font-weight: 700;">Friday</td>
+          <td style="color: #fff; font-weight: 600;">Update (async)</td>
+          <td>Short message in our group chat: What I finished this week. No meeting needed — just a quick text update</td>
+        </tr>
+        <tr>
+          <td style="color: #ffd700; font-weight: 700;">End of Month</td>
+          <td style="color: #fff; font-weight: 600;">Monthly Review</td>
+          <td>Look back at what we accomplished. Plan next month's priorities. Share student feedback. Celebrate progress.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div style="margin-top: 15px; background: rgba(255,255,255,0.04); border-radius: 10px; padding: 18px 25px;">
+    <p style="font-size: 16px; color: #b0b8c8;">The goal is simple: <span style="color: #fff; font-weight: 600;">every week we decide together what needs to happen, and every week we deliver.</span> Small steps, consistently.</p>
+  </div>
+</div>
+
+<!-- ===== SLIDE 7: PROPOSED ROLES ===== -->
+<div class="slide slide-dark" id="slide-7">
+  <div class="tag-blue">Proposal — Let's Discuss</div>
+  <h2>Who Does <span class="blue">What?</span></h2>
+  <p style="font-size: 18px; margin-bottom: 15px;">Here's a starting point. These are suggestions — let's shape them together:</p>
+  <div class="org-chart">
+    <div class="org-box board" style="padding: 12px 24px;">
+      <h3 style="color: #4da6ff; font-size: 14px;">FUTURE: ADVISORY BOARD</h3>
+      <p>Mentors & advisors (we'll build this over time)</p>
+    </div>
+    <div class="connector"></div>
+    <div class="org-box ceo">
+      <h3 style="color: #e94560; font-size: 18px;">SAHAR NIKZAD</h3>
+      <p style="color: #e94560;">Founder & CEO</p>
+      <p style="margin-top: 4px;">Vision | Partnerships | Fundraising</p>
+    </div>
+    <div class="connector"></div>
+    <div class="org-row">
+      <div class="org-box" style="border-color: #4ecca3;">
+        <h3 style="color: #4ecca3;">Programs Lead</h3>
+        <p>Classes | Teachers<br>Student Support</p>
+      </div>
+      <div class="org-box" style="border-color: #ffd700;">
+        <h3 style="color: #ffd700;">Technology Lead</h3>
+        <p>Platform | Data<br>Google Meet</p>
+      </div>
+      <div class="org-box" style="border-color: #c084fc;">
+        <h3 style="color: #c084fc;">Operations Lead</h3>
+        <p>Community | Comms<br>Outreach</p>
+      </div>
+    </div>
+  </div>
+  <div class="discussion">
+    <h3>Open questions for the team</h3>
+    <ul>
+      <li>Which area interests you most? Where do you see yourself?</li>
+      <li>Are there responsibilities that don't fit neatly? Let's figure those out.</li>
+      <li>What title feels right to you?</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ===== SLIDE 8: ROLE DETAILS ===== -->
+<div class="slide slide-content" id="slide-8">
+  <div class="tag">Roles</div>
+  <h2>What Each <span class="accent">Role</span> Looks Like</h2>
+  <div class="grid-2" style="align-items: start;">
+    <div>
+      <div class="card card-accent" style="margin-bottom: 18px;">
+        <h3 style="color: #e94560; font-size: 17px;">CEO — Sahar</h3>
+        <p style="font-size: 14px; line-height: 1.8;">
+          Fundraising & partnerships<br>
+          Representing AlphaSeekers externally<br>
+          Setting priorities with the team<br>
+          Board/advisor relationships<br>
+          Making sure we have what we need to grow
+        </p>
+      </div>
+      <div class="card card-green">
+        <h3 style="color: #4ecca3; font-size: 17px;">Programs Lead</h3>
+        <p style="font-size: 14px; line-height: 1.8;">
+          Coordinating classes and teachers<br>
+          Helping students succeed<br>
+          Scheduling sessions<br>
+          Curriculum planning (Dari + English)<br>
+          Tracking student progress
+        </p>
+      </div>
+    </div>
+    <div>
+      <div class="card card-gold" style="margin-bottom: 18px;">
+        <h3 style="color: #ffd700; font-size: 17px;">Technology Lead</h3>
+        <p style="font-size: 14px; line-height: 1.8;">
+          Keeping the platform running<br>
+          Fixing bugs and improvements<br>
+          Google Meet setup for classes<br>
+          Analytics and reporting<br>
+          Bilingual functionality
+        </p>
+      </div>
+      <div class="card" style="border-left: 3px solid #c084fc;">
+        <h3 style="color: #c084fc; font-size: 17px;">Operations Lead</h3>
+        <p style="font-size: 14px; line-height: 1.8;">
+          Social media and communications<br>
+          Student outreach and enrollment<br>
+          Volunteer coordination<br>
+          Admin and scheduling<br>
+          Community engagement
+        </p>
+      </div>
+    </div>
+  </div>
+  <div class="discussion" style="margin-top: 12px;">
+    <h3>Let's discuss</h3>
+    <ul>
+      <li>Does this division make sense? What would you change?</li>
+      <li>Is anything missing or overlapping?</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ===== SLIDE 9: ADVISORY BOARD ===== -->
+<div class="slide slide-dark" id="slide-9">
+  <div class="tag-blue">Proposal — Let's Discuss</div>
+  <h2>Building Our <span class="blue">Advisory Board</span></h2>
+  <p style="font-size: 18px; margin-bottom: 20px;">As we grow, we need experienced people to guide us — not to run the organization, but to advise us. Here's why:</p>
+  <div class="grid-2" style="align-items: start;">
+    <div>
+      <div class="card card-blue" style="margin-bottom: 18px;">
+        <h3 style="color: #4da6ff;">Why a Board?</h3>
+        <p style="font-size: 15px; line-height: 1.9;">
+          Every successful nonprofit has advisors<br>
+          Funders expect to see a board structure<br>
+          We need guidance on fundraising, legal, and strategy<br>
+          Board members open doors to partnerships<br>
+          It gives AlphaSeekers credibility and trust<br>
+          <strong style="color: #fff;">Organizations like SOLA and Khan Academy built boards early</strong>
+        </p>
+      </div>
+      <div class="card" style="border-left: 3px solid #c084fc;">
+        <h3 style="color: #c084fc;">Advisory vs. Governing Board</h3>
+        <p style="font-size: 15px; line-height: 1.9;">
+          We're starting with an <strong style="color: #fff;">Advisory Board</strong><br>
+          They <strong style="color:#fff;">advise</strong> — they don't make decisions for us<br>
+          Sahar and the team still run the organization<br>
+          Advisors share expertise, connections, and mentorship<br>
+          As we grow, this can evolve into a formal governing board
+        </p>
+      </div>
+    </div>
+    <div>
+      <div class="card card-gold" style="margin-bottom: 18px;">
+        <h3 style="color: #ffd700;">Who We'd Want on the Board</h3>
+        <p style="font-size: 15px; line-height: 1.9;">
+          <span style="color: #ffd700;">Education Expert</span> — Someone with experience in online learning or Afghan education<br>
+          <span style="color: #4ecca3;">Nonprofit Leader</span> — Someone who has built or run a nonprofit<br>
+          <span style="color: #4da6ff;">Fundraising Advisor</span> — Experience with grants and donor relationships<br>
+          <span style="color: #e94560;">Community Voice</span> — Someone from the Afghan diaspora community<br>
+          <span style="color: #c084fc;">Tech Advisor</span> — Guidance on platform growth and scaling
+        </p>
+      </div>
+      <div class="card card-green">
+        <h3 style="color: #4ecca3;">Board Responsibilities</h3>
+        <p style="font-size: 15px; line-height: 1.9;">
+          Meet quarterly (4 times a year) for 1-2 hours<br>
+          Review our progress and give strategic feedback<br>
+          Help identify funding and partnership opportunities<br>
+          Mentor Sahar and the leadership team<br>
+          Advocate for AlphaSeekers in their networks<br>
+          <strong style="color: #fff;">No financial commitment required — just expertise and time</strong>
+        </p>
+      </div>
+    </div>
+  </div>
+  <div class="discussion" style="margin-top: 12px;">
+    <h3>Let's discuss</h3>
+    <ul>
+      <li>Do you know anyone who could be a good advisor for us?</li>
+      <li>What kind of expertise do we need most right now?</li>
+      <li>Any questions about how a board works?</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ===== SLIDE 10: AVAILABILITY & COMMITMENT ===== -->
+<div class="slide slide-dark" id="slide-10">
+  <div class="tag" style="background: rgba(255, 215, 0, 0.15); color: #ffd700;">Important Conversation</div>
+  <h2>Let's Talk About <span class="gold">Availability</span></h2>
+  <p style="font-size: 19px; margin-bottom: 25px;">
+    I want to be open with you. For AlphaSeekers to grow, we need to know what each of us can realistically commit. There are no wrong answers — I'd rather have an honest 5 hours/week than an unreliable 20.
+  </p>
+  <div class="grid-2">
+    <div class="card" style="border: 2px solid rgba(255, 215, 0, 0.3);">
+      <h3 style="color: #ffd700;">What I'd Like Us to Share</h3>
+      <p style="font-size: 15px; line-height: 2;">
+        How many hours per week can you commit?<br>
+        Which days/times are you available?<br>
+        Do you have other commitments (school, work)?<br>
+        Can you attend the weekly meetings?<br>
+        Is your availability consistent or does it change?
+      </p>
+    </div>
+    <div class="card card-accent">
+      <h3 style="color: #e94560;">Why This Matters</h3>
+      <p style="font-size: 15px; line-height: 2;">
+        We need to plan work based on real capacity<br>
+        Students depend on us showing up<br>
+        Teachers need reliable coordination<br>
+        When we approach funders, they will ask about our team's commitment<br>
+        <strong style="color: #fff;">Consistency matters more than quantity</strong>
+      </p>
+    </div>
+  </div>
+  <div class="highlight-box" style="margin-top: 15px;">
+    <p style="font-size: 16px; line-height: 1.7;">
+      As we grow and seek funding, we'll need to show that our team is committed and reliable. Funders invest in <strong>teams</strong>, not just ideas. The hours you commit to — that's what we'll plan around and that's what we'll report. So let's be honest with each other.
+    </p>
+  </div>
+</div>
+
+<!-- ===== SLIDE 11: COMMITMENT FORM ===== -->
+<div class="slide slide-content" id="slide-11">
+  <div class="tag-green">Let's Fill This Out Together</div>
+  <h2>Our <span class="green">Team Commitment</span></h2>
+  <p style="font-size: 18px; margin-bottom: 20px;">Let's go around the room. Each person shares what they can commit to:</p>
+  <div style="flex: 1; overflow: auto;">
+    <table>
+      <thead>
+        <tr>
+          <th>Question</th>
+          <th>Person 1</th>
+          <th>Person 2</th>
+          <th>Person 3</th>
+          <th>Sahar</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="color: #fff; font-weight: 600;">Hours per week</td>
+          <td style="color: #555;">_____</td>
+          <td style="color: #555;">_____</td>
+          <td style="color: #555;">_____</td>
+          <td style="color: #555;">_____</td>
+        </tr>
+        <tr>
+          <td style="color: #fff; font-weight: 600;">Available days</td>
+          <td style="color: #555;">_____</td>
+          <td style="color: #555;">_____</td>
+          <td style="color: #555;">_____</td>
+          <td style="color: #555;">_____</td>
+        </tr>
+        <tr>
+          <td style="color: #fff; font-weight: 600;">Available times</td>
+          <td style="color: #555;">_____</td>
+          <td style="color: #555;">_____</td>
+          <td style="color: #555;">_____</td>
+          <td style="color: #555;">_____</td>
+        </tr>
+        <tr>
+          <td style="color: #fff; font-weight: 600;">Can attend weekly meetings?</td>
+          <td style="color: #555;">_____</td>
+          <td style="color: #555;">_____</td>
+          <td style="color: #555;">_____</td>
+          <td style="color: #555;">_____</td>
+        </tr>
+        <tr>
+          <td style="color: #fff; font-weight: 600;">Other commitments</td>
+          <td style="color: #555;">_____</td>
+          <td style="color: #555;">_____</td>
+          <td style="color: #555;">_____</td>
+          <td style="color: #555;">_____</td>
+        </tr>
+        <tr>
+          <td style="color: #fff; font-weight: 600;">Preferred role / area</td>
+          <td style="color: #555;">_____</td>
+          <td style="color: #555;">_____</td>
+          <td style="color: #555;">_____</td>
+          <td style="color: #555;">_____</td>
+        </tr>
+        <tr>
+          <td style="color: #fff; font-weight: 600;">What excites you most?</td>
+          <td style="color: #555;">_____</td>
+          <td style="color: #555;">_____</td>
+          <td style="color: #555;">_____</td>
+          <td style="color: #555;">_____</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div style="margin-top: 12px; background: rgba(78,204,163,0.08); border-radius: 10px; padding: 15px 22px;">
+    <p style="font-size: 15px; color: #4ecca3;">This is a two-way conversation. I want everyone to feel comfortable with what they commit to. We'll revisit this monthly and adjust as needed.</p>
+  </div>
+</div>
+
+<!-- ===== SLIDE 12: ACCOUNTABILITY ===== -->
+<div class="slide slide-dark" id="slide-12">
+  <div class="tag">Working Agreement</div>
+  <h2>Our <span class="accent">Promise</span> to Each Other</h2>
+  <p style="font-size: 18px; margin-bottom: 25px;">These aren't rules from the top — these are agreements we make as a team:</p>
+  <div class="grid-2">
+    <div>
+      <div class="card" style="margin-bottom: 18px;">
+        <h3 style="color: #4ecca3; font-size: 18px;">1. Show up when you say you will</h3>
+        <p style="font-size: 15px;">If you commit to 10 hours, we plan around that. If something changes, just communicate early.</p>
+      </div>
+      <div class="card" style="margin-bottom: 18px;">
+        <h3 style="color: #4da6ff; font-size: 18px;">2. Communicate openly</h3>
+        <p style="font-size: 15px;">Stuck? Say it. Overwhelmed? Say it. Have a better idea? Say it. No judgment.</p>
+      </div>
+      <div class="card">
+        <h3 style="color: #ffd700; font-size: 18px;">3. Deliver what you commit to</h3>
+        <p style="font-size: 15px;">At Monday's planning, we each pick our tasks. By Friday, we share what we completed. Simple.</p>
+      </div>
+    </div>
+    <div>
+      <div class="card" style="margin-bottom: 18px;">
+        <h3 style="color: #e94560; font-size: 18px;">4. Students come first</h3>
+        <p style="font-size: 15px;">Everything we do should serve our students. When in doubt, ask: "Does this help a student?"</p>
+      </div>
+      <div class="card" style="margin-bottom: 18px;">
+        <h3 style="color: #c084fc; font-size: 18px;">5. Support each other</h3>
+        <p style="font-size: 15px;">We're a small team. When someone needs help, we step in. No silos.</p>
+      </div>
+      <div class="card">
+        <h3 style="color: #4ecca3; font-size: 18px;">6. Grow together</h3>
+        <p style="font-size: 15px;">As AlphaSeekers grows, your role grows. The people who build this from day one are the future leaders.</p>
+      </div>
+    </div>
+  </div>
+  <div class="discussion" style="margin-top: 12px;">
+    <h3>Anything you'd add or change?</h3>
+    <ul>
+      <li>What other agreements should we have?</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ===== SLIDE 13: THE BIGGER PICTURE ===== -->
+<div class="slide slide-content" id="slide-13">
+  <div class="tag">Looking Ahead</div>
+  <h2>Where We're <span class="accent">Going</span></h2>
+  <p style="font-size: 18px; margin-bottom: 20px;">Step by step. No rush — but a clear direction:</p>
+  <div class="timeline">
+    <div class="timeline-item" style="background: rgba(233,69,96,0.05);">
+      <div class="timeline-phase">Now</div>
+      <div class="timeline-title" style="color: #e94560;">Get Organized</div>
+      <ul class="timeline-list">
+        <li>Finalize roles and availability</li>
+        <li>Start weekly meetings</li>
+        <li>Test the platform thoroughly</li>
+        <li>Fix issues and improve UI</li>
+        <li>Onboard first students</li>
+      </ul>
+    </div>
+    <div class="timeline-item" style="background: rgba(77,166,255,0.05);">
+      <div class="timeline-phase">Next 3 Months</div>
+      <div class="timeline-title" style="color: #4da6ff;">Build Momentum</div>
+      <ul class="timeline-list">
+        <li>Recruit volunteer teachers</li>
+        <li>Launch first classes</li>
+        <li>Build advisory board (mentors)</li>
+        <li>Apply for Google for Nonprofits</li>
+        <li>Start tracking impact (student count, attendance)</li>
+      </ul>
+    </div>
+    <div class="timeline-item" style="background: rgba(78,204,163,0.05);">
+      <div class="timeline-phase">6-12 Months</div>
+      <div class="timeline-title" style="color: #4ecca3;">Grow & Fund</div>
+      <ul class="timeline-list">
+        <li>Apply for first grants</li>
+        <li>Grow student base</li>
+        <li>Add more courses</li>
+        <li>Build partnerships</li>
+        <li>Tell our story publicly</li>
+      </ul>
+    </div>
+  </div>
+  <div class="highlight-box" style="margin-top: 15px;">
+    <p style="font-size: 15px;">When we approach funders, they ask three things: What's your mission? Who's your team? Are they committed? <strong>That's why today's conversation matters.</strong></p>
+  </div>
+</div>
+
+<!-- ===== SLIDE 14: FUNDING REALITY ===== -->
+<div class="slide slide-dark" id="slide-14">
+  <div class="tag" style="background: rgba(255, 215, 0, 0.15); color: #ffd700;">Real Talk</div>
+  <h2>Funding & <span class="gold">What It Takes</span></h2>
+  <p style="font-size: 18px; margin-bottom: 25px;">I want to be transparent about what's ahead. As we look for funding to support our work:</p>
+  <div class="grid-2">
+    <div class="card card-gold">
+      <h3 style="color: #ffd700;">What Funders Look For</h3>
+      <p style="font-size: 15px; line-height: 2;">
+        A committed, reliable team<br>
+        Clear roles and responsibilities<br>
+        Regular meetings and progress tracking<br>
+        Impact data (how many students, attendance rates)<br>
+        A team that delivers on its promises
+      </p>
+    </div>
+    <div class="card card-accent">
+      <h3 style="color: #e94560;">What This Means for Us</h3>
+      <p style="font-size: 15px; line-height: 2;">
+        The hours we commit to will be what we report<br>
+        Our weekly progress shows up in grant applications<br>
+        Consistency builds credibility<br>
+        Even small grants ($5K-$25K) open doors to bigger ones<br>
+        <strong style="color: #fff;">Our commitment today = funding tomorrow</strong>
+      </p>
+    </div>
+  </div>
+  <div style="margin-top: 20px; background: rgba(255,255,255,0.04); border-radius: 10px; padding: 18px 25px;">
+    <p style="font-size: 16px; color: #b0b8c8;">This isn't pressure — it's reality. Organizations like Malala Fund and SOLA got their first grants because they could show a dedicated team. <span style="color: #fff; font-weight: 600;">We are building that track record starting now.</span></p>
+  </div>
+</div>
+
+<!-- ===== SLIDE 15: NEXT STEPS ===== -->
+<div class="slide slide-content" id="slide-15">
+  <div class="tag-green">Together</div>
+  <h2>What Happens <span class="green">After Today</span></h2>
+  <div class="grid-2" style="align-items: start;">
+    <div>
+      <div class="card" style="margin-bottom: 18px;">
+        <h3 style="color: #e94560; font-size: 17px;">This Week</h3>
+        <p style="font-size: 15px; line-height: 2;">
+          Everyone tests the platform and shares feedback<br>
+          Everyone confirms their role preference<br>
+          Everyone submits their weekly availability<br>
+          We schedule our first Monday planning meeting<br>
+          We create our team group chat
+        </p>
+      </div>
+      <div class="card">
+        <h3 style="color: #4da6ff; font-size: 17px;">This Month</h3>
+        <p style="font-size: 15px; line-height: 2;">
+          Run 3-4 weekly planning meetings<br>
+          Fix top platform issues from testing<br>
+          Start recruiting volunteer teachers<br>
+          Begin student outreach<br>
+          Apply for Google for Nonprofits
+        </p>
+      </div>
+    </div>
+    <div>
+      <div class="card card-green" style="height: 100%;">
+        <h3 style="color: #4ecca3; font-size: 17px;">Your Action Items (before next meeting)</h3>
+        <p style="font-size: 15px; line-height: 2.2;">
+          1. Explore the live platform top to bottom<br>
+          2. Write down 3 things you'd improve<br>
+          3. Confirm your weekly hours to Sahar<br>
+          4. Share your preferred role/area<br>
+          5. Share your available days and times<br>
+          6. Think about: what do you want AlphaSeekers to become?
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 16: FEEDBACK ===== -->
+<div class="slide slide-dark" id="slide-16">
+  <div class="tag-green">Your Voice</div>
+  <h2>What Do <span class="green">You</span> Think?</h2>
+  <p style="font-size: 20px; margin-bottom: 30px;">Before we wrap up, I genuinely want to hear from each of you:</p>
+  <div class="grid-2">
+    <div>
+      <div class="card" style="margin-bottom: 18px; border: 2px solid rgba(78, 204, 163, 0.3);">
+        <h3 style="color: #4ecca3; font-size: 18px;">Share your thoughts</h3>
+        <p style="font-size: 15px; line-height: 2;">
+          What excited you in this meeting?<br>
+          What concerns do you have?<br>
+          What's missing that we should add?<br>
+          How can I support you better as CEO?<br>
+          What would make you feel more confident?
+        </p>
+      </div>
+    </div>
+    <div>
+      <div class="card" style="margin-bottom: 18px; border: 2px solid rgba(233, 69, 96, 0.3);">
+        <h3 style="color: #e94560; font-size: 18px;">Nothing is set in stone</h3>
+        <p style="font-size: 15px; line-height: 2;">
+          Everything I presented today is a proposal<br>
+          We shape this together<br>
+          Your feedback changes the plan<br>
+          We'll revisit and adjust every month<br>
+          This is <em>our</em> organization
+        </p>
+      </div>
+    </div>
+  </div>
+  <div style="margin-top: 15px; text-align: center; background: rgba(255,255,255,0.04); border-radius: 12px; padding: 25px;">
+    <p style="font-size: 20px; color: #fff; font-weight: 600;">Send your thoughts anytime to:</p>
+    <p style="font-size: 22px; color: #e94560; margin-top: 8px;">alphaseekers2026@gmail.com</p>
+  </div>
+</div>
+
+<!-- ===== SLIDE 17: CLOSING ===== -->
+<div class="slide slide-title" id="slide-17">
+  <div>
+    <h1 style="font-size: 52px; line-height: 1.3;">
+      We're building something<br>
+      that <span class="accent">matters</span>.
+    </h1>
+    <p style="font-size: 22px; color: #8892a4; margin-top: 30px;">
+      Khan Academy started with 4 people.<br>
+      SOLA started with one young Afghan woman.<br>
+      <span style="color: #fff; font-weight: 600;">AlphaSeekers starts with us. Today.</span>
+    </p>
+    <p style="font-size: 18px; color: #555; margin-top: 40px;">Thank you for being here. Let's do this together.</p>
+  </div>
+</div>
+
+<!-- Navigation -->
+<div class="nav">
+  <button onclick="prevSlide()">&#8592;</button>
+  <button onclick="nextSlide()">&#8594;</button>
+</div>
+<div class="slide-counter" id="counter">1 / 17</div>
+
+<script>
+  let current = 1;
+  const total = 17;
+  function showSlide(n) {
+    document.querySelectorAll('.slide').forEach(s => s.classList.remove('active'));
+    document.getElementById('slide-' + n).classList.add('active');
+    document.getElementById('counter').textContent = n + ' / ' + total;
+    document.getElementById('progress').style.width = ((n / total) * 100) + '%';
+  }
+  function nextSlide() { if (current < total) { current++; showSlide(current); } }
+  function prevSlide() { if (current > 1) { current--; showSlide(current); } }
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'Enter') { e.preventDefault(); nextSlide(); }
+    if (e.key === 'ArrowLeft' || e.key === 'Backspace') { e.preventDefault(); prevSlide(); }
+    if (e.key === 'f' || e.key === 'F') {
+      if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+      else document.exitFullscreen();
+    }
+  });
+  showSlide(1);
+</script>
+
+</body>
+</html>

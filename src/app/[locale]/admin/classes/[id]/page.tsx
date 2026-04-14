@@ -121,7 +121,7 @@ export default async function AdminClassDetailPage({ params }: AdminClassDetailP
                 </tr>
               </thead>
               <tbody>
-                {enrolledStudents.map((student) => {
+                {enrolledStudents.map((student: { studentId: string; name: string; email: string; enrolledAt: Date | string }) => {
                   const stats = attendanceSummary.students.find((s) => s.studentId === student.studentId);
                   return (
                     <tr className="border-b border-slate-100 text-slate-700" key={student.studentId}>

@@ -21,7 +21,8 @@
     "register": "Request access",
     "logout": "Log out",
     "brandTagline": "Free education for Afghan girls",
-    "networkBadge": ""
+    "networkBadge": "",
+    "aiTutor": "AI Tutor"
   },
   "home": {
     "eyebrow": "Free classes for Afghan girls",
@@ -247,7 +248,54 @@
         }
       }
     },
-    "footer": "AlphaSeekers is run by volunteers. All classes are free."
+    "footer": "AlphaSeekers is run by volunteers. All classes are free.",
+    "hero": {
+      "headline1": "Every Afghan girl",
+      "headline2": "deserves to",
+      "highlightWord": "learn",
+      "getStarted": "Get started",
+      "imStudent": "I'm a student",
+      "imTeacher": "I'm a teacher",
+      "alreadyHaveAccount": "Already have an account?",
+      "trustFree": "100% Free",
+      "trustSafe": "Safe & private",
+      "trustOffline": "Works offline",
+      "students": "500+ students",
+      "studentsSubtext": "learning across Afghanistan",
+      "countries": "12+ countries",
+      "countriesSubtext": "volunteer teachers"
+    },
+    "builtWith": {
+      "kicker": "Architecture",
+      "title": "Built with production-grade technology",
+      "subtitle": "Engineered for privacy, reliability, and accessibility in low-bandwidth environments.",
+      "items": {
+        "rag": {
+          "title": "AI-Powered Study Assistant",
+          "body": "RAG pipeline with vector embeddings, semantic search, and streaming LLM responses."
+        },
+        "i18n": {
+          "title": "Bilingual & RTL-First",
+          "body": "Full Dari/English support with automatic RTL layout switching."
+        },
+        "offline": {
+          "title": "Offline-Ready PWA",
+          "body": "Service worker caching, installable app, and schedule persistence for connectivity gaps."
+        },
+        "notifications": {
+          "title": "Multi-Channel Notifications",
+          "body": "Fallback chain across Telegram, Web Push, Email, and WhatsApp with retry logic."
+        },
+        "scheduling": {
+          "title": "Automated Scheduling",
+          "body": "Teacher availability → session generation → Google Meet links → student reminders."
+        },
+        "security": {
+          "title": "Role-Based Access Control",
+          "body": "JWT auth, approval gates, rate limiting, and encrypted data at rest."
+        }
+      }
+    }
   },
   "login": {
     "eyebrow": "Access",
@@ -866,5 +914,25 @@
     "availability": "Availability",
     "subtitle": "Set your weekly available time slots. The platform will auto-schedule your classes.",
     "backToDashboard": "Back to dashboard"
+  },
+  "ai": {
+    "title": "Study Assistant",
+    "subtitle": "Ask questions about your course materials",
+    "placeholder": "Ask a question about your studies...",
+    "disclaimer": "Answers are generated from indexed course materials using AI. Always verify with your teacher.",
+    "emptyTitle": "How can I help you learn?",
+    "emptySubtitle": "Ask me anything about your course materials. I will find relevant content and give you an answer.",
+    "suggestion1": "Explain the main topics from my class",
+    "suggestion2": "Summarize the latest reading material",
+    "suggestion3": "Help me understand this concept",
+    "navLabel": "AI Tutor",
+    "feedbackThanks": "Thanks for the feedback!",
+    "helpful": "Helpful",
+    "notHelpful": "Not helpful",
+    "explainSimpler": "Explain simpler",
+    "giveExample": "Give me an example",
+    "poweredBy": "Powered by RAG + Llama 3.1",
+    "sources": "Sources",
+    "newConversation": "New conversation"
   }
 }

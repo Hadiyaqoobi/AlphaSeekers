@@ -29,73 +29,158 @@ export default async function AdminClassesPage({ params }: AdminClassesPageProps
   const teachers = await listUsersByRole("TEACHER");
   const classes = await listAdminClasses({ page: 1, limit: 10 });
 
+  const totalClasses = classes.items.length;
+  const activeClasses = classes.items.filter((c) => c.status === "ACTIVE").length;
+  const archivedClasses = classes.items.filter((c) => c.status === "ARCHIVED").length;
+
   return (
-    <section className="space-y-4 sm:space-y-5">
-      <header className="hero-panel p-5 sm:p-6">
-        <p className="section-kicker">{t("title")}</p>
-        <h1 className="text-3xl font-black text-slate-900 sm:text-4xl">{t("controlPanel")}</h1>
-        <p className="mt-2 text-sm text-slate-600">{t("controlPanelSubtitle")}</p>
-        <div className="mt-4 flex flex-wrap gap-2">
-          <Link className="btn-secondary" href={`/${params.locale}/admin/users`}>
+    <section className="mx-auto max-w-6xl px-6 py-10 lg:px-8">
+      {/* Page Header */}
+      <header className="mb-10">
+        <p className="text-xs font-semibold uppercase tracking-widest text-emerald-600">
+          {t("title")}
+        </p>
+        <h1 className="mt-2 text-4xl font-bold tracking-tight text-gray-900">
+          {t("controlPanel")}
+        </h1>
+        <p className="mt-2 text-base text-gray-500">{t("controlPanelSubtitle")}</p>
+        <div className="mt-6 flex flex-wrap gap-3">
+          <Link
+            className="inline-flex items-center rounded-xl border border-gray-200 bg-white px-5 py-2.5 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 hover:shadow-md"
+            href={`/${params.locale}/admin/users`}
+          >
             {t("userApprovals")}
           </Link>
-          <Link className="btn-secondary" href={`/${params.locale}/admin/teachers`}>
+          <Link
+            className="inline-flex items-center rounded-xl border border-gray-200 bg-white px-5 py-2.5 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 hover:shadow-md"
+            href={`/${params.locale}/admin/teachers`}
+          >
             {t("teachers")}
           </Link>
-          <Link className="btn-secondary" href={`/${params.locale}/admin/content`}>
+          <Link
+            className="inline-flex items-center rounded-xl border border-gray-200 bg-white px-5 py-2.5 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 hover:shadow-md"
+            href={`/${params.locale}/admin/content`}
+          >
             {t("content")}
           </Link>
-          <Link className="btn-secondary" href={`/${params.locale}/admin/analytics`}>
+          <Link
+            className="inline-flex items-center rounded-xl border border-gray-200 bg-white px-5 py-2.5 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 hover:shadow-md"
+            href={`/${params.locale}/admin/analytics`}
+          >
             {t("analytics")}
           </Link>
-          <Link className="btn-secondary" href={`/${params.locale}/dashboard`}>
+          <Link
+            className="inline-flex items-center rounded-xl border border-gray-200 bg-white px-5 py-2.5 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 hover:shadow-md"
+            href={`/${params.locale}/dashboard`}
+          >
             {t("dashboard")}
           </Link>
         </div>
       </header>
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      {/* Stats Row */}
+      <div className="mb-8 grid grid-cols-1 gap-5 sm:grid-cols-3">
+        <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+          <p className="text-sm font-medium text-gray-500">Total Classes</p>
+          <p className="mt-2 text-3xl font-bold text-gray-900">{totalClasses}</p>
+        </div>
+        <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+          <p className="text-sm font-medium text-gray-500">Active</p>
+          <p className="mt-2 text-3xl font-bold text-emerald-600">{activeClasses}</p>
+        </div>
+        <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+          <p className="text-sm font-medium text-gray-500">Archived</p>
+          <p className="mt-2 text-3xl font-bold text-gray-400">{archivedClasses}</p>
+        </div>
+      </div>
+
+      {/* Action Cards */}
+      <div className="mb-8 grid gap-5 lg:grid-cols-3">
         <AdminClassForm teachers={teachers} />
         <RunSchedulerButton />
         <RunRemindersButton />
       </div>
 
-      <section className="panel panel-strong p-4">
-        <h2 className="text-lg font-black text-slate-900">{t("recentClasses")}</h2>
-        <div className="mt-3 overflow-x-auto">
-          <table className="w-full min-w-[640px] border-collapse text-left text-sm">
+      {/* Classes Table */}
+      <section className="rounded-2xl border border-gray-100 bg-white shadow-sm">
+        <div className="border-b border-gray-100 px-6 py-5">
+          <h2 className="text-lg font-bold text-gray-900">{t("recentClasses")}</h2>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[700px] text-left text-sm">
             <thead>
-              <tr className="border-b border-slate-200 text-slate-500">
-                <th className="py-2 font-semibold" scope="col">{t("name")}</th>
-                <th className="py-2 font-semibold" scope="col">{t("teacher")}</th>
-                <th className="py-2 font-semibold" scope="col">{t("schedule")}</th>
-                <th className="py-2 font-semibold" scope="col">{t("duration")}</th>
-                <th className="py-2 font-semibold" scope="col">{t("enrolled")}</th>
-                <th className="py-2 font-semibold" scope="col">{t("status")}</th>
-                <th className="py-2 text-right font-semibold" scope="col">{t("actions")}</th>
+              <tr className="bg-gray-50 text-xs font-semibold uppercase tracking-wider text-gray-500">
+                <th className="px-6 py-4" scope="col">{t("name")}</th>
+                <th className="px-6 py-4" scope="col">{t("teacher")}</th>
+                <th className="px-6 py-4" scope="col">{t("schedule")}</th>
+                <th className="px-6 py-4" scope="col">{t("duration")}</th>
+                <th className="px-6 py-4" scope="col">{t("enrolled")}</th>
+                <th className="px-6 py-4" scope="col">{t("status")}</th>
+                <th className="px-6 py-4 text-right" scope="col">{t("actions")}</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-gray-50">
               {classes.items.map((item) => (
-                <tr className="border-b border-slate-100 text-slate-700" key={item.id}>
-                  <td className="py-2 font-semibold text-slate-900">{item.name}</td>
-                  <td className="py-2">{item.teacherName}</td>
-                  <td className="py-2">{item.schedulePreference}</td>
-                  <td className="py-2">{item.durationMinutes} {t("min")}</td>
-                  <td className="py-2">{item.enrolledCount}</td>
-                  <td className="py-2">{item.status}</td>
-                  <td className="py-2 text-right">
-                    <div className="flex flex-wrap justify-end gap-2">
-                      <Link className="btn-secondary" href={`/${params.locale}/admin/classes/${item.id}`}>
+                <tr
+                  className="transition-colors hover:bg-gray-50"
+                  key={item.id}
+                >
+                  <td className="px-6 py-4 font-semibold text-gray-900">{item.name}</td>
+                  <td className="px-6 py-4 text-gray-600">{item.teacherName}</td>
+                  <td className="px-6 py-4 text-gray-600">{item.schedulePreference}</td>
+                  <td className="px-6 py-4 text-gray-600">
+                    {item.durationMinutes} {t("min")}
+                  </td>
+                  <td className="px-6 py-4 text-gray-600">{item.enrolledCount}</td>
+                  <td className="px-6 py-4">
+                    <span
+                      className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
+                        item.status === "ACTIVE"
+                          ? "bg-emerald-50 text-emerald-700"
+                          : "bg-gray-100 text-gray-500"
+                      }`}
+                    >
+                      {item.status}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <div className="flex flex-wrap items-center justify-end gap-2">
+                      <Link
+                        className="inline-flex items-center rounded-lg border border-gray-200 bg-white px-4 py-2 text-xs font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 hover:shadow"
+                        href={`/${params.locale}/admin/classes/${item.id}`}
+                      >
                         {t("view")}
                       </Link>
-                      {item.status === "ARCHIVED" ? null : <ArchiveClassButton classId={item.id} />}
+                      {item.status === "ARCHIVED" ? null : (
+                        <ArchiveClassButton classId={item.id} />
+                      )}
                     </div>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+
+          {classes.items.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <svg
+                className="mx-auto h-12 w-12 text-gray-300"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={1.5}
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M4.26 10.147a60.438 60.438 0 0 0-.491 6.347A48.62 48.62 0 0 1 12 20.904a48.62 48.62 0 0 1 8.232-4.41 60.46 60.46 0 0 0-.491-6.347m-15.482 0a50.636 50.636 0 0 0-2.658-.813A59.906 59.906 0 0 1 12 3.493a59.903 59.903 0 0 1 10.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.717 50.717 0 0 1 12 13.489a50.702 50.702 0 0 1 7.74-3.342M6.75 15a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v-3.675A55.378 55.378 0 0 1 12 8.443m-7.007 11.55A5.981 5.981 0 0 0 6.75 15.75v-1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              <p className="mt-4 text-sm font-medium text-gray-500">
+                No classes found. Create your first class above.
+              </p>
+            </div>
+          )}
         </div>
       </section>
     </section>

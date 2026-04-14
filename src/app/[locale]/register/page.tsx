@@ -71,76 +71,237 @@ export default function RegisterPage() {
   }
 
   return (
-    <section className="auth-page mx-auto w-full max-w-sm px-4 py-12 sm:py-16">
-      <div className="mb-8 text-center">
-        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-600 text-lg font-bold text-white shadow-md shadow-emerald-200">A</div>
-        <h1 className="text-2xl font-bold text-slate-900">{t("title")}</h1>
-        <p className="mt-2 text-sm text-slate-600">{t("subtitle")}</p>
+    <div className="min-h-screen lg:grid lg:grid-cols-2">
+      {/* -------- Left branding panel (desktop only) -------- */}
+      <div className="hidden lg:flex flex-col justify-between relative overflow-hidden bg-gradient-to-br from-emerald-700 via-emerald-800 to-teal-900 p-12 text-white">
+        {/* Decorative circles */}
+        <div className="absolute -top-24 -left-24 h-96 w-96 rounded-full bg-white/5" />
+        <div className="absolute -bottom-32 -right-32 h-[28rem] w-[28rem] rounded-full bg-white/5" />
+        <div className="absolute top-1/2 left-1/3 h-64 w-64 rounded-full bg-white/[0.03]" />
+
+        {/* Top logo */}
+        <div className="relative z-10 flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/15 text-base font-bold backdrop-blur-sm">
+            A
+          </div>
+          <span className="text-lg font-semibold tracking-tight">AlphaSeekers</span>
+        </div>
+
+        {/* Center copy */}
+        <div className="relative z-10 space-y-8">
+          <div className="space-y-4">
+            <h2 className="text-4xl font-extrabold leading-tight tracking-tight xl:text-5xl">
+              Start learning<br />for free.
+            </h2>
+            <p className="max-w-sm text-lg leading-relaxed text-emerald-100/80">
+              Join thousands of students and teachers building a brighter future through education.
+            </p>
+          </div>
+
+          {/* Trust points */}
+          <div className="space-y-4 pt-2">
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/10 backdrop-blur-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-emerald-300" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-white">Safe &amp; private</p>
+                <p className="text-xs text-emerald-200/60">Your data stays protected</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/10 backdrop-blur-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-emerald-300" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-white">100% Free</p>
+                <p className="text-xs text-emerald-200/60">No hidden fees, ever</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/10 backdrop-blur-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-emerald-300" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838l-2.727 1.17 1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0z" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-white">Volunteer teachers from 12+ countries</p>
+                <p className="text-xs text-emerald-200/60">A truly global community</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom quote */}
+        <p className="relative z-10 max-w-xs text-sm italic leading-relaxed text-emerald-200/60">
+          &ldquo;One child, one teacher, one book, one pen can change the world.&rdquo;
+        </p>
       </div>
 
-      <form className="space-y-4 rounded-xl border border-slate-200/80 bg-white p-6 shadow-sm" onSubmit={submit}>
-        <label className="block space-y-1.5 text-sm">
-          <span className="font-medium text-slate-700">{t("name")}</span>
-          <input
-            className="field"
-            onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
-            required
-            value={form.name}
-          />
-        </label>
+      {/* -------- Right form panel -------- */}
+      <div className="flex min-h-screen flex-col items-center justify-center bg-[var(--bg-base)] px-6 py-12 lg:min-h-0 lg:overflow-y-auto lg:px-16">
+        {/* Mobile-only branding header */}
+        <div className="mb-8 flex flex-col items-center lg:hidden">
+          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-600 to-teal-700 text-lg font-bold text-white shadow-lg shadow-emerald-200/50">
+            A
+          </div>
+          <span className="text-sm font-semibold tracking-tight text-slate-700">AlphaSeekers</span>
+        </div>
 
-        <label className="block space-y-1.5 text-sm">
-          <span className="font-medium text-slate-700">{t("email")}</span>
-          <input
-            autoComplete="email"
-            className="field"
-            onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))}
-            required
-            type="email"
-            value={form.email}
-          />
-        </label>
+        <div className="w-full max-w-md animate-fade-in-up">
+          {/* Heading */}
+          <div className="mb-8">
+            <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">
+              {t("title")}
+            </h1>
+            <p className="mt-2 text-base text-slate-500">{t("subtitle")}</p>
+          </div>
 
-        <label className="block space-y-1.5 text-sm">
-          <span className="font-medium text-slate-700">{t("password")}</span>
-          <input
-            autoComplete="new-password"
-            className="field"
-            onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
-            required
-            type="password"
-            value={form.password}
-          />
-        </label>
-
-        <label className="block space-y-1.5 text-sm">
-          <span className="font-medium text-slate-700">{t("phone")}</span>
-          <input
-            className="field"
-            onChange={(event) => setForm((current) => ({ ...current, phone: event.target.value }))}
-            placeholder="+93..."
-            value={form.phone}
-          />
-        </label>
-
-        <label className="block space-y-1.5 text-sm">
-          <span className="font-medium text-slate-700">{t("role")}</span>
-          <select
-            className="select-field"
-            onChange={(event) => setForm((current) => ({ ...current, role: event.target.value as FormState["role"] }))}
-            value={form.role}
+          {/* Form card */}
+          <form
+            className="space-y-5 rounded-2xl border border-slate-200/70 bg-white p-8 shadow-md shadow-slate-200/50"
+            onSubmit={submit}
           >
-            <option value="STUDENT">{t("student")}</option>
-            <option value="TEACHER">{t("teacher")}</option>
-          </select>
-        </label>
+            <label className="block space-y-2 text-sm">
+              <span className="font-semibold text-slate-700">{t("name")}</span>
+              <input
+                className="field min-h-[3rem] text-base"
+                onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
+                required
+                value={form.name}
+              />
+            </label>
 
-        {message ? <p className="text-sm text-red-600">{message}</p> : null}
+            <label className="block space-y-2 text-sm">
+              <span className="font-semibold text-slate-700">{t("email")}</span>
+              <input
+                autoComplete="email"
+                className="field min-h-[3rem] text-base"
+                onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))}
+                required
+                type="email"
+                value={form.email}
+              />
+            </label>
 
-        <button className="btn-primary w-full" disabled={submitting} type="submit">
-          {submitting ? "..." : t("submit")}
-        </button>
-      </form>
-    </section>
+            <label className="block space-y-2 text-sm">
+              <span className="font-semibold text-slate-700">{t("password")}</span>
+              <input
+                autoComplete="new-password"
+                className="field min-h-[3rem] text-base"
+                onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
+                required
+                type="password"
+                value={form.password}
+              />
+            </label>
+
+            <label className="block space-y-2 text-sm">
+              <span className="font-semibold text-slate-700">{t("phone")}</span>
+              <input
+                className="field min-h-[3rem] text-base"
+                onChange={(event) => setForm((current) => ({ ...current, phone: event.target.value }))}
+                placeholder="+93..."
+                value={form.phone}
+              />
+            </label>
+
+            {/* Role selector as pill buttons */}
+            <fieldset className="space-y-2">
+              <legend className="text-sm font-semibold text-slate-700">{t("role")}</legend>
+              <div className="flex gap-2 rounded-xl bg-slate-100 p-1">
+                <button
+                  type="button"
+                  onClick={() => setForm((current) => ({ ...current, role: "STUDENT" }))}
+                  className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-semibold transition-all duration-200 ${
+                    form.role === "STUDENT"
+                      ? "bg-white text-emerald-700 shadow-sm ring-1 ring-slate-200/80"
+                      : "text-slate-500 hover:text-slate-700"
+                  }`}
+                >
+                  <span className="flex items-center justify-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                      <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838l-2.727 1.17 1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0z" />
+                    </svg>
+                    {t("student")}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setForm((current) => ({ ...current, role: "TEACHER" }))}
+                  className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-semibold transition-all duration-200 ${
+                    form.role === "TEACHER"
+                      ? "bg-white text-emerald-700 shadow-sm ring-1 ring-slate-200/80"
+                      : "text-slate-500 hover:text-slate-700"
+                  }`}
+                >
+                  <span className="flex items-center justify-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                    </svg>
+                    {t("teacher")}
+                  </span>
+                </button>
+              </div>
+            </fieldset>
+
+            {message ? (
+              <div className="flex items-start gap-2 rounded-lg bg-red-50 p-3 text-sm text-red-700">
+                <svg xmlns="http://www.w3.org/2000/svg" className="mt-0.5 h-4 w-4 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                <span>{message}</span>
+              </div>
+            ) : null}
+
+            <button
+              className="btn-primary w-full min-h-[3rem] text-base"
+              disabled={submitting}
+              type="submit"
+            >
+              {submitting ? (
+                <span className="flex items-center gap-2">
+                  <svg className="h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                  <span>{t("submit")}</span>
+                </span>
+              ) : (
+                t("submit")
+              )}
+            </button>
+          </form>
+
+          {/* Mobile trust points */}
+          <div className="mt-8 grid grid-cols-3 gap-3 text-center lg:hidden">
+            <div className="rounded-xl bg-emerald-50 px-3 py-3">
+              <svg xmlns="http://www.w3.org/2000/svg" className="mx-auto mb-1 h-5 w-5 text-emerald-600" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+              </svg>
+              <p className="text-xs font-semibold text-emerald-800">Safe</p>
+            </div>
+            <div className="rounded-xl bg-emerald-50 px-3 py-3">
+              <svg xmlns="http://www.w3.org/2000/svg" className="mx-auto mb-1 h-5 w-5 text-emerald-600" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+              <p className="text-xs font-semibold text-emerald-800">100% Free</p>
+            </div>
+            <div className="rounded-xl bg-emerald-50 px-3 py-3">
+              <svg xmlns="http://www.w3.org/2000/svg" className="mx-auto mb-1 h-5 w-5 text-emerald-600" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838l-2.727 1.17 1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0z" />
+              </svg>
+              <p className="text-xs font-semibold text-emerald-800">12+ countries</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

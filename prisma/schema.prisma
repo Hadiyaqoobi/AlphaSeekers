@@ -267,3 +267,20 @@ model GoogleAccountLink {
 
   user                  User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
+
+// ─── RAG Study Assistant ───
+
+model DocumentChunk {
+  id                    String                @id
+  sourceType            String                // "LIBRARY" | "MATERIAL"
+  sourceId              String
+  sourceTitle           String
+  content               String
+  chunkIndex            Int
+  tokenCount            Int                   @default(0)
+  // embedding vector(384) — managed via raw SQL, not Prisma
+  // See: prisma/migrations/20260413000000_add_rag_vector_store/migration.sql
+  createdAt             DateTime              @default(now())
+
+  @@index([sourceType, sourceId])
+}
