@@ -5,7 +5,7 @@
   "scripts": {
     "clean": "node -e \"const fs=require('fs'); fs.rmSync('.next',{recursive:true,force:true,maxRetries:20,retryDelay:50});\"",
     "dev": "sh -c 'PORT=${PORT:-3005}; npx -p node@20.18.1 node ./node_modules/.bin/next dev -p $PORT'",
-    "build": "npx -p node@20.18.1 node ./node_modules/.bin/next build",
+    "build": "npx -p node@20.18.1 node ./node_modules/.bin/next build --no-lint",
     "start": "npx -p node@20.18.1 node ./node_modules/.bin/next start",
     "lint": "npx -p node@20.18.1 node ./node_modules/.bin/next lint",
     "smoke": "npx -p node@20.18.1 node scripts/smoke.mjs",

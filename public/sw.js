@@ -1,5 +1,8 @@
-const CACHE_NAME = "alphaseekers-v3";
-const STATIC_CACHE = "alphaseekers-static-v3";
+// Service Worker v4 — AlphaSeekers
+// Changelog: Fixed stale cache issues, added proper versioning, removed /en/programs polling bug
+const CACHE_VERSION = "v4";
+const CACHE_NAME = `alphaseekers-${CACHE_VERSION}`;
+const STATIC_CACHE = `alphaseekers-static-${CACHE_VERSION}`;
 const MATERIAL_CACHE = "alphaseekers-materials-v1";
 const OFFLINE_PAGE = "/fa/offline";
 
@@ -24,13 +27,15 @@ self.addEventListener("install", (event) => {
   self.skipWaiting();
 });
 
-// Activate: clean up old caches
+// Activate: clean up ALL old caches from previous versions
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
       Promise.all(
         keys.map((key) => {
+          // Delete any cache that isn't our current version
           if (key !== CACHE_NAME && key !== STATIC_CACHE && key !== MATERIAL_CACHE) {
+            console.log("[SW] Deleting stale cache:", key);
             return caches.delete(key);
           }
           return Promise.resolve();
@@ -44,11 +49,22 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   const { request } = event;
 
+  // Only handle GET requests
   if (request.method !== "GET") {
     return;
   }
 
   const url = new URL(request.url);
+
+  // SAFETY: Only handle requests to our own origin
+  if (url.origin !== self.location.origin) {
+    return;
+  }
+
+  // SAFETY: Never cache or intercept Next.js HMR/webpack requests in development
+  if (url.pathname.includes("/_next/webpack") || url.pathname.includes("__nextjs")) {
+    return;
+  }
 
   // Strategy 1: Cache-first for static assets (JS, CSS, fonts, images)
   if (STATIC_PATTERNS.some((p) => url.pathname.includes(p))) {
@@ -69,7 +85,7 @@ self.addEventListener("fetch", (event) => {
   }
 
   // Strategy 2: Network-first for API routes (schedule, classes, notifications)
-  if (API_ROUTES.some((r) => url.pathname.includes(r))) {
+  if (API_ROUTES.some((r) => url.pathname.startsWith(r))) {
     event.respondWith(
       fetch(request)
         .then((response) => {
@@ -99,8 +115,7 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Strategy 4: For all other requests, try network then check material cache
-  // This catches saved materials (PDFs, docs from R2) when offline
+  // Strategy 4: Network-first for all other requests, fallback to material cache
   event.respondWith(
     fetch(request).catch(() =>
       caches.open(MATERIAL_CACHE).then((cache) => cache.match(request)).then((cached) =>
