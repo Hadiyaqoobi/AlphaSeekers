@@ -1,27 +1,31 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
-import { useInView } from 'framer-motion';
+import { useRef, useEffect, useState } from 'react';
 
-export function useCountUp(target: number, duration = 2) {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true });
+export function useCountUp(target: number) {
+  const ref = useRef<HTMLDivElement>(null);
   const [count, setCount] = useState(0);
 
   useEffect(() => {
-    if (!isInView || target === 0) return;
-    let start = 0;
-    const step = target / (duration * 60);
-    const timer = setInterval(() => {
-      start += step;
-      if (start >= target) {
-        setCount(target);
-        clearInterval(timer);
-      } else {
-        setCount(Math.floor(start));
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        const duration = 1500;
+        const startTime = Date.now();
+        const tick = () => {
+          const elapsed = Date.now() - startTime;
+          const progress = Math.min(elapsed / duration, 1);
+          const eased = 1 - Math.pow(1 - progress, 3);
+          setCount(Math.round(eased * target));
+          if (progress < 1) requestAnimationFrame(tick);
+        };
+        tick();
+        observer.disconnect();
       }
-    }, 1000 / 60);
-    return () => clearInterval(timer);
-  }, [isInView, target, duration]);
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [target]);
 
   return { ref, count };
 }

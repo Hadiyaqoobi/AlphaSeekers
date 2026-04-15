@@ -1,6 +1,9 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
+
 export function LogoTicker() {
+  const t = useTranslations('landing');
   const orgs = [
     'Khan Academy',
     'SOLA',
@@ -15,7 +18,7 @@ export function LogoTicker() {
   return (
     <section className="w-full py-16 bg-land-cream">
       <p className="text-center text-sm text-gray-400 font-medium tracking-wide uppercase mb-8">
-        Organizations advancing education access
+        {t('ticker.label')}
       </p>
       <div className="relative overflow-hidden group">
         {/* Fade edges */}

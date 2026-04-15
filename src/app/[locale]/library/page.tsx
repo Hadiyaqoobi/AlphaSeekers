@@ -1,6 +1,6 @@
 import { getTranslations } from "next-intl/server";
-import { redirect } from "next/navigation";
 
+import { LibraryComingSoon } from "@/components/coming-soon/library-coming-soon";
 import { DataCostBadge } from "@/components/data-cost-badge";
 import { LibraryForm } from "@/components/forms/library-form";
 import { SaveOfflineButton } from "@/components/save-offline-button";
@@ -17,16 +17,19 @@ export default async function LibraryPage({ params, searchParams }: LibraryPageP
   const t = await getTranslations({ locale, namespace: "library" });
   const user = await getSessionUser();
 
-  if (!user) {
-    redirect(`/${locale}/login`);
-  }
-
-  if (!user.approved && user.role !== "ADMIN") {
-    redirect(`/${locale}/pending-approval`);
-  }
-
   const query = searchParams.q ?? "";
   const items = await listLibraryResources(query);
+
+  // Show coming soon for everyone when no content exists
+  if (items.length === 0 && !user?.role?.includes("ADMIN")) {
+    return <LibraryComingSoon />;
+  }
+
+  // If there IS content but user isn't logged in, send to login
+  if (!user && items.length > 0) {
+    const { redirect } = await import("next/navigation");
+    redirect(`/${locale}/login`);
+  }
 
   return (
     <section className="mx-auto max-w-6xl px-6 py-10 lg:px-8">
@@ -40,35 +43,37 @@ export default async function LibraryPage({ params, searchParams }: LibraryPageP
         </h1>
 
         {/* Search Bar */}
-        <form className="mt-6 flex gap-3" method="GET">
-          <div className="relative flex-1">
-            <svg
-              className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-300"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2}
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+        {items.length > 0 && (
+          <form className="mt-6 flex gap-3" method="GET">
+            <div className="relative flex-1">
+              <svg
+                className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-300"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              <input
+                className="min-h-12 w-full rounded-xl border border-gray-200 bg-white py-3 pl-12 pr-4 text-sm text-gray-900 placeholder:text-gray-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                defaultValue={query}
+                name="q"
+                placeholder={t("searchPlaceholder")}
               />
-            </svg>
-            <input
-              className="min-h-12 w-full rounded-xl border border-gray-200 bg-white py-3 pl-12 pr-4 text-sm text-gray-900 placeholder:text-gray-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
-              defaultValue={query}
-              name="q"
-              placeholder={t("searchPlaceholder")}
-            />
-          </div>
-          <button
-            className="inline-flex min-h-12 items-center rounded-xl bg-emerald-600 px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
-            type="submit"
-          >
-            {t("searchButton")}
-          </button>
-        </form>
+            </div>
+            <button
+              className="inline-flex min-h-12 items-center rounded-xl bg-emerald-600 px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+              type="submit"
+            >
+              {t("searchButton")}
+            </button>
+          </form>
+        )}
       </header>
 
       {/* Admin Form */}
@@ -170,27 +175,7 @@ export default async function LibraryPage({ params, searchParams }: LibraryPageP
           ))}
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-gray-100 bg-white py-20 shadow-sm">
-          <svg
-            className="h-16 w-16 text-gray-200"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={1}
-            viewBox="0 0 24 24"
-          >
-            <path
-              d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-          <p className="mt-4 text-base font-medium text-gray-400">
-            {query ? "No resources matched your search." : "No resources available yet."}
-          </p>
-          <p className="mt-1 text-sm text-gray-300">
-            {query ? "Try a different search term." : "Check back soon for new content."}
-          </p>
-        </div>
+        <LibraryComingSoon />
       )}
     </section>
   );

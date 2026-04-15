@@ -13,8 +13,9 @@
 
 import { assertAiConfigured } from "./config";
 import { generateEmbedding } from "./embeddings";
-import { generateCompletion, streamCompletion } from "./llm";
+import { generateCompletion, streamCompletionWithFallback } from "./llm";
 import { buildNoContextMessage, buildRagMessages } from "./prompts";
+import { cacheResponse, checkCache, detectLanguage } from "./response-cache";
 import { similaritySearch, type StoredChunk } from "./vector-store";
 
 export type RagRequest = {
@@ -105,6 +106,30 @@ export function createRagStream(request: RagRequest): ReadableStream {
       const start = Date.now();
 
       try {
+        // 0. Check cache BEFORE any expensive work
+        const cached = await checkCache(request.query);
+        if (cached) {
+          if (cached.sources) {
+            try {
+              controller.enqueue(
+                encoder.encode(
+                  `data: ${JSON.stringify({ type: "sources", sources: JSON.parse(cached.sources), chunksUsed: 0 })}\n\n`,
+                ),
+              );
+            } catch { /* skip malformed sources */ }
+          }
+          controller.enqueue(
+            encoder.encode(`data: ${JSON.stringify({ type: "text", content: cached.answer })}\n\n`),
+          );
+          controller.enqueue(
+            encoder.encode(
+              `data: ${JSON.stringify({ type: "done", latencyMs: Date.now() - start, cached: true })}\n\n`,
+            ),
+          );
+          controller.close();
+          return;
+        }
+
         // 1. Embed the query
         const queryEmbedding = await generateEmbedding(request.query);
 
@@ -128,6 +153,7 @@ export function createRagStream(request: RagRequest): ReadableStream {
 
         // 4. Send sources metadata first
         const sources = deduplicateSources(chunks);
+        const sourcesJson = JSON.stringify(sources);
         controller.enqueue(
           encoder.encode(
             `data: ${JSON.stringify({ type: "sources", sources, chunksUsed: chunks.length })}\n\n`,
@@ -145,8 +171,12 @@ export function createRagStream(request: RagRequest): ReadableStream {
           })),
         });
 
-        await streamCompletion(messages, {
+        let fullAnswer = "";
+        let usedProvider = "groq";
+
+        await streamCompletionWithFallback(messages, {
           onToken(token) {
+            fullAnswer += token;
             controller.enqueue(
               encoder.encode(`data: ${JSON.stringify({ type: "text", content: token })}\n\n`),
             );
@@ -158,6 +188,20 @@ export function createRagStream(request: RagRequest): ReadableStream {
               ),
             );
             controller.close();
+
+            // Cache the response in background (fire-and-forget)
+            if (fullAnswer.length > 50) {
+              cacheResponse({
+                question: request.query,
+                questionLang: detectLanguage(request.query),
+                answer: fullAnswer,
+                sources: sourcesJson,
+                provider: usedProvider,
+              }).catch(() => {});
+            }
+          },
+          onProvider(name) {
+            usedProvider = name;
           },
           onError(error) {
             controller.enqueue(

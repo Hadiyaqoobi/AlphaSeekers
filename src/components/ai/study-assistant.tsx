@@ -154,7 +154,7 @@ export function StudyAssistant() {
     setIsStreaming(true);
 
     try {
-      const response = await fetch("/api/ai/study", {
+      const response = await fetch("/api/ai/ask", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query }),
@@ -187,11 +187,11 @@ export function StudyAssistant() {
 
           try {
             const parsed = JSON.parse(data);
-            if (parsed.type === "token" && parsed.token) {
+            if (parsed.type === "text" && parsed.content) {
               setMessages((prev) =>
                 prev.map((m) =>
                   m.id === assistantId
-                    ? { ...m, content: m.content + parsed.token }
+                    ? { ...m, content: m.content + parsed.content }
                     : m
                 )
               );
@@ -208,14 +208,13 @@ export function StudyAssistant() {
         }
       }
     } catch (error) {
+      const errorContent = (error instanceof Error && error.message.includes("429"))
+        ? "You're asking great questions! Give me a moment to catch up — try again in a few seconds."
+        : "I wasn't able to find an answer right now. This usually means the connection is slow.";
       setMessages((prev) =>
         prev.map((m) =>
           m.id === assistantId
-            ? {
-                ...m,
-                content:
-                  "I'm sorry, I couldn't process your question right now. Please try again or check your connection.",
-              }
+            ? { ...m, content: `__ERROR__${errorContent}__QUERY__${query}` }
             : m
         )
       );
@@ -280,7 +279,10 @@ export function StudyAssistant() {
           </div>
           <div>
             <h2 className="text-base font-bold text-slate-900">{t("title")}</h2>
-            <p className="text-xs text-slate-500">{t("poweredBy")}</p>
+            <div className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" style={{ boxShadow: '0 0 6px rgba(52,208,126,0.5)' }} />
+              <span className="text-xs text-emerald-600">Online</span>
+            </div>
           </div>
         </div>
         {messages.length > 0 && (
@@ -339,7 +341,21 @@ export function StudyAssistant() {
                       : "bg-slate-50 text-slate-800 rounded-2xl rounded-bl-md px-5 py-4 border border-slate-100"
                   }`}
                 >
-                  {message.role === "assistant" && message.content ? (
+                  {message.role === "assistant" && message.content?.startsWith("__ERROR__") ? (
+                    (() => {
+                      const errorText = message.content.split("__QUERY__")[0].replace("__ERROR__", "");
+                      const originalQuery = message.content.split("__QUERY__")[1] || "";
+                      return (
+                        <div className="bg-amber-50 border border-amber-100 rounded-2xl rounded-bl-md px-5 py-4">
+                          <p className="text-sm text-amber-800">{errorText}</p>
+                          <div className="mt-3 flex gap-2">
+                            <button onClick={() => handleSubmit(originalQuery)} className="text-xs font-medium text-amber-700 hover:text-amber-900 bg-amber-100 px-3 py-1.5 rounded-lg transition-colors">Try again</button>
+                            <button onClick={() => inputRef.current?.focus()} className="text-xs font-medium text-amber-600 hover:text-amber-800 px-3 py-1.5 rounded-lg transition-colors">Ask differently</button>
+                          </div>
+                        </div>
+                      );
+                    })()
+                  ) : message.role === "assistant" && message.content ? (
                     <>
                       {/* Rendered markdown content */}
                       <div

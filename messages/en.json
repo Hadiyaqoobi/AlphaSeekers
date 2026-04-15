@@ -22,7 +22,8 @@
     "logout": "Log out",
     "brandTagline": "Free education for Afghan students",
     "networkBadge": "",
-    "aiTutor": "AI Tutor"
+    "aiTutor": "AI Tutor",
+    "team": "Team"
   },
   "home": {
     "eyebrow": "Free classes for Afghan students",
@@ -297,6 +298,138 @@
       }
     }
   },
+  "landing": {
+    "nav": {
+      "home": "Home",
+      "programs": "Programs",
+      "howItWorks": "How It Works",
+      "faq": "FAQ"
+    },
+    "hero": {
+      "subtitle": "Free online classes for Afghan students, taught by volunteer teachers from around the world. Powered by AI. Built for low-bandwidth connections.",
+      "pill": "Free education for Afghan students",
+      "floatBadge1Title": "Worldwide",
+      "floatBadge1Sub": "volunteer teachers",
+      "floatBadge2Title": "Growing community",
+      "floatBadge2Sub": "students across Afghanistan"
+    },
+    "ticker": {
+      "label": "Organizations advancing education access"
+    },
+    "pipeline": {
+      "kicker": "The Student Journey",
+      "title": "From sign-up to your first live class",
+      "subtitle": "No fees. No complicated setup. Join a global classroom in minutes.",
+      "steps": [
+        { "title": "Request access", "desc": "Sign up in 30 seconds" },
+        { "title": "Get approved", "desc": "Safe, vetted community" },
+        { "title": "Browse classes", "desc": "Languages, arts, and skills" },
+        { "title": "Enroll", "desc": "One tap to join" },
+        { "title": "Join live class", "desc": "Google Meet, one tap" }
+      ]
+    },
+    "features": {
+      "kicker": "Platform",
+      "title": "Built for learning, designed for Afghanistan",
+      "subtitle": "Every feature exists because a real student needed it.",
+      "tabs": [
+        {
+          "title": "Live classes via Google Meet",
+          "desc": "Students join live classes taught by volunteer teachers across multiple time zones. WhatsApp reminders ensure nobody misses a session. One tap from the dashboard opens Google Meet directly."
+        },
+        {
+          "title": "AI study assistant",
+          "desc": "A bilingual AI tutor that answers student questions using actual course materials. Powered by a RAG pipeline with vector search, it responds in Dari or English and streams answers in real-time. Built to work on 2G connections."
+        },
+        {
+          "title": "Opportunities & library",
+          "desc": "Browse curated scholarships, internships, and grants. Download free reading materials as PDFs for offline study during power outages."
+        },
+        {
+          "title": "Offline-first design",
+          "desc": "Class schedules are cached locally. Forms auto-save during power outages. The entire platform works on a 2G connection with a $50 Android phone. Every kilobyte is accounted for."
+        }
+      ]
+    },
+    "mission": {
+      "kicker": "Our Mission",
+      "title": "Education is a right, not a privilege",
+      "body": "When Afghan students lost access to education, we built a classroom that fits in a pocket. Free forever. Open to every student who wants to learn.",
+      "pills": ["100% Free", "Bilingual (Dari + English)", "$0/month infrastructure", "AI-powered study assistant"]
+    },
+    "howItWorks": {
+      "kicker": "How It Works",
+      "title": "Start learning in three steps",
+      "subtitle": "No fees, no complicated setup. Just sign up and join a class.",
+      "steps": [
+        {
+          "num": "1",
+          "title": "Request access",
+          "desc": "Sign up as a student or volunteer teacher. Your account is reviewed to keep the community safe."
+        },
+        {
+          "num": "2",
+          "title": "Browse and enroll",
+          "desc": "Explore classes in languages, arts, and professional skills. Enroll in any class with one tap."
+        },
+        {
+          "num": "3",
+          "title": "Join live classes",
+          "desc": "Get a WhatsApp reminder before each session. Tap to join Google Meet directly from your phone."
+        }
+      ],
+      "mockup": {
+        "welcomeBack": "Welcome back \ud83d\udc4b",
+        "myClasses": "My Classes",
+        "classes": "Classes",
+        "today": "Today",
+        "todayValue": "2 sessions",
+        "mockClassNames": ["English A2", "Graphic Design", "Career Skills"],
+        "mockTimes": ["Tue 6:00 PM", "Wed 4:00 PM", "Thu 5:30 PM"]
+      }
+    },
+    "aiShowcase": {
+      "kicker": "Powered by AI",
+      "title": "An intelligent tutor that speaks your language",
+      "subtitle": "Ask a question in Dari or English. Get an answer grounded in your course materials. In real-time.",
+      "chatHeader": "AI Study Assistant",
+      "chatOnline": "Online",
+      "chatPlaceholder": "Ask about your course materials...",
+      "chatSource": "Sources",
+      "sourceText": "Chapter 3: Plant Biology",
+      "features": [
+        { "title": "Bilingual", "desc": "Responds in Dari or English automatically" },
+        { "title": "Grounded", "desc": "Answers only from your course materials" },
+        { "title": "Real-time", "desc": "Streams responses word by word" },
+        { "title": "Private", "desc": "No student data sent to external services" }
+      ]
+    },
+    "ctaBanner": {
+      "headline": "The classroom of the future is free",
+      "subtitle": "Whether you want to learn or teach, there's a place for you.",
+      "ctaStudent": "Start learning",
+      "ctaDashboard": "Go to dashboard",
+      "ctaVolunteer": "Become a volunteer"
+    },
+    "footer": {
+      "brandDesc": "Free online education for Afghan students, taught by volunteer teachers from around the world.",
+      "colPrograms": "Programs",
+      "colAbout": "About",
+      "colResources": "Resources",
+      "onlineClasses": "Online Classes",
+      "webinars": "Webinars",
+      "opportunities": "Opportunities",
+      "library": "Library",
+      "ourMission": "Our Mission",
+      "howItWorks": "How It Works",
+      "team": "Our Team",
+      "volunteer": "Volunteer",
+      "aiAssistant": "AI Study Assistant",
+      "faq": "FAQ",
+      "copyright": "AlphaSeekers",
+      "missionLine": "Built for Afghan students. Built for slow internet. Built with purpose."
+    }
+  },
   "login": {
     "eyebrow": "Access",
     "title": "Log in",
@@ -487,7 +620,15 @@
     "registeredBadge": "Registered",
     "registerButton": "Register",
     "registeredStatus": "Registered",
-    "registrationFailed": "Registration failed"
+    "registrationFailed": "Registration failed",
+    "comingSoon": {
+      "kicker": "Coming Soon",
+      "title": "Live webinars are coming",
+      "body": "We are organizing sessions with guest speakers on careers, health, and personal growth — open to all students.",
+      "pill1": "Guest Speakers",
+      "pill2": "Career Workshops",
+      "pill3": "Live Q&A Sessions"
+    }
   },
   "opportunities": {
     "title": "Opportunities",
@@ -518,7 +659,15 @@
     "fileSizeUnavailable": "File size unavailable",
     "downloadPdf": "Download PDF",
     "fileUnavailable": "File unavailable",
-    "openExternalLink": "Open external link"
+    "openExternalLink": "Open external link",
+    "comingSoon": {
+      "kicker": "Coming Soon",
+      "title": "The Library is on its way",
+      "body": "We are building a collection of textbooks, research papers, and study guides — all free and downloadable for offline use.",
+      "pill1": "Textbooks & Guides",
+      "pill2": "Research Papers",
+      "pill3": "Offline Downloads"
+    }
   },
   "error": {
     "title": "Something went wrong",
@@ -530,6 +679,17 @@
     "title": "Page not found",
     "body": "The page you are looking for does not exist.",
     "goHome": "Go home"
+  },
+  "team": {
+    "kicker": "Our Team",
+    "title": "The people behind AlphaSeekers",
+    "subtitle": "A small team building something that matters. Five people, one mission: free education for every Afghan student who wants to learn.",
+    "spotlightBadge": "Founder & CEO",
+    "teamGridTitle": "The team",
+    "ctaTitle": "Want to be part of the mission?",
+    "ctaBody": "We are always looking for volunteer teachers and team members who believe in accessible education.",
+    "ctaVolunteer": "Become a volunteer teacher",
+    "ctaJoin": "Join the team"
   },
   "teacherClasses": {
     "title": "My Classes",

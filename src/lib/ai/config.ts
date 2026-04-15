@@ -5,13 +5,15 @@
  * Follows the same pattern as the main runtime.ts configuration.
  *
  * Providers:
- *   LLM:        Groq (OpenAI-compatible) — free tier: 14,400 req/day
- *   Embeddings: HuggingFace Inference API — free tier: rate-limited
- *   Vector DB:  pgvector on PostgreSQL/Neon — free tier supports extension
+ *   LLM (primary):  Groq (OpenAI-compatible) — free tier: 14,400 req/day
+ *   LLM (fallback): Google AI Studio (Gemma) — free tier: 10 RPM
+ *   Embeddings:     HuggingFace Inference API — free tier: rate-limited
+ *   Vector DB:      pgvector on PostgreSQL/Neon — free tier supports extension
  */
 
 export const aiConfig = (() => {
   const groqApiKey = process.env.GROQ_API_KEY ?? "";
+  const gemmaApiKey = process.env.GEMMA_API_KEY ?? "";
   const hfApiToken = process.env.HF_API_TOKEN ?? "";
 
   return {
@@ -20,6 +22,11 @@ export const aiConfig = (() => {
       baseUrl: process.env.GROQ_BASE_URL ?? "https://api.groq.com/openai/v1",
       model: process.env.GROQ_MODEL ?? "llama-3.1-8b-instant",
       configured: groqApiKey.length > 0,
+    },
+    gemma: {
+      apiKey: gemmaApiKey,
+      model: process.env.GEMMA_MODEL ?? "gemma-3-27b-it",
+      configured: gemmaApiKey.length > 0,
     },
     embeddings: {
       apiToken: hfApiToken,

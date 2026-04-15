@@ -240,20 +240,40 @@ This creates a **continuous improvement loop** where:
 | Frontend | React + Next.js | SSR for initial load, client-side streaming |
 | Caching | In-memory (demo mode) | Fallback when DB is unavailable |
 
-## Future Improvements
+## Multi-Provider Fallback
+
+The system uses a fallback chain to ensure zero-downtime AI responses:
+
+| Priority | Provider | Model | Cost |
+|----------|----------|-------|------|
+| Cache | Local DB (CachedResponse) | Pre-computed | $0 |
+| Primary | Groq | Llama 3.1 8B Instant | $0/mo (free tier) |
+| Fallback | Google AI Studio | Gemma 3 27B | $0/mo (free tier) |
+
+If Groq fails (rate limit, network, 500), Gemma is tried automatically.
+If both fail, the student sees a friendly retry message.
+
+## Response Caching
+
+Common questions are cached after first answer. Cache lookup uses
+SHA-256 hash of the normalized question text. Cache is self-healing:
+entries with quality scores below 0.3 (from student thumbs-down feedback)
+are automatically removed. Cache is invalidated when course materials
+are updated.
+
+## Admin AI Dashboard
+
+Available at `/admin/ai`. Shows:
+- Provider status (Groq, Gemma, HuggingFace) with configuration state
+- Response cache statistics (total entries, hit count, average quality)
+- RAG configuration parameters
+
+## Future Roadmap
 
 1. **Hybrid search**: Combine vector similarity with BM25 keyword matching
-   for better recall on exact terminology queries.
-
-2. **Query rewriting**: Use LLM to rephrase student questions for better
-   retrieval (e.g., "what is photosynthesis?" → "definition process
-   photosynthesis plants energy sunlight").
-
-3. **Conversation memory**: Include previous Q&A pairs in the prompt for
-   multi-turn context awareness.
-
-4. **Response caching**: Cache common queries to reduce API calls and
-   improve latency for frequently asked questions.
-
-5. **Model evaluation**: Automated evaluation pipeline using LLM-as-judge
-   to score response quality against reference answers.
+2. **Query rewriting**: LLM-powered question rephrasing for better retrieval
+3. **Multi-turn conversation memory**: AIConversation model is ready (schema added)
+4. **Fine-tune Gemma** on AlphaSeekers curriculum (LoRA on Colab)
+5. **On-device Gemma** for mobile app (offline AI)
+6. **Vector similarity cache**: Catch rephrased versions of cached questions
+7. **Automated quality evaluation**: LLM-as-judge scoring pipeline

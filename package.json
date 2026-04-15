@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "clean": "node -e \"const fs=require('fs'); fs.rmSync('.next',{recursive:true,force:true,maxRetries:20,retryDelay:50});\"",
-    "dev": "sh -c 'PORT=${PORT:-3005}; npx -p node@20.18.1 node ./node_modules/.bin/next dev -p $PORT'",
+    "dev": "sh -c 'PORT=${PORT:-3005}; node -e \"require(\\\"fs\\\").rmSync(\\\".next/cache\\\",{recursive:true,force:true})\" 2>/dev/null; npx -p node@20.18.1 node ./node_modules/.bin/next dev -p $PORT'",
     "build": "npx -p node@20.18.1 node ./node_modules/.bin/next build --no-lint",
     "start": "npx -p node@20.18.1 node ./node_modules/.bin/next start",
     "lint": "npx -p node@20.18.1 node ./node_modules/.bin/next lint",
@@ -20,7 +20,7 @@
     "@fontsource/outfit": "^5.2.8",
     "@prisma/client": "^6.19.2",
     "@vercel/analytics": "^1.6.1",
-    "framer-motion": "^12.34.0",
+    "framer-motion": "^11.18.2",
     "googleapis": "^144.0.0",
     "has-symbols": "^1.0.3",
     "imapflow": "^1.2.16",

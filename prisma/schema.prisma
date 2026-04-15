@@ -284,3 +284,33 @@ model DocumentChunk {
 
   @@index([sourceType, sourceId])
 }
+
+// ─── AI Response Cache ───
+
+model CachedResponse {
+  id            String    @id @default(cuid())
+  questionHash  String    @unique
+  questionText  String
+  questionLang  String    @default("en")
+  answer        String    @db.Text
+  sources       String?   @db.Text
+  provider      String
+  quality       Float?
+  hitCount      Int       @default(0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  expiresAt     DateTime?
+}
+
+// ─── AI Conversation Memory (foundation for future multi-turn) ───
+
+model AIConversation {
+  id        String   @id @default(cuid())
+  userId    String
+  sessionId String
+  messages  Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, sessionId])
+}

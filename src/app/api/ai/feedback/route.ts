@@ -12,6 +12,7 @@
 
 import { NextResponse } from "next/server";
 
+import { updateCacheQuality } from "@/lib/ai/response-cache";
 import { getSessionUser } from "@/lib/security/session";
 
 type FeedbackPayload = {
@@ -54,15 +55,10 @@ export async function POST(request: Request) {
     }),
   );
 
-  // TODO: In production, persist to database:
-  // await prisma.aiFeedback.create({
-  //   data: {
-  //     userId: user.id,
-  //     messageId: body.messageId,
-  //     rating: body.rating,
-  //     comment: body.comment,
-  //   },
-  // });
+  // Update cache quality based on feedback (fire-and-forget)
+  if (body.comment) {
+    updateCacheQuality(body.comment, body.rating).catch(() => {});
+  }
 
   return NextResponse.json({ success: true });
 }

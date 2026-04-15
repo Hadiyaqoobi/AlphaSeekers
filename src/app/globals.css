@@ -1323,3 +1323,17 @@ h4 {
 :has(.landing-page) > [data-locale] {
   background-color: transparent !important;
 }
+
+/* ============================================================
+   Hydration safety net — ensure landing content is visible
+   even if React fails to hydrate (e.g. browser extension clash).
+   After 2s, force opacity to 1 on all animated landing elements.
+   ============================================================ */
+@keyframes force-visible {
+  to { opacity: 1; transform: none; }
+}
+
+.landing-page section,
+.landing-page section > div {
+  animation: force-visible 0s 2s forwards;
+}

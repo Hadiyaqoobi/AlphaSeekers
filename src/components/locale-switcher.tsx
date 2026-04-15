@@ -19,11 +19,11 @@ export function LocaleSwitcher({ currentLocale }: LocaleSwitcherProps) {
 
   return (
     <Link
-      aria-label={`Switch language to ${nextLocale === "fa" ? "Farsi" : "English"}`}
+      aria-label={`Switch language to ${nextLocale === "fa" ? "Dari" : "English"}`}
       className="btn-primary"
       href={nextPath}
     >
-      {nextLocale.toUpperCase()}
+      {nextLocale === "fa" ? "دری" : "EN"}
     </Link>
   );
 }

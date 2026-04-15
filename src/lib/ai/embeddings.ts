@@ -11,7 +11,7 @@ import { retryWithBackoff } from "@/lib/retry";
 
 import { aiConfig } from "./config";
 
-const HF_INFERENCE_URL = "https://api-inference.huggingface.co/pipeline/feature-extraction";
+const HF_INFERENCE_URL = "https://router.huggingface.co/hf-inference/models";
 
 /**
  * Generate an embedding vector for a single text input.
@@ -24,7 +24,7 @@ export async function generateEmbedding(text: string): Promise<number[]> {
   }
 
   const response = await retryWithBackoff(async () => {
-    const res = await fetch(`${HF_INFERENCE_URL}/${model}`, {
+    const res = await fetch(`${HF_INFERENCE_URL}/${model}/pipeline/feature-extraction`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiToken}`,

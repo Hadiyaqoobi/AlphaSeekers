@@ -1,5 +1,4 @@
 import { getTranslations } from "next-intl/server";
-
 import { getSessionUser } from "@/lib/security/session";
 import { LandingShell } from "@/components/landing/LandingShell";
 

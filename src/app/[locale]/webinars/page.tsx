@@ -1,6 +1,7 @@
 import { getTranslations } from "next-intl/server";
 import { redirect } from "next/navigation";
 
+import { WebinarsComingSoon } from "@/components/coming-soon/webinars-coming-soon";
 import { formatDateTime } from "@/lib/format-date";
 import { WebinarForm } from "@/components/forms/webinar-form";
 import { WebinarRegisterButton } from "@/components/forms/webinar-register-button";
@@ -16,15 +17,17 @@ export default async function WebinarsPage({ params }: WebinarsPageProps) {
   const t = await getTranslations({ locale, namespace: "webinars" });
   const user = await getSessionUser();
 
-  if (!user) {
+  const items = await listWebinars();
+
+  // Show coming soon for everyone when no content exists
+  if (items.length === 0 && !user?.role?.includes("ADMIN")) {
+    return <WebinarsComingSoon />;
+  }
+
+  // If there IS content but user isn't logged in, send to login
+  if (!user && items.length > 0) {
     redirect(`/${locale}/login`);
   }
-
-  if (!user.approved && user.role !== "ADMIN") {
-    redirect(`/${locale}/pending-approval`);
-  }
-
-  const items = await listWebinars();
   const registeredIds = user ? new Set(await listRegisteredWebinarIds(user.id)) : new Set<string>();
 
   return (
@@ -126,25 +129,7 @@ export default async function WebinarsPage({ params }: WebinarsPageProps) {
           ))}
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-gray-100 bg-white py-20 shadow-sm">
-          <svg
-            className="h-16 w-16 text-gray-200"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={1}
-            viewBox="0 0 24 24"
-          >
-            <path
-              d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-          <p className="mt-4 text-base font-medium text-gray-400">
-            No webinars scheduled yet.
-          </p>
-          <p className="mt-1 text-sm text-gray-300">Check back soon for upcoming sessions.</p>
-        </div>
+        <WebinarsComingSoon />
       )}
     </section>
   );

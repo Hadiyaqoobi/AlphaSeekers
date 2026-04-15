@@ -26,16 +26,13 @@ export default async function OpportunitiesPage({ params, searchParams }: Opport
   const t = await getTranslations({ locale, namespace: "opportunities" });
   const user = await getSessionUser();
 
-  if (!user) {
-    redirect(`/${locale}/login`);
-  }
-
-  if (!user.approved && user.role !== "ADMIN") {
-    redirect(`/${locale}/pending-approval`);
-  }
-
   const currentType = searchParams.type ?? "ALL";
   const items = await listOpportunities(currentType === "ALL" ? undefined : currentType);
+
+  // Allow unauthenticated users to see the page (content or empty state)
+  if (!user && items.length > 0) {
+    redirect(`/${locale}/login`);
+  }
 
   return (
     <section className="mx-auto max-w-6xl px-6 py-10 lg:px-8">

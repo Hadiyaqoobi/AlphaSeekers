@@ -2,6 +2,7 @@
 
 import { ScrollReveal } from './ScrollReveal';
 import { useCountUp } from './CountUp';
+import { useTranslations } from 'next-intl';
 
 type MissionSectionProps = {
   /** Pass real counts from the database. If 0 or missing, mission mode is shown. */
@@ -27,6 +28,7 @@ function StatCard({ value, suffix, label }: { value: number; suffix: string; lab
 }
 
 export function MissionSection({ studentCount = 0, teacherCount = 0, countryCount = 0, classCount = 0 }: MissionSectionProps) {
+  const t = useTranslations('landing');
   const hasRealData = studentCount > 0 || teacherCount > 0;
 
   return (
@@ -47,25 +49,25 @@ export function MissionSection({ studentCount = 0, teacherCount = 0, countryCoun
           <ScrollReveal>
             <div className="text-center max-w-3xl mx-auto">
               <p className="text-land-green-400 text-sm font-semibold uppercase tracking-[0.15em] mb-4">
-                Our Mission
+                {t('mission.kicker')}
               </p>
               <h2
                 className="text-4xl lg:text-5xl font-bold text-white tracking-tight"
                 style={{ fontFamily: 'var(--font-landing), var(--font-display-latin), sans-serif' }}
               >
-                Education is a right, not a privilege
+                {t('mission.title')}
               </h2>
               <p className="text-lg text-white/55 max-w-2xl mx-auto leading-relaxed mt-6">
-                When Afghan students lost access to education, we built a classroom that fits in a pocket. Free forever. Open to every student who wants to learn.
+                {t('mission.body')}
               </p>
 
               {/* Feature pills */}
               <div className="mt-10 flex flex-wrap justify-center gap-3">
                 {[
-                  '100% Free',
-                  'Bilingual (Dari + English)',
-                  '$0/month infrastructure',
-                  'AI-powered study assistant',
+                  t('mission.pills.0'),
+                  t('mission.pills.1'),
+                  t('mission.pills.2'),
+                  t('mission.pills.3'),
                 ].map((pill) => (
                   <span
                     key={pill}
