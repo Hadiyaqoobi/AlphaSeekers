@@ -12,7 +12,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "AlphaSeekers",
-  description: "Free education platform for Afghan girls",
+  description: "Free education platform for Afghan students",
 };
 
 export default function RootLayout({

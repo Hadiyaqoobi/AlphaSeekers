@@ -28,7 +28,7 @@ export function Footer({ locale, signedIn }: FooterProps) {
               </span>
             </div>
             <p className="text-sm text-white/40 max-w-xs leading-relaxed">
-              Free online education for Afghan girls, taught by volunteer teachers from around the world.
+              Free online education for Afghan students, taught by volunteer teachers from around the world.
             </p>
           </div>
 
@@ -36,10 +36,10 @@ export function Footer({ locale, signedIn }: FooterProps) {
           <div>
             <h4 className="text-xs font-semibold text-white/30 uppercase tracking-widest mb-4">Programs</h4>
             <ul className="space-y-2.5">
-              <li><Link className="text-sm text-white/50 hover:text-white/80 transition-colors" href={gatedHref(`/${locale}/classes`)}>Online Classes</Link></li>
-              <li><Link className="text-sm text-white/50 hover:text-white/80 transition-colors" href={gatedHref(`/${locale}/webinars`)}>Webinars</Link></li>
-              <li><Link className="text-sm text-white/50 hover:text-white/80 transition-colors" href={gatedHref(`/${locale}/opportunities`)}>Opportunities</Link></li>
-              <li><Link className="text-sm text-white/50 hover:text-white/80 transition-colors" href={gatedHref(`/${locale}/library`)}>Library</Link></li>
+              <li><FooterLink href={gatedHref(`/${locale}/classes`)}>Online Classes</FooterLink></li>
+              <li><FooterLink href={gatedHref(`/${locale}/webinars`)}>Webinars</FooterLink></li>
+              <li><FooterLink href={gatedHref(`/${locale}/opportunities`)}>Opportunities</FooterLink></li>
+              <li><FooterLink href={gatedHref(`/${locale}/library`)}>Library</FooterLink></li>
             </ul>
           </div>
 
@@ -47,9 +47,9 @@ export function Footer({ locale, signedIn }: FooterProps) {
           <div>
             <h4 className="text-xs font-semibold text-white/30 uppercase tracking-widest mb-4">About</h4>
             <ul className="space-y-2.5">
-              <li><Link className="text-sm text-white/50 hover:text-white/80 transition-colors" href={`/${locale}#workflow`}>Our Mission</Link></li>
-              <li><Link className="text-sm text-white/50 hover:text-white/80 transition-colors" href={`/${locale}#how-it-works`}>How It Works</Link></li>
-              <li><Link className="text-sm text-white/50 hover:text-white/80 transition-colors" href={`/${locale}/register`}>Volunteer</Link></li>
+              <li><FooterLink href={`/${locale}#workflow`}>Our Mission</FooterLink></li>
+              <li><FooterLink href={`/${locale}#how-it-works`}>How It Works</FooterLink></li>
+              <li><FooterLink href={`/${locale}/register`}>Volunteer</FooterLink></li>
             </ul>
           </div>
 
@@ -57,8 +57,8 @@ export function Footer({ locale, signedIn }: FooterProps) {
           <div>
             <h4 className="text-xs font-semibold text-white/30 uppercase tracking-widest mb-4">Resources</h4>
             <ul className="space-y-2.5">
-              <li><Link className="text-sm text-white/50 hover:text-white/80 transition-colors" href={gatedHref(`/${locale}/study-assistant`)}>AI Study Assistant</Link></li>
-              <li><Link className="text-sm text-white/50 hover:text-white/80 transition-colors" href={`/${locale}#faq`}>FAQ</Link></li>
+              <li><FooterLink href={gatedHref(`/${locale}/study-assistant`)}>AI Study Assistant</FooterLink></li>
+              <li><FooterLink href={`/${locale}#faq`}>FAQ</FooterLink></li>
             </ul>
           </div>
         </div>
@@ -67,10 +67,23 @@ export function Footer({ locale, signedIn }: FooterProps) {
         <div className="mt-12 pt-6 border-t border-white/[0.06] flex flex-col sm:flex-row justify-between items-center gap-4">
           <p className="text-xs text-white/25">© {new Date().getFullYear()} AlphaSeekers</p>
           <p className="text-xs text-white/25 italic">
-            Built for Afghan girls. Built for slow internet. Built with purpose.
+            Built for Afghan students. Built for slow internet. Built with purpose.
           </p>
         </div>
       </div>
     </footer>
+  );
+}
+
+/* Footer link with sliding underline on hover */
+function FooterLink({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <Link
+      className="relative text-sm text-white/50 hover:text-white/80 transition-colors inline-block group"
+      href={href}
+    >
+      {children}
+      <span className="absolute left-0 -bottom-0.5 w-full h-[1px] bg-white/40 origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-300" />
+    </Link>
   );
 }

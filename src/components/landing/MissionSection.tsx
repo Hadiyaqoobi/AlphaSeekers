@@ -56,7 +56,7 @@ export function MissionSection({ studentCount = 0, teacherCount = 0, countryCoun
                 Education is a right, not a privilege
               </h2>
               <p className="text-lg text-white/55 max-w-2xl mx-auto leading-relaxed mt-6">
-                When Afghan girls were banned from school, we built a classroom that fits in a pocket. Free forever. Open to every girl who wants to learn.
+                When Afghan students lost access to education, we built a classroom that fits in a pocket. Free forever. Open to every student who wants to learn.
               </p>
 
               {/* Feature pills */}

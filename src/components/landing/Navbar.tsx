@@ -53,6 +53,7 @@ export function Navbar({ locale, signedIn, loginLabel, registerLabel }: NavbarPr
             ? 'bg-white/90 backdrop-blur-xl shadow-[0_1px_3px_rgba(0,0,0,0.06)] border-b border-black/[0.04]'
             : 'bg-transparent border-b border-transparent'
         }`}
+        style={{ animation: 'fade-in-down 0.6s cubic-bezier(0.16,1,0.3,1) 0.2s both' }}
       >
         <div className="mx-auto max-w-7xl px-6 lg:px-8 h-full flex items-center justify-between">
           {/* Logo */}

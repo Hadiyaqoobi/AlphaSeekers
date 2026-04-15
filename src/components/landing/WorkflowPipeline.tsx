@@ -31,6 +31,10 @@ const steps = [
   },
 ];
 
+// Sequential step animation: each step appears 0.5s after the previous
+const stepDelay = (i: number) => 0.3 + i * 0.5;
+const lineDelay = (i: number) => 0.3 + i * 0.5 + 0.15;
+
 export function WorkflowPipeline() {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: '-100px' });
@@ -58,7 +62,7 @@ export function WorkflowPipeline() {
         <div ref={ref} className="relative">
           {/* Desktop: horizontal */}
           <div className="hidden lg:grid lg:grid-cols-5 lg:gap-0 relative">
-            {/* Connecting lines */}
+            {/* Connecting lines — draw sequentially */}
             {[0, 1, 2, 3].map((i) => (
               <div
                 key={`line-${i}`}
@@ -68,7 +72,7 @@ export function WorkflowPipeline() {
                   width: 'calc(20%)',
                   transform: isInView ? 'scaleX(1)' : 'scaleX(0)',
                   transformOrigin: 'left',
-                  transition: `transform 0.4s cubic-bezier(0.16,1,0.3,1) ${0.3 + i * 0.2}s`,
+                  transition: `transform 0.4s cubic-bezier(0.16,1,0.3,1) ${lineDelay(i)}s`,
                 }}
               />
             ))}
@@ -79,20 +83,29 @@ export function WorkflowPipeline() {
                 className="flex flex-col items-center text-center relative z-10"
                 initial={{ opacity: 0, y: 20 }}
                 animate={isInView ? { opacity: 1, y: 0 } : {}}
-                transition={{ delay: i * 0.15, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                transition={{ delay: stepDelay(i), duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
               >
-                <div
-                  className="w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-500"
+                {/* Icon with scale pulse + glow */}
+                <motion.div
+                  className="w-16 h-16 rounded-2xl flex items-center justify-center transition-colors duration-500"
+                  initial={{ scale: 0.8 }}
+                  animate={isInView ? { scale: [0.8, 1.1, 1] } : {}}
+                  transition={{
+                    delay: stepDelay(i),
+                    duration: 0.4,
+                    ease: [0.34, 1.56, 0.64, 1],
+                  }}
                   style={{
                     background: isInView ? 'rgba(29,185,100,0.1)' : 'rgba(255,255,255,0.05)',
                     border: `1px solid ${isInView ? 'rgba(29,185,100,0.4)' : 'rgba(255,255,255,0.1)'}`,
-                    transitionDelay: `${i * 0.15}s`,
+                    boxShadow: isInView ? '0 0 20px rgba(29,185,100,0.15)' : 'none',
+                    transitionDelay: `${stepDelay(i)}s`,
                   }}
                 >
                   <svg className="w-7 h-7 text-land-green-400" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d={step.icon} />
                   </svg>
-                </div>
+                </motion.div>
                 <p className="text-white text-sm font-semibold mt-4">{step.title}</p>
                 <p className="text-white/40 text-xs mt-1 max-w-[140px]">{step.desc}</p>
               </motion.div>
@@ -107,16 +120,25 @@ export function WorkflowPipeline() {
                 className="flex items-start gap-5"
                 initial={{ opacity: 0, y: 20 }}
                 animate={isInView ? { opacity: 1, y: 0 } : {}}
-                transition={{ delay: i * 0.1, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                transition={{ delay: i * 0.15, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
               >
                 <div className="flex flex-col items-center">
-                  <div className="w-14 h-14 rounded-2xl bg-land-green-600/10 border border-land-green-500/30 flex items-center justify-center flex-shrink-0">
+                  <div
+                    className="w-14 h-14 rounded-2xl bg-land-green-600/10 border border-land-green-500/30 flex items-center justify-center flex-shrink-0"
+                    style={{ boxShadow: isInView ? '0 0 16px rgba(29,185,100,0.12)' : 'none' }}
+                  >
                     <svg className="w-6 h-6 text-land-green-400" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" d={step.icon} />
                     </svg>
                   </div>
                   {i < steps.length - 1 && (
-                    <div className="w-[2px] h-8 bg-land-green-500/20 mt-2" />
+                    <div
+                      className="w-[2px] h-8 bg-land-green-500/20 mt-2 origin-top"
+                      style={{
+                        transform: isInView ? 'scaleY(1)' : 'scaleY(0)',
+                        transition: `transform 0.3s ease ${0.15 * i + 0.2}s`,
+                      }}
+                    />
                   )}
                 </div>
                 <div className="pt-3">

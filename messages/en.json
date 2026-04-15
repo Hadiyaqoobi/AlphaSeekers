@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "AlphaSeekers",
-    "description": "Free education for Afghan girls"
+    "description": "Free education for Afghan students"
   },
   "nav": {
     "home": "Home",
@@ -20,14 +20,14 @@
     "login": "Log in",
     "register": "Request access",
     "logout": "Log out",
-    "brandTagline": "Free education for Afghan girls",
+    "brandTagline": "Free education for Afghan students",
     "networkBadge": "",
     "aiTutor": "AI Tutor"
   },
   "home": {
-    "eyebrow": "Free classes for Afghan girls",
+    "eyebrow": "Free classes for Afghan students",
     "title": "AlphaSeekers",
-    "subtitle": "Free online classes for Afghan girls, run by volunteer teachers from around the world.",
+    "subtitle": "Free online classes for Afghan students, run by volunteer teachers from around the world.",
     "ctaClasses": "Browse classes",
     "ctaLogin": "Log in",
     "ctaDashboard": "Live dashboard",
@@ -232,7 +232,7 @@
       "items": {
         "access": {
           "q": "Who can join AlphaSeekers?",
-          "a": "AlphaSeekers supports Afghan girls seeking free education. Access is reviewed to protect students and teachers."
+          "a": "AlphaSeekers supports Afghan students seeking free education. Access is reviewed to protect students and teachers."
         },
         "privacy": {
           "q": "Will my information be public?",
@@ -250,7 +250,7 @@
     },
     "footer": "AlphaSeekers is run by volunteers. All classes are free.",
     "hero": {
-      "headline1": "Every Afghan girl",
+      "headline1": "Every Afghan student",
       "headline2": "deserves to",
       "highlightWord": "learn",
       "getStarted": "Get started",

@@ -15,7 +15,7 @@ export function LogoTicker() {
   return (
     <section className="w-full py-16 bg-land-cream">
       <p className="text-center text-sm text-gray-400 font-medium tracking-wide uppercase mb-8">
-        Organizations advancing girls&apos; education
+        Organizations advancing education access
       </p>
       <div className="relative overflow-hidden group">
         {/* Fade edges */}

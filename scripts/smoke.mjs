@@ -247,12 +247,12 @@ async function main() {
     const fa = await expectOkHtml(null, "/fa");
     assert(fa.includes('dir="rtl"'), "Expected /fa to render RTL");
     assert(fa.includes("خانه"), "Expected /fa to render Persian nav");
-    assert(fa.includes("آموزش رایگان برای دختران افغان"), "Expected /fa to include Persian tagline");
+    assert(fa.includes("آموزش رایگان برای دانش\u200cآموزان افغان"), "Expected /fa to include Persian tagline");
 
     const en = await expectOkHtml(null, "/en");
     assert(en.includes('dir="ltr"'), "Expected /en to render LTR");
     assert(en.includes(">Home<"), "Expected /en to render English nav");
-    assert(en.includes("Free education for Afghan girls"), "Expected /en to include English tagline");
+    assert(en.includes("Free education for Afghan students"), "Expected /en to include English tagline");
     assert(!en.includes("خانه"), "Expected /en not to include Persian nav strings");
   });
 

@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 
 import { Navbar } from '@/components/landing/Navbar';
 import { Hero } from '@/components/landing/Hero';
@@ -75,14 +74,14 @@ export function LandingShell(props: Props) {
             <div className="max-w-xl">
               <span className="inline-flex items-center gap-2.5 rounded-full bg-land-green-600/15 border border-land-green-500/25 px-5 py-2 text-sm font-medium text-land-green-300">
                 <span className="flex h-2 w-2 rounded-full bg-land-green-400" />
-                Free education for Afghan girls
+                Free education for Afghan students
               </span>
               <h1 className="mt-8 text-5xl sm:text-6xl lg:text-7xl font-extrabold text-white tracking-tight leading-[1.05]" style={{ fontFamily: 'var(--font-landing), var(--font-display-latin), sans-serif' }}>
-                Every Afghan girl{' '}<br className="hidden sm:block" />
+                Every Afghan student{' '}<br className="hidden sm:block" />
                 deserves to{' '}<span className="text-land-green-400">learn</span>
               </h1>
               <p className="mt-7 text-lg lg:text-xl text-white/55 max-w-xl leading-relaxed">
-                Free online classes for Afghan girls, taught by volunteer teachers from around the world. Powered by AI. Built for low-bandwidth connections.
+                Free online classes for Afghan students, taught by volunteer teachers from around the world. Powered by AI. Built for low-bandwidth connections.
               </p>
               <div className="mt-10 flex flex-col sm:flex-row gap-4">
                 <Link href={props.signedIn ? `/${props.locale}/dashboard` : `/${props.locale}/register`} className="group inline-flex items-center justify-center gap-3 py-4 px-8 rounded-xl bg-land-green-600 text-white text-base font-semibold">
@@ -93,10 +92,9 @@ export function LandingShell(props: Props) {
                 </Link>
               </div>
             </div>
+            {/* Platform mockup placeholder */}
             <div className="relative mt-16 lg:mt-0">
-              <div className="relative rounded-2xl overflow-hidden aspect-[4/3] shadow-2xl shadow-black/30">
-                <Image src="/images/hero-student.jpg" alt="Young Afghan woman studying with a laptop" fill priority className="object-cover" />
-              </div>
+              <div className="rounded-2xl overflow-hidden shadow-2xl shadow-black/40 border border-white/[0.08] bg-[#0f1419] min-h-[280px]" />
             </div>
           </div>
         </section>

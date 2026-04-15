@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import Image from 'next/image';
 import { motion } from 'framer-motion';
+import { useEffect, useState } from 'react';
 
 type HeroProps = {
   locale: string;
@@ -37,20 +37,139 @@ const scaleIn = {
   }),
 };
 
+/* ── Animated Platform Mockup ── */
+const mockClasses = [
+  { name: 'English A2', teacher: 'Ms. Sarah', time: 'Tue 6:00 PM', color: 'bg-emerald-500' },
+  { name: 'Graphic Design', teacher: 'Mr. Ahmad', time: 'Wed 4:00 PM', color: 'bg-sky-500' },
+  { name: 'Career Skills', teacher: 'Ms. Leila', time: 'Thu 5:30 PM', color: 'bg-amber-500' },
+];
+
+function PlatformMockup() {
+  const [phase, setPhase] = useState(0); // 0=cards, 1=enroll, 2=enrolled, 3=notification, 4=hold, 5=fadeout
+  const [cycle, setCycle] = useState(0);
+
+  useEffect(() => {
+    const timings = [2000, 1000, 1000, 1500, 1000, 500];
+    const timer = setTimeout(() => {
+      if (phase < 5) {
+        setPhase(phase + 1);
+      } else {
+        setPhase(0);
+        setCycle(c => c + 1);
+      }
+    }, timings[phase]);
+    return () => clearTimeout(timer);
+  }, [phase, cycle]);
+
+  return (
+    <div className="relative rounded-2xl overflow-hidden shadow-2xl shadow-black/40 border border-white/[0.08]">
+      {/* Browser chrome */}
+      <div className="bg-[#1a1a2e] px-4 py-3 flex items-center gap-3 border-b border-white/[0.06]">
+        <div className="flex gap-1.5">
+          <span className="w-3 h-3 rounded-full bg-[#ff5f57]" />
+          <span className="w-3 h-3 rounded-full bg-[#febc2e]" />
+          <span className="w-3 h-3 rounded-full bg-[#28c840]" />
+        </div>
+        <div className="flex-1 bg-white/[0.06] rounded-lg px-3 py-1.5 text-xs text-white/40 font-mono">
+          alphaseekers.onrender.com
+        </div>
+      </div>
+
+      {/* App content */}
+      <div
+        className="bg-[#0f1419] p-5 min-h-[280px] relative"
+        style={{ opacity: phase === 5 ? 0 : 1, transition: 'opacity 0.5s' }}
+        key={cycle}
+      >
+        {/* App header */}
+        <div className="flex items-center gap-2 mb-4 pb-3 border-b border-white/[0.06]">
+          <div className="w-7 h-7 rounded-lg bg-land-green-600 flex items-center justify-center text-[10px] font-bold text-white">A</div>
+          <span className="text-xs font-bold text-white">My Classes</span>
+          <span className="ml-auto text-[10px] text-white/30">Welcome back 👋</span>
+        </div>
+
+        {/* Class cards */}
+        <div className="space-y-2.5">
+          {mockClasses.map((cls, i) => (
+            <div
+              key={cls.name}
+              className="bg-white/[0.04] border border-white/[0.06] rounded-xl p-3 flex items-center gap-3"
+              style={{
+                opacity: phase >= 0 ? 1 : 0,
+                transform: phase >= 0 ? 'translateY(0)' : 'translateY(10px)',
+                transition: `all 0.5s cubic-bezier(0.16,1,0.3,1) ${i * 0.12}s`,
+              }}
+            >
+              <div className={`w-8 h-8 rounded-lg ${cls.color}/20 flex items-center justify-center flex-shrink-0`}>
+                <div className={`w-2 h-2 rounded-full ${cls.color}`} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[11px] font-semibold text-white truncate">{cls.name}</p>
+                <p className="text-[9px] text-white/30">{cls.teacher} · {cls.time}</p>
+              </div>
+              {i === 0 ? (
+                <button
+                  className="text-[9px] font-bold px-3 py-1.5 rounded-lg transition-all duration-300 flex-shrink-0"
+                  style={{
+                    background: phase >= 2 ? 'rgba(29,185,100,0.2)' : phase >= 1 ? 'rgba(29,185,100,0.15)' : 'rgba(29,185,100,0.1)',
+                    color: phase >= 2 ? '#34d07e' : '#1DB964',
+                    transform: phase === 1 ? 'scale(1.05)' : 'scale(1)',
+                    boxShadow: phase === 1 ? '0 0 12px rgba(29,185,100,0.3)' : 'none',
+                  }}
+                >
+                  {phase >= 2 ? '✓ Enrolled' : 'Enroll'}
+                </button>
+              ) : (
+                <span className="text-[9px] text-white/20 flex-shrink-0">Enrolled</span>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Notification toast */}
+        <div
+          className="absolute top-3 right-3 bg-[#1e293b] border border-white/[0.1] rounded-xl px-3 py-2.5 shadow-xl max-w-[200px]"
+          style={{
+            opacity: phase >= 3 && phase < 5 ? 1 : 0,
+            transform: phase >= 3 && phase < 5 ? 'translateX(0)' : 'translateX(20px)',
+            transition: 'all 0.4s cubic-bezier(0.16,1,0.3,1)',
+          }}
+        >
+          <div className="flex items-start gap-2">
+            <span className="text-sm flex-shrink-0">📱</span>
+            <div>
+              <p className="text-[9px] font-semibold text-white">WhatsApp</p>
+              <p className="text-[8px] text-white/50 mt-0.5 leading-relaxed">Your English class starts in 1 hour!</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function Hero({ locale, signedIn, studentLabel, teacherLabel }: HeroProps) {
   return (
     <section className="relative min-h-screen overflow-hidden bg-land-dark">
-      {/* === Background layers for cinematic depth === */}
+      {/* === Background layers === */}
 
-      {/* Gradient blobs */}
+      {/* Drifting gradient blobs */}
       <div
         className="absolute rounded-full blur-[150px] opacity-25"
-        style={{ width: 600, height: 600, top: '20%', left: '70%', background: 'radial-gradient(circle, #064D27 0%, transparent 70%)' }}
+        style={{
+          width: 600, height: 600, top: '20%', left: '70%',
+          background: 'radial-gradient(circle, #064D27 0%, transparent 70%)',
+          animation: 'blob-drift-1 25s ease-in-out infinite',
+        }}
         aria-hidden="true"
       />
       <div
         className="absolute rounded-full blur-[120px] opacity-15"
-        style={{ width: 500, height: 500, top: '80%', left: '20%', background: 'radial-gradient(circle, #0A6B36 0%, transparent 70%)' }}
+        style={{
+          width: 500, height: 500, top: '80%', left: '20%',
+          background: 'radial-gradient(circle, #0A6B36 0%, transparent 70%)',
+          animation: 'blob-drift-2 30s ease-in-out infinite',
+        }}
         aria-hidden="true"
       />
 
@@ -95,8 +214,8 @@ export function Hero({ locale, signedIn, studentLabel, teacherLabel }: HeroProps
           {/* Pill badge */}
           <motion.div custom={0} initial="hidden" animate="visible" variants={fadeUp}>
             <span className="inline-flex items-center gap-2.5 rounded-full bg-land-green-600/15 border border-land-green-500/25 px-5 py-2 text-sm font-medium text-land-green-300">
-              <span className="flex h-2 w-2 rounded-full bg-land-green-400 animate-[pulse-soft_2s_ease-in-out_infinite]" />
-              Free education for Afghan girls
+              <span className="flex h-2 w-2 rounded-full bg-land-green-400 animate-[pulse-soft_2s_ease-in-out_infinite]" style={{ boxShadow: '0 0 8px rgba(52,208,126,0.5)' }} />
+              Free education for Afghan students
             </span>
           </motion.div>
 
@@ -109,16 +228,16 @@ export function Hero({ locale, signedIn, studentLabel, teacherLabel }: HeroProps
             className="mt-8 text-5xl sm:text-6xl lg:text-7xl font-extrabold text-white tracking-tight leading-[1.05]"
             style={{ fontFamily: 'var(--font-landing), var(--font-display-latin), sans-serif' }}
           >
-            Every Afghan girl{' '}
+            Every Afghan student{' '}
             <br className="hidden sm:block" />
             deserves to{' '}
             <span className="relative inline-block">
               <span className="text-land-green-400">learn</span>
-              {/* Animated underline */}
+              {/* Dramatic underline draw */}
               <span
                 className="absolute -bottom-1 left-0 w-full h-[3px] bg-land-amber origin-left"
                 style={{
-                  animation: 'underline-draw 0.8s cubic-bezier(0.25,0.46,0.45,0.94) 1.2s forwards',
+                  animation: 'underline-draw-dramatic 1.2s cubic-bezier(0.25,0.46,0.45,0.94) 1.2s forwards',
                   transform: 'scaleX(0)',
                 }}
               />
@@ -133,7 +252,7 @@ export function Hero({ locale, signedIn, studentLabel, teacherLabel }: HeroProps
             variants={fadeUp}
             className="mt-7 text-lg lg:text-xl text-white/55 max-w-xl leading-relaxed"
           >
-            Free online classes for Afghan girls, taught by volunteer teachers from around the world. Powered by AI. Built for low-bandwidth connections.
+            Free online classes for Afghan students, taught by volunteer teachers from around the world. Powered by AI. Built for low-bandwidth connections.
           </motion.p>
 
           {/* CTA buttons */}
@@ -141,6 +260,7 @@ export function Hero({ locale, signedIn, studentLabel, teacherLabel }: HeroProps
             <Link
               href={signedIn ? `/${locale}/dashboard` : `/${locale}/register`}
               className="group inline-flex items-center justify-center gap-3 py-4 px-8 rounded-xl bg-land-green-600 text-white text-base font-semibold transition-all duration-200 hover:bg-land-green-500 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-land-green-600/25 active:translate-y-0"
+              style={{ animation: 'cta-glow 3s ease-in-out infinite' }}
             >
               {signedIn ? 'Dashboard' : studentLabel}
               <svg className="w-4 h-4 opacity-60 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" /></svg>
@@ -168,7 +288,7 @@ export function Hero({ locale, signedIn, studentLabel, teacherLabel }: HeroProps
           </motion.div>
         </div>
 
-        {/* Right column — hero visual */}
+        {/* Right column — Animated Platform Mockup */}
         <motion.div
           custom={0}
           initial="hidden"
@@ -176,17 +296,7 @@ export function Hero({ locale, signedIn, studentLabel, teacherLabel }: HeroProps
           variants={scaleIn}
           className="relative mt-16 lg:mt-0"
         >
-          {/* Main image */}
-          <div className="relative rounded-2xl overflow-hidden aspect-[4/3] shadow-2xl shadow-black/30">
-            <Image
-              src="/images/hero-student.jpg"
-              alt="Young Afghan woman studying with a laptop"
-              fill
-              priority
-              className="object-cover"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-land-dark/30 via-transparent to-transparent" />
-          </div>
+          <PlatformMockup />
 
           {/* Floating card — top right */}
           <div
