@@ -22,6 +22,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fa">
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){if('caches'in self)caches.keys().then(function(k){k.forEach(function(n){caches.delete(n)})});if('serviceWorker'in navigator)navigator.serviceWorker.getRegistrations().then(function(r){r.forEach(function(w){w.unregister()})})})()`,
+          }}
+        />
+      </head>
       <body>{children}</body>
     </html>
   );
