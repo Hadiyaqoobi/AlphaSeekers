@@ -10,7 +10,6 @@
 
 const SUPERADMIN_EMAILS = [
   "hadiyaqoobi@gmail.com",
-  "project2025board@gmail.com",
 ];
 
 export function isSuperAdmin(email: string | null | undefined): boolean {
