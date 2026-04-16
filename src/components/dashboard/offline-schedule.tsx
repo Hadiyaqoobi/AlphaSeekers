@@ -69,7 +69,7 @@ export function OfflineSchedule() {
   }, []);
 
   if (!data && !offline) {
-    return <p className="text-sm text-slate-600">{t("loading")}</p>;
+    return <p className="text-sm text-ink-soft">{t("loading")}</p>;
   }
 
   if (!data && offline) {
@@ -84,7 +84,7 @@ export function OfflineSchedule() {
   return (
     <section className="panel panel-strong space-y-2 p-4">
       <header className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="text-sm font-black text-slate-900">{t("title")}</h3>
+        <h3 className="text-sm font-black text-ink-main">{t("title")}</h3>
         {offline ? (
           <p className="text-xs font-semibold text-amber-700">
             {generatedAt
@@ -92,7 +92,7 @@ export function OfflineSchedule() {
               : t("offlineMode")}
           </p>
         ) : (
-          <p className="text-xs text-slate-500">{t("updated", { time: new Date(data!.generatedAt).toLocaleString() })}</p>
+          <p className="text-xs text-ink-soft">{t("updated", { time: new Date(data!.generatedAt).toLocaleString() })}</p>
         )}
       </header>
 
@@ -105,14 +105,14 @@ export function OfflineSchedule() {
       <div className="space-y-2">
         {data!.items.slice(0, 6).map((item) => (
           <article className="stat-card p-3" key={item.id}>
-            <p className="text-sm font-semibold text-slate-900">{item.className}</p>
-            <p className="text-xs text-slate-600">{new Date(item.startTime).toLocaleString()}</p>
+            <p className="text-sm font-semibold text-ink-main">{item.className}</p>
+            <p className="text-xs text-ink-soft">{new Date(item.startTime).toLocaleString()}</p>
             {item.meetLink ? (
               <a className="text-xs font-semibold text-sky-700 underline-offset-2 hover:underline" href={item.meetLink} rel="noreferrer" target="_blank">
                 {t("joinLink")}
               </a>
             ) : (
-              <p className="text-xs text-slate-500">{t("meetPending")}</p>
+              <p className="text-xs text-ink-soft">{t("meetPending")}</p>
             )}
           </article>
         ))}

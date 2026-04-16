@@ -22,7 +22,7 @@ export function Footer({ locale, signedIn }: FooterProps) {
           {/* Brand */}
           <div className="sm:col-span-2 lg:col-span-1">
             <div className="flex items-center gap-3 mb-5">
-              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 border border-white/10 text-sm font-bold text-white">
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-dark-100/10 border border-white/10 text-sm font-bold text-white">
                 A
               </span>
               <span
@@ -89,7 +89,7 @@ function FooterLink({ href, children }: { href: string; children: React.ReactNod
       href={href}
     >
       {children}
-      <span className="absolute left-0 -bottom-0.5 w-full h-[1px] bg-white/40 origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-300" />
+      <span className="absolute left-0 -bottom-0.5 w-full h-[1px] bg-dark-100/40 origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-300" />
     </Link>
   );
 }

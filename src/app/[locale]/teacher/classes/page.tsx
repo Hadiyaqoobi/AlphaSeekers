@@ -31,7 +31,7 @@ export default async function TeacherClassesPage({ params }: TeacherClassesPageP
     <section className="space-y-4 sm:space-y-5">
       <header className="hero-panel p-5 sm:p-6">
         <p className="section-kicker">{t("subtitle")}</p>
-        <h1 className="mt-1 text-3xl font-black text-slate-900 sm:text-4xl">
+        <h1 className="mt-1 text-3xl font-black text-ink-main sm:text-4xl">
           {t("title")}
         </h1>
         <div className="mt-4 flex flex-wrap gap-2">
@@ -42,7 +42,7 @@ export default async function TeacherClassesPage({ params }: TeacherClassesPageP
       </header>
 
       {classes.length === 0 ? (
-        <div className="panel panel-strong p-6 text-center text-slate-500">
+        <div className="panel panel-strong p-6 text-center text-ink-soft">
           {t("empty")}
         </div>
       ) : (
@@ -51,11 +51,11 @@ export default async function TeacherClassesPage({ params }: TeacherClassesPageP
             <article className="panel panel-strong p-4 sm:p-5" key={klass.id}>
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div>
-                  <h2 className="text-lg font-black text-slate-900">{klass.name}</h2>
-                  <p className="mt-1 text-sm text-slate-600">
+                  <h2 className="text-lg font-black text-ink-main">{klass.name}</h2>
+                  <p className="mt-1 text-sm text-ink-soft">
                     {klass.schedule} • {klass.durationMinutes} min
                   </p>
-                  <p className="mt-1 text-sm text-slate-600">
+                  <p className="mt-1 text-sm text-ink-soft">
                     {t("enrolledCount")}: {klass.enrolledCount}
                   </p>
                 </div>
@@ -68,15 +68,15 @@ export default async function TeacherClassesPage({ params }: TeacherClassesPageP
               </div>
 
               <div className="mt-3">
-                <h3 className="text-sm font-semibold text-slate-700">{t("sessions")}</h3>
+                <h3 className="text-sm font-semibold text-ink-main">{t("sessions")}</h3>
                 {klass.sessions.length === 0 ? (
-                  <p className="mt-1 text-sm text-slate-500">{t("noSessions")}</p>
+                  <p className="mt-1 text-sm text-ink-soft">{t("noSessions")}</p>
                 ) : (
                   <div className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                     {klass.sessions.map((session) => (
                       <div className="stat-card flex items-center justify-between p-3" key={session.id}>
                         <div>
-                          <p className="text-sm font-semibold text-slate-900">
+                          <p className="text-sm font-semibold text-ink-main">
                             {formatDateTime(session.startTime, locale)}
                           </p>
                         </div>

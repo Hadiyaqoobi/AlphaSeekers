@@ -29,8 +29,8 @@ export default async function AdminContentPage({ params }: AdminContentPageProps
     <section className="space-y-4 sm:space-y-5">
       <header className="hero-panel p-5 sm:p-6">
         <p className="section-kicker">{t("kicker")}</p>
-        <h1 className="text-3xl font-black text-slate-900 sm:text-4xl">{t("title")}</h1>
-        <p className="mt-2 text-sm text-slate-600">{t("subtitle")}</p>
+        <h1 className="text-3xl font-black text-ink-main sm:text-4xl">{t("title")}</h1>
+        <p className="mt-2 text-sm text-ink-soft">{t("subtitle")}</p>
         <div className="mt-4 flex flex-wrap gap-2">
           <Link className="btn-secondary" href={`/${params.locale}/admin/classes`}>
             {t("backToAdmin")}

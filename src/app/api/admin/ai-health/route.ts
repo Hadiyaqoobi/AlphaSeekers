@@ -3,10 +3,11 @@ import { NextResponse } from "next/server";
 import { aiConfig } from "@/lib/ai/config";
 import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/security/session";
+import { isSuperAdmin } from "@/lib/security/superadmin";
 
 export async function GET() {
   const user = await getSessionUser();
-  if (!user || user.role !== "ADMIN") {
+  if (!user || user.role !== "ADMIN" || !isSuperAdmin(user.email)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

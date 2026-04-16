@@ -69,10 +69,10 @@ export function JoinNowCard({ session }: JoinNowCardProps) {
   const isOngoing = Date.now() >= new Date(session.startTime).getTime();
 
   return (
-    <article className="hero-panel border-emerald-200/70 p-4">
+    <article className="hero-panel border-neon-200/70 p-4">
       <p className="section-kicker">{t("title")}</p>
-      <h2 className="mt-1 text-lg font-black text-slate-900">{session.className}</h2>
-      <p className="text-sm text-slate-700">
+      <h2 className="mt-1 text-lg font-black text-ink-main">{session.className}</h2>
+      <p className="text-sm text-ink-main">
         {isOngoing
           ? t("inProgressAt", { time: new Date(session.startTime).toLocaleString() })
           : t("startsAt", { time: new Date(session.startTime).toLocaleString() })}
@@ -87,11 +87,11 @@ export function JoinNowCard({ session }: JoinNowCardProps) {
           {t("openVideo")}
         </button>
       ) : (
-        <p className="mt-2 text-xs text-slate-600">{t("meetPending")}</p>
+        <p className="mt-2 text-xs text-ink-soft">{t("meetPending")}</p>
       )}
 
       {session.continuation?.meetLink ? (
-        <p className="mt-2 text-xs text-slate-700">
+        <p className="mt-2 text-xs text-ink-main">
           {t("nextSegment", { time: new Date(session.continuation.startTime).toLocaleTimeString() })}
           {transitionArmed ? ` ${t("autoSwitchArmed")}` : ""}
         </p>

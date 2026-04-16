@@ -63,7 +63,7 @@ export function WebinarForm() {
 
   return (
     <form className="panel panel-strong space-y-3 p-4" onSubmit={submit}>
-      <h2 className="text-lg font-black text-slate-900">{t("createWebinar")}</h2>
+      <h2 className="text-lg font-black text-ink-main">{t("createWebinar")}</h2>
       <input
         className="field"
         onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))}
@@ -103,7 +103,7 @@ export function WebinarForm() {
       <button className="btn-primary" type="submit">
         {t("publishWebinar")}
       </button>
-      {status ? <p className="text-sm text-slate-700">{status}</p> : null}
+      {status ? <p className="text-sm text-ink-main">{status}</p> : null}
     </form>
   );
 }

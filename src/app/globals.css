@@ -3,51 +3,67 @@
 @tailwind utilities;
 
 /* ============================================================
-   AlphaSeekers Design System v2.0
-   Inspired by Khan Academy, Coursera, Duolingo, Teach For All,
-   Pencils of Promise & Room to Read
+   AlphaSeekers Design System v3.0 — ELECTRIC WAVE
+   Dark theme with green→cyan→blue energy. Glow accents.
+   No light mode. The wave IS the brand.
    ============================================================ */
 
 :root {
+  color-scheme: dark;
+
   /* --- Surface & Background --- */
-  --bg-base: #FAFAF7;
-  --bg-strong: #F5F3EF;
-  --bg-warm: #FFF5EB;
+  --bg-base: #070B0E;       /* deepest, with subtle blue-green tint */
+  --bg-strong: #0D1419;     /* card / panel surface */
+  --bg-warm: #111B22;       /* elevated surface */
+  --bg-elevated: #15222C;   /* hover state on elevated */
 
   /* --- Ink --- */
-  --ink-main: #1A2332;
-  --ink-soft: #5A6A7E;
-  --ink-faint: #94A3B8;
+  --ink-main: #E8EEF2;      /* primary text on dark */
+  --ink-soft: #8AA4B8;      /* secondary text */
+  --ink-faint: #5A7A94;     /* tertiary / placeholder */
 
   /* --- Panel --- */
-  --panel: #ffffff;
-  --panel-strong: #ffffff;
-  --line: #E5DFD6;
-  --line-soft: #F0EBE3;
+  --panel: #0D1419;
+  --panel-strong: #111B22;
+  --line: rgba(0, 230, 118, 0.12);   /* green-tinted borders */
+  --line-soft: rgba(0, 230, 118, 0.06);
 
-  /* --- Brand Palette --- */
-  --brand: #0E7C6B;
-  --brand-deep: #0A5F53;
-  --brand-light: #E8F5F1;
-  --brand-50: #F0FAF7;
-  --accent: #E8985A;
-  --accent-deep: #D4854A;
-  --accent-light: #FFF5EB;
-  --accent-warm: #E8985A;
-  --highlight: #7B61C4;
-  --highlight-light: #F0EDF8;
-  --success: #059669;
-  --warning: #D97706;
-  --danger: #DC2626;
+  /* --- Brand Palette (Electric Wave) --- */
+  --brand: #00E676;                          /* electric green */
+  --brand-deep: #00C853;
+  --brand-light: rgba(0, 230, 118, 0.10);
+  --brand-50: rgba(0, 230, 118, 0.06);
+  --cyan: #00E5FF;
+  --cyan-deep: #00B8D4;
+  --electric: #2979FF;                       /* electric blue */
+  --electric-deep: #2962FF;
+  --accent: #FFB300;                         /* warm amber */
+  --accent-deep: #FFA000;
+  --accent-light: rgba(255, 179, 0, 0.10);
+  --accent-warm: #FFB300;
+  --highlight: #00E5FF;                      /* highlight = cyan */
+  --highlight-light: rgba(0, 229, 255, 0.08);
+  --success: #00E676;
+  --warning: #FFB300;
+  --danger: #EF4444;
 
-  /* --- Shadows --- */
-  --shadow-xs: 0 1px 2px rgba(26, 35, 50, 0.03);
-  --shadow-sm: 0 1px 3px rgba(26, 35, 50, 0.04), 0 1px 2px rgba(26, 35, 50, 0.02);
-  --shadow-md: 0 4px 12px rgba(26, 35, 50, 0.06), 0 1px 3px rgba(26, 35, 50, 0.03);
-  --shadow-lg: 0 8px 28px rgba(26, 35, 50, 0.08), 0 2px 6px rgba(26, 35, 50, 0.03);
-  --shadow-xl: 0 16px 48px rgba(26, 35, 50, 0.10), 0 4px 12px rgba(26, 35, 50, 0.04);
-  --shadow-brand: 0 4px 14px rgba(14, 124, 107, 0.25);
-  --shadow-accent: 0 4px 14px rgba(232, 152, 90, 0.25);
+  /* --- Shadows (with subtle glow) --- */
+  --shadow-xs: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.3), 0 0 1px rgba(0, 230, 118, 0.1);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4), 0 0 2px rgba(0, 230, 118, 0.08);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 4px rgba(0, 230, 118, 0.06);
+  --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.6), 0 0 8px rgba(0, 230, 118, 0.04);
+  --shadow-brand: 0 0 20px rgba(0, 230, 118, 0.3), 0 0 4px rgba(0, 230, 118, 0.5);
+  --shadow-accent: 0 0 20px rgba(255, 179, 0, 0.3), 0 0 4px rgba(255, 179, 0, 0.5);
+  --shadow-cyan: 0 0 20px rgba(0, 229, 255, 0.3), 0 0 4px rgba(0, 229, 255, 0.5);
+  --shadow-electric: 0 0 20px rgba(41, 121, 255, 0.3), 0 0 4px rgba(41, 121, 255, 0.5);
+
+  /* --- Gradients --- */
+  --gradient-brand: linear-gradient(135deg, #00E676, #00E5FF);
+  --gradient-electric: linear-gradient(135deg, #00E5FF, #2979FF);
+  --gradient-full: linear-gradient(135deg, #00E676, #00E5FF, #2979FF);
+  --gradient-surface: linear-gradient(180deg, #0A1014 0%, #070B0E 100%);
+  --gradient-glow: radial-gradient(ellipse at 50% 0%, rgba(0, 230, 118, 0.15) 0%, transparent 70%);
 
   /* --- Radii --- */
   --radius-panel: 1rem;
@@ -73,79 +89,100 @@
   --nav-height: 80px;
 }
 
-/* --- Dark Mode (auto) --- */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg-base: #0F1419;
-    --bg-strong: #1A2332;
-    --bg-warm: #1A1F2B;
-
-    --ink-main: #E8ECEF;
-    --ink-soft: #94A3B8;
-    --ink-faint: #64748B;
-
-    --panel: #1E293B;
-    --panel-strong: #233044;
-    --line: #334155;
-    --line-soft: #1E293B;
-
-    --brand: #14B8A6;
-    --brand-deep: #0F9688;
-    --brand-light: rgba(20, 184, 166, 0.12);
-    --brand-50: rgba(20, 184, 166, 0.06);
-    --accent: #E8A87C;
-    --accent-deep: #D4956A;
-    --accent-light: rgba(232, 168, 124, 0.12);
-    --highlight: #A78BFA;
-    --highlight-light: rgba(167, 139, 250, 0.12);
-
-    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.2);
-    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.25), 0 1px 2px rgba(0, 0, 0, 0.15);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.2);
-    --shadow-lg: 0 8px 28px rgba(0, 0, 0, 0.35), 0 2px 6px rgba(0, 0, 0, 0.2);
-    --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.25);
-    --shadow-brand: 0 4px 14px rgba(20, 184, 166, 0.2);
-  }
+/* The site is dark-only. data-theme="light" overrides are deprecated. */
+[data-theme="light"], [data-theme="dark"] {
+  /* Both theme attributes resolve to the dark palette above. */
+  color-scheme: dark;
 }
 
-/* --- Dark Mode (manual toggle) --- */
-[data-theme="dark"] {
-  --bg-base: #0F1419;
-  --bg-strong: #1A2332;
-  --bg-warm: #1A1F2B;
+/* ============================================================
+   Body — ambient depth (radial glows from green/cyan/blue)
+   ============================================================ */
 
-  --ink-main: #E8ECEF;
-  --ink-soft: #94A3B8;
-  --ink-faint: #64748B;
-
-  --panel: #1E293B;
-  --panel-strong: #233044;
-  --line: #334155;
-  --line-soft: #1E293B;
-
-  --brand: #14B8A6;
-  --brand-deep: #0F9688;
-  --brand-light: rgba(20, 184, 166, 0.12);
-  --brand-50: rgba(20, 184, 166, 0.06);
-  --accent: #E8A87C;
-  --accent-deep: #D4956A;
-  --accent-light: rgba(232, 168, 124, 0.12);
-  --highlight: #A78BFA;
-  --highlight-light: rgba(167, 139, 250, 0.12);
-
-  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.2);
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.25), 0 1px 2px rgba(0, 0, 0, 0.15);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.2);
-  --shadow-lg: 0 8px 28px rgba(0, 0, 0, 0.35), 0 2px 6px rgba(0, 0, 0, 0.2);
-  --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.25);
-  --shadow-brand: 0 4px 14px rgba(20, 184, 166, 0.2);
+body {
+  background-color: #080D12;
+  background-image:
+    radial-gradient(ellipse at 20% 50%, rgba(0, 230, 118, 0.04) 0%, transparent 55%),
+    radial-gradient(ellipse at 80% 20%, rgba(0, 229, 255, 0.025) 0%, transparent 55%),
+    radial-gradient(ellipse at 50% 100%, rgba(41, 121, 255, 0.025) 0%, transparent 55%);
+  background-attachment: fixed;
+  color: #E8EEF2;
 }
 
-/* Dark mode color scheme hint for scrollbars, form controls */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) { color-scheme: dark; }
+/* ============================================================
+   SAFETY NET — catch any remaining light-mode classes
+   These !important overrides ensure no white/gray shows up
+   anywhere outside the landing page (which has its own palette).
+   ============================================================ */
+
+.bg-white { background-color: #0E1921 !important; }
+.bg-gray-50 { background-color: #0A1118 !important; }
+.bg-gray-100 { background-color: #0E1921 !important; }
+.bg-gray-200 { background-color: #142230 !important; }
+.bg-gray-300 { background-color: #1A2D3D !important; }
+
+.text-gray-900, .text-gray-950 { color: #E8EEF2 !important; }
+.text-gray-800 { color: #E8EEF2 !important; }
+.text-gray-700 { color: #C0CCD6 !important; }
+.text-gray-600 { color: #8899A6 !important; }
+.text-gray-500 { color: #8899A6 !important; }
+.text-gray-400 { color: #556677 !important; }
+.text-gray-300 { color: #556677 !important; }
+
+.border-gray-100, .border-gray-200, .border-gray-300, .border-gray-400 {
+  border-color: #1A2D3D !important;
 }
-[data-theme="dark"] { color-scheme: dark; }
+
+.divide-gray-100 > :not([hidden]) ~ :not([hidden]),
+.divide-gray-200 > :not([hidden]) ~ :not([hidden]) {
+  border-color: #1A2D3D !important;
+}
+
+/* Pale pastel chip backgrounds (-50) → translucent tinted backgrounds on dark */
+.bg-blue-50    { background-color: rgba(41, 121, 255, 0.10) !important; }
+.bg-sky-50     { background-color: rgba(0, 229, 255, 0.10) !important; }
+.bg-amber-50   { background-color: rgba(255, 179, 0, 0.10) !important; }
+.bg-yellow-50  { background-color: rgba(255, 193, 7, 0.10) !important; }
+.bg-purple-50  { background-color: rgba(139, 92, 246, 0.10) !important; }
+.bg-violet-50  { background-color: rgba(139, 92, 246, 0.10) !important; }
+.bg-pink-50    { background-color: rgba(236, 72, 153, 0.10) !important; }
+.bg-rose-50    { background-color: rgba(244, 63, 94, 0.10) !important; }
+.bg-red-50     { background-color: rgba(239, 68, 68, 0.10) !important; }
+.bg-orange-50  { background-color: rgba(249, 115, 22, 0.10) !important; }
+.bg-green-50   { background-color: rgba(0, 230, 118, 0.10) !important; }
+.bg-teal-50    { background-color: rgba(20, 184, 166, 0.10) !important; }
+.bg-indigo-50  { background-color: rgba(99, 102, 241, 0.10) !important; }
+
+/* -100 versions (slightly darker pastels) */
+.bg-blue-100   { background-color: rgba(41, 121, 255, 0.15) !important; }
+.bg-amber-100  { background-color: rgba(255, 179, 0, 0.15) !important; }
+.bg-red-100    { background-color: rgba(239, 68, 68, 0.15) !important; }
+.bg-purple-100 { background-color: rgba(139, 92, 246, 0.15) !important; }
+.bg-rose-100   { background-color: rgba(244, 63, 94, 0.15) !important; }
+
+/* hover variants on dark */
+.hover\:bg-gray-50:hover  { background-color: #142230 !important; }
+.hover\:bg-gray-100:hover { background-color: #15222C !important; }
+
+/* Headings on dark — pure white pops */
+h1, h2, h3, h4 {
+  color: #FFFFFF;
+}
+
+/* Muted but readable body text helper */
+.body-text {
+  color: #B0BEC5;
+}
+.muted {
+  color: rgba(255, 255, 255, 0.45);
+}
+.overline {
+  color: #00E676;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  font-weight: 500;
+  font-size: 0.75rem;
+}
 
 /* ============================================================
    Smooth Scroll + Reduced Motion
@@ -1293,8 +1330,128 @@ h4 {
    ============================================================ */
 
 ::selection {
-  background: rgba(14, 124, 107, 0.15);
-  color: var(--ink-main);
+  background: rgba(0, 230, 118, 0.25);
+  color: #FFFFFF;
+}
+
+/* ============================================================
+   Form Elements (dark theme defaults)
+   ============================================================ */
+
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="search"],
+input[type="url"],
+input[type="tel"],
+input[type="number"],
+input[type="date"],
+input[type="datetime-local"],
+input[type="time"],
+textarea,
+select {
+  background-color: #0D1419;
+  border: 1px solid rgba(0, 230, 118, 0.12);
+  color: #E8EEF2;
+  border-radius: var(--radius-btn);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: #00E676;
+  box-shadow: 0 0 0 3px rgba(0, 230, 118, 0.15), 0 0 8px rgba(0, 230, 118, 0.1);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #5A7A94;
+}
+
+input:disabled,
+textarea:disabled,
+select:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Native checkbox / radio accent */
+input[type="checkbox"],
+input[type="radio"] {
+  accent-color: #00E676;
+}
+
+/* ============================================================
+   Scrollbar (dark themed, green-tinted)
+   ============================================================ */
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 230, 118, 0.15);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 230, 118, 0.3);
+}
+
+/* ============================================================
+   Special Effects (use sparingly — landing & key moments)
+   ============================================================ */
+
+.gradient-text {
+  background: linear-gradient(135deg, #00E676 0%, #00E5FF 50%, #2979FF 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  color: transparent;
+}
+
+.pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 10px rgba(0, 230, 118, 0.2); }
+  50% { box-shadow: 0 0 25px rgba(0, 230, 118, 0.4), 0 0 6px rgba(0, 230, 118, 0.6); }
+}
+
+.glow-divider {
+  height: 1px;
+  background: linear-gradient(to right, transparent, rgba(0, 230, 118, 0.3), transparent);
+  border: 0;
+}
+
+.glow-border {
+  position: relative;
+  isolation: isolate;
+}
+.glow-border::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, #00E676, #00E5FF, #2979FF);
+  opacity: 0;
+  transition: opacity 0.3s;
+  z-index: -1;
+}
+.glow-border:hover::before {
+  opacity: 1;
+}
+.glow-border::after {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  border-radius: inherit;
+  background: #0D1419;
+  z-index: -1;
 }
 
 /* ============================================================

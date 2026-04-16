@@ -37,7 +37,7 @@ export default async function AdminClassesPage({ params }: AdminClassesPageProps
     <section className="mx-auto max-w-6xl px-6 py-10 lg:px-8">
       {/* Page Header */}
       <header className="mb-10">
-        <p className="text-xs font-semibold uppercase tracking-widest text-emerald-600">
+        <p className="text-xs font-semibold uppercase tracking-widest text-neon-600">
           {t("title")}
         </p>
         <h1 className="mt-2 text-4xl font-bold tracking-tight text-gray-900">
@@ -46,31 +46,31 @@ export default async function AdminClassesPage({ params }: AdminClassesPageProps
         <p className="mt-2 text-base text-gray-500">{t("controlPanelSubtitle")}</p>
         <div className="mt-6 flex flex-wrap gap-3">
           <Link
-            className="inline-flex items-center rounded-xl border border-gray-200 bg-white px-5 py-2.5 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 hover:shadow-md"
+            className="inline-flex items-center rounded-xl border border-gray-200 bg-dark-100 px-5 py-2.5 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 hover:shadow-md"
             href={`/${params.locale}/admin/users`}
           >
             {t("userApprovals")}
           </Link>
           <Link
-            className="inline-flex items-center rounded-xl border border-gray-200 bg-white px-5 py-2.5 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 hover:shadow-md"
+            className="inline-flex items-center rounded-xl border border-gray-200 bg-dark-100 px-5 py-2.5 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 hover:shadow-md"
             href={`/${params.locale}/admin/teachers`}
           >
             {t("teachers")}
           </Link>
           <Link
-            className="inline-flex items-center rounded-xl border border-gray-200 bg-white px-5 py-2.5 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 hover:shadow-md"
+            className="inline-flex items-center rounded-xl border border-gray-200 bg-dark-100 px-5 py-2.5 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 hover:shadow-md"
             href={`/${params.locale}/admin/content`}
           >
             {t("content")}
           </Link>
           <Link
-            className="inline-flex items-center rounded-xl border border-gray-200 bg-white px-5 py-2.5 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 hover:shadow-md"
+            className="inline-flex items-center rounded-xl border border-gray-200 bg-dark-100 px-5 py-2.5 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 hover:shadow-md"
             href={`/${params.locale}/admin/analytics`}
           >
             {t("analytics")}
           </Link>
           <Link
-            className="inline-flex items-center rounded-xl border border-gray-200 bg-white px-5 py-2.5 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 hover:shadow-md"
+            className="inline-flex items-center rounded-xl border border-gray-200 bg-dark-100 px-5 py-2.5 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 hover:shadow-md"
             href={`/${params.locale}/dashboard`}
           >
             {t("dashboard")}
@@ -80,15 +80,15 @@ export default async function AdminClassesPage({ params }: AdminClassesPageProps
 
       {/* Stats Row */}
       <div className="mb-8 grid grid-cols-1 gap-5 sm:grid-cols-3">
-        <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+        <div className="rounded-2xl border border-gray-100 bg-dark-100 p-6 shadow-sm">
           <p className="text-sm font-medium text-gray-500">Total Classes</p>
           <p className="mt-2 text-3xl font-bold text-gray-900">{totalClasses}</p>
         </div>
-        <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+        <div className="rounded-2xl border border-gray-100 bg-dark-100 p-6 shadow-sm">
           <p className="text-sm font-medium text-gray-500">Active</p>
-          <p className="mt-2 text-3xl font-bold text-emerald-600">{activeClasses}</p>
+          <p className="mt-2 text-3xl font-bold text-neon-600">{activeClasses}</p>
         </div>
-        <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+        <div className="rounded-2xl border border-gray-100 bg-dark-100 p-6 shadow-sm">
           <p className="text-sm font-medium text-gray-500">Archived</p>
           <p className="mt-2 text-3xl font-bold text-gray-400">{archivedClasses}</p>
         </div>
@@ -102,7 +102,7 @@ export default async function AdminClassesPage({ params }: AdminClassesPageProps
       </div>
 
       {/* Classes Table */}
-      <section className="rounded-2xl border border-gray-100 bg-white shadow-sm">
+      <section className="rounded-2xl border border-gray-100 bg-dark-100 shadow-sm">
         <div className="border-b border-gray-100 px-6 py-5">
           <h2 className="text-lg font-bold text-gray-900">{t("recentClasses")}</h2>
         </div>
@@ -136,7 +136,7 @@ export default async function AdminClassesPage({ params }: AdminClassesPageProps
                     <span
                       className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
                         item.status === "ACTIVE"
-                          ? "bg-emerald-50 text-emerald-700"
+                          ? "bg-neon-50 text-neon-700"
                           : "bg-gray-100 text-gray-500"
                       }`}
                     >
@@ -146,7 +146,7 @@ export default async function AdminClassesPage({ params }: AdminClassesPageProps
                   <td className="px-6 py-4 text-right">
                     <div className="flex flex-wrap items-center justify-end gap-2">
                       <Link
-                        className="inline-flex items-center rounded-lg border border-gray-200 bg-white px-4 py-2 text-xs font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 hover:shadow"
+                        className="inline-flex items-center rounded-lg border border-gray-200 bg-dark-100 px-4 py-2 text-xs font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 hover:shadow"
                         href={`/${params.locale}/admin/classes/${item.id}`}
                       >
                         {t("view")}

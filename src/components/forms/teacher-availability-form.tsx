@@ -135,15 +135,15 @@ export function TeacherAvailabilityForm() {
     <section className="panel panel-strong space-y-4 p-5 sm:p-6">
       <header className="space-y-1">
         <p className="section-kicker">{t("scheduling")}</p>
-        <h1 className="text-2xl font-black text-slate-900">{t("title")}</h1>
-        <p className="text-sm text-slate-600">{t("subtitle")}</p>
+        <h1 className="text-2xl font-black text-ink-main">{t("title")}</h1>
+        <p className="text-sm text-ink-soft">{t("subtitle")}</p>
       </header>
 
       <div className="space-y-3">
         {days.map((day, index) => (
           <article className="stat-card p-3" key={DAY_KEYS[index]}>
             <div className="flex flex-wrap items-center gap-3">
-              <label className="inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-slate-700">
+              <label className="inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-ink-main">
                 <input
                   checked={day.enabled}
                   onChange={(event) => {
@@ -156,10 +156,10 @@ export function TeacherAvailabilityForm() {
                 {t(DAY_KEYS[index])}
               </label>
 
-              <label className="inline-flex items-center gap-2 text-xs text-slate-600">
+              <label className="inline-flex items-center gap-2 text-xs text-ink-soft">
                 {t("start")}
                 <input
-                  className="rounded-lg border border-slate-300 bg-white px-2 py-1"
+                  className="rounded-lg border border-line-DEFAULT bg-dark-100 px-2 py-1"
                   disabled={!day.enabled}
                   onChange={(event) =>
                     setDays((current) =>
@@ -171,10 +171,10 @@ export function TeacherAvailabilityForm() {
                 />
               </label>
 
-              <label className="inline-flex items-center gap-2 text-xs text-slate-600">
+              <label className="inline-flex items-center gap-2 text-xs text-ink-soft">
                 {t("end")}
                 <input
-                  className="rounded-lg border border-slate-300 bg-white px-2 py-1"
+                  className="rounded-lg border border-line-DEFAULT bg-dark-100 px-2 py-1"
                   disabled={!day.enabled}
                   onChange={(event) =>
                     setDays((current) =>
@@ -199,7 +199,7 @@ export function TeacherAvailabilityForm() {
         >
           {saving ? t("saving") : t("save")}
         </button>
-        {message ? <p className="text-sm text-slate-700">{message}</p> : null}
+        {message ? <p className="text-sm text-ink-main">{message}</p> : null}
       </div>
     </section>
   );

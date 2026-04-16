@@ -40,12 +40,12 @@ export function RunRemindersButton() {
 
   return (
     <div className="panel panel-strong space-y-2 p-4">
-      <h2 className="text-lg font-black text-slate-900">Reminders</h2>
-      <p className="text-sm text-slate-600">Sends session reminders to enrolled students within the next hour.</p>
+      <h2 className="text-lg font-black text-ink-main">Reminders</h2>
+      <p className="text-sm text-ink-soft">Sends session reminders to enrolled students within the next hour.</p>
       <button aria-label="Run reminder batch to send session reminders" className="btn-primary" disabled={loading} onClick={run} type="button">
         {loading ? "Running..." : "Run reminder batch"}
       </button>
-      {status ? <p className="text-sm text-slate-700">{status}</p> : null}
+      {status ? <p className="text-sm text-ink-main">{status}</p> : null}
     </div>
   );
 }

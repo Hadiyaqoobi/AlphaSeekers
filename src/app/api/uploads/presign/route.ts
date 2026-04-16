@@ -9,7 +9,7 @@ const uploadSchema = z.object({
     filename: z.string().trim().min(1).max(255),
     contentType: z.string().trim().min(1).max(100),
     fileSize: z.number().int().positive().max(5 * 1024 * 1024), // 5MB
-    purpose: z.enum(["material", "library"]).default("material"),
+    purpose: z.enum(["material", "library", "posts"]).default("material"),
     classId: z.string().optional(),
 });
 
@@ -20,15 +20,8 @@ const uploadSchema = z.object({
  */
 export async function POST(request: NextRequest) {
     const user = await getSessionUser();
-    if (!user || (user.role !== "TEACHER" && user.role !== "ADMIN")) {
+    if (!user) {
         return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-    }
-
-    if (!isR2Configured()) {
-        return NextResponse.json(
-            { message: "File uploads not configured. Contact administrator to set up R2." },
-            { status: 503 },
-        );
     }
 
     const body = await request.json().catch(() => null);
@@ -42,10 +35,32 @@ export async function POST(request: NextRequest) {
 
     const { filename, contentType, fileSize, purpose, classId } = parsed.data;
 
-    // Build a unique key: purpose/classId/timestamp-filename
+    // Only TEACHER/ADMIN can upload materials and library
+    // Any approved user can upload for "posts" (student voices)
+    if (purpose === "material" || purpose === "library") {
+        if (user.role !== "TEACHER" && user.role !== "ADMIN") {
+            return NextResponse.json({ message: "Unauthorized" }, { status: 403 });
+        }
+    } else if (purpose === "posts") {
+        if (!user.approved) {
+            return NextResponse.json({ message: "Account pending approval" }, { status: 403 });
+        }
+    }
+
+    if (!isR2Configured()) {
+        return NextResponse.json(
+            { message: "File uploads not configured. Contact administrator to set up R2." },
+            { status: 503 },
+        );
+    }
+
+    // Build a unique key: purpose/classId|userId/timestamp-filename
     const timestamp = Date.now();
     const sanitized = filename.replace(/[^a-zA-Z0-9._-]/g, "_");
-    const prefix = purpose === "material" && classId ? `materials/${classId}` : `library`;
+    let prefix: string;
+    if (purpose === "material" && classId) prefix = `materials/${classId}`;
+    else if (purpose === "posts") prefix = `posts/${user.id}`;
+    else prefix = "library";
     const key = `${prefix}/${timestamp}-${sanitized}`;
 
     try {

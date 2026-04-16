@@ -6,9 +6,16 @@ import { prisma } from "@/lib/prisma";
 import { hashPassword } from "@/lib/security/passwords";
 import { encryptPhone } from "@/lib/security/phone-crypto";
 import { checkRateLimit, getClientIp } from "@/lib/security/rate-limit";
+import { stripHtml } from "@/lib/security/sanitize";
 
 const registerSchema = z.object({
-  name: z.string().trim().min(1).max(120),
+  name: z
+    .string()
+    .trim()
+    .min(1)
+    .max(120)
+    .transform(stripHtml)
+    .pipe(z.string().min(1, "Name must contain visible text")),
   email: z.string().trim().email(),
   password: z.string().min(6).max(72),
   role: z.enum(["STUDENT", "TEACHER"]),

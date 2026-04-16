@@ -23,7 +23,8 @@
     "brandTagline": "Free education for Afghan students",
     "networkBadge": "",
     "aiTutor": "AI Tutor",
-    "team": "Team"
+    "team": "Team",
+    "stories": "Stories"
   },
   "home": {
     "eyebrow": "Free classes for Afghan students",
@@ -683,8 +684,8 @@
   "team": {
     "kicker": "Our Team",
     "title": "The people behind AlphaSeekers",
-    "subtitle": "A small team building something that matters. Five people, one mission: free education for every Afghan student who wants to learn.",
-    "spotlightBadge": "Founder & CEO",
+    "subtitle": "A small team building something that matters. Four people, one mission: free education for every Afghan student who wants to learn.",
+    "spotlightBadge": "Co-Founder",
     "teamGridTitle": "The team",
     "ctaTitle": "Want to be part of the mission?",
     "ctaBody": "We are always looking for volunteer teachers and team members who believe in accessible education.",
@@ -724,6 +725,7 @@
   "attendance": {
     "title": "Session Attendance",
     "loading": "Loading attendance...",
+    "summaryLoading": "Loading summary...",
     "sessionNotFound": "Session not found.",
     "noStudents": "No students enrolled in this class.",
     "student": "Student",
@@ -1093,6 +1095,12 @@
     "giveExample": "Give me an example",
     "poweredBy": "Powered by RAG + Llama 3.1",
     "sources": "Sources",
-    "newConversation": "New conversation"
+    "newConversation": "New conversation",
+    "modeStudy": "Study mode",
+    "modePractice": "Practice mode",
+    "modeQuiz": "Quiz mode",
+    "modeExplain": "Explain mode",
+    "modeVocab": "Vocabulary mode",
+    "modePrepare": "Prep mode"
   }
 }

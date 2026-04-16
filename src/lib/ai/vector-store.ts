@@ -65,6 +65,7 @@ export async function insertChunks(
     chunkIndex: number;
     tokenCount: number;
     embedding: number[];
+    classId?: string | null;
   }>,
 ): Promise<number> {
   let inserted = 0;
@@ -72,12 +73,13 @@ export async function insertChunks(
   for (const chunk of chunks) {
     const embeddingStr = `[${chunk.embedding.join(",")}]`;
     await prisma.$executeRawUnsafe(
-      `INSERT INTO "DocumentChunk" (id, "sourceType", "sourceId", "sourceTitle", content, "chunkIndex", "tokenCount", embedding, "createdAt")
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8::vector, NOW())
+      `INSERT INTO "DocumentChunk" (id, "sourceType", "sourceId", "sourceTitle", content, "chunkIndex", "tokenCount", "classId", embedding, "createdAt")
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::vector, NOW())
        ON CONFLICT (id) DO UPDATE SET
          content = EXCLUDED.content,
          "sourceTitle" = EXCLUDED."sourceTitle",
          "tokenCount" = EXCLUDED."tokenCount",
+         "classId" = EXCLUDED."classId",
          embedding = EXCLUDED.embedding`,
       chunk.id,
       chunk.sourceType,
@@ -86,6 +88,7 @@ export async function insertChunks(
       chunk.content,
       chunk.chunkIndex,
       chunk.tokenCount,
+      chunk.classId ?? null,
       embeddingStr,
     );
     inserted += 1;
@@ -120,6 +123,72 @@ export async function similaritySearch(
 
   // Filter by minimum similarity threshold
   return results.filter((r) => r.similarity >= minSimilarity);
+}
+
+/**
+ * Two-stage enrollment-aware similarity search.
+ *
+ * Stage 1: Search within the student's enrolled class materials (higher relevance).
+ * Stage 2: If not enough results, fill from the general pool.
+ *
+ * This means a student enrolled in "English A2" who asks about grammar
+ * gets answers from their English A2 textbook, not from Korean class materials.
+ */
+export async function enrollmentAwareSearch(
+  queryEmbedding: number[],
+  enrolledClassIds: string[],
+  topK?: number,
+  threshold?: number,
+): Promise<StoredChunk[]> {
+  const k = topK ?? aiConfig.rag.topK;
+  const minSimilarity = threshold ?? aiConfig.rag.similarityThreshold;
+  const embeddingStr = `[${queryEmbedding.join(",")}]`;
+
+  let results: StoredChunk[] = [];
+
+  // Stage 1: Search within enrolled classes
+  if (enrolledClassIds.length > 0) {
+    const placeholders = enrolledClassIds.map((_, i) => `$${i + 2}`).join(", ");
+    const enrolledResults = await prisma.$queryRawUnsafe<StoredChunk[]>(
+      `SELECT id, content, "sourceTitle", "sourceId", "sourceType", "chunkIndex",
+              1 - (embedding <=> $1::vector) as similarity
+       FROM "DocumentChunk"
+       WHERE "classId" IN (${placeholders})
+         AND embedding IS NOT NULL
+       ORDER BY embedding <=> $1::vector
+       LIMIT ${k}`,
+      embeddingStr,
+      ...enrolledClassIds,
+    );
+
+    results = enrolledResults.filter((r) => r.similarity >= minSimilarity);
+  }
+
+  // Stage 2: Fill remaining slots from global pool
+  if (results.length < k) {
+    const remaining = k - results.length;
+    const existingIds = new Set(results.map((r) => r.id));
+
+    const globalResults = await prisma.$queryRawUnsafe<StoredChunk[]>(
+      `SELECT id, content, "sourceTitle", "sourceId", "sourceType", "chunkIndex",
+              1 - (embedding <=> $1::vector) as similarity
+       FROM "DocumentChunk"
+       WHERE embedding IS NOT NULL
+       ORDER BY embedding <=> $1::vector
+       LIMIT $2`,
+      embeddingStr,
+      remaining + results.length, // fetch extra to account for overlap
+    );
+
+    for (const r of globalResults) {
+      if (results.length >= k) break;
+      if (!existingIds.has(r.id) && r.similarity >= minSimilarity) {
+        results.push(r);
+      }
+    }
+  }
+
+  return results.sort((a, b) => b.similarity - a.similarity);
 }
 
 /**

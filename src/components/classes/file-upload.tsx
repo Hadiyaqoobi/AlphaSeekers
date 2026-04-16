@@ -154,11 +154,11 @@ export function FileUpload({ purpose, classId, onUploadComplete }: FileUploadPro
   return (
     <div className="space-y-2">
       {/* File input */}
-      <label className="block cursor-pointer rounded border border-dashed border-slate-300 p-3 text-center text-sm text-slate-600 hover:border-slate-400">
-        <span className="font-medium text-slate-800">{t("selectFile")}</span>{" "}
-        <span className="text-slate-500">{t("dragDrop")}</span>
+      <label className="block cursor-pointer rounded border border-dashed border-line-DEFAULT p-3 text-center text-sm text-ink-soft hover:border-line-strong">
+        <span className="font-medium text-ink-main">{t("selectFile")}</span>{" "}
+        <span className="text-ink-soft">{t("dragDrop")}</span>
         <br />
-        <span className="text-xs text-slate-400">{t("maxSize")}</span>
+        <span className="text-xs text-ink-faint">{t("maxSize")}</span>
         <input
           ref={inputRef}
           accept={ACCEPT_STRING}
@@ -171,10 +171,10 @@ export function FileUpload({ purpose, classId, onUploadComplete }: FileUploadPro
 
       {/* File info */}
       {file && !done ? (
-        <div className="flex items-center justify-between rounded bg-slate-50 px-3 py-2 text-sm">
+        <div className="flex items-center justify-between rounded bg-dark-50 px-3 py-2 text-sm">
           <div>
-            <p className="font-medium text-slate-800">{file.name}</p>
-            <p className="text-xs text-slate-500">
+            <p className="font-medium text-ink-main">{file.name}</p>
+            <p className="text-xs text-ink-soft">
               {formatSize(file.size)} ({t("dataCost", { cost: estimateCost(file.size) })})
             </p>
           </div>
@@ -193,19 +193,19 @@ export function FileUpload({ purpose, classId, onUploadComplete }: FileUploadPro
       {/* Progress bar */}
       {uploading ? (
         <div className="space-y-1">
-          <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200">
+          <div className="h-2 w-full overflow-hidden rounded-full bg-dark-200">
             <div
-              className="h-2 rounded-full bg-emerald-500 transition-all"
+              className="h-2 rounded-full bg-neon-500 transition-all"
               style={{ width: `${progress}%` }}
             />
           </div>
-          <p className="text-xs text-slate-500">{t("uploadProgress", { percent: progress })}</p>
+          <p className="text-xs text-ink-soft">{t("uploadProgress", { percent: progress })}</p>
         </div>
       ) : null}
 
       {/* Upload complete */}
       {done ? (
-        <div className="flex items-center gap-2 rounded bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+        <div className="flex items-center gap-2 rounded bg-neon-50 px-3 py-2 text-sm text-neon-700">
           <svg
             className="h-4 w-4 flex-shrink-0"
             fill="none"
@@ -231,7 +231,7 @@ export function FileUpload({ purpose, classId, onUploadComplete }: FileUploadPro
 
       {/* Uploading indicator */}
       {uploading ? (
-        <p className="text-xs text-slate-500">{t("uploading")}</p>
+        <p className="text-xs text-ink-soft">{t("uploading")}</p>
       ) : null}
     </div>
   );

@@ -1,21 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { createOpportunity, listOpportunities } from "@/lib/platform/store";
+import { withCors, corsPreflight } from "@/lib/security/cors";
 import { getSessionUser, isApproved, pendingApproval, unauthorized } from "@/lib/security/session";
+
+export async function OPTIONS(request: NextRequest) {
+  return corsPreflight(request);
+}
 
 export async function GET(request: NextRequest) {
   const user = await getSessionUser();
 
   if (!user) {
-    return unauthorized();
+    return withCors(unauthorized(), request);
   }
 
   if (!isApproved(user)) {
-    return pendingApproval();
+    return withCors(pendingApproval(), request);
   }
 
   const type = request.nextUrl.searchParams.get("type") ?? undefined;
-  return NextResponse.json({ items: await listOpportunities(type) });
+  return withCors(NextResponse.json({ items: await listOpportunities(type) }), request);
 }
 
 export async function POST(request: NextRequest) {

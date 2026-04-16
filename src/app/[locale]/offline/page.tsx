@@ -21,8 +21,8 @@ export default async function OfflinePage({ params }: { params: { locale: string
         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-amber-100">
           <span className="text-2xl">&#x1F4F6;</span>
         </div>
-        <h1 className="text-2xl font-black text-slate-900">{t("title")}</h1>
-        <p className="text-sm text-slate-600">{t("body")}</p>
+        <h1 className="text-2xl font-black text-ink-main">{t("title")}</h1>
+        <p className="text-sm text-ink-soft">{t("body")}</p>
         <a className="btn-primary" href={`/${params.locale}/dashboard`}>
           {t("cachedSchedule")}
         </a>

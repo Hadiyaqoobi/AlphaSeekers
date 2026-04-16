@@ -41,7 +41,7 @@ export function SaveOfflineButton({ fileUrl, title }: SaveOfflineButtonProps) {
 
   if (status === "saved") {
     return (
-      <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700">
+      <span className="inline-flex items-center gap-1 text-xs font-medium text-neon-700">
         {t("savedOffline")}
       </span>
     );
@@ -49,7 +49,7 @@ export function SaveOfflineButton({ fileUrl, title }: SaveOfflineButtonProps) {
 
   return (
     <button
-      className="text-xs font-medium text-slate-600 hover:text-slate-900"
+      className="text-xs font-medium text-ink-soft hover:text-ink-main"
       disabled={status === "saving"}
       onClick={handleSave}
       title={title}

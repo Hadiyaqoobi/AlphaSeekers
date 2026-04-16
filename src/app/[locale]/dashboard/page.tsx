@@ -66,10 +66,10 @@ export default async function DashboardPage({ params, searchParams }: DashboardP
   });
 
   const statCards = [
-    { value: stats.activeClasses, label: t("cards.classes"), color: "bg-emerald-50 text-emerald-600", icon: "M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" },
-    { value: stats.students, label: t("cards.students"), color: "bg-blue-50 text-blue-600", icon: "M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" },
-    { value: stats.teachers, label: t("cards.teachers"), color: "bg-amber-50 text-amber-600", icon: "M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" },
-    { value: stats.sessionsToday, label: t("cards.today"), color: "bg-purple-50 text-purple-600", icon: "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" },
+    { value: stats.activeClasses, label: t("cards.classes"), iconBg: "rgba(0, 230, 118, 0.10)", iconColor: "#00E676", icon: "M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" },
+    { value: stats.students, label: t("cards.students"), iconBg: "rgba(0, 229, 255, 0.10)", iconColor: "#00E5FF", icon: "M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" },
+    { value: stats.teachers, label: t("cards.teachers"), iconBg: "rgba(41, 121, 255, 0.10)", iconColor: "#2979FF", icon: "M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" },
+    { value: stats.sessionsToday, label: t("cards.today"), iconBg: "rgba(255, 179, 0, 0.10)", iconColor: "#FFB300", icon: "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" },
   ];
 
   return (
@@ -81,8 +81,8 @@ export default async function DashboardPage({ params, searchParams }: DashboardP
       <header>
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
           <div>
-            <h1 className="text-2xl font-semibold text-gray-900">{greeting}, {firstName}</h1>
-            <p className="mt-1 text-sm text-gray-500">
+            <h1 className="text-2xl font-bold" style={{ color: "#E8EEF2" }}>{greeting}, {firstName}</h1>
+            <p className="mt-1 text-sm" style={{ color: "#8899A6" }}>
               {stats.sessionsToday > 0
                 ? `${stats.sessionsToday} ${t("cards.today").toLowerCase()} — ${dateStr}`
                 : dateStr}
@@ -94,14 +94,21 @@ export default async function DashboardPage({ params, searchParams }: DashboardP
       {/* Stat Cards */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {statCards.map((card) => (
-          <article key={card.label} className="rounded-xl border border-gray-100 bg-white p-5">
-            <div className={`inline-flex items-center justify-center w-10 h-10 rounded-xl ${card.color}`}>
+          <article
+            key={card.label}
+            className="rounded-2xl p-5"
+            style={{ background: "#0E1921", border: "1px solid #1A2D3D" }}
+          >
+            <div
+              className="inline-flex items-center justify-center w-10 h-10 rounded-xl"
+              style={{ background: card.iconBg, color: card.iconColor }}
+            >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d={card.icon} />
               </svg>
             </div>
-            <p className="text-3xl font-bold text-gray-900 mt-4">{card.value}</p>
-            <p className="text-sm text-gray-500 mt-1">{card.label}</p>
+            <p className="text-3xl font-bold mt-4" style={{ color: "#E8EEF2" }}>{card.value}</p>
+            <p className="text-sm mt-1" style={{ color: "#8899A6" }}>{card.label}</p>
           </article>
         ))}
       </div>
@@ -118,16 +125,16 @@ export default async function DashboardPage({ params, searchParams }: DashboardP
 
           {/* Classes / Sessions */}
           {user.role === "STUDENT" ? (
-            <section className="rounded-xl border border-gray-100 bg-white p-6">
+            <section className="rounded-xl border border-gray-100 bg-dark-100 p-6">
               <div className="flex items-center justify-between mb-5">
                 <h3 className="text-base font-semibold text-gray-900">{t("sections.myClasses")}</h3>
-                <Link className="text-sm text-emerald-600 hover:text-emerald-700" href={`/${locale}/classes`}>{t("actions.viewAll")}</Link>
+                <Link className="text-sm text-neon-600 hover:text-neon-700" href={`/${locale}/classes`}>{t("actions.viewAll")}</Link>
               </div>
               {myClasses.length > 0 ? (
                 <div className="space-y-3">
                   {myClasses.map((item) => (
                     <div className="flex items-center gap-4 rounded-lg p-3 hover:bg-gray-50 transition-colors" key={item.id}>
-                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 flex-shrink-0">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-neon-50 text-neon-600 flex-shrink-0">
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
                       </div>
                       <div className="flex-1 min-w-0">
@@ -141,15 +148,15 @@ export default async function DashboardPage({ params, searchParams }: DashboardP
                 <div className="rounded-lg bg-gray-50 p-8 text-center">
                   <svg className="mx-auto w-8 h-8 text-gray-300 mb-2" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
                   <p className="text-sm text-gray-500">{t("empty.noEnrollments")}</p>
-                  <Link className="text-xs text-emerald-600 font-medium mt-2 inline-block" href={`/${locale}/classes`}>{t("actions.viewAll")}</Link>
+                  <Link className="text-xs text-neon-600 font-medium mt-2 inline-block" href={`/${locale}/classes`}>{t("actions.viewAll")}</Link>
                 </div>
               )}
             </section>
           ) : user.role === "TEACHER" ? (
-            <section className="rounded-xl border border-gray-100 bg-white p-6">
+            <section className="rounded-xl border border-gray-100 bg-dark-100 p-6">
               <div className="flex items-center justify-between mb-5">
                 <h3 className="text-base font-semibold text-gray-900">{t("sections.myClasses")}</h3>
-                <Link className="text-sm text-emerald-600 hover:text-emerald-700" href={`/${locale}/teacher/classes`}>{t("actions.viewAll")}</Link>
+                <Link className="text-sm text-neon-600 hover:text-neon-700" href={`/${locale}/teacher/classes`}>{t("actions.viewAll")}</Link>
               </div>
               {teacherClasses.length > 0 ? (
                 <div className="space-y-3">
@@ -173,13 +180,13 @@ export default async function DashboardPage({ params, searchParams }: DashboardP
             </section>
           ) : (
             /* Admin: Today's Sessions */
-            <section className="rounded-xl border border-gray-100 bg-white p-6">
+            <section className="rounded-xl border border-gray-100 bg-dark-100 p-6">
               <h3 className="text-base font-semibold text-gray-900 mb-5">{t("sections.todaySessions")}</h3>
               {todaySessions.length > 0 ? (
                 <div className="space-y-2">
                   {todaySessions.map((item) => (
                     <div className="flex items-center gap-4 rounded-lg p-3 hover:bg-gray-50 transition-colors" key={item.id}>
-                      <span className={`flex-shrink-0 w-2.5 h-2.5 rounded-full ${item.meetLinkStatus === "GENERATED" ? "bg-emerald-400" : item.meetLinkStatus === "PENDING" ? "bg-amber-400" : "bg-red-400"}`} />
+                      <span className={`flex-shrink-0 w-2.5 h-2.5 rounded-full ${item.meetLinkStatus === "GENERATED" ? "bg-neon-400" : item.meetLinkStatus === "PENDING" ? "bg-amber-400" : "bg-red-400"}`} />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-gray-900">{item.className}</p>
                         <p className="text-xs text-gray-500">{item.teacherName}</p>
@@ -202,7 +209,7 @@ export default async function DashboardPage({ params, searchParams }: DashboardP
         <div className="space-y-6">
           {/* Quick Actions (Admin only) */}
           {user.role === "ADMIN" ? (
-            <section className="rounded-xl border border-gray-100 bg-white p-5">
+            <section className="rounded-xl border border-gray-100 bg-dark-100 p-5">
               <h3 className="text-base font-semibold text-gray-900 mb-4">Quick actions</h3>
               <div className="space-y-1">
                 {[
@@ -222,12 +229,12 @@ export default async function DashboardPage({ params, searchParams }: DashboardP
 
           {/* Notifications */}
           {notifications.length > 0 ? (
-            <section className="rounded-xl border border-gray-100 bg-white p-5">
+            <section className="rounded-xl border border-gray-100 bg-dark-100 p-5">
               <h3 className="text-base font-semibold text-gray-900 mb-4">{t("sections.latestNotifications")}</h3>
               <div className="space-y-3">
                 {notifications.map((item) => (
                   <div className="flex gap-3" key={item.id}>
-                    <div className="flex-shrink-0 mt-1.5"><div className="w-2 h-2 rounded-full bg-emerald-400" /></div>
+                    <div className="flex-shrink-0 mt-1.5"><div className="w-2 h-2 rounded-full bg-neon-400" /></div>
                     <div className="min-w-0">
                       <p className="text-sm text-gray-700 leading-relaxed">{item.content}</p>
                       <p className="text-xs text-gray-400 mt-1">{item.sentAt ? formatDateTime(item.sentAt, locale) : t("labels.pending")}</p>

@@ -49,7 +49,7 @@ export function LibraryComingSoon() {
             {(['pill1', 'pill2', 'pill3'] as const).map((key) => (
               <span
                 key={key}
-                className="bg-white/[0.06] border border-white/[0.08] text-white/70 text-sm font-medium px-5 py-2 rounded-full"
+                className="bg-dark-100/[0.06] border border-white/[0.08] text-white/70 text-sm font-medium px-5 py-2 rounded-full"
               >
                 {t(`comingSoon.${key}`)}
               </span>

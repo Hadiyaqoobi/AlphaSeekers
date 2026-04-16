@@ -44,8 +44,8 @@ export default async function AdminTeachersPage({ params }: AdminTeachersPagePro
     <section className="space-y-4 sm:space-y-5">
       <header className="hero-panel p-5 sm:p-6">
         <p className="section-kicker">{t("kicker")}</p>
-        <h1 className="text-3xl font-black text-slate-900 sm:text-4xl">{t("title")}</h1>
-        <p className="mt-2 text-sm text-slate-600">{t("subtitle")}</p>
+        <h1 className="text-3xl font-black text-ink-main sm:text-4xl">{t("title")}</h1>
+        <p className="mt-2 text-sm text-ink-soft">{t("subtitle")}</p>
         <div className="mt-4 flex flex-wrap gap-2">
           <Link className="btn-secondary" href={`/${params.locale}/admin/classes`}>
             {t("backToAdmin")}
@@ -53,19 +53,19 @@ export default async function AdminTeachersPage({ params }: AdminTeachersPagePro
         </div>
       </header>
 
-      <div className="grid gap-px bg-slate-200 rounded-lg overflow-hidden sm:grid-cols-3">
-        <article className="bg-white p-4">
-          <p className="text-sm text-slate-500">{t("stats.total")}</p>
-          <p className="mt-1 text-2xl font-bold text-slate-900">{teachers.length}</p>
+      <div className="grid gap-px bg-dark-200 rounded-lg overflow-hidden sm:grid-cols-3">
+        <article className="bg-dark-100 p-4">
+          <p className="text-sm text-ink-soft">{t("stats.total")}</p>
+          <p className="mt-1 text-2xl font-bold text-ink-main">{teachers.length}</p>
         </article>
-        <article className="bg-white p-4">
-          <p className="text-sm text-slate-500">{t("stats.withAvailability")}</p>
-          <p className="mt-1 text-2xl font-bold text-emerald-700">
+        <article className="bg-dark-100 p-4">
+          <p className="text-sm text-ink-soft">{t("stats.withAvailability")}</p>
+          <p className="mt-1 text-2xl font-bold text-neon-700">
             {teacherDetails.filter((t) => t.hasAvailability).length}
           </p>
         </article>
-        <article className="bg-white p-4">
-          <p className="text-sm text-slate-500">{t("stats.noAvailability")}</p>
+        <article className="bg-dark-100 p-4">
+          <p className="text-sm text-ink-soft">{t("stats.noAvailability")}</p>
           <p className="mt-1 text-2xl font-bold text-red-600">
             {teacherDetails.filter((t) => !t.hasAvailability).length}
           </p>
@@ -80,10 +80,10 @@ export default async function AdminTeachersPage({ params }: AdminTeachersPagePro
             {teacherDetails
               .filter((t) => !t.hasAvailability)
               .map((teacher) => (
-                <div className="flex items-center justify-between rounded-lg bg-white px-3 py-2" key={teacher.id}>
+                <div className="flex items-center justify-between rounded-lg bg-dark-100 px-3 py-2" key={teacher.id}>
                   <div>
-                    <p className="text-sm font-medium text-slate-900">{teacher.name}</p>
-                    <p className="text-xs text-slate-500">{teacher.email}</p>
+                    <p className="text-sm font-medium text-ink-main">{teacher.name}</p>
+                    <p className="text-xs text-ink-soft">{teacher.email}</p>
                   </div>
                   <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
                     {t("pendingSetup")}
@@ -95,11 +95,11 @@ export default async function AdminTeachersPage({ params }: AdminTeachersPagePro
       ) : null}
 
       <section className="panel panel-strong p-4 sm:p-5">
-        <h2 className="text-lg font-black text-slate-900">{t("allTeachers")}</h2>
+        <h2 className="text-lg font-black text-ink-main">{t("allTeachers")}</h2>
         <div className="mt-3 overflow-x-auto">
           <table className="w-full min-w-[640px] border-collapse text-left text-sm">
             <thead>
-              <tr className="border-b border-slate-200 text-slate-500">
+              <tr className="border-b border-line-DEFAULT text-ink-soft">
                 <th className="py-2 font-semibold" scope="col">{t("name")}</th>
                 <th className="py-2 font-semibold" scope="col">{t("email")}</th>
                 <th className="py-2 font-semibold" scope="col">{t("classes")}</th>
@@ -110,14 +110,14 @@ export default async function AdminTeachersPage({ params }: AdminTeachersPagePro
             </thead>
             <tbody>
               {teacherDetails.map((teacher) => (
-                <tr className="border-b border-slate-100 text-slate-700" key={teacher.id}>
-                  <td className="py-2 font-semibold text-slate-900">{teacher.name}</td>
+                <tr className="border-b border-line-soft text-ink-main" key={teacher.id}>
+                  <td className="py-2 font-semibold text-ink-main">{teacher.name}</td>
                   <td className="py-2">{teacher.email}</td>
                   <td className="py-2">{teacher.classCount}</td>
                   <td className="py-2">{teacher.totalStudents}</td>
                   <td className="py-2">
                     {teacher.hasAvailability ? (
-                      <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800">
+                      <span className="rounded-full bg-neon-100 px-2 py-0.5 text-xs font-medium text-neon-800">
                         {teacher.availabilitySlots} {t("slots")}
                       </span>
                     ) : (
@@ -128,7 +128,7 @@ export default async function AdminTeachersPage({ params }: AdminTeachersPagePro
                   </td>
                   <td className="py-2">
                     {teacher.approvedAt ? (
-                      <span className="text-xs text-emerald-700">{formatDateTime(teacher.approvedAt, locale)}</span>
+                      <span className="text-xs text-neon-700">{formatDateTime(teacher.approvedAt, locale)}</span>
                     ) : (
                       <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
                         {t("pending")}

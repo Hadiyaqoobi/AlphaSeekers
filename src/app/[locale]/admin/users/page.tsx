@@ -29,7 +29,7 @@ export default async function AdminUsersPage({ params }: AdminUsersPageProps) {
     <section className="mx-auto max-w-6xl px-6 py-10 lg:px-8">
       {/* Page Header */}
       <header className="mb-10">
-        <p className="text-xs font-semibold uppercase tracking-widest text-emerald-600">
+        <p className="text-xs font-semibold uppercase tracking-widest text-neon-600">
           {t("title")}
         </p>
         <h1 className="mt-2 text-4xl font-bold tracking-tight text-gray-900">
@@ -40,7 +40,7 @@ export default async function AdminUsersPage({ params }: AdminUsersPageProps) {
         </p>
         <div className="mt-6 flex flex-wrap gap-3">
           <Link
-            className="inline-flex items-center rounded-xl border border-gray-200 bg-white px-5 py-2.5 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 hover:shadow-md"
+            className="inline-flex items-center rounded-xl border border-gray-200 bg-dark-100 px-5 py-2.5 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 hover:shadow-md"
             href={`/${params.locale}/admin/classes`}
           >
             <svg className="mr-2 h-4 w-4 text-gray-400" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
@@ -49,7 +49,7 @@ export default async function AdminUsersPage({ params }: AdminUsersPageProps) {
             {t("backToAdmin")}
           </Link>
           <Link
-            className="inline-flex items-center rounded-xl border border-gray-200 bg-white px-5 py-2.5 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 hover:shadow-md"
+            className="inline-flex items-center rounded-xl border border-gray-200 bg-dark-100 px-5 py-2.5 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 hover:shadow-md"
             href={`/${params.locale}/dashboard`}
           >
             {t("dashboard")}
@@ -58,7 +58,7 @@ export default async function AdminUsersPage({ params }: AdminUsersPageProps) {
       </header>
 
       {/* User Approvals Component */}
-      <div className="rounded-2xl border border-gray-100 bg-white shadow-sm">
+      <div className="rounded-2xl border border-gray-100 bg-dark-100 shadow-sm">
         <UserApprovals />
       </div>
     </section>

@@ -65,7 +65,7 @@ export function LibraryForm() {
 
   return (
     <form className="panel panel-strong space-y-3 p-4" onSubmit={submit}>
-      <h2 className="text-lg font-black text-slate-900">{t("addLibrary")}</h2>
+      <h2 className="text-lg font-black text-ink-main">{t("addLibrary")}</h2>
       <input
         className="field"
         onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))}
@@ -94,7 +94,7 @@ export function LibraryForm() {
         purpose="library"
       />
       {form.fileUrl ? (
-        <p className="text-xs text-emerald-600">File uploaded to R2</p>
+        <p className="text-xs text-neon-600">File uploaded to R2</p>
       ) : (
         <input
           className="field"
@@ -114,7 +114,7 @@ export function LibraryForm() {
       <button className="btn-primary" type="submit">
         {t("addResource")}
       </button>
-      {status ? <p className="text-sm text-slate-700">{status}</p> : null}
+      {status ? <p className="text-sm text-ink-main">{status}</p> : null}
     </form>
   );
 }

@@ -11,6 +11,7 @@ const ingestSchema = z.object({
   sourceId: z.string().min(1),
   sourceTitle: z.string().min(1),
   content: z.string().min(10),
+  classId: z.string().optional(), // Links document chunks to a specific class
 });
 
 function generateChunkId(sourceId: string, chunkIndex: number): string {
@@ -49,7 +50,7 @@ export async function POST(request: Request) {
     // Ensure pgvector extension exists
     await ensureVectorExtension();
 
-    const { sourceType, sourceId, sourceTitle, content } = parsed.data;
+    const { sourceType, sourceId, sourceTitle, content, classId } = parsed.data;
 
     // Delete existing chunks for this source (supports re-ingestion)
     const deleted = await deleteChunksBySource(sourceType, sourceId);
@@ -77,6 +78,7 @@ export async function POST(request: Request) {
       chunkIndex: chunk.chunkIndex,
       tokenCount: chunk.tokenCount,
       embedding: embeddings[i],
+      classId: classId || null,
     }));
 
     const inserted = await insertChunks(chunksWithEmbeddings);

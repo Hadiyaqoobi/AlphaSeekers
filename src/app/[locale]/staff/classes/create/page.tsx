@@ -29,8 +29,8 @@ export default async function StaffCreateClassPage({ params }: CreateClassPagePr
         <section className="mx-auto max-w-xl space-y-4 sm:space-y-5">
             <header className="hero-panel p-5 sm:p-6">
                 <p className="section-kicker">{t("title")}</p>
-                <h1 className="text-3xl font-black text-slate-900 sm:text-4xl">{t("createClassTitle")}</h1>
-                <p className="mt-2 text-sm text-slate-600">
+                <h1 className="text-3xl font-black text-ink-main sm:text-4xl">{t("createClassTitle")}</h1>
+                <p className="mt-2 text-sm text-ink-soft">
                     {t("createClassSubtitle")}
                 </p>
                 <div className="mt-4">

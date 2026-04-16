@@ -34,25 +34,52 @@ export function WorkflowPipeline() {
   const lineDelay = (i: number) => 0.3 + i * 0.5 + 0.15;
 
   return (
-    <section className="w-full py-24 bg-land-dark-100" id="workflow">
-      <div className="mx-auto max-w-7xl px-6 lg:px-8">
+    <section className="relative w-full py-24 overflow-hidden" id="workflow">
+      {/* Ambient glow */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_50%,rgba(0,230,118,0.05)_0%,transparent_60%)] pointer-events-none" aria-hidden="true" />
+
+      <div className="relative mx-auto max-w-7xl px-6 lg:px-8">
         <div className="text-center mb-16">
-          <p className="text-land-green-400 text-sm font-semibold uppercase tracking-[0.15em] mb-4">{t('pipeline.kicker')}</p>
-          <h2 className="text-3xl lg:text-4xl font-bold text-white tracking-tight mb-4" style={{ fontFamily: 'var(--font-landing), var(--font-display-latin), sans-serif' }}>{t('pipeline.title')}</h2>
+          <p className="text-sm uppercase tracking-[0.15em] text-neon-500 font-medium mb-4">{t('pipeline.kicker')}</p>
+          <h2 className="text-3xl lg:text-5xl font-bold text-white tracking-tight mb-4" style={{ fontFamily: 'var(--font-landing), var(--font-display-latin), sans-serif' }}>{t('pipeline.title')}</h2>
           <p className="text-lg text-white/50 max-w-2xl mx-auto">{t('pipeline.subtitle')}</p>
         </div>
         <div ref={ref} className="relative">
           <div className="hidden lg:grid lg:grid-cols-5 lg:gap-0 relative">
             {[0,1,2,3].map(i => (
-              <div key={`line-${i}`} className="absolute top-8 h-[2px] bg-land-green-500/30" style={{ left: `calc(${(i+1)*20}% - 10%)`, width: 'calc(20%)', transform: inView ? 'scaleX(1)' : 'scaleX(0)', transformOrigin: 'left', transition: `transform 0.4s cubic-bezier(0.16,1,0.3,1) ${lineDelay(i)}s` }} />
+              <div
+                key={`line-${i}`}
+                className="absolute top-8 h-[2px]"
+                style={{
+                  left: `calc(${(i+1)*20}% - 10%)`,
+                  width: 'calc(20%)',
+                  background: 'linear-gradient(90deg, rgba(0,230,118,0.35), rgba(0,229,255,0.25), rgba(0,230,118,0.35))',
+                  boxShadow: inView ? '0 0 8px rgba(0,229,255,0.25)' : 'none',
+                  transform: inView ? 'scaleX(1)' : 'scaleX(0)',
+                  transformOrigin: 'left',
+                  transition: `transform 0.4s cubic-bezier(0.16,1,0.3,1) ${lineDelay(i)}s, box-shadow 0.4s ${lineDelay(i)}s`,
+                }}
+              />
             ))}
             {steps.map((step, i) => (
-              <div key={step.title} className="flex flex-col items-center text-center relative z-10" style={{ opacity: inView ? 1 : 0, transform: inView ? 'translateY(0)' : 'translateY(20px)', transition: `all 0.5s cubic-bezier(0.16,1,0.3,1) ${stepDelay(i)}s` }}>
-                <div className="w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-500" style={{ background: inView ? 'rgba(29,185,100,0.1)' : 'rgba(255,255,255,0.05)', border: `1px solid ${inView ? 'rgba(29,185,100,0.4)' : 'rgba(255,255,255,0.1)'}`, boxShadow: inView ? '0 0 20px rgba(29,185,100,0.15)' : 'none', transitionDelay: `${stepDelay(i)}s` }}>
-                  <svg className="w-7 h-7 text-land-green-400" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d={step.icon} /></svg>
+              <div key={step.title} className="group flex flex-col items-center text-center relative z-10" style={{ opacity: inView ? 1 : 0, transform: inView ? 'translateY(0)' : 'translateY(20px)', transition: `all 0.5s cubic-bezier(0.16,1,0.3,1) ${stepDelay(i)}s` }}>
+                <div className="relative">
+                  {/* Pulse glow ring */}
+                  <div className="absolute -inset-2 rounded-2xl bg-neon-500/15 opacity-0 group-hover:opacity-100 blur-md transition-opacity duration-300" />
+                  <div
+                    className="relative w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-500 group-hover:border-neon-500/60 group-hover:bg-neon-500/15 group-hover:shadow-[0_0_25px_rgba(0,230,118,0.3)]"
+                    style={{
+                      background: inView ? 'rgba(0,230,118,0.08)' : 'rgba(255,255,255,0.05)',
+                      border: `1px solid ${inView ? 'rgba(0,230,118,0.4)' : 'rgba(255,255,255,0.1)'}`,
+                      boxShadow: inView ? '0 0 20px rgba(0,230,118,0.18)' : 'none',
+                      transitionDelay: `${stepDelay(i)}s`,
+                    }}
+                  >
+                    <svg className="w-7 h-7 text-neon-400" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d={step.icon} /></svg>
+                  </div>
                 </div>
                 <p className="text-white text-sm font-semibold mt-4">{step.title}</p>
-                <p className="text-white/40 text-xs mt-1 max-w-[140px]">{step.desc}</p>
+                <p className="text-white/45 text-xs mt-1 max-w-[140px]">{step.desc}</p>
               </div>
             ))}
           </div>
@@ -65,11 +92,16 @@ export function WorkflowPipeline() {
                   </div>
                   {i < steps.length - 1 && <div className="w-[2px] h-8 bg-land-green-500/20 mt-2 origin-top" style={{ transform: inView ? 'scaleY(1)' : 'scaleY(0)', transition: `transform 0.3s ease ${0.15*i+0.2}s` }} />}
                 </div>
-                <div className="pt-3"><p className="text-white text-sm font-semibold">{step.title}</p><p className="text-white/40 text-xs mt-1">{step.desc}</p></div>
+                <div className="pt-3"><p className="text-white text-sm font-semibold">{step.title}</p><p className="text-white/45 text-xs mt-1">{step.desc}</p></div>
               </div>
             ))}
           </div>
         </div>
+      </div>
+
+      {/* Bottom glow divider */}
+      <div className="relative mx-auto max-w-7xl px-6 lg:px-8 mt-16">
+        <div className="h-px bg-gradient-to-r from-transparent via-neon-500/30 to-transparent" />
       </div>
     </section>
   );

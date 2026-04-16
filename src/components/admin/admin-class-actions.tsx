@@ -86,7 +86,7 @@ export function AdminClassActions({ classId }: AdminClassActionsProps) {
       </button>
 
       {editing ? (
-        <form className="mt-2 w-full rounded-lg border border-slate-200 bg-white p-4 space-y-3" onSubmit={handleEdit}>
+        <form className="mt-2 w-full rounded-lg border border-line-DEFAULT bg-dark-100 p-4 space-y-3" onSubmit={handleEdit}>
           <input
             className="field"
             onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
@@ -109,11 +109,11 @@ export function AdminClassActions({ classId }: AdminClassActionsProps) {
           <button className="btn-primary" disabled={saving} type="submit">
             {saving ? "..." : t("saveChanges")}
           </button>
-          {message ? <p className="text-sm text-slate-700">{message}</p> : null}
+          {message ? <p className="text-sm text-ink-main">{message}</p> : null}
         </form>
       ) : null}
 
-      {message && !editing ? <p className="text-sm text-slate-700">{message}</p> : null}
+      {message && !editing ? <p className="text-sm text-ink-main">{message}</p> : null}
     </div>
   );
 }

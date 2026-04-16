@@ -58,7 +58,7 @@ export function OpportunityForm() {
 
   return (
     <form className="panel panel-strong space-y-3 p-4" onSubmit={submit}>
-      <h2 className="text-lg font-black text-slate-900">{t("postOpportunity")}</h2>
+      <h2 className="text-lg font-black text-ink-main">{t("postOpportunity")}</h2>
       <input
         className="field"
         onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))}
@@ -101,7 +101,7 @@ export function OpportunityForm() {
       <button className="btn-primary" type="submit">
         {t("publish")}
       </button>
-      {status ? <p className="text-sm text-slate-700">{status}</p> : null}
+      {status ? <p className="text-sm text-ink-main">{status}</p> : null}
     </form>
   );
 }

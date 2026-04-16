@@ -88,8 +88,8 @@ export function AIShowcase() {
               </div>
               <div className="py-6 space-y-4 min-h-[180px]" dir="rtl">
                 {userTyping.displayText && <div className="flex justify-start"><div className="bg-land-green-600/20 rounded-2xl rounded-tr-md px-4 py-3 max-w-[85%]"><p className="text-sm text-white" dir="rtl">{userTyping.displayText}</p></div></div>}
-                {showThinking && !aiTyping.displayText && <div className="flex justify-end" dir="rtl"><div className="bg-white/[0.05] rounded-2xl rounded-tl-md px-4 py-3"><div className="flex gap-1">{[0,1,2].map(i => <span key={i} className="w-1.5 h-1.5 rounded-full bg-white/30" style={{ animation: 'pulse-soft 1s ease-in-out infinite', animationDelay: `${i*0.2}s` }} />)}</div></div></div>}
-                {aiTyping.displayText && <div className="flex justify-end" dir="rtl"><div className="max-w-[85%]"><div className="bg-white/[0.05] rounded-2xl rounded-tl-md px-4 py-3"><p className="text-sm text-white/80 leading-relaxed" dir="rtl">{aiTyping.displayText}</p></div>
+                {showThinking && !aiTyping.displayText && <div className="flex justify-end" dir="rtl"><div className="bg-dark-100/[0.05] rounded-2xl rounded-tl-md px-4 py-3"><div className="flex gap-1">{[0,1,2].map(i => <span key={i} className="w-1.5 h-1.5 rounded-full bg-dark-100/30" style={{ animation: 'pulse-soft 1s ease-in-out infinite', animationDelay: `${i*0.2}s` }} />)}</div></div></div>}
+                {aiTyping.displayText && <div className="flex justify-end" dir="rtl"><div className="max-w-[85%]"><div className="bg-dark-100/[0.05] rounded-2xl rounded-tl-md px-4 py-3"><p className="text-sm text-white/80 leading-relaxed" dir="rtl">{aiTyping.displayText}</p></div>
                   <p className="text-xs text-white/30 mt-2 text-left" dir="ltr" style={{ opacity: showSource ? 1 : 0, transition: 'opacity 0.5s' }}>{t('aiShowcase.chatSource')} {t('aiShowcase.sourceText')}</p>
                   <div className="flex gap-2 mt-2" dir="ltr" style={{ opacity: showFeedback ? 1 : 0, transition: 'opacity 0.5s' }}>
                     <button className="text-white/20 hover:text-white/50 transition-colors" aria-label="Helpful"><svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6.633 10.25c.806 0 1.533-.446 2.031-1.08a9.041 9.041 0 012.861-2.4c.723-.384 1.35-.956 1.653-1.715a4.498 4.498 0 00.322-1.672V3a.75.75 0 01.75-.75 2.25 2.25 0 012.25 2.25c0 1.152-.26 2.243-.723 3.218-.266.558.107 1.282.725 1.282m0 0h3.126c1.026 0 1.945.694 2.054 1.715.045.422.068.85.068 1.285a11.95 11.95 0 01-2.649 7.521c-.388.482-.987.729-1.605.729H13.48c-.483 0-.964-.078-1.423-.23l-3.114-1.04a4.501 4.501 0 00-1.423-.23H5.904m10.598-9.75H14.25M5.904 18.5c.083.205.173.405.27.602.197.4-.078.898-.523.898h-.908c-.889 0-1.713-.518-1.972-1.368a12 12 0 01-.521-3.507c0-1.553.295-3.036.831-4.398C3.387 9.953 4.167 9.5 5 9.5h1.053c.472 0 .745.556.5.96a8.958 8.958 0 00-1.302 4.665c0 1.194.232 2.333.654 3.375z" /></svg></button>
@@ -97,7 +97,7 @@ export function AIShowcase() {
                   </div></div></div>}
               </div>
               <div className="flex items-center gap-3 pt-4 border-t border-white/[0.06]">
-                <div className="flex-1 bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3"><span className="text-sm text-white/25">{t('aiShowcase.chatPlaceholder')}</span></div>
+                <div className="flex-1 bg-dark-100/[0.04] border border-white/[0.08] rounded-xl px-4 py-3"><span className="text-sm text-white/25">{t('aiShowcase.chatPlaceholder')}</span></div>
                 <button className="w-10 h-10 rounded-xl bg-land-green-600/20 flex items-center justify-center text-land-green-400 flex-shrink-0" aria-label="Send"><svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" /></svg></button>
               </div>
             </div>
@@ -105,7 +105,7 @@ export function AIShowcase() {
           <div className="grid grid-cols-2 gap-4 mt-12 lg:mt-0">
             {featureIcons.map((icon, i) => (
               <ScrollReveal key={i} delay={i * 0.15}>
-                <div className="bg-white/[0.04] border border-white/[0.06] rounded-xl p-5 transition-all duration-300 hover:-translate-y-1.5 hover:bg-white/[0.08] hover:border-land-green-500/30 group">
+                <div className="bg-dark-100/[0.04] border border-white/[0.06] rounded-xl p-5 transition-all duration-300 hover:-translate-y-1.5 hover:bg-dark-100/[0.08] hover:border-land-green-500/30 group">
                   <svg className="w-5 h-5 text-land-green-400 mb-3 group-hover:text-land-green-300 transition-colors" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d={icon} /></svg>
                   <h3 className="text-white text-sm font-semibold">{t(`aiShowcase.features.${i}.title`)}</h3>
                   <p className="text-white/40 text-xs mt-1">{t(`aiShowcase.features.${i}.desc`)}</p>

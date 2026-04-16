@@ -37,8 +37,8 @@ export function RunSchedulerButton() {
 
   return (
     <div className="panel panel-strong space-y-2 p-4">
-      <h2 className="text-lg font-black text-slate-900">Scheduler</h2>
-      <p className="text-sm text-slate-600">Runs 10 classes per invocation to stay inside serverless limits.</p>
+      <h2 className="text-lg font-black text-ink-main">Scheduler</h2>
+      <p className="text-sm text-ink-soft">Runs 10 classes per invocation to stay inside serverless limits.</p>
       <button
         aria-label="Run scheduler batch to process classes"
         className="btn-primary"
@@ -48,7 +48,7 @@ export function RunSchedulerButton() {
       >
         {loading ? "Running..." : "Run scheduler batch"}
       </button>
-      {status ? <p className="text-sm text-slate-700">{status}</p> : null}
+      {status ? <p className="text-sm text-ink-main">{status}</p> : null}
     </div>
   );
 }

@@ -48,7 +48,7 @@ export function WebinarRegisterButton({ webinarId }: WebinarRegisterButtonProps)
       >
         {loading ? "..." : registered ? t("registeredBadge") : t("registerButton")}
       </button>
-      {status && !registered ? <p className="text-xs text-slate-600">{status}</p> : null}
+      {status && !registered ? <p className="text-xs text-ink-soft">{status}</p> : null}
     </div>
   );
 }

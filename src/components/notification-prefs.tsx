@@ -45,33 +45,33 @@ export function NotificationPrefs() {
 
   return (
     <div className="space-y-2">
-      <h3 className="text-sm font-semibold text-slate-900">{t("title")}</h3>
-      <p className="text-xs text-slate-500">{t("description")}</p>
+      <h3 className="text-sm font-semibold text-ink-main">{t("title")}</h3>
+      <p className="text-xs text-ink-soft">{t("description")}</p>
       <div className="flex flex-wrap gap-3">
-        <label className="flex items-center gap-2 text-sm text-slate-700">
+        <label className="flex items-center gap-2 text-sm text-ink-main">
           <input
             checked={prefs.telegram}
-            className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+            className="h-4 w-4 rounded border-line-DEFAULT text-neon-600 focus:ring-neon-500"
             disabled={saving}
             onChange={() => toggle("telegram")}
             type="checkbox"
           />
           {t("telegram")}
         </label>
-        <label className="flex items-center gap-2 text-sm text-slate-700">
+        <label className="flex items-center gap-2 text-sm text-ink-main">
           <input
             checked={prefs.webPush}
-            className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+            className="h-4 w-4 rounded border-line-DEFAULT text-neon-600 focus:ring-neon-500"
             disabled={saving}
             onChange={() => toggle("webPush")}
             type="checkbox"
           />
           {t("webPush")}
         </label>
-        <label className="flex items-center gap-2 text-sm text-slate-700">
+        <label className="flex items-center gap-2 text-sm text-ink-main">
           <input
             checked={prefs.email}
-            className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+            className="h-4 w-4 rounded border-line-DEFAULT text-neon-600 focus:ring-neon-500"
             disabled={saving}
             onChange={() => toggle("email")}
             type="checkbox"

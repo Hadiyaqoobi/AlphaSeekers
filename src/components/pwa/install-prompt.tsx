@@ -51,15 +51,15 @@ export function InstallPrompt() {
     <div className="fixed bottom-4 left-4 right-4 z-50 mx-auto max-w-sm animate-pulse-once">
       <div className="panel panel-strong flex items-center gap-3 p-3 shadow-lg">
         <div className="flex-1">
-          <p className="text-sm font-bold text-slate-900">{t("installTitle")}</p>
-          <p className="text-xs text-slate-600">{t("installBody")}</p>
+          <p className="text-sm font-bold text-ink-main">{t("installTitle")}</p>
+          <p className="text-xs text-ink-soft">{t("installBody")}</p>
         </div>
         <button className="btn-primary text-xs" onClick={handleInstall} type="button">
           {t("install")}
         </button>
         <button
           aria-label={t("dismiss")}
-          className="text-slate-400 hover:text-slate-600"
+          className="text-ink-faint hover:text-ink-soft"
           onClick={handleDismiss}
           type="button"
         >

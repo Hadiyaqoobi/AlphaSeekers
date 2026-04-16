@@ -22,7 +22,7 @@ const BORDER_COLORS = [
 ] as const;
 
 const AVATAR_GRADIENTS = [
-  "from-emerald-500 to-teal-600",
+  "from-neon-500 to-teal-600",
   "from-teal-500 to-cyan-600",
   "from-sky-500 to-blue-600",
   "from-amber-500 to-orange-600",
@@ -69,17 +69,17 @@ export default async function ClassesPage({ params, searchParams }: ClassesPageP
       {/* Page Header */}
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+          <h1 className="text-3xl font-extrabold tracking-tight text-ink-main sm:text-4xl">
             {t("title")}
           </h1>
-          <p className="mt-1.5 text-base text-slate-500">{t("subtitle")}</p>
+          <p className="mt-1.5 text-base text-ink-soft">{t("subtitle")}</p>
         </div>
 
         <form className="flex gap-2 sm:min-w-[320px]" method="GET">
           <div className="relative flex-1">
             {/* Search icon */}
             <svg
-              className="pointer-events-none absolute inset-y-0 left-3 h-full w-4 text-slate-400"
+              className="pointer-events-none absolute inset-y-0 left-3 h-full w-4 text-ink-faint"
               fill="none"
               stroke="currentColor"
               strokeWidth={2}
@@ -103,11 +103,11 @@ export default async function ClassesPage({ params, searchParams }: ClassesPageP
 
       {/* Class Cards */}
       {result.items.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white/60 px-6 py-16 text-center">
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-line-DEFAULT bg-dark-100/60 px-6 py-16 text-center">
           {/* Empty-state illustration icon */}
           <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-slate-100 to-slate-200">
             <svg
-              className="h-10 w-10 text-slate-400"
+              className="h-10 w-10 text-ink-faint"
               fill="none"
               stroke="currentColor"
               strokeWidth={1.5}
@@ -120,7 +120,7 @@ export default async function ClassesPage({ params, searchParams }: ClassesPageP
               />
             </svg>
           </div>
-          <p className="text-sm font-medium text-slate-500">{t("empty")}</p>
+          <p className="text-sm font-medium text-ink-soft">{t("empty")}</p>
         </div>
       ) : (
         <div className="grid gap-5 sm:grid-cols-2">
@@ -132,7 +132,7 @@ export default async function ClassesPage({ params, searchParams }: ClassesPageP
 
             return (
               <article
-                className={`group relative overflow-hidden rounded-2xl border border-slate-200 border-t-4 ${borderColor} bg-white shadow-sm transition-all duration-300 hover:shadow-xl hover:-translate-y-1`}
+                className={`group relative overflow-hidden rounded-2xl border border-line-DEFAULT border-t-4 ${borderColor} bg-dark-100 shadow-sm transition-all duration-300 hover:shadow-xl hover:-translate-y-1`}
                 key={item.id}
               >
                 <div className="p-5 sm:p-6">
@@ -144,19 +144,19 @@ export default async function ClassesPage({ params, searchParams }: ClassesPageP
                       {teacherInitial}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <h2 className="truncate text-lg font-bold text-slate-900 group-hover:text-teal-700 transition-colors">
+                      <h2 className="truncate text-lg font-bold text-ink-main group-hover:text-teal-700 transition-colors">
                         {item.name}
                       </h2>
-                      <p className="truncate text-sm text-slate-500">{item.teacherName}</p>
+                      <p className="truncate text-sm text-ink-soft">{item.teacherName}</p>
                     </div>
                   </div>
 
                   {/* Details */}
                   <div className="mt-4 space-y-2.5">
                     {/* Schedule */}
-                    <div className="flex items-center gap-2 text-sm text-slate-600">
+                    <div className="flex items-center gap-2 text-sm text-ink-soft">
                       <svg
-                        className="h-4 w-4 flex-shrink-0 text-slate-400"
+                        className="h-4 w-4 flex-shrink-0 text-ink-faint"
                         fill="none"
                         stroke="currentColor"
                         strokeWidth={2}
@@ -171,7 +171,7 @@ export default async function ClassesPage({ params, searchParams }: ClassesPageP
                     {/* Badges Row */}
                     <div className="flex flex-wrap items-center gap-2">
                       {/* Language Badge */}
-                      <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-dark-100 px-2.5 py-0.5 text-xs font-semibold text-ink-soft">
                         <svg
                           className="h-3 w-3"
                           fill="none"
@@ -189,7 +189,7 @@ export default async function ClassesPage({ params, searchParams }: ClassesPageP
                       </span>
 
                       {/* Enrollment pill */}
-                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-neon-50 px-2.5 py-0.5 text-xs font-semibold text-neon-700">
                         <svg className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                           <path d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
@@ -207,7 +207,7 @@ export default async function ClassesPage({ params, searchParams }: ClassesPageP
                   </div>
 
                   {/* Next Session */}
-                  <p className="mt-3 text-xs text-slate-400">
+                  <p className="mt-3 text-xs text-ink-faint">
                     {item.nextSessionStart
                       ? formatDateTime(item.nextSessionStart, locale)
                       : t("sessionPending")}
@@ -215,7 +215,7 @@ export default async function ClassesPage({ params, searchParams }: ClassesPageP
                 </div>
 
                 {/* Footer */}
-                <div className="flex items-center justify-between gap-2 border-t border-slate-100 bg-slate-50/50 px-5 py-3 sm:px-6">
+                <div className="flex items-center justify-between gap-2 border-t border-line-soft bg-dark-50/50 px-5 py-3 sm:px-6">
                   <Link
                     className="btn-secondary !min-h-[2.25rem] !px-4 !text-xs"
                     href={`/${locale}/classes/${item.id}`}
@@ -237,7 +237,7 @@ export default async function ClassesPage({ params, searchParams }: ClassesPageP
         <nav className="flex items-center justify-center gap-3 pt-2">
           <Link
             aria-disabled={result.pagination.page <= 1}
-            className="inline-flex h-10 items-center gap-1.5 rounded-full border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 shadow-sm transition-all hover:border-teal-300 hover:bg-teal-50 hover:text-teal-700 aria-disabled:pointer-events-none aria-disabled:opacity-40"
+            className="inline-flex h-10 items-center gap-1.5 rounded-full border border-line-DEFAULT bg-dark-100 px-5 text-sm font-semibold text-ink-main shadow-sm transition-all hover:border-teal-300 hover:bg-teal-50 hover:text-teal-700 aria-disabled:pointer-events-none aria-disabled:opacity-40"
             href={`/${locale}/classes?page=${Math.max(1, result.pagination.page - 1)}&search=${encodeURIComponent(search)}`}
           >
             <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
@@ -246,13 +246,13 @@ export default async function ClassesPage({ params, searchParams }: ClassesPageP
             {t("prev")}
           </Link>
 
-          <span className="inline-flex h-10 items-center rounded-full bg-white px-4 text-sm font-medium text-slate-600 shadow-sm ring-1 ring-slate-200">
+          <span className="inline-flex h-10 items-center rounded-full bg-dark-100 px-4 text-sm font-medium text-ink-soft shadow-sm ring-1 ring-line-DEFAULT">
             {result.pagination.page} / {result.pagination.totalPages}
           </span>
 
           <Link
             aria-disabled={result.pagination.page >= result.pagination.totalPages}
-            className="inline-flex h-10 items-center gap-1.5 rounded-full border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 shadow-sm transition-all hover:border-teal-300 hover:bg-teal-50 hover:text-teal-700 aria-disabled:pointer-events-none aria-disabled:opacity-40"
+            className="inline-flex h-10 items-center gap-1.5 rounded-full border border-line-DEFAULT bg-dark-100 px-5 text-sm font-semibold text-ink-main shadow-sm transition-all hover:border-teal-300 hover:bg-teal-50 hover:text-teal-700 aria-disabled:pointer-events-none aria-disabled:opacity-40"
             href={`/${locale}/classes?page=${Math.min(result.pagination.totalPages, result.pagination.page + 1)}&search=${encodeURIComponent(search)}`}
           >
             {t("next")}

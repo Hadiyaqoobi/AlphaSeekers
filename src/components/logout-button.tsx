@@ -37,7 +37,7 @@ export function LogoutButton({ callbackUrl, label, variant = "danger" }: LogoutB
     <button
       aria-label="Log out of your account"
       className={variant === "nav"
-        ? "text-sm font-medium text-slate-600 hover:text-slate-900"
+        ? "text-sm font-medium text-ink-soft hover:text-ink-main"
         : "btn-danger"
       }
       onClick={handleLogout}

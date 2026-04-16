@@ -1,23 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { createWebinar, listRegisteredWebinarIds, listWebinars } from "@/lib/platform/store";
+import { withCors, corsPreflight } from "@/lib/security/cors";
 import { getSessionUser, isApproved, pendingApproval, unauthorized } from "@/lib/security/session";
 
-export async function GET() {
+export async function OPTIONS(request: Request) {
+  return corsPreflight(request);
+}
+
+export async function GET(request: Request) {
   const user = await getSessionUser();
 
   if (!user) {
-    return unauthorized();
+    return withCors(unauthorized(), request);
   }
 
   if (!isApproved(user)) {
-    return pendingApproval();
+    return withCors(pendingApproval(), request);
   }
 
   const items = await listWebinars();
 
   if (user.role === "ADMIN") {
-    return NextResponse.json({ items });
+    return withCors(NextResponse.json({ items }), request);
   }
 
   const registeredIds = new Set(await listRegisteredWebinarIds(user.id));
@@ -27,7 +32,7 @@ export async function GET() {
     registered: registeredIds.has(item.id),
   }));
 
-  return NextResponse.json({ items: safe });
+  return withCors(NextResponse.json({ items: safe }), request);
 }
 
 export async function POST(request: NextRequest) {

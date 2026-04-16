@@ -179,24 +179,24 @@ export function StaffClassForm({ teachers }: StaffClassFormProps) {
         return (
             <div className="panel panel-strong space-y-4 p-5">
                 <div className="flex items-center gap-2">
-                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-neon-100 text-neon-600">
                         ✓
                     </span>
-                    <h2 className="text-xl font-black text-slate-900">{t("classCreated")}</h2>
+                    <h2 className="text-xl font-black text-ink-main">{t("classCreated")}</h2>
                 </div>
 
-                <p className="text-sm text-slate-600">
+                <p className="text-sm text-ink-soft">
                     {t("classLiveMessage", { name: result.class.name })}
                 </p>
 
                 <div className="space-y-3">
                     {/* Registration link */}
-                    <div className="rounded-lg border border-slate-200 bg-white p-3">
-                        <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    <div className="rounded-lg border border-line-DEFAULT bg-dark-100 p-3">
+                        <label className="text-xs font-semibold uppercase tracking-wide text-ink-soft">
                             {t("registrationLinkLabel")}
                         </label>
                         <div className="mt-1 flex items-center gap-2">
-                            <code className="flex-1 truncate rounded bg-slate-50 px-2 py-1 text-sm text-slate-800">
+                            <code className="flex-1 truncate rounded bg-dark-50 px-2 py-1 text-sm text-ink-main">
                                 {result.registrationUrl}
                             </code>
                             <button
@@ -211,12 +211,12 @@ export function StaffClassForm({ teachers }: StaffClassFormProps) {
 
                     {/* Meet link */}
                     {result.sessions[0]?.meetLink ? (
-                        <div className="rounded-lg border border-slate-200 bg-white p-3">
-                            <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        <div className="rounded-lg border border-line-DEFAULT bg-dark-100 p-3">
+                            <label className="text-xs font-semibold uppercase tracking-wide text-ink-soft">
                                 {t("meetLinkLabel")}
                             </label>
                             <div className="mt-1 flex items-center gap-2">
-                                <code className="flex-1 truncate rounded bg-slate-50 px-2 py-1 text-sm text-slate-800">
+                                <code className="flex-1 truncate rounded bg-dark-50 px-2 py-1 text-sm text-ink-main">
                                     {result.sessions[0].meetLink}
                                 </code>
                                 <button
@@ -227,7 +227,7 @@ export function StaffClassForm({ teachers }: StaffClassFormProps) {
                                     {copiedField === "meet" ? t("copied") : t("copy")}
                                 </button>
                             </div>
-                            <p className="mt-1 text-xs text-slate-500">
+                            <p className="mt-1 text-xs text-ink-soft">
                                 {t("firstSession", { time: new Date(result.sessions[0].startTime).toLocaleString() })}
                             </p>
                         </div>
@@ -235,21 +235,21 @@ export function StaffClassForm({ teachers }: StaffClassFormProps) {
 
                     {/* Session timeline */}
                     {result.sessions.length > 0 ? (
-                        <div className="rounded-lg border border-slate-200 bg-white p-3">
-                            <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        <div className="rounded-lg border border-line-DEFAULT bg-dark-100 p-3">
+                            <label className="text-xs font-semibold uppercase tracking-wide text-ink-soft">
                                 {t("timelineLabel")}
                             </label>
                             <div className="mt-2 space-y-1">
                                 {result.sessions.map((session, index) => (
-                                    <div className="flex items-center gap-2 text-sm text-slate-700" key={index}>
+                                    <div className="flex items-center gap-2 text-sm text-ink-main" key={index}>
                                         <span className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-600">
                                             {index + 1}
                                         </span>
                                         <span>{new Date(session.startTime).toLocaleString()}</span>
-                                        <span className="text-slate-400">→</span>
+                                        <span className="text-ink-faint">→</span>
                                         <span>{new Date(session.endTime).toLocaleTimeString()}</span>
                                         {session.meetLink ? (
-                                            <span className="ml-auto rounded bg-emerald-50 px-1.5 py-0.5 text-xs font-semibold text-emerald-600">
+                                            <span className="ml-auto rounded bg-neon-50 px-1.5 py-0.5 text-xs font-semibold text-neon-600">
                                                 {t("meetReady")} ✓
                                             </span>
                                         ) : (
@@ -265,12 +265,12 @@ export function StaffClassForm({ teachers }: StaffClassFormProps) {
 
                     {/* Google Form */}
                     {result.registrationFormUrl ? (
-                        <div className="rounded-lg border border-slate-200 bg-white p-3">
-                            <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        <div className="rounded-lg border border-line-DEFAULT bg-dark-100 p-3">
+                            <label className="text-xs font-semibold uppercase tracking-wide text-ink-soft">
                                 {t("googleFormLabel")}
                             </label>
                             <div className="mt-1 flex items-center gap-2">
-                                <code className="flex-1 truncate rounded bg-slate-50 px-2 py-1 text-sm text-slate-800">
+                                <code className="flex-1 truncate rounded bg-dark-50 px-2 py-1 text-sm text-ink-main">
                                     {result.registrationFormUrl}
                                 </code>
                                 <button
@@ -295,14 +295,14 @@ export function StaffClassForm({ teachers }: StaffClassFormProps) {
     // ── Class creation form ───────────────────────────────────────────────
     return (
         <form className="panel panel-strong space-y-4 p-4" onSubmit={submit}>
-            <h2 className="text-lg font-black text-slate-900">{t("createClass")}</h2>
-            <p className="text-xs text-slate-500">
+            <h2 className="text-lg font-black text-ink-main">{t("createClass")}</h2>
+            <p className="text-xs text-ink-soft">
                 {t("formSubtitle")}
             </p>
 
             {/* ── Class details ──────── */}
             <fieldset className="space-y-3">
-                <legend className="text-xs font-bold uppercase tracking-wide text-slate-400">{t("classDetails")}</legend>
+                <legend className="text-xs font-bold uppercase tracking-wide text-ink-faint">{t("classDetails")}</legend>
 
                 <input
                     className="field"
@@ -348,18 +348,18 @@ export function StaffClassForm({ teachers }: StaffClassFormProps) {
 
             {/* ── Lecturer ──────── */}
             <fieldset className="space-y-3">
-                <legend className="text-xs font-bold uppercase tracking-wide text-slate-400">{t("lecturer")}</legend>
+                <legend className="text-xs font-bold uppercase tracking-wide text-ink-faint">{t("lecturer")}</legend>
 
                 <div className="flex gap-2">
                     <button
-                        className={`rounded-full px-3 py-1 text-xs font-semibold transition ${form.teacherMode === "existing" ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-600"}`}
+                        className={`rounded-full px-3 py-1 text-xs font-semibold transition ${form.teacherMode === "existing" ? "bg-indigo-600 text-white" : "bg-dark-100 text-ink-soft"}`}
                         onClick={() => setForm((current) => ({ ...current, teacherMode: "existing" }))}
                         type="button"
                     >
                         {t("existingTeacher")}
                     </button>
                     <button
-                        className={`rounded-full px-3 py-1 text-xs font-semibold transition ${form.teacherMode === "invite" ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-600"}`}
+                        className={`rounded-full px-3 py-1 text-xs font-semibold transition ${form.teacherMode === "invite" ? "bg-indigo-600 text-white" : "bg-dark-100 text-ink-soft"}`}
                         onClick={() => setForm((current) => ({ ...current, teacherMode: "invite" }))}
                         type="button"
                     >
@@ -382,7 +382,7 @@ export function StaffClassForm({ teachers }: StaffClassFormProps) {
                             ))}
                         </select>
                         {selectedTeacher ? (
-                            <p className="text-xs text-slate-500">
+                            <p className="text-xs text-ink-soft">
                                 {selectedTeacher.email}
                             </p>
                         ) : null}
@@ -406,14 +406,14 @@ export function StaffClassForm({ teachers }: StaffClassFormProps) {
                             type="email"
                             value={form.newTeacherEmail}
                         />
-                        <p className="text-xs text-slate-500">{t("inviteHint")}</p>
+                        <p className="text-xs text-ink-soft">{t("inviteHint")}</p>
                     </>
                 )}
             </fieldset>
 
             {/* ── Schedule ──────── */}
             <fieldset className="space-y-3">
-                <legend className="text-xs font-bold uppercase tracking-wide text-slate-400">{t("schedule")}</legend>
+                <legend className="text-xs font-bold uppercase tracking-wide text-ink-faint">{t("schedule")}</legend>
 
                 <div className="grid grid-cols-3 gap-3">
                     <select
@@ -476,7 +476,7 @@ export function StaffClassForm({ teachers }: StaffClassFormProps) {
                     />
                 </div>
 
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-ink-faint">
                     {t("preview", {
                         day: t(DAY_KEYS[DAY_VALUES.indexOf(form.day)] ?? "sun"),
                         time: formatTimeTo12h(form.time),
@@ -488,7 +488,7 @@ export function StaffClassForm({ teachers }: StaffClassFormProps) {
 
             {/* ── Optional extras ──────── */}
             <fieldset className="space-y-3">
-                <legend className="text-xs font-bold uppercase tracking-wide text-slate-400">
+                <legend className="text-xs font-bold uppercase tracking-wide text-ink-faint">
                     {t("optionalExtras")}
                 </legend>
 

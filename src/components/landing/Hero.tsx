@@ -12,13 +12,19 @@ type HeroProps = {
 };
 
 /* ── Animated Platform Mockup ── */
-const mockClasses = [
-  { name: 'English A2', teacher: 'Ms. Sarah', time: 'Tue 6:00 PM', color: '#10b981' },
-  { name: 'Graphic Design', teacher: 'Mr. Ahmad', time: 'Wed 4:00 PM', color: '#0ea5e9' },
-  { name: 'Career Skills', teacher: 'Ms. Leila', time: 'Thu 5:30 PM', color: '#f59e0b' },
-];
+const mockClassColors = ['#10b981', '#0ea5e9', '#f59e0b'];
+const mockTeachers = ['Ms. Sarah', 'Mr. Ahmad', 'Ms. Leila'];
 
 function PlatformMockup() {
+  const t = useTranslations('home.hero.mockup');
+  const classNames = t.raw('mockClassNames') as string[];
+  const times = t.raw('mockTimes') as string[];
+  const mockClasses = classNames.map((name, i) => ({
+    name,
+    teacher: mockTeachers[i],
+    time: times[i],
+    color: mockClassColors[i],
+  }));
   const [phase, setPhase] = useState(0);
   const [cycle, setCycle] = useState(0);
 
@@ -39,7 +45,7 @@ function PlatformMockup() {
           <span className="w-3 h-3 rounded-full bg-[#febc2e]" />
           <span className="w-3 h-3 rounded-full bg-[#28c840]" />
         </div>
-        <div className="flex-1 bg-white/[0.06] rounded-lg px-3 py-1.5 text-xs text-white/40 font-mono">
+        <div className="flex-1 bg-dark-100/[0.06] rounded-lg px-3 py-1.5 text-xs text-white/40 font-mono">
           alphaseekers.onrender.com
         </div>
       </div>
@@ -50,14 +56,14 @@ function PlatformMockup() {
       >
         <div className="flex items-center gap-2 mb-4 pb-3 border-b border-white/[0.06]">
           <div className="w-7 h-7 rounded-lg bg-[#1DB964] flex items-center justify-center text-[10px] font-bold text-white">A</div>
-          <span className="text-xs font-bold text-white">My Classes</span>
-          <span className="ml-auto text-[10px] text-white/30">Welcome back 👋</span>
+          <span className="text-xs font-bold text-white">{t('myClasses')}</span>
+          <span className="ml-auto text-[10px] text-white/30">{t('welcomeBack')}</span>
         </div>
         <div className="space-y-2.5">
           {mockClasses.map((cls, i) => (
             <div
               key={cls.name}
-              className="bg-white/[0.04] border border-white/[0.06] rounded-xl p-3 flex items-center gap-3"
+              className="bg-dark-100/[0.04] border border-white/[0.06] rounded-xl p-3 flex items-center gap-3"
               style={{
                 opacity: phase >= 0 ? 1 : 0,
                 transform: phase >= 0 ? 'translateY(0)' : 'translateY(10px)',
@@ -117,11 +123,22 @@ export function Hero({ locale, signedIn, studentLabel, teacherLabel }: HeroProps
   useEffect(() => { setLoaded(true); }, []);
 
   return (
-    <section className="relative min-h-screen overflow-hidden bg-land-dark">
-      {/* Drifting gradient blobs */}
-      <div className="absolute rounded-full blur-[150px] opacity-25" style={{ width: 600, height: 600, top: '20%', left: '70%', background: 'radial-gradient(circle, #064D27 0%, transparent 70%)', animation: 'blob-drift-1 25s ease-in-out infinite' }} aria-hidden="true" />
-      <div className="absolute rounded-full blur-[120px] opacity-15" style={{ width: 500, height: 500, top: '80%', left: '20%', background: 'radial-gradient(circle, #0A6B36 0%, transparent 70%)', animation: 'blob-drift-2 30s ease-in-out infinite' }} aria-hidden="true" />
-      <div className="absolute inset-0 opacity-[0.035]" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.08) 1px, transparent 1px)', backgroundSize: '80px 80px' }} aria-hidden="true" />
+    <section className="relative min-h-screen overflow-hidden bg-dark-DEFAULT">
+      {/* Wave image — atmospheric, not dominant */}
+      <div className="absolute inset-0" aria-hidden="true">
+        <div
+          className="absolute inset-0 bg-wave-pattern bg-cover bg-center opacity-25 scale-110"
+          style={{ filter: 'blur(1px) saturate(1.2)' }}
+        />
+        {/* Top + bottom fade so navbar/CTA areas stay clean */}
+        <div className="absolute inset-0 bg-gradient-to-b from-dark-DEFAULT via-transparent to-dark-DEFAULT" />
+        {/* Center vignette — focuses the energy in the middle */}
+        <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at 50% 40%, transparent 25%, #070B10 85%)' }} />
+      </div>
+
+      {/* Subtle drifting glow blobs (electric green + cyan) */}
+      <div className="absolute rounded-full blur-[150px] opacity-30" style={{ width: 600, height: 600, top: '20%', left: '70%', background: 'radial-gradient(circle, rgba(0,229,255,0.18) 0%, transparent 70%)', animation: 'blob-drift-1 25s ease-in-out infinite' }} aria-hidden="true" />
+      <div className="absolute rounded-full blur-[120px] opacity-25" style={{ width: 500, height: 500, top: '80%', left: '20%', background: 'radial-gradient(circle, rgba(0,230,118,0.18) 0%, transparent 70%)', animation: 'blob-drift-2 30s ease-in-out infinite' }} aria-hidden="true" />
 
       <div className="relative mx-auto max-w-7xl px-6 lg:px-8 pt-32 pb-20 lg:grid lg:grid-cols-2 lg:gap-16 lg:items-center min-h-screen">
         <div className="max-w-xl">
@@ -141,8 +158,16 @@ export function Hero({ locale, signedIn, studentLabel, teacherLabel }: HeroProps
             {ht('hero.headline1')}{' '}<br className="hidden sm:block" />
             {ht('hero.headline2')}{' '}
             <span className="relative inline-block">
-              <span className="text-land-green-400">{ht('hero.highlightWord')}</span>
-              <span className="absolute -bottom-1 left-0 w-full h-[3px] bg-land-amber origin-left" style={{ animation: loaded ? 'underline-draw-dramatic 1.2s cubic-bezier(0.25,0.46,0.45,0.94) 1.4s forwards' : 'none', transform: 'scaleX(0)' }} />
+              <span className="gradient-text">{ht('hero.highlightWord')}</span>
+              <span
+                className="absolute -bottom-1 left-0 w-full h-[3px] origin-left rounded-full"
+                style={{
+                  background: 'linear-gradient(90deg, #00E676 0%, #00E5FF 50%, #2979FF 100%)',
+                  boxShadow: '0 0 12px rgba(0,229,255,0.5)',
+                  animation: loaded ? 'underline-draw-dramatic 1.2s cubic-bezier(0.25,0.46,0.45,0.94) 1.4s forwards' : 'none',
+                  transform: 'scaleX(0)',
+                }}
+              />
             </span>
           </h1>
 
@@ -153,11 +178,11 @@ export function Hero({ locale, signedIn, studentLabel, teacherLabel }: HeroProps
 
           {/* CTA buttons */}
           <div style={{ opacity: loaded ? 1 : 0, transform: loaded ? 'none' : 'translateY(20px)', transition: 'all 0.7s cubic-bezier(0.16,1,0.3,1) 0.65s' }} className="mt-10 flex flex-col sm:flex-row gap-4">
-            <Link href={signedIn ? `/${locale}/dashboard` : `/${locale}/register`} className="group inline-flex items-center justify-center gap-3 py-4 px-8 rounded-xl bg-land-green-600 text-white text-base font-semibold transition-all duration-200 hover:bg-land-green-500 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-land-green-600/25 active:translate-y-0" style={{ animation: 'cta-glow 3s ease-in-out infinite' }}>
+            <Link href={signedIn ? `/${locale}/dashboard` : `/${locale}/register`} className="group pulse-glow inline-flex items-center justify-center gap-3 py-4 px-8 rounded-xl bg-neon-500 text-dark-DEFAULT text-base font-bold transition-all duration-200 hover:bg-neon-400 hover:-translate-y-0.5 active:translate-y-0">
               {signedIn ? 'Dashboard' : studentLabel}
               <svg className="w-4 h-4 opacity-60 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" /></svg>
             </Link>
-            <Link href={signedIn ? `/${locale}/teacher/availability` : `/${locale}/register`} className="inline-flex items-center justify-center gap-3 py-4 px-8 rounded-xl bg-white/[0.06] border border-white/[0.12] text-white text-base font-semibold transition-all duration-200 hover:bg-white/[0.12] hover:-translate-y-0.5 active:translate-y-0">
+            <Link href={signedIn ? `/${locale}/teacher/availability` : `/${locale}/register`} className="inline-flex items-center justify-center gap-3 py-4 px-8 rounded-xl bg-dark-100/[0.06] border border-white/[0.12] text-white text-base font-semibold transition-all duration-200 hover:bg-dark-100/[0.12] hover:-translate-y-0.5 active:translate-y-0">
               {teacherLabel}
             </Link>
           </div>
@@ -180,11 +205,11 @@ export function Hero({ locale, signedIn, studentLabel, teacherLabel }: HeroProps
         {/* Right column — Animated Platform Mockup */}
         <div className="relative mt-16 lg:mt-0" style={{ opacity: loaded ? 1 : 0, transform: loaded ? 'scale(1)' : 'scale(0.92)', transition: 'all 0.8s cubic-bezier(0.34,1.56,0.64,1) 0.6s' }}>
           <PlatformMockup />
-          <div className="absolute -top-4 -right-4 lg:-right-8 bg-white/[0.07] backdrop-blur-xl border border-white/[0.12] rounded-2xl px-5 py-3.5 z-10" style={{ animation: 'float-gentle 4s ease-in-out infinite' }}>
+          <div className="absolute -top-4 -right-4 lg:-right-8 bg-dark-100/[0.07] backdrop-blur-xl border border-white/[0.12] rounded-2xl px-5 py-3.5 z-10" style={{ animation: 'float-gentle 4s ease-in-out infinite' }}>
             <p className="text-sm font-semibold text-white">{t('hero.floatBadge1Title')}</p>
             <p className="text-xs text-white/40">{t('hero.floatBadge1Sub')}</p>
           </div>
-          <div className="absolute -bottom-2 -left-4 lg:-left-8 bg-white/[0.07] backdrop-blur-xl border border-white/[0.12] rounded-2xl px-5 py-3.5 flex items-center gap-3 z-10" style={{ animation: 'float-gentle 4s ease-in-out 1.5s infinite' }}>
+          <div className="absolute -bottom-2 -left-4 lg:-left-8 bg-dark-100/[0.07] backdrop-blur-xl border border-white/[0.12] rounded-2xl px-5 py-3.5 flex items-center gap-3 z-10" style={{ animation: 'float-gentle 4s ease-in-out 1.5s infinite' }}>
             <div className="flex -space-x-2">
               <span className="w-8 h-8 rounded-full bg-land-green-600/30 border-2 border-white/10 flex items-center justify-center text-xs font-bold text-land-green-300">F</span>
               <span className="w-8 h-8 rounded-full bg-amber-500/20 border-2 border-white/10 flex items-center justify-center text-xs font-bold text-amber-300">Z</span>

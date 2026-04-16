@@ -68,7 +68,7 @@ export function MaterialUploadForm({ classId }: MaterialUploadFormProps) {
 
   return (
     <form className="stat-card space-y-2 p-3" onSubmit={submit}>
-      <h3 className="text-sm font-black text-slate-900">{t("title")}</h3>
+      <h3 className="text-sm font-black text-ink-main">{t("title")}</h3>
       <input
         className="field"
         onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))}
@@ -84,7 +84,7 @@ export function MaterialUploadForm({ classId }: MaterialUploadFormProps) {
         purpose="material"
       />
       {form.fileUrl ? (
-        <div className="flex items-center gap-2 text-sm text-emerald-700">
+        <div className="flex items-center gap-2 text-sm text-neon-700">
           <svg
             className="h-4 w-4 flex-shrink-0"
             fill="none"
@@ -105,7 +105,7 @@ export function MaterialUploadForm({ classId }: MaterialUploadFormProps) {
         >
           {saving ? "..." : t("save")}
         </button>
-        {message ? <p className="text-xs text-slate-600">{message}</p> : null}
+        {message ? <p className="text-xs text-ink-soft">{message}</p> : null}
       </div>
     </form>
   );

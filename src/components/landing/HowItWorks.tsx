@@ -22,62 +22,117 @@ export function HowItWorks() {
   }, []);
 
   return (
-    <section className="w-full py-24 bg-land-sage" id="how-it-works" ref={ref}>
-      <div className="mx-auto max-w-7xl px-6 lg:px-8">
-        <div className="text-center mb-16 lg:text-left" style={{ opacity: inView ? 1 : 0, transform: inView ? 'none' : 'translateY(30px)', transition: 'all 0.7s cubic-bezier(0.16,1,0.3,1)' }}>
-          <p className="text-land-green-600 text-sm font-semibold uppercase tracking-[0.15em] mb-4">{t('howItWorks.kicker')}</p>
-          <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 tracking-tight mb-4" style={{ fontFamily: 'var(--font-landing), var(--font-display-latin), sans-serif' }}>{t('howItWorks.title')}</h2>
-          <p className="text-lg text-gray-500 max-w-lg">{t('howItWorks.subtitle')}</p>
+    <section className="relative w-full py-20 lg:py-28 overflow-hidden" id="how-it-works" ref={ref}>
+      {/* Section ambient glow */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_70%_50%,rgba(0,230,118,0.06)_0%,transparent_60%)] pointer-events-none" aria-hidden="true" />
+
+      <div className="relative mx-auto max-w-7xl px-6 lg:px-8">
+        {/* Section header */}
+        <div className="text-center mb-16" style={{ opacity: inView ? 1 : 0, transform: inView ? 'none' : 'translateY(30px)', transition: 'all 0.7s cubic-bezier(0.16,1,0.3,1)' }}>
+          <p className="text-sm uppercase tracking-[0.15em] text-neon-500 font-medium mb-4">{t('howItWorks.kicker')}</p>
+          <h2 className="text-3xl lg:text-5xl font-bold text-white tracking-tight mb-4" style={{ fontFamily: 'var(--font-landing), var(--font-display-latin), sans-serif' }}>{t('howItWorks.title')}</h2>
+          <p className="text-lg text-white/45 max-w-xl mx-auto">{t('howItWorks.subtitle')}</p>
         </div>
+
         <div className="lg:grid lg:grid-cols-2 lg:gap-16 lg:items-center">
+          {/* Steps — LEFT */}
           <div className="space-y-0">
             {steps.map((step, i) => (
               <div key={step.num} className="flex items-start gap-5" style={{ opacity: inView ? 1 : 0, transform: inView ? 'none' : 'translateY(20px)', transition: `all 0.6s cubic-bezier(0.16,1,0.3,1) ${0.2 + i * 0.3}s` }}>
                 <div className="flex flex-col items-center">
-                  <div className="w-10 h-10 rounded-full bg-land-green-600 text-white flex items-center justify-center text-sm font-bold flex-shrink-0" style={{ transform: inView ? 'scale(1)' : 'scale(0)', transition: `transform 0.4s cubic-bezier(0.34,1.56,0.64,1) ${0.2 + i * 0.3}s` }}>
+                  <div
+                    className="w-10 h-10 rounded-full bg-neon-500 text-dark-DEFAULT flex items-center justify-center text-sm font-bold flex-shrink-0 shadow-[0_0_16px_rgba(0,230,118,0.4)]"
+                    style={{ transform: inView ? 'scale(1)' : 'scale(0)', transition: `transform 0.4s cubic-bezier(0.34,1.56,0.64,1) ${0.2 + i * 0.3}s` }}
+                  >
                     {step.num}
                   </div>
                   {i < steps.length - 1 && (
-                    <div className="w-[2px] h-12 border-l-2 border-dashed border-gray-200 ml-0 origin-top" style={{ transform: inView ? 'scaleY(1)' : 'scaleY(0)', transition: `transform 0.4s ease ${0.4 + i * 0.3}s` }} />
+                    <div
+                      className="w-px h-12 bg-gradient-to-b from-neon-500/40 to-transparent mt-2 origin-top"
+                      style={{ transform: inView ? 'scaleY(1)' : 'scaleY(0)', transition: `transform 0.4s ease ${0.4 + i * 0.3}s` }}
+                    />
                   )}
                 </div>
                 <div className="pb-8" style={{ opacity: inView ? 1 : 0, transition: `opacity 0.5s ${0.35 + i * 0.3}s` }}>
-                  <h3 className="text-lg font-semibold text-gray-900 mt-1.5">{step.title}</h3>
-                  <p className="text-base text-gray-500 mt-1 leading-relaxed">{step.desc}</p>
+                  <h3 className="text-lg font-semibold text-white mt-1.5">{step.title}</h3>
+                  <p className="text-base text-white/45 mt-1 leading-relaxed">{step.desc}</p>
                 </div>
               </div>
             ))}
           </div>
+
+          {/* Phone mockup — RIGHT (fully dark themed) */}
           <div className="mt-12 lg:mt-0 flex justify-center" style={{ opacity: inView ? 1 : 0, transform: inView ? 'none' : 'translateX(60px) rotate(3deg)', transition: 'all 0.8s cubic-bezier(0.16,1,0.3,1) 0.5s' }}>
-            <div className="relative w-[280px] rounded-[2.5rem] border-[8px] border-gray-800 bg-gray-800 shadow-2xl shadow-black/30 overflow-hidden">
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[120px] h-[28px] bg-gray-800 rounded-b-2xl z-10" />
-              <div className="relative bg-gradient-to-b from-white to-gray-50 rounded-[2rem] overflow-hidden aspect-[9/19.5]">
-                <div className="h-12 bg-white flex items-end justify-between px-6 pb-1">
-                  <span className="text-[10px] font-semibold text-gray-900">9:41</span>
-                  <div className="flex gap-1 items-center"><div className="w-3.5 h-2.5 border border-gray-400 rounded-sm relative"><div className="absolute inset-[1px] right-[2px] bg-gray-400 rounded-[1px]" /></div></div>
-                </div>
-                <div className="px-5 pt-4 pb-3 bg-white border-b border-gray-100">
-                  <div className="flex items-center gap-2 mb-3"><div className="w-7 h-7 rounded-lg bg-land-green-600 flex items-center justify-center text-[9px] font-bold text-white">A</div><span className="text-xs font-bold text-gray-900">AlphaSeekers</span></div>
-                  <p className="text-[9px] text-gray-400">{t('howItWorks.mockup.welcomeBack')}</p>
-                </div>
-                <div className="px-5 py-4 space-y-3">
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="bg-white rounded-xl p-3 border border-gray-100 shadow-sm"><p className="text-[8px] text-gray-400">{t('howItWorks.mockup.classes')}</p><p className="text-sm font-bold text-gray-900">3</p></div>
-                    <div className="bg-white rounded-xl p-3 border border-gray-100 shadow-sm"><p className="text-[8px] text-gray-400">{t('howItWorks.mockup.today')}</p><p className="text-sm font-bold text-land-green-600">{t('howItWorks.mockup.todayValue')}</p></div>
-                  </div>
-                  {[0, 1, 2].map((j) => (
-                    <div key={j} className="bg-white rounded-xl p-3 border border-gray-100 shadow-sm">
-                      <div className="flex items-center justify-between">
-                        <div><p className="text-[9px] font-semibold text-gray-900">{t(`howItWorks.mockup.mockClassNames.${j}`)}</p><p className="text-[8px] text-gray-400 mt-0.5">{t(`howItWorks.mockup.mockTimes.${j}`)}</p></div>
-                        <div className="w-6 h-6 rounded-lg bg-land-green-50 flex items-center justify-center"><svg className="w-3 h-3 text-land-green-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z" /></svg></div>
+            <div className="relative">
+              {/* Glow behind phone */}
+              <div className="absolute -inset-10 bg-[radial-gradient(ellipse_at_50%_50%,rgba(0,230,118,0.15)_0%,transparent_70%)] pointer-events-none" aria-hidden="true" />
+
+              {/* Phone shell */}
+              <div className="relative w-[280px] rounded-[2.5rem] border-[3px] border-white/10 bg-dark-200 p-2 shadow-[0_0_50px_rgba(0,230,118,0.12)]">
+                {/* Notch */}
+                <div className="absolute top-2 left-1/2 -translate-x-1/2 w-[100px] h-[24px] bg-dark-DEFAULT rounded-b-2xl z-10" />
+
+                {/* Screen */}
+                <div className="relative bg-dark-DEFAULT rounded-[2rem] overflow-hidden aspect-[9/19.5]">
+                  {/* Status bar */}
+                  <div className="h-9 flex items-end justify-between px-6 pb-1 pt-2">
+                    <span className="text-[10px] font-semibold text-white/60">9:41</span>
+                    <div className="flex gap-1 items-center">
+                      <div className="w-3.5 h-2 border border-white/30 rounded-sm relative">
+                        <div className="absolute inset-[1px] right-[2px] bg-white/30 rounded-[1px]" />
                       </div>
                     </div>
-                  ))}
+                  </div>
+
+                  {/* App header */}
+                  <div className="px-5 pt-3 pb-3 border-b border-white/[0.06]">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-7 h-7 rounded-lg bg-neon-500 flex items-center justify-center text-[10px] font-bold text-dark-DEFAULT shadow-[0_0_10px_rgba(0,230,118,0.4)]">A</div>
+                      <span className="text-xs font-bold text-white">AlphaSeekers</span>
+                    </div>
+                    <p className="text-[10px] text-white/40">{t('howItWorks.mockup.welcomeBack')}</p>
+                  </div>
+
+                  {/* Stat cards */}
+                  <div className="px-5 py-4 space-y-3">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="bg-dark-100 rounded-xl p-3 border border-white/[0.06]">
+                        <p className="text-[9px] text-white/40">{t('howItWorks.mockup.classes')}</p>
+                        <p className="text-sm font-bold text-white">3</p>
+                      </div>
+                      <div className="bg-dark-100 rounded-xl p-3 border border-white/[0.06]">
+                        <p className="text-[9px] text-white/40">{t('howItWorks.mockup.today')}</p>
+                        <p className="text-sm font-bold text-neon-400">{t('howItWorks.mockup.todayValue')}</p>
+                      </div>
+                    </div>
+
+                    {/* Session cards */}
+                    {[0, 1, 2].map((j) => (
+                      <div key={j} className="bg-dark-100 rounded-xl p-3 border border-white/[0.06]">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-[10px] font-semibold text-white">{t(`howItWorks.mockup.mockClassNames.${j}`)}</p>
+                            <p className="text-[9px] text-white/40 mt-0.5">{t(`howItWorks.mockup.mockTimes.${j}`)}</p>
+                          </div>
+                          <div className="w-7 h-7 rounded-lg bg-neon-500/15 flex items-center justify-center">
+                            <svg className="w-3.5 h-3.5 text-neon-400" fill="currentColor" viewBox="0 0 20 20">
+                              <path d="M6.3 2.84A1.5 1.5 0 0 0 4 4.11v11.78a1.5 1.5 0 0 0 2.3 1.27l9.344-5.891a1.5 1.5 0 0 0 0-2.538L6.3 2.84z" />
+                            </svg>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Bottom glow divider */}
+      <div className="relative mx-auto max-w-7xl px-6 lg:px-8 mt-20">
+        <div className="h-px bg-gradient-to-r from-transparent via-neon-500/30 to-transparent" />
       </div>
     </section>
   );

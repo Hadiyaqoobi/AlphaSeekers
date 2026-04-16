@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useState, useEffect, useCallback } from "react";
 import { LogoutButton } from "@/components/logout-button";
 
@@ -24,6 +25,7 @@ type MobileNavProps = {
 };
 
 export function MobileNav({ navItems, authItems, user, logoutCallbackUrl, logoutLabel }: MobileNavProps) {
+  const t = useTranslations("dashboard");
   const [open, setOpen] = useState(false);
 
   const close = useCallback(() => setOpen(false), []);
@@ -54,7 +56,7 @@ export function MobileNav({ navItems, authItems, user, logoutCallbackUrl, logout
       <button
         aria-label={open ? "Close menu" : "Open menu"}
         aria-expanded={open}
-        className="flex h-11 w-11 items-center justify-center rounded-xl text-slate-600 transition-all duration-200 hover:bg-brand-50 hover:text-brand-500"
+        className="flex h-11 w-11 items-center justify-center rounded-xl text-ink-soft transition-all duration-200 hover:bg-brand-50 hover:text-brand-500"
         onClick={() => setOpen(!open)}
         type="button"
       >
@@ -100,7 +102,7 @@ export function MobileNav({ navItems, authItems, user, logoutCallbackUrl, logout
           </div>
           <button
             onClick={close}
-            className="flex h-11 w-11 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-colors"
+            className="flex h-11 w-11 items-center justify-center rounded-xl text-ink-soft hover:bg-dark-100 hover:text-ink-main transition-colors"
             aria-label="Close menu"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -118,7 +120,7 @@ export function MobileNav({ navItems, authItems, user, logoutCallbackUrl, logout
               </span>
               <div>
                 <p className="text-sm font-bold text-ink-main">{user.name}</p>
-                <p className="text-xs text-ink-faint">Welcome back</p>
+                <p className="text-xs text-ink-faint">{t("welcome")}</p>
               </div>
             </div>
           )}
@@ -128,7 +130,7 @@ export function MobileNav({ navItems, authItems, user, logoutCallbackUrl, logout
             <div className="grid gap-1">
               {navItems.map((item, index) => (
                 <Link
-                  className="flex items-center rounded-xl px-4 py-3.5 text-[15px] font-medium text-slate-700 transition-all duration-200 active:bg-brand-50 hover:bg-slate-50 hover:text-brand-600"
+                  className="flex items-center rounded-xl px-4 py-3.5 text-[15px] font-medium text-ink-main transition-all duration-200 active:bg-brand-50 hover:bg-dark-50 hover:text-brand-600"
                   href={item.href}
                   key={item.href}
                   onClick={close}

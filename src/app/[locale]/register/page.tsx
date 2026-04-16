@@ -71,17 +71,19 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen lg:grid lg:grid-cols-2">
+    <div className="min-h-screen lg:grid lg:grid-cols-2" style={{ background: "#080D12" }}>
       {/* -------- Left branding panel (desktop only) -------- */}
-      <div className="hidden lg:flex flex-col justify-between relative overflow-hidden bg-gradient-to-br from-emerald-700 via-emerald-800 to-teal-900 p-12 text-white">
-        {/* Decorative circles */}
-        <div className="absolute -top-24 -left-24 h-96 w-96 rounded-full bg-white/5" />
-        <div className="absolute -bottom-32 -right-32 h-[28rem] w-[28rem] rounded-full bg-white/5" />
-        <div className="absolute top-1/2 left-1/3 h-64 w-64 rounded-full bg-white/[0.03]" />
+      <div className="hidden lg:flex flex-col justify-between relative overflow-hidden p-12 text-white" style={{ background: "#080D12" }}>
+        {/* Atmospheric green glow */}
+        <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse at 30% 60%, rgba(0,230,118,0.18) 0%, transparent 60%)" }} />
+        {/* Subtle wave image */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/images/brand-wave.jpg" alt="" aria-hidden="true" className="absolute inset-0 w-full h-full object-cover opacity-15 scale-110" style={{ filter: "blur(1px)" }} />
+        <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse at 50% 50%, transparent 30%, #080D12 90%)" }} />
 
         {/* Top logo */}
         <div className="relative z-10 flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/15 text-base font-bold backdrop-blur-sm">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-dark-100/15 text-base font-bold backdrop-blur-sm">
             A
           </div>
           <span className="text-lg font-semibold tracking-tight">AlphaSeekers</span>
@@ -93,7 +95,7 @@ export default function RegisterPage() {
             <h2 className="text-4xl font-extrabold leading-tight tracking-tight xl:text-5xl">
               Start learning<br />for free.
             </h2>
-            <p className="max-w-sm text-lg leading-relaxed text-emerald-100/80">
+            <p className="max-w-sm text-lg leading-relaxed text-neon-100/80">
               Join thousands of students and teachers building a brighter future through education.
             </p>
           </div>
@@ -101,45 +103,45 @@ export default function RegisterPage() {
           {/* Trust points */}
           <div className="space-y-4 pt-2">
             <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/10 backdrop-blur-sm">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-emerald-300" viewBox="0 0 20 20" fill="currentColor">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-dark-100/10 backdrop-blur-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-neon-300" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
                 </svg>
               </div>
               <div>
                 <p className="text-sm font-semibold text-white">Safe &amp; private</p>
-                <p className="text-xs text-emerald-200/60">Your data stays protected</p>
+                <p className="text-xs text-neon-200/60">Your data stays protected</p>
               </div>
             </div>
 
             <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/10 backdrop-blur-sm">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-emerald-300" viewBox="0 0 20 20" fill="currentColor">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-dark-100/10 backdrop-blur-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-neon-300" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                 </svg>
               </div>
               <div>
                 <p className="text-sm font-semibold text-white">100% Free</p>
-                <p className="text-xs text-emerald-200/60">No hidden fees, ever</p>
+                <p className="text-xs text-neon-200/60">No hidden fees, ever</p>
               </div>
             </div>
 
             <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/10 backdrop-blur-sm">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-emerald-300" viewBox="0 0 20 20" fill="currentColor">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-dark-100/10 backdrop-blur-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-neon-300" viewBox="0 0 20 20" fill="currentColor">
                   <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838l-2.727 1.17 1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0z" />
                 </svg>
               </div>
               <div>
                 <p className="text-sm font-semibold text-white">Volunteer teachers from 12+ countries</p>
-                <p className="text-xs text-emerald-200/60">A truly global community</p>
+                <p className="text-xs text-neon-200/60">A truly global community</p>
               </div>
             </div>
           </div>
         </div>
 
         {/* Bottom quote */}
-        <p className="relative z-10 max-w-xs text-sm italic leading-relaxed text-emerald-200/60">
+        <p className="relative z-10 max-w-xs text-sm italic leading-relaxed text-neon-200/60">
           &ldquo;One child, one teacher, one book, one pen can change the world.&rdquo;
         </p>
       </div>
@@ -148,28 +150,29 @@ export default function RegisterPage() {
       <div className="flex min-h-screen flex-col items-center justify-center bg-[var(--bg-base)] px-6 py-12 lg:min-h-0 lg:overflow-y-auto lg:px-16">
         {/* Mobile-only branding header */}
         <div className="mb-8 flex flex-col items-center lg:hidden">
-          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-600 to-teal-700 text-lg font-bold text-white shadow-lg shadow-emerald-200/50">
+          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-neon-600 to-teal-700 text-lg font-bold text-white shadow-lg shadow-emerald-200/50">
             A
           </div>
-          <span className="text-sm font-semibold tracking-tight text-slate-700">AlphaSeekers</span>
+          <span className="text-sm font-semibold tracking-tight text-ink-main">AlphaSeekers</span>
         </div>
 
         <div className="w-full max-w-md animate-fade-in-up">
           {/* Heading */}
           <div className="mb-8">
-            <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">
+            <h1 className="text-3xl font-extrabold tracking-tight text-ink-main">
               {t("title")}
             </h1>
-            <p className="mt-2 text-base text-slate-500">{t("subtitle")}</p>
+            <p className="mt-2 text-base text-ink-soft">{t("subtitle")}</p>
           </div>
 
           {/* Form card */}
           <form
-            className="space-y-5 rounded-2xl border border-slate-200/70 bg-white p-8 shadow-md shadow-slate-200/50"
+            className="space-y-5 rounded-2xl p-8"
+            style={{ background: "#0E1921", border: "1px solid #1A2D3D" }}
             onSubmit={submit}
           >
             <label className="block space-y-2 text-sm">
-              <span className="font-semibold text-slate-700">{t("name")}</span>
+              <span className="font-semibold text-ink-main">{t("name")}</span>
               <input
                 className="field min-h-[3rem] text-base"
                 onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
@@ -179,7 +182,7 @@ export default function RegisterPage() {
             </label>
 
             <label className="block space-y-2 text-sm">
-              <span className="font-semibold text-slate-700">{t("email")}</span>
+              <span className="font-semibold text-ink-main">{t("email")}</span>
               <input
                 autoComplete="email"
                 className="field min-h-[3rem] text-base"
@@ -191,7 +194,7 @@ export default function RegisterPage() {
             </label>
 
             <label className="block space-y-2 text-sm">
-              <span className="font-semibold text-slate-700">{t("password")}</span>
+              <span className="font-semibold text-ink-main">{t("password")}</span>
               <input
                 autoComplete="new-password"
                 className="field min-h-[3rem] text-base"
@@ -203,7 +206,7 @@ export default function RegisterPage() {
             </label>
 
             <label className="block space-y-2 text-sm">
-              <span className="font-semibold text-slate-700">{t("phone")}</span>
+              <span className="font-semibold text-ink-main">{t("phone")}</span>
               <input
                 className="field min-h-[3rem] text-base"
                 onChange={(event) => setForm((current) => ({ ...current, phone: event.target.value }))}
@@ -214,15 +217,15 @@ export default function RegisterPage() {
 
             {/* Role selector as pill buttons */}
             <fieldset className="space-y-2">
-              <legend className="text-sm font-semibold text-slate-700">{t("role")}</legend>
-              <div className="flex gap-2 rounded-xl bg-slate-100 p-1">
+              <legend className="text-sm font-semibold text-ink-main">{t("role")}</legend>
+              <div className="flex gap-2 rounded-xl bg-dark-100 p-1">
                 <button
                   type="button"
                   onClick={() => setForm((current) => ({ ...current, role: "STUDENT" }))}
                   className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-semibold transition-all duration-200 ${
                     form.role === "STUDENT"
-                      ? "bg-white text-emerald-700 shadow-sm ring-1 ring-slate-200/80"
-                      : "text-slate-500 hover:text-slate-700"
+                      ? "bg-dark-100 text-neon-700 shadow-sm ring-1 ring-line-DEFAULT/80"
+                      : "text-ink-soft hover:text-ink-main"
                   }`}
                 >
                   <span className="flex items-center justify-center gap-2">
@@ -237,8 +240,8 @@ export default function RegisterPage() {
                   onClick={() => setForm((current) => ({ ...current, role: "TEACHER" }))}
                   className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-semibold transition-all duration-200 ${
                     form.role === "TEACHER"
-                      ? "bg-white text-emerald-700 shadow-sm ring-1 ring-slate-200/80"
-                      : "text-slate-500 hover:text-slate-700"
+                      ? "bg-dark-100 text-neon-700 shadow-sm ring-1 ring-line-DEFAULT/80"
+                      : "text-ink-soft hover:text-ink-main"
                   }`}
                 >
                   <span className="flex items-center justify-center gap-2">
@@ -281,23 +284,23 @@ export default function RegisterPage() {
 
           {/* Mobile trust points */}
           <div className="mt-8 grid grid-cols-3 gap-3 text-center lg:hidden">
-            <div className="rounded-xl bg-emerald-50 px-3 py-3">
-              <svg xmlns="http://www.w3.org/2000/svg" className="mx-auto mb-1 h-5 w-5 text-emerald-600" viewBox="0 0 20 20" fill="currentColor">
+            <div className="rounded-xl bg-neon-50 px-3 py-3">
+              <svg xmlns="http://www.w3.org/2000/svg" className="mx-auto mb-1 h-5 w-5 text-neon-600" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
               </svg>
-              <p className="text-xs font-semibold text-emerald-800">Safe</p>
+              <p className="text-xs font-semibold text-neon-800">Safe</p>
             </div>
-            <div className="rounded-xl bg-emerald-50 px-3 py-3">
-              <svg xmlns="http://www.w3.org/2000/svg" className="mx-auto mb-1 h-5 w-5 text-emerald-600" viewBox="0 0 20 20" fill="currentColor">
+            <div className="rounded-xl bg-neon-50 px-3 py-3">
+              <svg xmlns="http://www.w3.org/2000/svg" className="mx-auto mb-1 h-5 w-5 text-neon-600" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
               </svg>
-              <p className="text-xs font-semibold text-emerald-800">100% Free</p>
+              <p className="text-xs font-semibold text-neon-800">100% Free</p>
             </div>
-            <div className="rounded-xl bg-emerald-50 px-3 py-3">
-              <svg xmlns="http://www.w3.org/2000/svg" className="mx-auto mb-1 h-5 w-5 text-emerald-600" viewBox="0 0 20 20" fill="currentColor">
+            <div className="rounded-xl bg-neon-50 px-3 py-3">
+              <svg xmlns="http://www.w3.org/2000/svg" className="mx-auto mb-1 h-5 w-5 text-neon-600" viewBox="0 0 20 20" fill="currentColor">
                 <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838l-2.727 1.17 1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0z" />
               </svg>
-              <p className="text-xs font-semibold text-emerald-800">12+ countries</p>
+              <p className="text-xs font-semibold text-neon-800">12+ countries</p>
             </div>
           </div>
         </div>

@@ -22,10 +22,10 @@ export default async function PendingApprovalPage({ params }: PendingApprovalPag
     <section className="mx-auto flex min-h-[60vh] max-w-lg items-center justify-center px-6 py-16 lg:px-8">
       <div className="w-full text-center">
         {/* Animated Checkmark Circle */}
-        <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-emerald-50">
-          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100">
+        <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-neon-50">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-neon-100">
             <svg
-              className="h-8 w-8 text-emerald-600 animate-[pulse_3s_ease-in-out_infinite]"
+              className="h-8 w-8 text-neon-600 animate-[pulse_3s_ease-in-out_infinite]"
               fill="none"
               stroke="currentColor"
               strokeWidth={2}
@@ -41,7 +41,7 @@ export default async function PendingApprovalPage({ params }: PendingApprovalPag
         </div>
 
         {/* Kicker */}
-        <p className="mt-6 text-xs font-semibold uppercase tracking-widest text-emerald-600">
+        <p className="mt-6 text-xs font-semibold uppercase tracking-widest text-neon-600">
           {t("eyebrow")}
         </p>
 
@@ -56,10 +56,10 @@ export default async function PendingApprovalPage({ params }: PendingApprovalPag
         </p>
 
         {/* Note Card */}
-        <div className="mx-auto mt-8 max-w-sm rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+        <div className="mx-auto mt-8 max-w-sm rounded-2xl border border-gray-100 bg-dark-100 p-6 shadow-sm">
           <div className="flex items-start gap-3">
             <svg
-              className="mt-0.5 h-5 w-5 shrink-0 text-emerald-500"
+              className="mt-0.5 h-5 w-5 shrink-0 text-neon-500"
               fill="none"
               stroke="currentColor"
               strokeWidth={2}
@@ -80,13 +80,13 @@ export default async function PendingApprovalPage({ params }: PendingApprovalPag
         {/* Actions */}
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
           <Link
-            className="inline-flex min-h-12 items-center rounded-xl bg-emerald-600 px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+            className="inline-flex min-h-12 items-center rounded-xl bg-neon-600 px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-neon-700 focus:outline-none focus:ring-2 focus:ring-neon-500/20"
             href={`/${params.locale}/login`}
           >
             {t("goToLogin")}
           </Link>
           <Link
-            className="inline-flex min-h-12 items-center rounded-xl border border-gray-200 bg-white px-6 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 hover:shadow-md"
+            className="inline-flex min-h-12 items-center rounded-xl border border-gray-200 bg-dark-100 px-6 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 hover:shadow-md"
             href={`/${params.locale}`}
           >
             {t("home")}

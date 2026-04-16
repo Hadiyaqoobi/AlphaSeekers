@@ -136,8 +136,8 @@ export function UserApprovals() {
     <section className="panel panel-strong space-y-4 p-4 sm:p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="space-y-1">
-          <h2 className="text-lg font-black text-slate-900">{t("pendingApprovals")}</h2>
-          <p className="text-sm text-slate-600">{t("approvalSubtitle")}</p>
+          <h2 className="text-lg font-black text-ink-main">{t("pendingApprovals")}</h2>
+          <p className="text-sm text-ink-soft">{t("approvalSubtitle")}</p>
         </div>
         <button className="btn-secondary" disabled={loading} onClick={load} type="button">
           {loading ? "..." : t("refresh")}
@@ -164,8 +164,8 @@ export function UserApprovals() {
       </form>
 
       {selected.size > 0 ? (
-        <div className="flex items-center gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2">
-          <p className="text-sm font-medium text-emerald-900">{selected.size} selected</p>
+        <div className="flex items-center gap-3 rounded-lg border border-neon-200 bg-neon-50 px-3 py-2">
+          <p className="text-sm font-medium text-neon-900">{selected.size} selected</p>
           <button
             className="btn-primary"
             disabled={bulkApproving}
@@ -177,17 +177,17 @@ export function UserApprovals() {
         </div>
       ) : null}
 
-      {message ? <p className="text-sm text-slate-700">{message}</p> : null}
+      {message ? <p className="text-sm text-ink-main">{message}</p> : null}
 
-      {loading ? <p className="text-sm text-slate-600">{t("loading")}</p> : null}
+      {loading ? <p className="text-sm text-ink-soft">{t("loading")}</p> : null}
 
       {!loading && items.length === 0 ? (
-        <p className="text-sm text-slate-600">{t("noPending")}</p>
+        <p className="text-sm text-ink-soft">{t("noPending")}</p>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full min-w-[720px] border-collapse text-left text-sm">
             <thead>
-              <tr className="border-b border-slate-200 text-slate-500">
+              <tr className="border-b border-line-DEFAULT text-ink-soft">
                 <th className="py-2 w-8" scope="col">
                   <input
                     checked={items.length > 0 && selected.size === items.length}
@@ -205,7 +205,7 @@ export function UserApprovals() {
             </thead>
             <tbody>
               {items.map((item) => (
-                <tr className="border-b border-slate-100 text-slate-700" key={item.id}>
+                <tr className="border-b border-line-soft text-ink-main" key={item.id}>
                   <td className="py-2 w-8">
                     <input
                       checked={selected.has(item.id)}
@@ -213,7 +213,7 @@ export function UserApprovals() {
                       type="checkbox"
                     />
                   </td>
-                  <td className="py-2 font-semibold text-slate-900">{item.name}</td>
+                  <td className="py-2 font-semibold text-ink-main">{item.name}</td>
                   <td className="py-2">{item.role}</td>
                   <td className="py-2">{item.email}</td>
                   <td className="py-2">{item.phone ?? "-"}</td>
@@ -240,7 +240,7 @@ export function UserApprovals() {
           >
             {t("prev")}
           </button>
-          <p className="text-sm font-semibold text-slate-700">
+          <p className="text-sm font-semibold text-ink-main">
             {t("pageInfo", { current: pagination.page, total: pagination.totalPages, count: pagination.totalItems })}
           </p>
           <button

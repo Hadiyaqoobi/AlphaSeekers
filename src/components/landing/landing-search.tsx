@@ -48,7 +48,7 @@ export function LandingSearch({ locale, signedIn }: LandingSearchProps) {
   return (
     <section className="panel panel-strong p-4 sm:p-5">
       <p className="section-kicker">{t("search.kicker")}</p>
-      <h2 className="mt-2 text-lg font-black text-slate-950">{t("search.title")}</h2>
+      <h2 className="mt-2 text-lg font-black text-ink-main">{t("search.title")}</h2>
 
       <form className="mt-4 flex flex-wrap gap-2" onSubmit={handleSubmit}>
         <label className="sr-only" htmlFor="landing-search">
@@ -80,7 +80,7 @@ export function LandingSearch({ locale, signedIn }: LandingSearchProps) {
         ))}
       </div>
 
-      <p className="mt-3 text-xs font-semibold text-slate-600">{t("search.helper")}</p>
+      <p className="mt-3 text-xs font-semibold text-ink-soft">{t("search.helper")}</p>
     </section>
   );
 }

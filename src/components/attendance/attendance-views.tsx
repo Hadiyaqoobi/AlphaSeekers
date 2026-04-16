@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
@@ -43,6 +44,7 @@ export function AttendanceSheet({
     sessionId: string;
     locale: string;
 }) {
+    const t = useTranslations("attendance");
     const [data, setData] = useState<SessionData | null>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState<string | null>(null);
@@ -81,15 +83,15 @@ export function AttendanceSheet({
 
     if (loading) {
         return (
-            <div className="panel panel-strong p-6 text-center text-slate-500">
-                Loading attendance...
+            <div className="panel panel-strong p-6 text-center text-ink-soft">
+                {t("loading")}
             </div>
         );
     }
 
     if (!data) {
         return (
-            <div className="panel panel-strong p-6 text-center text-slate-500">
+            <div className="panel panel-strong p-6 text-center text-ink-soft">
                 Session not found.
             </div>
         );
@@ -106,10 +108,10 @@ export function AttendanceSheet({
                 >
                     ← {data.className}
                 </Link>
-                <h1 className="mt-1 text-2xl font-black text-slate-900">
+                <h1 className="mt-1 text-2xl font-black text-ink-main">
                     Session Attendance
                 </h1>
-                <p className="text-sm text-slate-600">
+                <p className="text-sm text-ink-soft">
                     {new Date(data.startTime).toLocaleDateString(undefined, {
                         weekday: "long",
                         month: "short",
@@ -126,20 +128,20 @@ export function AttendanceSheet({
                         minute: "2-digit",
                     })}
                 </p>
-                <p className="mt-2 text-sm font-semibold text-emerald-700">
+                <p className="mt-2 text-sm font-semibold text-neon-700">
                     {presentCount} / {data.students.length} present
                 </p>
             </header>
 
             {data.students.length === 0 ? (
-                <div className="panel panel-strong p-6 text-center text-slate-500">
+                <div className="panel panel-strong p-6 text-center text-ink-soft">
                     No students enrolled in this class.
                 </div>
             ) : (
                 <div className="panel panel-strong overflow-x-auto p-4">
                     <table className="w-full min-w-[480px] border-collapse text-left text-sm">
                         <thead>
-                            <tr className="border-b border-slate-200 text-slate-500">
+                            <tr className="border-b border-line-DEFAULT text-ink-soft">
                                 <th className="py-2 font-semibold" scope="col">Student</th>
                                 <th className="py-2 font-semibold" scope="col">Email</th>
                                 <th className="py-2 text-center font-semibold" scope="col">Present</th>
@@ -148,19 +150,19 @@ export function AttendanceSheet({
                         <tbody>
                             {data.students.map((student) => (
                                 <tr
-                                    className="border-b border-slate-100 text-slate-700"
+                                    className="border-b border-line-soft text-ink-main"
                                     key={student.studentId}
                                 >
-                                    <td className="py-2 font-semibold text-slate-900">
+                                    <td className="py-2 font-semibold text-ink-main">
                                         {student.studentName}
                                     </td>
-                                    <td className="py-2 text-slate-500">{student.studentEmail}</td>
+                                    <td className="py-2 text-ink-soft">{student.studentEmail}</td>
                                     <td className="py-2 text-center">
                                         <button
                                             aria-label={student.attended ? `Mark ${student.studentName} as absent` : `Mark ${student.studentName} as present`}
                                             className={`inline-flex h-11 w-11 items-center justify-center rounded-full text-lg font-bold transition-colors ${student.attended
-                                                    ? "bg-emerald-100 text-emerald-700"
-                                                    : "bg-slate-100 text-slate-400 hover:bg-red-50 hover:text-red-500"
+                                                    ? "bg-neon-100 text-neon-700"
+                                                    : "bg-dark-100 text-ink-faint hover:bg-red-50 hover:text-red-500"
                                                 }`}
                                             disabled={saving === student.studentId}
                                             onClick={() =>
@@ -188,6 +190,7 @@ export function ClassAttendanceSummary({
     classId: string;
     locale: string;
 }) {
+    const t = useTranslations("attendance");
     const [data, setData] = useState<SummaryData | null>(null);
     const [loading, setLoading] = useState(true);
 
@@ -201,15 +204,15 @@ export function ClassAttendanceSummary({
 
     if (loading) {
         return (
-            <div className="panel panel-strong p-6 text-center text-slate-500">
-                Loading summary...
+            <div className="panel panel-strong p-6 text-center text-ink-soft">
+                {t("summaryLoading")}
             </div>
         );
     }
 
     if (!data || data.totalStudents === 0) {
         return (
-            <div className="panel panel-strong p-6 text-center text-slate-500">
+            <div className="panel panel-strong p-6 text-center text-ink-soft">
                 No attendance data yet.
             </div>
         );
@@ -224,10 +227,10 @@ export function ClassAttendanceSummary({
                 >
                     ← Staff Dashboard
                 </Link>
-                <h1 className="mt-1 text-2xl font-black text-slate-900">
+                <h1 className="mt-1 text-2xl font-black text-ink-main">
                     Attendance Summary
                 </h1>
-                <p className="text-sm text-slate-600">
+                <p className="text-sm text-ink-soft">
                     {data.totalStudents} students • {data.totalSessions} sessions
                 </p>
             </header>
@@ -235,7 +238,7 @@ export function ClassAttendanceSummary({
             <div className="panel panel-strong overflow-x-auto p-4">
                 <table className="w-full min-w-[480px] border-collapse text-left text-sm">
                     <thead>
-                        <tr className="border-b border-slate-200 text-slate-500">
+                        <tr className="border-b border-line-DEFAULT text-ink-soft">
                             <th className="py-2 font-semibold" scope="col">Student</th>
                             <th className="py-2 font-semibold" scope="col">Email</th>
                             <th className="py-2 text-center font-semibold" scope="col">Attended</th>
@@ -245,20 +248,20 @@ export function ClassAttendanceSummary({
                     <tbody>
                         {data.students.map((s) => (
                             <tr
-                                className="border-b border-slate-100 text-slate-700"
+                                className="border-b border-line-soft text-ink-main"
                                 key={s.studentId}
                             >
-                                <td className="py-2 font-semibold text-slate-900">
+                                <td className="py-2 font-semibold text-ink-main">
                                     {s.studentName}
                                 </td>
-                                <td className="py-2 text-slate-500">{s.studentEmail}</td>
+                                <td className="py-2 text-ink-soft">{s.studentEmail}</td>
                                 <td className="py-2 text-center">
                                     {s.sessionsAttended} / {s.totalSessions}
                                 </td>
                                 <td className="py-2 text-center">
                                     <span
                                         className={`inline-block rounded-full px-2 py-0.5 text-xs font-bold ${s.attendanceRate >= 80
-                                                ? "bg-emerald-100 text-emerald-700"
+                                                ? "bg-neon-100 text-neon-700"
                                                 : s.attendanceRate >= 50
                                                     ? "bg-amber-100 text-amber-700"
                                                     : "bg-red-100 text-red-700"

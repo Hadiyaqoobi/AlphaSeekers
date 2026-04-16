@@ -58,29 +58,29 @@ export default async function ClassDetailPage({ params }: ClassDetailPageProps) 
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <p className="badge-pill">{record.subjectCategory}</p>
-            <h1 className="mt-2 text-3xl font-black text-slate-900 sm:text-4xl">{record.name}</h1>
+            <h1 className="mt-2 text-3xl font-black text-ink-main sm:text-4xl">{record.name}</h1>
           </div>
           <Link className="btn-secondary" href={`/${locale}/classes`}>
             {t("backToClasses")}
           </Link>
         </div>
 
-        <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-700">{record.description}</p>
-        <div className="mt-4 grid gap-2 text-sm text-slate-700 sm:grid-cols-2 lg:grid-cols-3">
+        <p className="mt-3 max-w-3xl text-sm leading-7 text-ink-main">{record.description}</p>
+        <div className="mt-4 grid gap-2 text-sm text-ink-main sm:grid-cols-2 lg:grid-cols-3">
           <p>
-            <span className="font-semibold text-slate-500">{t("teacher")}:</span> {record.teacherName}
+            <span className="font-semibold text-ink-soft">{t("teacher")}:</span> {record.teacherName}
           </p>
           <p>
-            <span className="font-semibold text-slate-500">{t("schedule")}:</span> {record.schedulePreference}
+            <span className="font-semibold text-ink-soft">{t("schedule")}:</span> {record.schedulePreference}
           </p>
           <p>
-            <span className="font-semibold text-slate-500">{t("language")}:</span> {record.language}
+            <span className="font-semibold text-ink-soft">{t("language")}:</span> {record.language}
           </p>
           <p>
-            <span className="font-semibold text-slate-500">{t("enrolled")}:</span> {record.enrolledCount} / {record.maxStudents}
+            <span className="font-semibold text-ink-soft">{t("enrolled")}:</span> {record.enrolledCount} / {record.maxStudents}
           </p>
           <p>
-            <span className="font-semibold text-slate-500">{t("duration")}:</span> {record.durationMinutes} {t("minutes")}
+            <span className="font-semibold text-ink-soft">{t("duration")}:</span> {record.durationMinutes} {t("minutes")}
           </p>
         </div>
 
@@ -98,12 +98,12 @@ export default async function ClassDetailPage({ params }: ClassDetailPageProps) 
       </header>
 
       <section className="panel panel-strong p-4 sm:p-5">
-        <h2 className="text-lg font-black text-slate-900">{t("upcomingSessions")}</h2>
+        <h2 className="text-lg font-black text-ink-main">{t("upcomingSessions")}</h2>
         <div className="timeline-line mt-3 space-y-2">
           {record.sessions.slice(0, 6).map((session) => (
             <article className={`stat-card p-3 ${session.cancelled ? "opacity-50" : ""}`} key={session.id}>
               <div className="flex items-center justify-between gap-2">
-                <p className="text-sm font-semibold text-slate-900">
+                <p className="text-sm font-semibold text-ink-main">
                   {formatDateTime(session.startTime, locale)}
                   {session.cancelled ? <span className="ml-2 text-xs font-normal text-red-500">{tSession("cancelled")}</span> : null}
                 </p>
@@ -113,20 +113,30 @@ export default async function ClassDetailPage({ params }: ClassDetailPageProps) 
               </div>
               {!session.cancelled ? (
                 <>
-                  <p className="text-xs text-slate-600">
+                  <p className="text-xs text-ink-soft">
                     {t("meetStatus")}: {session.meetLinkStatus}
                   </p>
-                  {canAccessPrivateDetails && session.meetLink ? (
-                    <a className="text-xs font-semibold text-emerald-700 underline-offset-2 hover:underline" href={session.meetLink} rel="noreferrer" target="_blank">
-                      {t("openMeet")}
-                    </a>
-                  ) : (
-                    <p className="text-xs text-slate-500">
-                      {session.meetLink
-                        ? t("joinAfterEnroll")
-                        : t("meetPending")}
-                    </p>
-                  )}
+                  <div className="flex items-center gap-3 mt-1 flex-wrap">
+                    {canAccessPrivateDetails && session.meetLink ? (
+                      <a className="text-xs font-semibold text-neon-700 underline-offset-2 hover:underline" href={session.meetLink} rel="noreferrer" target="_blank">
+                        {t("openMeet")}
+                      </a>
+                    ) : (
+                      <p className="text-xs text-ink-soft">
+                        {session.meetLink
+                          ? t("joinAfterEnroll")
+                          : t("meetPending")}
+                      </p>
+                    )}
+                    {canAccessPrivateDetails && (
+                      <Link
+                        className="text-xs font-semibold text-neon-700 hover:text-neon-800"
+                        href={`/${locale}/classes/${record.id}/live/${session.id}`}
+                      >
+                        Live session →
+                      </Link>
+                    )}
+                  </div>
                 </>
               ) : null}
             </article>
@@ -136,16 +146,16 @@ export default async function ClassDetailPage({ params }: ClassDetailPageProps) 
 
       {canAccessPrivateDetails ? (
         <section className="panel panel-strong p-4 sm:p-5">
-          <h2 className="text-lg font-black text-slate-900">{tAnnounce("title")}</h2>
+          <h2 className="text-lg font-black text-ink-main">{tAnnounce("title")}</h2>
           {canUploadMaterials ? <AnnouncementForm classId={record.id} /> : null}
           <div className="mt-3 space-y-2">
             {announcements.length === 0 ? (
-              <p className="text-sm text-slate-500">{tAnnounce("empty")}</p>
+              <p className="text-sm text-ink-soft">{tAnnounce("empty")}</p>
             ) : (
               announcements.map((a) => (
-                <div className="rounded-lg border border-slate-100 p-3" key={a.id}>
-                  <p className="text-sm text-slate-700">{a.content}</p>
-                  <p className="mt-1 text-xs text-slate-400">
+                <div className="rounded-lg border border-line-soft p-3" key={a.id}>
+                  <p className="text-sm text-ink-main">{a.content}</p>
+                  <p className="mt-1 text-xs text-ink-faint">
                     {a.authorName} &middot; {formatDateTime(a.createdAt, locale)}
                   </p>
                 </div>
@@ -156,22 +166,22 @@ export default async function ClassDetailPage({ params }: ClassDetailPageProps) 
       ) : null}
 
       <section className="panel panel-strong p-4 sm:p-5">
-        <h2 className="text-lg font-black text-slate-900">{t("materialsTitle")}</h2>
+        <h2 className="text-lg font-black text-ink-main">{t("materialsTitle")}</h2>
         <div className="mt-3 space-y-2">
           {!canAccessPrivateDetails ? (
-            <p className="text-sm text-slate-600">{t("materialsRestricted")}</p>
+            <p className="text-sm text-ink-soft">{t("materialsRestricted")}</p>
           ) : null}
 
           {canUploadMaterials ? <MaterialUploadForm classId={record.id} /> : null}
 
           {canAccessPrivateDetails && record.materials.length === 0 ? (
-            <p className="text-sm text-slate-600">{t("noMaterials")}</p>
+            <p className="text-sm text-ink-soft">{t("noMaterials")}</p>
           ) : canAccessPrivateDetails ? (
             record.materials.map((material) => (
               <article className="stat-card flex flex-wrap items-center justify-between gap-2 p-3" key={material.id}>
                 <div>
-                  <p className="text-sm font-semibold text-slate-900">{material.title}</p>
-                  <p className="flex items-center gap-2 text-xs text-slate-600">
+                  <p className="text-sm font-semibold text-ink-main">{material.title}</p>
+                  <p className="flex items-center gap-2 text-xs text-ink-soft">
                     {(material.fileSize / 1024 / 1024).toFixed(2)} MB
                     <DataCostBadge fileSize={material.fileSize} />
                   </p>
@@ -195,15 +205,15 @@ export default async function ClassDetailPage({ params }: ClassDetailPageProps) 
 
       {canUploadMaterials && enrolledStudents.length > 0 ? (
         <section className="panel panel-strong p-4 sm:p-5">
-          <h2 className="text-lg font-black text-slate-900">{t("studentsTitle")}</h2>
+          <h2 className="text-lg font-black text-ink-main">{t("studentsTitle")}</h2>
           <div className="mt-3 space-y-1">
             {enrolledStudents.map((student) => (
-              <div className="flex items-center justify-between rounded-lg border border-slate-100 px-3 py-2" key={student.studentId}>
+              <div className="flex items-center justify-between rounded-lg border border-line-soft px-3 py-2" key={student.studentId}>
                 <div>
-                  <p className="text-sm font-medium text-slate-900">{student.name}</p>
-                  <p className="text-xs text-slate-500">{student.email}</p>
+                  <p className="text-sm font-medium text-ink-main">{student.name}</p>
+                  <p className="text-xs text-ink-soft">{student.email}</p>
                 </div>
-                <p className="text-xs text-slate-400">{formatDateTime(student.enrolledAt, locale)}</p>
+                <p className="text-xs text-ink-faint">{formatDateTime(student.enrolledAt, locale)}</p>
               </div>
             ))}
           </div>

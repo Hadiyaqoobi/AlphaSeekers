@@ -87,7 +87,7 @@ export function AdminClassForm({ teachers }: AdminClassFormProps) {
 
   return (
     <form className="panel panel-strong space-y-3 p-4" onSubmit={submit}>
-      <h2 className="text-lg font-black text-slate-900">{t("createClass")}</h2>
+      <h2 className="text-lg font-black text-ink-main">{t("createClass")}</h2>
 
       <input
         className="field"
@@ -165,7 +165,7 @@ export function AdminClassForm({ teachers }: AdminClassFormProps) {
         {saving ? t("saving") : t("createClassBtn")}
       </button>
 
-      {message ? <p className="text-sm text-slate-700">{message}</p> : null}
+      {message ? <p className="text-sm text-ink-main">{message}</p> : null}
     </form>
   );
 }

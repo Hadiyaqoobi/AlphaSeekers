@@ -58,20 +58,20 @@ export function GoogleConnectCard({ locale, notice }: GoogleConnectCardProps) {
 
   return (
     <article className="panel panel-strong p-4">
-      <h3 className="text-sm font-black text-slate-900">{t("title")}</h3>
+      <h3 className="text-sm font-black text-ink-main">{t("title")}</h3>
 
       {notice === "connected" ? (
-        <p className="mt-2 text-xs text-emerald-700">{t("noticeConnected")}</p>
+        <p className="mt-2 text-xs text-neon-700">{t("noticeConnected")}</p>
       ) : null}
 
       {notice === "failed" ? (
         <p className="mt-2 text-xs text-rose-700">{t("noticeFailed")}</p>
       ) : null}
 
-      {loading ? <p className="mt-2 text-xs text-slate-600">{t("checking")}</p> : null}
+      {loading ? <p className="mt-2 text-xs text-ink-soft">{t("checking")}</p> : null}
 
       {!loading && status?.connected ? (
-        <p className="mt-2 text-xs text-slate-700">
+        <p className="mt-2 text-xs text-ink-main">
           {status.connectedAt
             ? t("connectedAsOn", {
                 email: status.accountEmail ?? t("accountFallback"),
@@ -82,7 +82,7 @@ export function GoogleConnectCard({ locale, notice }: GoogleConnectCardProps) {
       ) : null}
 
       {!loading && !status?.connected ? (
-        <p className="mt-2 text-xs text-slate-700">
+        <p className="mt-2 text-xs text-ink-main">
           {t("notConnected")}
         </p>
       ) : null}

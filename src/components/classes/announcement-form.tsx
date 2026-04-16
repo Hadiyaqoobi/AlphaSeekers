@@ -56,7 +56,7 @@ export function AnnouncementForm({ classId }: AnnouncementFormProps) {
         <button className="btn-primary text-sm" disabled={submitting || !content.trim()} type="submit">
           {submitting ? "..." : t("send")}
         </button>
-        {message ? <p className="text-xs text-slate-500">{message}</p> : null}
+        {message ? <p className="text-xs text-ink-soft">{message}</p> : null}
       </div>
     </form>
   );

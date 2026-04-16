@@ -34,7 +34,7 @@ export default async function WebinarsPage({ params }: WebinarsPageProps) {
     <section className="mx-auto max-w-6xl px-6 py-10 lg:px-8">
       {/* Page Header */}
       <header className="mb-10">
-        <p className="text-xs font-semibold uppercase tracking-widest text-emerald-600">
+        <p className="text-xs font-semibold uppercase tracking-widest text-neon-600">
           {t("title")}
         </p>
         <h1 className="mt-2 text-4xl font-bold tracking-tight text-gray-900">
@@ -54,7 +54,7 @@ export default async function WebinarsPage({ params }: WebinarsPageProps) {
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {items.map((item) => (
             <article
-              className="group flex flex-col rounded-2xl border border-gray-100 bg-white shadow-sm transition-all duration-200 hover:shadow-lg"
+              className="group flex flex-col rounded-2xl border border-gray-100 bg-dark-100 shadow-sm transition-all duration-200 hover:shadow-lg"
               key={item.id}
             >
               {/* Date Badge */}
@@ -81,7 +81,7 @@ export default async function WebinarsPage({ params }: WebinarsPageProps) {
 
               {/* Content */}
               <div className="flex flex-1 flex-col px-6 pb-6 pt-4">
-                <h2 className="text-lg font-bold text-gray-900 group-hover:text-emerald-700 transition-colors">
+                <h2 className="text-lg font-bold text-gray-900 group-hover:text-neon-700 transition-colors">
                   {item.title}
                 </h2>
                 <p className="mt-2 flex-1 text-sm leading-relaxed text-gray-500">
@@ -91,7 +91,7 @@ export default async function WebinarsPage({ params }: WebinarsPageProps) {
                 {/* Join Link */}
                 {user && (user.role === "ADMIN" || (user.approved && registeredIds.has(item.id))) ? (
                   <a
-                    className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-emerald-600 transition hover:text-emerald-700"
+                    className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-neon-600 transition hover:text-neon-700"
                     href={item.meetLink}
                     rel="noreferrer"
                     target="_blank"
@@ -109,7 +109,7 @@ export default async function WebinarsPage({ params }: WebinarsPageProps) {
                 {user ? (
                   <div className="mt-5 border-t border-gray-50 pt-4">
                     {registeredIds.has(item.id) ? (
-                      <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-neon-50 px-3 py-1 text-xs font-semibold text-neon-700">
                         <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20">
                           <path
                             clipRule="evenodd"

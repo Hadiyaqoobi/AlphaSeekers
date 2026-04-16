@@ -12,7 +12,7 @@ import { aiConfig } from "./config";
 
 export type DocumentChunkInput = {
   content: string;
-  sourceType: "LIBRARY" | "MATERIAL";
+  sourceType: "LIBRARY" | "MATERIAL" | "RECORDING";
   sourceId: string;
   sourceTitle: string;
 };

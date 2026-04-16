@@ -31,7 +31,7 @@ export function StudentAttendanceSummary() {
 
   if (loading) {
     return (
-      <div className="panel panel-strong p-4 text-center text-sm text-slate-500">
+      <div className="panel panel-strong p-4 text-center text-sm text-ink-soft">
         {t("loading")}
       </div>
     );
@@ -44,11 +44,11 @@ export function StudentAttendanceSummary() {
   return (
     <section className="panel panel-strong p-4 sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-lg font-black text-slate-900">{t("myAttendance")}</h2>
+        <h2 className="text-lg font-black text-ink-main">{t("myAttendance")}</h2>
         <span
           className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-bold ${
             data.overallRate >= 80
-              ? "bg-emerald-100 text-emerald-700"
+              ? "bg-neon-100 text-neon-700"
               : data.overallRate >= 50
                 ? "bg-amber-100 text-amber-700"
                 : "bg-red-100 text-red-700"
@@ -62,11 +62,11 @@ export function StudentAttendanceSummary() {
         {data.classes.map((c) => (
           <article className="stat-card p-3" key={c.classId}>
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <h3 className="text-sm font-black text-slate-900">{c.className}</h3>
+              <h3 className="text-sm font-black text-ink-main">{c.className}</h3>
               <span
                 className={`inline-block rounded-full px-2 py-0.5 text-xs font-bold ${
                   c.attendanceRate >= 80
-                    ? "bg-emerald-100 text-emerald-700"
+                    ? "bg-neon-100 text-neon-700"
                     : c.attendanceRate >= 50
                       ? "bg-amber-100 text-amber-700"
                       : "bg-red-100 text-red-700"
@@ -75,7 +75,7 @@ export function StudentAttendanceSummary() {
                 {c.attendanceRate}%
               </span>
             </div>
-            <p className="mt-1 text-xs text-slate-600">
+            <p className="mt-1 text-xs text-ink-soft">
               {c.sessionsAttended} / {c.totalSessions} {t("attended")}
             </p>
             <div className="mt-2 progress-track">

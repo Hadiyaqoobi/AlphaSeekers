@@ -27,11 +27,11 @@ export function FaqAccordion({ items }: { items: FaqItem[] }) {
     <div className="space-y-2">
       {items.map((item) => (
         <details className="faq-details stat-card overflow-hidden" key={item.id}>
-          <summary className="faq-summary flex min-h-11 cursor-pointer items-center justify-between gap-4 px-4 py-3 text-start text-sm font-black text-slate-950">
+          <summary className="faq-summary flex min-h-11 cursor-pointer items-center justify-between gap-4 px-4 py-3 text-start text-sm font-black text-ink-main">
             <span>{item.question}</span>
-            <ChevronIcon className="faq-chevron h-4 w-4 shrink-0 text-emerald-800" />
+            <ChevronIcon className="faq-chevron h-4 w-4 shrink-0 text-neon-800" />
           </summary>
-          <div className="px-4 pb-4 text-sm leading-7 text-slate-700">{item.answer}</div>
+          <div className="px-4 pb-4 text-sm leading-7 text-ink-main">{item.answer}</div>
         </details>
       ))}
     </div>

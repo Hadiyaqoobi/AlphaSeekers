@@ -19,8 +19,8 @@ export default function LocaleError({
   return (
     <section className="flex min-h-[50vh] items-center justify-center p-4">
       <div className="panel panel-strong mx-auto max-w-sm space-y-4 p-6 text-center">
-        <h1 className="text-2xl font-black text-slate-900">{t("title")}</h1>
-        <p className="text-sm text-slate-600">{t("body")}</p>
+        <h1 className="text-2xl font-black text-ink-main">{t("title")}</h1>
+        <p className="text-sm text-ink-soft">{t("body")}</p>
         <div className="flex flex-wrap items-center justify-center gap-2">
           <button className="btn-primary" onClick={() => reset()} type="button">
             {t("retry")}

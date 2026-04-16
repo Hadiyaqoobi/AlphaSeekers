@@ -49,10 +49,10 @@ export function TelegramLink() {
 
   if (linked) {
     return (
-      <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2">
-        <span className="text-sm font-semibold text-emerald-700">{t("linked")}</span>
+      <div className="flex items-center gap-2 rounded-lg border border-neon-200 bg-neon-50 px-3 py-2">
+        <span className="text-sm font-semibold text-neon-700">{t("linked")}</span>
         <button
-          className="ml-auto text-xs font-medium text-slate-500 hover:text-slate-700"
+          className="ml-auto text-xs font-medium text-ink-soft hover:text-ink-main"
           onClick={handleUnlink}
           type="button"
         >
@@ -63,9 +63,9 @@ export function TelegramLink() {
   }
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-3">
-      <p className="text-sm font-semibold text-slate-900">{t("linkTitle")}</p>
-      <p className="mt-1 text-xs text-slate-600">{t("linkDescription")}</p>
+    <div className="rounded-lg border border-line-DEFAULT bg-dark-100 p-3">
+      <p className="text-sm font-semibold text-ink-main">{t("linkTitle")}</p>
+      <p className="mt-1 text-xs text-ink-soft">{t("linkDescription")}</p>
       <button
         className="btn-secondary mt-2 text-xs"
         disabled={loading}

@@ -35,12 +35,12 @@ export function CTABanner({ locale, signedIn }: CTABannerProps) {
             {t('ctaBanner.subtitle')}
           </p>
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4" style={{ opacity: inView ? 1 : 0, transform: inView ? 'none' : 'translateY(15px)', transition: 'all 0.6s 0.7s' }}>
-            <Link href={ctaHref} className="inline-flex items-center gap-2.5 px-8 py-4 rounded-xl bg-white text-land-green-700 text-base font-bold transition-all duration-200 hover:-translate-y-1 hover:shadow-xl hover:shadow-black/25 active:translate-y-0">
+            <Link href={ctaHref} className="inline-flex items-center gap-2.5 px-8 py-4 rounded-xl bg-dark-100 text-land-green-700 text-base font-bold transition-all duration-200 hover:-translate-y-1 hover:shadow-xl hover:shadow-black/25 active:translate-y-0">
               {signedIn ? t('ctaBanner.ctaDashboard') : t('ctaBanner.ctaStudent')}
               <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" /></svg>
             </Link>
             {!signedIn && (
-              <Link href={`/${locale}/register`} className="inline-flex items-center px-8 py-4 rounded-xl border-2 border-white/25 text-white text-base font-semibold transition-all duration-200 hover:bg-white/10 hover:-translate-y-1 active:translate-y-0">
+              <Link href={`/${locale}/register`} className="inline-flex items-center px-8 py-4 rounded-xl border-2 border-white/25 text-white text-base font-semibold transition-all duration-200 hover:bg-dark-100/10 hover:-translate-y-1 active:translate-y-0">
                 {t('ctaBanner.ctaVolunteer')}
               </Link>
             )}
