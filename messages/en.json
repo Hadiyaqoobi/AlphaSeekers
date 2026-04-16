@@ -748,6 +748,23 @@
     "studentTitle": "Student profile",
     "notStudentBlurb": "Student profile analytics are available for student accounts. You are logged in as {role}.",
     "minutesShort": "min",
+    "password": {
+      "title": "Change password",
+      "subtitle": "Use a strong password you don't use anywhere else.",
+      "current": "Current password",
+      "new": "New password",
+      "confirm": "Confirm new password",
+      "hint": "Minimum 6 characters.",
+      "submit": "Update password",
+      "submitting": "Saving...",
+      "success": "Password updated successfully.",
+      "errors": {
+        "tooShort": "New password must be at least 6 characters.",
+        "mismatch": "New password and confirmation don't match.",
+        "generic": "Could not update password. Please try again.",
+        "network": "Network error. Please check your connection."
+      }
+    },
     "actions": {
       "backToDashboard": "Back to dashboard",
       "openAvailability": "Open availability",

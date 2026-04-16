@@ -5,6 +5,7 @@ import { getTranslations } from "next-intl/server";
 import { StudentAttendanceSummary } from "@/components/attendance/student-attendance-summary";
 import { LogoutButton } from "@/components/logout-button";
 import { NotificationPrefs } from "@/components/notification-prefs";
+import { PasswordChangeForm } from "@/components/profile/password-change-form";
 import { PushSubscribe } from "@/components/pwa/push-subscribe";
 import { TelegramLink } from "@/components/telegram-link";
 import { formatDate, formatDateTime } from "@/lib/format-date";
@@ -89,6 +90,9 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
         <div className="rounded-2xl border border-line-DEFAULT bg-dark-100 p-5 shadow-sm">
           <NotificationPrefs />
         </div>
+
+        {/* Password Change */}
+        <PasswordChangeForm />
 
         {/* Sign Out */}
         <div className="border-t border-line-DEFAULT pt-5">
@@ -176,6 +180,11 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
       <div className="rounded-2xl border border-line-DEFAULT bg-dark-100 p-5 shadow-sm sm:p-6">
         <NotificationPrefs />
       </div>
+
+      {/* ============================================================
+          Password Change
+          ============================================================ */}
+      <PasswordChangeForm />
 
       {/* ============================================================
           Stats Row
