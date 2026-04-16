@@ -16,7 +16,7 @@ const mockClassColors = ['#10b981', '#0ea5e9', '#f59e0b'];
 const mockTeachers = ['Ms. Sarah', 'Mr. Ahmad', 'Ms. Leila'];
 
 function PlatformMockup() {
-  const t = useTranslations('home.hero.mockup');
+  const t = useTranslations('landing.howItWorks.mockup');
   const classNames = t.raw('mockClassNames') as string[];
   const times = t.raw('mockTimes') as string[];
   const mockClasses = classNames.map((name, i) => ({
