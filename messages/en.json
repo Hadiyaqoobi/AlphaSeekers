@@ -1135,5 +1135,31 @@
     "modeExplain": "Explain mode",
     "modeVocab": "Vocabulary mode",
     "modePrepare": "Prep mode"
+  },
+  "checkin": {
+    "title": "Check-in code",
+    "enterCode": "Enter the 4-digit code your teacher is showing on screen.",
+    "verify": "Verify",
+    "verified": "Attendance verified",
+    "markedPresent": "You are marked as present.",
+    "incorrectCode": "Incorrect code. Please check and try again.",
+    "expiredCode": "This code has expired. Ask your teacher for a new one.",
+    "noCodeYet": "No check-in code has been generated for this session yet.",
+    "invalidFormat": "Please enter a 4-digit code.",
+    "rateLimited": "Too many attempts. Please wait a few minutes.",
+    "networkError": "Something went wrong. Please try again.",
+    "generateCode": "Generate check-in code",
+    "generating": "Generating…",
+    "generateFailed": "Could not generate code. Please try again.",
+    "shareCode": "Share this code with your students:",
+    "expiresIn": "Expires in 30 minutes",
+    "expiresInTimer": "Expires in {time}",
+    "generateNew": "Generate new code",
+    "teacherHint": "Generate a code and share it on screen. Students enter it to confirm attendance.",
+    "legend": {
+      "verified": "Verified (joined + code)",
+      "joinedOnly": "Joined only (no code)",
+      "absent": "Absent"
+    }
   }
 }

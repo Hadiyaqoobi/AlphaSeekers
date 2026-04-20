@@ -10,6 +10,8 @@ type Student = {
     studentEmail: string;
     attended: boolean;
     joinedAt: string | null;
+    checkinVerified?: boolean;
+    checkinAt?: string | null;
 };
 
 type SessionData = {
@@ -26,8 +28,10 @@ type SummaryStudent = {
     studentName: string;
     studentEmail: string;
     sessionsAttended: number;
+    sessionsVerified?: number;
     totalSessions: number;
     attendanceRate: number;
+    verificationRate?: number;
 };
 
 type SummaryData = {
@@ -36,6 +40,11 @@ type SummaryData = {
     totalStudents: number;
     students: SummaryStudent[];
 };
+
+function formatTime(iso: string | null | undefined): string | null {
+    if (!iso) return null;
+    return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
 
 export function AttendanceSheet({
     sessionId,
@@ -98,6 +107,7 @@ export function AttendanceSheet({
     }
 
     const presentCount = data.students.filter((s) => s.attended).length;
+    const verifiedCount = data.students.filter((s) => s.checkinVerified).length;
 
     return (
         <section className="space-y-4">
@@ -129,7 +139,10 @@ export function AttendanceSheet({
                     })}
                 </p>
                 <p className="mt-2 text-sm font-semibold text-neon-700">
-                    {presentCount} / {data.students.length} present
+                    {verifiedCount} verified · {presentCount} / {data.students.length} joined
+                </p>
+                <p className="mt-1 text-[11px] text-ink-faint">
+                    ✓✓ {t("legend.verified")} · ✓ {t("legend.joinedOnly")} · ✗ {t("legend.absent")}
                 </p>
             </header>
 
@@ -139,42 +152,71 @@ export function AttendanceSheet({
                 </div>
             ) : (
                 <div className="panel panel-strong overflow-x-auto p-4">
-                    <table className="w-full min-w-[480px] border-collapse text-left text-sm">
+                    <table className="w-full min-w-[560px] border-collapse text-left text-sm">
                         <thead>
                             <tr className="border-b border-line-DEFAULT text-ink-soft">
                                 <th className="py-2 font-semibold" scope="col">Student</th>
                                 <th className="py-2 font-semibold" scope="col">Email</th>
-                                <th className="py-2 text-center font-semibold" scope="col">Present</th>
+                                <th className="py-2 text-center font-semibold" scope="col">Status</th>
+                                <th className="py-2 text-center font-semibold" scope="col">Manual</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {data.students.map((student) => (
-                                <tr
-                                    className="border-b border-line-soft text-ink-main"
-                                    key={student.studentId}
-                                >
-                                    <td className="py-2 font-semibold text-ink-main">
-                                        {student.studentName}
-                                    </td>
-                                    <td className="py-2 text-ink-soft">{student.studentEmail}</td>
-                                    <td className="py-2 text-center">
-                                        <button
-                                            aria-label={student.attended ? `Mark ${student.studentName} as absent` : `Mark ${student.studentName} as present`}
-                                            className={`inline-flex h-11 w-11 items-center justify-center rounded-full text-lg font-bold transition-colors ${student.attended
-                                                    ? "bg-neon-100 text-neon-700"
-                                                    : "bg-dark-100 text-ink-faint hover:bg-red-50 hover:text-red-500"
-                                                }`}
-                                            disabled={saving === student.studentId}
-                                            onClick={() =>
-                                                toggleAttendance(student.studentId, !student.attended)
-                                            }
-                                            type="button"
-                                        >
-                                            {saving === student.studentId ? "…" : student.attended ? "✓" : "✗"}
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))}
+                            {data.students.map((student) => {
+                                const state = student.checkinVerified
+                                    ? "verified"
+                                    : student.attended
+                                        ? "joined"
+                                        : "absent";
+                                const glyph = state === "verified" ? "✓✓" : state === "joined" ? "✓" : "✗";
+                                const glyphColor =
+                                    state === "verified"
+                                        ? "bg-neon-500/10 text-neon-400"
+                                        : state === "joined"
+                                            ? "bg-amber-500/10 text-amber-400"
+                                            : "bg-red-500/10 text-red-400";
+                                const detail =
+                                    state === "verified"
+                                        ? `${t("legend.verified")} · ${formatTime(student.checkinAt) ?? ""}`
+                                        : state === "joined"
+                                            ? `${t("legend.joinedOnly")} · ${formatTime(student.joinedAt) ?? ""}`
+                                            : t("legend.absent");
+                                return (
+                                    <tr
+                                        className="border-b border-line-soft text-ink-main"
+                                        key={student.studentId}
+                                    >
+                                        <td className="py-2 font-semibold text-ink-main">
+                                            {student.studentName}
+                                        </td>
+                                        <td className="py-2 text-ink-soft">{student.studentEmail}</td>
+                                        <td className="py-2 text-center">
+                                            <div className="flex items-center justify-center gap-2">
+                                                <span className={`inline-flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${glyphColor}`}>
+                                                    {glyph}
+                                                </span>
+                                                <span className="text-xs text-ink-faint">{detail}</span>
+                                            </div>
+                                        </td>
+                                        <td className="py-2 text-center">
+                                            <button
+                                                aria-label={student.attended ? `Mark ${student.studentName} as absent` : `Mark ${student.studentName} as present`}
+                                                className={`inline-flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold transition-colors ${student.attended
+                                                        ? "bg-neon-100 text-neon-700"
+                                                        : "bg-dark-100 text-ink-faint hover:bg-red-50 hover:text-red-500"
+                                                    }`}
+                                                disabled={saving === student.studentId}
+                                                onClick={() =>
+                                                    toggleAttendance(student.studentId, !student.attended)
+                                                }
+                                                type="button"
+                                            >
+                                                {saving === student.studentId ? "…" : student.attended ? "✓" : "✗"}
+                                            </button>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
                         </tbody>
                     </table>
                 </div>
@@ -241,37 +283,58 @@ export function ClassAttendanceSummary({
                         <tr className="border-b border-line-DEFAULT text-ink-soft">
                             <th className="py-2 font-semibold" scope="col">Student</th>
                             <th className="py-2 font-semibold" scope="col">Email</th>
-                            <th className="py-2 text-center font-semibold" scope="col">Attended</th>
-                            <th className="py-2 text-center font-semibold" scope="col">Rate</th>
+                            <th className="py-2 text-center font-semibold" scope="col">Joined</th>
+                            <th className="py-2 text-center font-semibold" scope="col">Join rate</th>
+                            <th className="py-2 text-center font-semibold" scope="col">Verified</th>
+                            <th className="py-2 text-center font-semibold" scope="col">Verify rate</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {data.students.map((s) => (
-                            <tr
-                                className="border-b border-line-soft text-ink-main"
-                                key={s.studentId}
-                            >
-                                <td className="py-2 font-semibold text-ink-main">
-                                    {s.studentName}
-                                </td>
-                                <td className="py-2 text-ink-soft">{s.studentEmail}</td>
-                                <td className="py-2 text-center">
-                                    {s.sessionsAttended} / {s.totalSessions}
-                                </td>
-                                <td className="py-2 text-center">
-                                    <span
-                                        className={`inline-block rounded-full px-2 py-0.5 text-xs font-bold ${s.attendanceRate >= 80
-                                                ? "bg-neon-100 text-neon-700"
-                                                : s.attendanceRate >= 50
-                                                    ? "bg-amber-100 text-amber-700"
-                                                    : "bg-red-100 text-red-700"
-                                            }`}
-                                    >
-                                        {s.attendanceRate}%
-                                    </span>
-                                </td>
-                            </tr>
-                        ))}
+                        {data.students.map((s) => {
+                            const verifyRate = s.verificationRate ?? 0;
+                            const verifyPill =
+                                verifyRate >= 80
+                                    ? "bg-neon-100 text-neon-700"
+                                    : verifyRate >= 50
+                                        ? "bg-amber-100 text-amber-700"
+                                        : "bg-red-100 text-red-700";
+                            return (
+                                <tr
+                                    className="border-b border-line-soft text-ink-main"
+                                    key={s.studentId}
+                                >
+                                    <td className="py-2 font-semibold text-ink-main">
+                                        {s.studentName}
+                                    </td>
+                                    <td className="py-2 text-ink-soft">{s.studentEmail}</td>
+                                    <td className="py-2 text-center">
+                                        {s.sessionsAttended} / {s.totalSessions}
+                                    </td>
+                                    <td className="py-2 text-center">
+                                        <span
+                                            className={`inline-block rounded-full px-2 py-0.5 text-xs font-bold ${s.attendanceRate >= 80
+                                                    ? "bg-neon-100 text-neon-700"
+                                                    : s.attendanceRate >= 50
+                                                        ? "bg-amber-100 text-amber-700"
+                                                        : "bg-red-100 text-red-700"
+                                                }`}
+                                        >
+                                            {s.attendanceRate}%
+                                        </span>
+                                    </td>
+                                    <td className="py-2 text-center">
+                                        {s.sessionsVerified ?? 0} / {s.totalSessions}
+                                    </td>
+                                    <td className="py-2 text-center">
+                                        <span
+                                            className={`inline-block rounded-full px-2 py-0.5 text-xs font-bold ${verifyPill}`}
+                                        >
+                                            {verifyRate}%
+                                        </span>
+                                    </td>
+                                </tr>
+                            );
+                        })}
                     </tbody>
                 </table>
             </div>

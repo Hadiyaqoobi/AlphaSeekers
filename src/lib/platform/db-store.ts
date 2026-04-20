@@ -2737,6 +2737,8 @@ export async function getSessionAttendance(sessionId: string) {
           studentId: true,
           attended: true,
           joinedAt: true,
+          checkinVerified: true,
+          checkinAt: true,
           student: {
             select: { id: true, name: true, email: true },
           },
@@ -2773,6 +2775,8 @@ export async function getSessionAttendance(sessionId: string) {
       studentEmail: e.student.email,
       attended: record?.attended ?? false,
       joinedAt: record?.joinedAt?.toISOString() ?? null,
+      checkinVerified: record?.checkinVerified ?? false,
+      checkinAt: record?.checkinAt?.toISOString() ?? null,
     };
   });
 
@@ -2833,6 +2837,7 @@ export async function getClassAttendanceSummary(classId: string) {
         select: {
           studentId: true,
           attended: true,
+          checkinVerified: true,
         },
       },
     },
@@ -2850,17 +2855,21 @@ export async function getClassAttendanceSummary(classId: string) {
   const totalSessions = sessions.length;
   const studentStats = enrollments.map((e) => {
     let present = 0;
+    let verified = 0;
     for (const session of sessions) {
       const record = session.attendance.find((a) => a.studentId === e.student.id);
       if (record?.attended) present++;
+      if (record?.checkinVerified) verified++;
     }
     return {
       studentId: e.student.id,
       studentName: e.student.name,
       studentEmail: e.student.email,
       sessionsAttended: present,
+      sessionsVerified: verified,
       totalSessions,
       attendanceRate: totalSessions > 0 ? Math.round((present / totalSessions) * 100) : 0,
+      verificationRate: totalSessions > 0 ? Math.round((verified / totalSessions) * 100) : 0,
     };
   });
 

@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
+import { CheckinCodePanel } from "./checkin-code-panel";
+import { CheckinEntry } from "./checkin-entry";
 import { HomeworkSubmit } from "./homework-submit";
 import { NoteEditor } from "./note-editor";
 import { PostClassQuiz } from "./post-class-quiz";
@@ -22,7 +24,14 @@ type LiveData = {
     isLanguageClass: boolean;
   };
   materials: { id: string; title: string; fileUrl: string }[];
-  attendance: { joinedAt: string | null } | null;
+  attendance:
+    | {
+        joinedAt: string | null;
+        checkinVerified?: boolean;
+        checkinAt?: string | null;
+      }
+    | null;
+  checkin: { code: string | null; expiresAt: string | null } | null;
   notes: { content: string; updatedAt: string } | null;
   summary: { content: string; quizData: string | null; generatedAt: string } | null;
   homework: Array<{
@@ -46,6 +55,8 @@ type LiveData = {
     studentName: string;
     attended: boolean;
     joinedAt: string | null;
+    checkinVerified?: boolean;
+    checkinAt?: string | null;
   }> | null;
 };
 
@@ -220,6 +231,32 @@ export function CompanionPanel({ initialData, locale }: CompanionPanelProps) {
           )}
         </div>
 
+        {/* Check-in: student enters teacher's 4-digit code */}
+        {role === "student" && joinedMeet && !data.attendance?.checkinVerified && (
+          <CheckinEntry
+            classId={session.classId}
+            sessionId={session.id}
+            initiallyVerified={false}
+          />
+        )}
+        {role === "student" && data.attendance?.checkinVerified && (
+          <CheckinEntry
+            classId={session.classId}
+            sessionId={session.id}
+            initiallyVerified={true}
+            initialVerifiedAt={data.attendance.checkinAt ?? null}
+          />
+        )}
+
+        {/* Check-in: teacher generates/displays the 4-digit code for screen share */}
+        {(role === "teacher" || role === "admin") && (
+          <CheckinCodePanel
+            classId={session.classId}
+            sessionId={session.id}
+            initial={data.checkin ?? undefined}
+          />
+        )}
+
         {/* Materials */}
         {data.materials.length > 0 && (
           <div className="rounded-2xl bg-dark-100 border border-line-DEFAULT p-5">
@@ -278,38 +315,58 @@ export function CompanionPanel({ initialData, locale }: CompanionPanelProps) {
           </div>
         )}
 
-        {/* Teacher attendance roster */}
+        {/* Teacher attendance roster (3 states: verified / joined-only / absent) */}
         {data.attendanceRoster && (
           <div className="rounded-2xl bg-dark-100 border border-line-DEFAULT p-5">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-bold text-ink-main">Attendance</h3>
               <span className="text-xs text-ink-soft">
-                {data.attendanceRoster.filter((a) => a.attended).length} / {data.attendanceRoster.length} joined
+                {data.attendanceRoster.filter((a) => a.checkinVerified).length} verified · {data.attendanceRoster.filter((a) => a.attended).length} joined / {data.attendanceRoster.length}
               </span>
             </div>
+            <p className="text-[11px] text-ink-faint mb-3">
+              ✓✓ Verified (joined + code) · ✓ Joined only (no code) · ✗ Absent
+            </p>
             <div className="space-y-1 max-h-64 overflow-y-auto">
-              {data.attendanceRoster.map((a) => (
-                <div
-                  key={a.studentId}
-                  className="flex items-center justify-between py-1.5 px-2 rounded text-sm"
-                >
-                  <span className="flex items-center gap-2">
-                    {a.attended ? (
-                      <span className="text-neon-500">✓</span>
-                    ) : (
-                      <span className="text-ink-faint">○</span>
+              {data.attendanceRoster.map((a) => {
+                const stateLabel = a.checkinVerified
+                  ? "verified"
+                  : a.attended
+                    ? "joined"
+                    : "absent";
+                const stateColor =
+                  stateLabel === "verified"
+                    ? "text-neon-400"
+                    : stateLabel === "joined"
+                      ? "text-amber-400"
+                      : "text-red-400";
+                const stateGlyph =
+                  stateLabel === "verified" ? "✓✓" : stateLabel === "joined" ? "✓" : "✗";
+                const nameColor =
+                  stateLabel === "absent" ? "text-ink-faint" : "text-ink-main";
+                const timestamp = a.checkinAt ?? a.joinedAt ?? null;
+                return (
+                  <div
+                    key={a.studentId}
+                    className="flex items-center justify-between py-1.5 px-2 rounded text-sm"
+                  >
+                    <span className="flex items-center gap-2">
+                      <span className={`${stateColor} font-mono w-5 text-center`}>
+                        {stateGlyph}
+                      </span>
+                      <span className={nameColor}>{a.studentName}</span>
+                    </span>
+                    {timestamp && (
+                      <span className="text-xs text-ink-faint">
+                        {new Date(timestamp).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </span>
                     )}
-                    <span className={a.attended ? "text-ink-main" : "text-ink-faint"}>
-                      {a.studentName}
-                    </span>
-                  </span>
-                  {a.joinedAt && (
-                    <span className="text-xs text-ink-faint">
-                      {new Date(a.joinedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                    </span>
-                  )}
-                </div>
-              ))}
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}

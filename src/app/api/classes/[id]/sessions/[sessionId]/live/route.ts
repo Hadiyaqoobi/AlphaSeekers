@@ -85,8 +85,9 @@ export async function GET(
           },
   });
 
-  // For teachers: real-time attendance roster
+  // For teachers: real-time attendance roster + current check-in code
   let attendanceRoster = null;
+  let checkin = null;
   if (role === "teacher" || role === "admin") {
     const enrollments = await prisma.enrollment.findMany({
       where: { classId: params.id, status: "ACTIVE" },
@@ -106,8 +107,19 @@ export async function GET(
         studentName: e.student.name,
         attended: att?.attended || false,
         joinedAt: att?.joinedAt || null,
+        checkinVerified: att?.checkinVerified || false,
+        checkinAt: att?.checkinAt || null,
       };
     });
+
+    const sessionCheckin = await prisma.session.findUnique({
+      where: { id: session.id },
+      select: { checkinCode: true, checkinCodeExpiresAt: true },
+    });
+    checkin = {
+      code: sessionCheckin?.checkinCode ?? null,
+      expiresAt: sessionCheckin?.checkinCodeExpiresAt ?? null,
+    };
   }
 
   return Response.json({
@@ -128,6 +140,7 @@ export async function GET(
     },
     materials,
     attendance,
+    checkin,
     notes,
     summary,
     homework,

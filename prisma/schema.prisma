@@ -125,6 +125,11 @@ model Session {
   cancelled             Boolean               @default(false)
   createdAt             DateTime              @default(now())
 
+  // Attendance check-in: teacher generates a 4-digit code during class;
+  // students enter it to verify they were actually present.
+  checkinCode           String?
+  checkinCodeExpiresAt  DateTime?
+
   class                 Class                 @relation(fields: [classId], references: [id], onDelete: Cascade)
   attendance            Attendance[]
   materials             Material[]
@@ -152,6 +157,10 @@ model Attendance {
   studentId             String
   attended              Boolean               @default(false)
   joinedAt              DateTime?
+
+  // Second-layer verification: did the student enter the check-in code?
+  checkinVerified       Boolean               @default(false)
+  checkinAt             DateTime?
 
   session               Session               @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   student               User                  @relation(fields: [studentId], references: [id], onDelete: Cascade)

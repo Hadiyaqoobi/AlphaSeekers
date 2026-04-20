@@ -2120,6 +2120,8 @@ export function getSessionAttendance(sessionId: string) {
       studentEmail: user?.email ?? "",
       attended: record?.attended ?? false,
       joinedAt: record?.joinedAt ?? null,
+      checkinVerified: (record as AttendanceRecord & { checkinVerified?: boolean })?.checkinVerified ?? false,
+      checkinAt: (record as AttendanceRecord & { checkinAt?: string | null })?.checkinAt ?? null,
     };
   });
 
@@ -2173,19 +2175,25 @@ export function getClassAttendanceSummary(classId: string) {
   const students = enrollments.map((e) => {
     const user = store.users.find((u) => u.id === e.studentId);
     let present = 0;
+    let verified = 0;
     for (const session of sessions) {
       const record = store.attendanceRecords.find(
         (a) => a.sessionId === session.id && a.studentId === e.studentId,
       );
       if (record?.attended) present++;
+      if ((record as (AttendanceRecord & { checkinVerified?: boolean }) | undefined)?.checkinVerified) {
+        verified++;
+      }
     }
     return {
       studentId: e.studentId,
       studentName: user?.name ?? "Unknown",
       studentEmail: user?.email ?? "",
       sessionsAttended: present,
+      sessionsVerified: verified,
       totalSessions,
       attendanceRate: totalSessions > 0 ? Math.round((present / totalSessions) * 100) : 0,
+      verificationRate: totalSessions > 0 ? Math.round((verified / totalSessions) * 100) : 0,
     };
   });
 

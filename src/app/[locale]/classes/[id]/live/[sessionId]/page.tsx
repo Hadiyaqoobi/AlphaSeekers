@@ -53,7 +53,7 @@ export default async function LiveSessionPage({ params }: PageProps) {
   const { session, role } = access;
 
   // Fetch all initial data server-side
-  const [materials, attendance, notes, summary, homework, attendanceRoster] =
+  const [materials, attendance, notes, summary, homework, attendanceRoster, sessionCheckin] =
     await Promise.all([
       prisma.material.findMany({
         where: { classId: params.id },
@@ -90,6 +90,14 @@ export default async function LiveSessionPage({ params }: PageProps) {
       role === "teacher" || role === "admin"
         ? loadAttendanceRoster(params.id, session.id)
         : Promise.resolve(null),
+      // Teacher sees the current code so a page reload doesn't lose it.
+      // Student is only told whether a code exists (not the code itself).
+      role === "teacher" || role === "admin"
+        ? prisma.session.findUnique({
+            where: { id: session.id },
+            select: { checkinCode: true, checkinCodeExpiresAt: true },
+          })
+        : Promise.resolve(null),
     ]);
 
   const isLanguageClass =
@@ -115,8 +123,20 @@ export default async function LiveSessionPage({ params }: PageProps) {
       createdAt: m.createdAt.toISOString(),
     })),
     attendance: attendance
-      ? { joinedAt: attendance.joinedAt?.toISOString() ?? null }
+      ? {
+          joinedAt: attendance.joinedAt?.toISOString() ?? null,
+          checkinVerified: attendance.checkinVerified,
+          checkinAt: attendance.checkinAt?.toISOString() ?? null,
+        }
       : null,
+    // Teachers get the live code (and expiry); students only get a flag.
+    checkin:
+      role === "teacher" || role === "admin"
+        ? {
+            code: sessionCheckin?.checkinCode ?? null,
+            expiresAt: sessionCheckin?.checkinCodeExpiresAt?.toISOString() ?? null,
+          }
+        : null,
     notes: notes
       ? { content: notes.content, updatedAt: notes.updatedAt.toISOString() }
       : null,
@@ -179,6 +199,8 @@ async function loadAttendanceRoster(classId: string, sessionId: string) {
       studentName: e.student.name,
       attended: att?.attended || false,
       joinedAt: att?.joinedAt?.toISOString() || null,
+      checkinVerified: att?.checkinVerified || false,
+      checkinAt: att?.checkinAt?.toISOString() || null,
     };
   });
 }
