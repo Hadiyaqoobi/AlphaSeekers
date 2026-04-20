@@ -22,7 +22,12 @@ import { evaluateResponse } from "./evaluation/llm-judge";
 import { generateCompletion, streamCompletionWithFallback } from "./llm";
 import { stripPIIFromContext, scanPromptForPII } from "./privacy/pii-stripper";
 import { buildIntelligentPrompt } from "./prompt-engine";
-import { buildNoContextMessage, buildRagMessages } from "./prompts";
+import {
+  buildGeneralKnowledgeDisclaimer,
+  buildGeneralKnowledgeMessages,
+  buildNoContextMessage,
+  buildRagMessages,
+} from "./prompts";
 import { cacheResponse, checkCache, detectLanguage } from "./response-cache";
 import { calculateConfidence } from "./safety/confidence";
 import { classifyContent } from "./safety/content-classifier";
@@ -68,10 +73,14 @@ export async function ragQuery(request: RagRequest): Promise<RagResult> {
   // 2. Search for relevant chunks
   const chunks = await similaritySearch(queryEmbedding);
 
-  // 3. Handle no results
+  // 3. Handle no results — fall back to general-knowledge answer with a clear
+  //    disclaimer instead of bouncing the student with a static "no materials"
+  //    message. Students still get a useful reply before any ingestion happens.
   if (chunks.length === 0) {
+    const generalMessages = buildGeneralKnowledgeMessages(request.query, request.locale);
+    const generalAnswer = await generateCompletion(generalMessages);
     return {
-      answer: buildNoContextMessage(request.locale),
+      answer: buildGeneralKnowledgeDisclaimer(request.locale) + generalAnswer,
       sources: [],
       chunksUsed: 0,
       latencyMs: Date.now() - start,
@@ -193,18 +202,59 @@ export function createRagStream(request: RagRequest): ReadableStream {
           ),
         );
 
-        // 5. Handle no results
+        // 5. Handle no results — stream a general-knowledge answer from the LLM
+        //    with a clear disclaimer instead of dead-ending the conversation.
         if (chunks.length === 0) {
-          const noContextMsg = buildNoContextMessage(request.locale);
+          const disclaimer = buildGeneralKnowledgeDisclaimer(request.locale);
           controller.enqueue(
-            encoder.encode(`data: ${JSON.stringify({ type: "text", content: noContextMsg })}\n\n`),
+            encoder.encode(`data: ${JSON.stringify({ type: "text", content: disclaimer })}\n\n`),
           );
-          controller.enqueue(
-            encoder.encode(
-              `data: ${JSON.stringify({ type: "done", sources: [], chunksUsed: 0, latencyMs: Date.now() - start })}\n\n`,
-            ),
-          );
-          controller.close();
+
+          const generalMessages = buildGeneralKnowledgeMessages(request.query, request.locale);
+          let generalAnswer = "";
+          let usedProviderNoCtx = "groq";
+
+          await streamCompletionWithFallback(generalMessages, {
+            onToken(token) {
+              generalAnswer += token;
+              controller.enqueue(
+                encoder.encode(`data: ${JSON.stringify({ type: "text", content: token })}\n\n`),
+              );
+            },
+            onDone() {
+              controller.enqueue(
+                encoder.encode(
+                  `data: ${JSON.stringify({ type: "done", sources: [], chunksUsed: 0, latencyMs: Date.now() - start })}\n\n`,
+                ),
+              );
+              controller.close();
+
+              logInteraction({
+                userId: request.userId,
+                query: request.query,
+                answer: disclaimer + generalAnswer,
+                provider: usedProviderNoCtx,
+                mode: studentContext.detectedMode,
+                startTime: start,
+              }).catch(() => {});
+            },
+            onProvider(name) {
+              usedProviderNoCtx = name;
+            },
+            onError(error) {
+              // If the LLM also fails, fall back to the static no-context message
+              const fallback = buildNoContextMessage(request.locale);
+              controller.enqueue(
+                encoder.encode(`data: ${JSON.stringify({ type: "text", content: fallback })}\n\n`),
+              );
+              controller.enqueue(
+                encoder.encode(
+                  `data: ${JSON.stringify({ type: "done", sources: [], chunksUsed: 0, latencyMs: Date.now() - start, llmError: error.message })}\n\n`,
+                ),
+              );
+              controller.close();
+            },
+          });
           return;
         }
 

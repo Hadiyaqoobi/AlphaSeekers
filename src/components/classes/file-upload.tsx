@@ -106,9 +106,14 @@ export function FileUpload({ purpose, classId, onUploadComplete }: FileUploadPro
 
       if (!presignResponse.ok) {
         const body = (await presignResponse.json().catch(() => ({ message: t("uploadFailed") }))) as {
+          code?: string;
           message?: string;
         };
-        setError(body.message ?? t("uploadFailed"));
+        const codeMap: Record<string, string> = {
+          not_configured: t("notConfigured"),
+        };
+        const translated = body.code && codeMap[body.code];
+        setError(translated ?? body.message ?? t("uploadFailed"));
         setUploading(false);
         return;
       }

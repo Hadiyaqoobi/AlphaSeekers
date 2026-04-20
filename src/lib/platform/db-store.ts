@@ -2046,17 +2046,20 @@ export async function runSchedulerBatch() {
       orderBy: [{ dayOfWeek: "asc" }, { startTimeUTC: "asc" }],
     });
 
-    let startDate: Date;
-
-    if (availability) {
-      const hour = availability.startTimeUTC.getUTCHours();
-      const minute = availability.startTimeUTC.getUTCMinutes();
-      startDate = nextWeekdayDate(availability.dayOfWeek, hour, minute);
-    } else {
-      const fallback = parseScheduleTime(klass.schedulePreference ?? "5:00 PM");
-      const fallbackDay = parseScheduleDay(klass.schedulePreference ?? "Sat");
-      startDate = nextWeekdayDate(fallbackDay, fallback.hour, fallback.minute);
+    // Gate: do NOT schedule sessions for a class whose teacher has not set
+    // their availability. Scheduling a fallback time silently creates sessions
+    // at hours the teacher may never attend (QA 2026-04-19). processedCount is
+    // incremented batch-wide after the loop, so simply continuing is correct.
+    if (!availability) {
+      console.log(
+        `[scheduler] skipping class ${klass.id} (${klass.name}): teacher ${klass.teacherId} has no availability set`,
+      );
+      continue;
     }
+
+    const hour = availability.startTimeUTC.getUTCHours();
+    const minute = availability.startTimeUTC.getUTCMinutes();
+    let startDate: Date = nextWeekdayDate(availability.dayOfWeek, hour, minute);
 
     const durationMinutes = normalizeDurationMinutes(klass.durationMinutes);
     let windows = buildSegmentWindows(startDate, durationMinutes);

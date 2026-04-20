@@ -49,7 +49,10 @@ export async function POST(request: NextRequest) {
 
     if (!isR2Configured()) {
         return NextResponse.json(
-            { message: "File uploads not configured. Contact administrator to set up R2." },
+            {
+                code: "not_configured",
+                message: "File uploads not configured. Contact administrator to set up R2.",
+            },
             { status: 503 },
         );
     }

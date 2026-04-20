@@ -62,4 +62,18 @@ export const teamMembers: TeamMember[] = [
       "تیم در حال رشد داوطلبان ما را مدیریت می‌کند و اطمینان حاصل می‌کند که هر معلم و عضو تیم حمایت لازم را دارد.",
     order: 4,
   },
+  // Sahar requested Farkhunda be added (QA cover note 2026-04-19) — no photo,
+  // avatar is used instead. Bio + Dari content still needs Sahar's review.
+  {
+    id: "farkhunda",
+    name: "Farkhunda Latif",
+    nameDari: "Farkhunda Latif", // TODO: NEEDS DARI TRANSLATION FROM TEAM
+    role: "Team Member",
+    roleDari: "Team Member", // TODO: NEEDS DARI TRANSLATION FROM TEAM
+    photo: null,
+    bio: "Part of the AlphaSeekers team, supporting the mission to expand access to free education for Afghan students.",
+    bioDari:
+      "Part of the AlphaSeekers team, supporting the mission to expand access to free education for Afghan students.", // TODO: NEEDS DARI TRANSLATION FROM TEAM
+    order: 5,
+  },
 ];

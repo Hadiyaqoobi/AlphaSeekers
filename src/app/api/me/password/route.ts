@@ -14,7 +14,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { hashPassword, verifyPassword } from "@/lib/security/passwords";
 import { checkRateLimit, getClientIp } from "@/lib/security/rate-limit";
-import { getSessionUser, unauthorized, badRequest } from "@/lib/security/session";
+import { getSessionUser, unauthorized } from "@/lib/security/session";
 
 const schema = z.object({
   currentPassword: z.string().min(1).max(200),
@@ -37,7 +37,10 @@ export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => null);
   const parsed = schema.safeParse(body);
   if (!parsed.success) {
-    return badRequest("Password must be at least 6 characters.");
+    return NextResponse.json(
+      { code: "too_short", message: "Password must be at least 6 characters." },
+      { status: 400 },
+    );
   }
 
   const account = await prisma.user.findUnique({
@@ -48,14 +51,14 @@ export async function POST(request: NextRequest) {
 
   if (!verifyPassword(parsed.data.currentPassword, account.passwordHash)) {
     return NextResponse.json(
-      { message: "Current password is incorrect." },
+      { code: "wrong_current", message: "Current password is incorrect." },
       { status: 400 },
     );
   }
 
   if (parsed.data.currentPassword === parsed.data.newPassword) {
     return NextResponse.json(
-      { message: "New password must be different from current password." },
+      { code: "same_as_current", message: "New password must be different from current password." },
       { status: 400 },
     );
   }

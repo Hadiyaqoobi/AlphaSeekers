@@ -35,9 +35,15 @@ export function PasswordChangeForm() {
       });
       const body = await r.json().catch(() => null);
       if (!r.ok) {
+        const codeMap: Record<string, string> = {
+          wrong_current: t("errors.wrongCurrent"),
+          same_as_current: t("errors.sameAsCurrent"),
+          too_short: t("errors.tooShort"),
+        };
+        const translated = body?.code && codeMap[body.code as string];
         setStatus({
           kind: "error",
-          message: body?.message ?? t("errors.generic"),
+          message: translated ?? body?.message ?? t("errors.generic"),
         });
         return;
       }

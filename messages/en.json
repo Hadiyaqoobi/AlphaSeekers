@@ -24,7 +24,10 @@
     "networkBadge": "",
     "aiTutor": "AI Tutor",
     "team": "Team",
-    "stories": "Stories"
+    "stories": "Stories",
+    "selfLearning": "Self Learning",
+    "analytics": "Analytics",
+    "aiHealth": "AI Health"
   },
   "home": {
     "eyebrow": "Free classes for Afghan students",
@@ -356,7 +359,7 @@
       "kicker": "Our Mission",
       "title": "Education is a right, not a privilege",
       "body": "When Afghan students lost access to education, we built a classroom that fits in a pocket. Free forever. Open to every student who wants to learn.",
-      "pills": ["100% Free", "Bilingual (Dari + English)", "$0/month infrastructure", "AI-powered study assistant"]
+      "pills": ["100% Free", "Bilingual (Dari + English)", "No cost to students", "AI-powered study assistant"]
     },
     "howItWorks": {
       "kicker": "How It Works",
@@ -493,6 +496,13 @@
       "meet": "Meet",
       "pending": "Pending",
       "nextSession": "Next session"
+    },
+    "quickActions": {
+      "heading": "Quick actions",
+      "createClass": "+ Create class",
+      "addOpportunity": "+ Add opportunity",
+      "viewPendingUsers": "View pending users",
+      "aiDashboard": "AI dashboard"
     }
   },
   "classes": {
@@ -579,7 +589,8 @@
     "dataCost": "~{cost} at $1-3/GB",
     "upload": "Upload",
     "remove": "Remove",
-    "fileSelected": "File selected"
+    "fileSelected": "File selected",
+    "notConfigured": "File uploads are not set up yet. Please contact the administrator."
   },
   "joinNow": {
     "title": "Join now",
@@ -684,7 +695,7 @@
   "team": {
     "kicker": "Our Team",
     "title": "The people behind AlphaSeekers",
-    "subtitle": "A small team building something that matters. Four people, one mission: free education for every Afghan student who wants to learn.",
+    "subtitle": "A small team building something that matters. One mission: free education for every Afghan student who wants to learn.",
     "spotlightBadge": "Co-Founder",
     "teamGridTitle": "The team",
     "ctaTitle": "Want to be part of the mission?",
@@ -761,6 +772,8 @@
       "errors": {
         "tooShort": "New password must be at least 6 characters.",
         "mismatch": "New password and confirmation don't match.",
+        "wrongCurrent": "Current password is incorrect.",
+        "sameAsCurrent": "New password must be different from your current password.",
         "generic": "Could not update password. Please try again.",
         "network": "Network error. Please check your connection."
       }
@@ -860,6 +873,9 @@
     "externalUrl": "External URL (optional)",
     "addResource": "Add resource",
     "resourceAdded": "Library resource added",
+    "fileAttached": "File attached",
+    "uploadNotConfigured": "File uploads are not configured yet. Please contact the administrator.",
+    "uploadFailed": "Upload failed. Please try again.",
     "postOpportunity": "Post Opportunity",
     "type": "Type",
     "deadline": "Deadline",

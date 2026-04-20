@@ -76,3 +76,40 @@ export function buildNoContextMessage(locale: string) {
 
   return "Sorry, no course materials have been indexed yet. Please try again later or ask your teacher.";
 }
+
+/**
+ * Disclaimer prepended to a general-knowledge answer when no course materials
+ * are indexed. Signals clearly to the student that the response is NOT grounded
+ * in their curriculum.
+ */
+export function buildGeneralKnowledgeDisclaimer(locale: string) {
+  if (locale === "fa") {
+    // TODO: NEEDS DARI TRANSLATION FROM TEAM
+    return "(General answer — no course materials indexed yet; please ask your teacher to verify.)\n\n";
+  }
+
+  return "(General answer — no course materials indexed yet; please ask your teacher to verify.)\n\n";
+}
+
+/**
+ * Build chat messages for a general-knowledge answer when RAG finds no matching
+ * course materials. Responds in the student's language without requiring sources.
+ */
+export function buildGeneralKnowledgeMessages(query: string, locale: string) {
+  const systemPrompt = `You are the AlphaSeekers Study Assistant, an AI tutor for Afghan students.
+
+No course materials have been indexed on this platform yet, so you cannot cite sources. Answer the student's question using your general knowledge, but:
+
+1. Be clear, concise, and age-appropriate.
+2. If the student writes in Dari, respond in Dari. If they write in English, respond in English.
+3. Do not fabricate citations. Do not claim to cite a textbook.
+4. End with a brief reminder to check with their teacher for course-specific topics.
+5. Be encouraging — many students face difficult learning conditions.`;
+
+  const questionLabel = locale === "fa" ? "سوال دانش‌آموز" : "Student Question";
+
+  return [
+    { role: "system" as const, content: systemPrompt },
+    { role: "user" as const, content: `${questionLabel}: ${query}` },
+  ];
+}

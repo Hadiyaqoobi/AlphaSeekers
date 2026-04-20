@@ -94,7 +94,7 @@ export function LibraryForm() {
         purpose="library"
       />
       {form.fileUrl ? (
-        <p className="text-xs text-neon-600">File uploaded to R2</p>
+        <p className="text-xs text-neon-600">{t("fileAttached")}</p>
       ) : (
         <input
           className="field"
