@@ -35,7 +35,7 @@ function ClassesMockup() {
     amber: 'bg-[rgba(255,179,0,0.12)] text-[#FFB300]',
   };
   return (
-    <BrowserShell url="alphaseekers.org/classes">
+    <BrowserShell url="alphaseekers.onrender.com/classes">
       <div className="p-6 space-y-4">
         <div className="flex items-center justify-between">
           <div>
@@ -83,7 +83,7 @@ function ClassesMockup() {
 
 function AiChatMockup() {
   return (
-    <BrowserShell url="alphaseekers.org/study-assistant">
+    <BrowserShell url="alphaseekers.onrender.com/study-assistant">
       <div className="p-6 space-y-3 min-h-[340px]">
         {/* User bubble — first */}
         <div className="flex justify-end">
@@ -201,7 +201,7 @@ function OpportunitiesMockup() {
     },
   ];
   return (
-    <BrowserShell url="alphaseekers.org/opportunities">
+    <BrowserShell url="alphaseekers.onrender.com/opportunities">
       <div className="p-6 space-y-3">
         <div>
           <p className="text-sm font-semibold" style={{ color: '#E8EEF2' }}>Open opportunities</p>
@@ -249,7 +249,7 @@ function OfflineMockup() {
     { name: 'Digital Art', time: 'Thu · 5:30 PM' },
   ];
   return (
-    <BrowserShell url="alphaseekers.org/dashboard">
+    <BrowserShell url="alphaseekers.onrender.com/dashboard">
       <div className="p-6 min-h-[340px] flex items-center justify-center">
         <div className="relative">
           {/* Soft glow behind card */}
