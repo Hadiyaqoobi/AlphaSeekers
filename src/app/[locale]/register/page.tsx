@@ -7,6 +7,7 @@ import { useParams, useRouter } from "next/navigation";
 
 import { useAutosaveForm } from "@/components/forms/use-autosave-form";
 import { ApiError, registerUser } from "@/lib/api-client";
+import { validateEmailStrict } from "@/lib/security/email";
 import type { RegisterRequest } from "@/types/api-contracts";
 
 type FormState = {
@@ -41,11 +42,35 @@ export default function RegisterPage() {
     setForm((current) => ({ ...current, ...payload as Partial<FormState> }));
   });
 
+  function localizeEmailError(result: ReturnType<typeof validateEmailStrict>): string {
+    if (result.ok) return "";
+    switch (result.code) {
+      case "TLD_MISSING":
+        return t("emailTldMissing");
+      case "TLD_SHAPE":
+        return t("emailTldShape");
+      case "TLD_TYPO":
+        return t("emailTldTypo", { tld: result.typoTld ?? "" });
+      case "INVALID_FORMAT":
+      default:
+        return t("emailInvalid");
+    }
+  }
+
   async function submit(event: React.FormEvent) {
     event.preventDefault();
 
-    setSubmitting(true);
     setMessage(null);
+
+    // Client-side email check so users on slow connections get instant
+    // feedback before the request goes out (UAT 2026-04-26 HIGH-B).
+    const emailCheck = validateEmailStrict(form.email);
+    if (!emailCheck.ok) {
+      setMessage(localizeEmailError(emailCheck));
+      return;
+    }
+
+    setSubmitting(true);
 
     const payload: RegisterRequest = {
       name: form.name,
@@ -60,7 +85,16 @@ export default function RegisterPage() {
     try {
       await registerUser(payload);
     } catch (error) {
-      setMessage(error instanceof ApiError ? error.message : t("error"));
+      // The server may reject the email even if our pre-check passed
+      // (race against a stricter server policy). Re-run the validator
+      // so we can show the localized message rather than the raw
+      // English fallback from the API.
+      const recheck = validateEmailStrict(form.email);
+      if (!recheck.ok) {
+        setMessage(localizeEmailError(recheck));
+      } else {
+        setMessage(error instanceof ApiError ? error.message : t("error"));
+      }
       setSubmitting(false);
       return;
     }

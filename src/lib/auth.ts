@@ -17,7 +17,11 @@ const credentialsSchema = z.object({
 export const authOptions: NextAuthOptions = {
   session: {
     strategy: "jwt",
-    maxAge: 30 * 60, // 30 minutes
+    // 7-day session, refreshed on every request the user makes.
+    // Was 30 minutes, which silently bounced active admins to /login mid-session
+    // (UAT 2026-04-26 CRIT-A). NextAuth rotates the JWT on `updateAge` cadence.
+    maxAge: 7 * 24 * 60 * 60,
+    updateAge: 60 * 60,
   },
   pages: {
     signIn: "/fa/login",

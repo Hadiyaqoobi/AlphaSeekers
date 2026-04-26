@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { WebinarsComingSoon } from "@/components/coming-soon/webinars-coming-soon";
 import { formatDateTime } from "@/lib/format-date";
+import { DeleteContentButton } from "@/components/admin/delete-content-button";
 import { WebinarForm } from "@/components/forms/webinar-form";
 import { WebinarRegisterButton } from "@/components/forms/webinar-register-button";
 import { listRegisteredWebinarIds, listWebinars } from "@/lib/platform/store";
@@ -32,14 +33,21 @@ export default async function WebinarsPage({ params }: WebinarsPageProps) {
 
   return (
     <section className="mx-auto max-w-6xl px-6 py-10 lg:px-8">
-      {/* Page Header */}
-      <header className="mb-10">
-        <p className="text-xs font-semibold uppercase tracking-widest text-neon-600">
-          {t("title")}
-        </p>
-        <h1 className="mt-2 text-4xl font-bold tracking-tight text-gray-900">
-          {t("subtitle")}
-        </h1>
+      {/* Page Header — sky-themed for Webinars to differentiate from Opportunities */}
+      <header className="mb-10 flex items-start gap-4">
+        <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-2xl bg-sky-100 text-sky-600 ring-1 ring-sky-200">
+          <svg className="h-7 w-7" fill="none" stroke="currentColor" strokeWidth={1.6} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25h-9A2.25 2.25 0 002.25 7.5v9a2.25 2.25 0 002.25 2.25z" />
+          </svg>
+        </div>
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-widest text-sky-600">
+            {t("title")}
+          </p>
+          <h1 className="mt-1 text-4xl font-bold tracking-tight text-gray-900">
+            {t("subtitle")}
+          </h1>
+        </div>
       </header>
 
       {/* Admin Form */}
@@ -107,7 +115,7 @@ export default async function WebinarsPage({ params }: WebinarsPageProps) {
 
                 {/* Registration Status */}
                 {user ? (
-                  <div className="mt-5 border-t border-gray-50 pt-4">
+                  <div className="mt-5 flex items-center justify-between gap-2 border-t border-gray-50 pt-4">
                     {registeredIds.has(item.id) ? (
                       <span className="inline-flex items-center gap-1.5 rounded-full bg-neon-50 px-3 py-1 text-xs font-semibold text-neon-700">
                         <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20">
@@ -122,6 +130,9 @@ export default async function WebinarsPage({ params }: WebinarsPageProps) {
                     ) : (
                       <WebinarRegisterButton webinarId={item.id} />
                     )}
+                    {user.role === "ADMIN" ? (
+                      <DeleteContentButton id={item.id} kind="webinar" />
+                    ) : null}
                   </div>
                 ) : null}
               </div>

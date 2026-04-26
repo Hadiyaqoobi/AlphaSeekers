@@ -33,8 +33,19 @@ export function EnrollButton({ classId, initiallyEnrolled = false }: EnrollButto
 
     if (!response.ok) {
       setEnrolled(false);
-      const body = (await response.json().catch(() => ({ message: t("enrollFailed") }))) as { message?: string };
-      setError(body.message ?? t("enrollFailed"));
+      const body = (await response.json().catch(() => ({ message: t("enrollFailed") }))) as {
+        message?: string;
+        code?: string;
+        limit?: number;
+      };
+      // Server returns code "ENROLLMENT_LIMIT" with a numeric limit when the
+      // student has reached MAX_ACTIVE_ENROLLMENTS — translate locally so the
+      // student sees Dari on /fa/* (UAT 2026-04-26 MED-A).
+      if (body.code === "ENROLLMENT_LIMIT" && typeof body.limit === "number") {
+        setError(t("limitReached", { limit: body.limit }));
+      } else {
+        setError(body.message ?? t("enrollFailed"));
+      }
       setLoading(false);
       return;
     }

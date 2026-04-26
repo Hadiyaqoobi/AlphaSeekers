@@ -457,7 +457,11 @@
     "student": "Student",
     "teacher": "Teacher",
     "submit": "Submit request",
-    "error": "Registration failed"
+    "error": "Registration failed",
+    "emailInvalid": "Please enter a valid email address.",
+    "emailTldMissing": "Email is missing a domain extension (for example .com).",
+    "emailTldShape": "Email domain extension looks wrong. Use letters only, like .com or .org.",
+    "emailTldTypo": "That domain extension (.{tld}) doesn't look right. Did you mean .com?"
   },
   "pending": {
     "eyebrow": "Access",
@@ -563,7 +567,8 @@
     "enroll": "Enroll",
     "enrolledTapToUnenroll": "Enrolled (tap to unenroll)",
     "enrollFailed": "Enrollment failed",
-    "unenrollFailed": "Unable to drop class"
+    "unenrollFailed": "Unable to drop class",
+    "limitReached": "You can join up to {limit} classes at a time. Drop one to add another."
   },
   "materials": {
     "title": "Upload material",
@@ -979,7 +984,9 @@
     "backToAdmin": "Back to admin",
     "analytics": "Analytics",
     "teachers": "Teachers",
-    "content": "Content"
+    "content": "Content",
+    "delete": "Delete",
+    "deleteConfirm": "Confirm delete?"
   },
   "adminContent": {
     "kicker": "Content",
@@ -1129,6 +1136,7 @@
     "poweredBy": "Powered by RAG + Llama 3.1",
     "sources": "Sources",
     "newConversation": "New conversation",
+    "thinking": "Thinking…",
     "modeStudy": "Study mode",
     "modePractice": "Practice mode",
     "modeQuiz": "Quiz mode",

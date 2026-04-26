@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
 import { prisma } from "@/lib/prisma";
+import { validateEmailStrict } from "@/lib/security/email";
 import { hashPassword } from "@/lib/security/passwords";
 import { encryptPhone } from "@/lib/security/phone-crypto";
 import { checkRateLimit, getClientIp } from "@/lib/security/rate-limit";
@@ -16,7 +17,16 @@ const registerSchema = z.object({
     .max(120, "Name is too long.")
     .transform(stripHtml)
     .pipe(z.string().min(1, "Name must contain visible text.")),
-  email: z.string().trim().email("Please enter a valid email address."),
+  email: z
+    .string()
+    .trim()
+    .email("Please enter a valid email address.")
+    .superRefine((value, ctx) => {
+      const result = validateEmailStrict(value);
+      if (!result.ok) {
+        ctx.addIssue({ code: "custom", message: result.message });
+      }
+    }),
   password: z
     .string()
     .min(6, "Password must be at least 6 characters.")

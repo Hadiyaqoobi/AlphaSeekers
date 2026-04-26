@@ -1,4 +1,6 @@
-import Image from "next/image";
+// Plain <img> rather than next/image: Render free tier intermittently
+// 504s on the image optimizer, leaving black placeholders
+// (UAT 2026-04-26 HIGH-A).
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 
@@ -46,12 +48,12 @@ export default async function TeamPage({ params }: TeamPageProps) {
                     {/* Photo */}
                     <div className="relative aspect-[4/5] overflow-hidden bg-gray-50">
                       {member.photo ? (
-                        <Image
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
                           src={member.photo}
                           alt={isDari ? member.nameDari : member.name}
-                          fill
-                          className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-                          sizes="(max-width: 640px) 100vw, 50vw"
+                          loading="lazy"
+                          className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
                         />
                       ) : (
                         <div className="absolute inset-0 bg-gradient-to-br from-land-green-600 to-land-green-800 flex items-center justify-center">

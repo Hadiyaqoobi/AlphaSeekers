@@ -1,6 +1,5 @@
 'use client';
 
-import Image from 'next/image';
 import type { TeamMember } from '@/lib/team-data';
 
 type TeamGridProps = {
@@ -19,15 +18,17 @@ export function TeamGrid({ members, locale, gridTitle }: TeamGridProps) {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           {members.map((member, i) => (
             <div key={member.id} className="group" style={{ animationDelay: `${i * 0.1}s` }}>
-              {/* Photo */}
+              {/* Photo — plain <img> rather than next/image: Render free tier
+                  intermittently 504s on the image optimizer, leaving black
+                  placeholders (UAT 2026-04-26 HIGH-A). */}
               <div className="relative aspect-[3/4] rounded-xl overflow-hidden bg-[var(--bg-strong)]">
                 {member.photo ? (
-                  <Image
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
                     src={member.photo}
                     alt={isDari ? member.nameDari : member.name}
-                    fill
-                    className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                    loading="lazy"
+                    className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
                   />
                 ) : (
                   <div className="absolute inset-0 bg-gradient-to-br from-land-green-600 to-land-green-800 flex items-center justify-center transition-transform duration-500 group-hover:scale-[1.03]">

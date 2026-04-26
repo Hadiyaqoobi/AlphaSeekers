@@ -206,11 +206,28 @@ export default async function ClassesPage({ params, searchParams }: ClassesPageP
                     </div>
                   </div>
 
-                  {/* Next Session */}
-                  <p className="mt-3 text-xs text-ink-faint">
-                    {item.nextSessionStart
-                      ? formatDateTime(item.nextSessionStart, locale)
-                      : t("sessionPending")}
+                  {/* Next Session — colored status dot makes scheduled vs
+                      pending classes visually distinct (UAT 2026-04-26 MED-B). */}
+                  <p className="mt-3 flex items-center gap-2 text-xs text-ink-faint">
+                    <span
+                      aria-hidden
+                      className={`inline-block h-2 w-2 rounded-full ${
+                        item.nextSessionStart ? "bg-emerald-500" : "bg-amber-400"
+                      }`}
+                    />
+                    <span>
+                      {item.nextSessionStart
+                        ? formatDateTime(item.nextSessionStart, locale)
+                        : t("sessionPending")}
+                    </span>
+                    {enrolledSet.has(item.id) ? (
+                      <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-neon-50 px-2 py-0.5 text-[10px] font-semibold text-neon-700">
+                        <svg className="h-2.5 w-2.5" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" />
+                        </svg>
+                        {t("enrolled")}
+                      </span>
+                    ) : null}
                   </p>
                 </div>
 

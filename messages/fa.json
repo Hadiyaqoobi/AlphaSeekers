@@ -457,7 +457,11 @@
     "student": "دانش‌آموز",
     "teacher": "استاد",
     "submit": "ارسال درخواست",
-    "error": "ثبت‌نام ناموفق بود"
+    "error": "ثبت‌نام ناموفق بود",
+    "emailInvalid": "لطفاً یک آدرس ایمیل معتبر وارد کنید.",
+    "emailTldMissing": "ایمیل پسوند دامنه ندارد (مانند .com).",
+    "emailTldShape": "پسوند دامنه ایمیل اشتباه است. فقط از حروف استفاده کنید، مانند .com یا .org.",
+    "emailTldTypo": "این پسوند دامنه (.{tld}) درست به نظر نمی‌رسد. منظور شما .com است؟"
   },
   "pending": {
     "eyebrow": "دسترسی",
@@ -563,7 +567,8 @@
     "enroll": "ثبت‌نام",
     "enrolledTapToUnenroll": "ثبت‌نام شد (برای لغو لمس کنید)",
     "enrollFailed": "ثبت‌نام ناموفق بود",
-    "unenrollFailed": "لغو ثبت‌نام ممکن نشد"
+    "unenrollFailed": "لغو ثبت‌نام ممکن نشد",
+    "limitReached": "شما می‌توانید همزمان در {limit} صنف اشتراک داشته باشید. برای ثبت‌نام در صنف جدید، یکی را لغو کنید."
   },
   "materials": {
     "title": "آپلود ماده",
@@ -979,7 +984,9 @@
     "backToAdmin": "برگشت به مدیریت",
     "analytics": "تحلیل‌ها",
     "teachers": "استادان",
-    "content": "محتوا"
+    "content": "محتوا",
+    "delete": "حذف",
+    "deleteConfirm": "تایید حذف؟"
   },
   "adminContent": {
     "kicker": "محتوا",
@@ -1129,6 +1136,7 @@
     "poweredBy": "با RAG + Llama 3.1 ساخته شده",
     "sources": "منابع",
     "newConversation": "مکالمه جدید",
+    "thinking": "در حال فکر کردن…",
     "modeStudy": "حالت مطالعه",
     "modePractice": "حالت تمرین",
     "modeQuiz": "حالت امتحان",

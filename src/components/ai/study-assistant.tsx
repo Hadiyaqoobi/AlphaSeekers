@@ -92,7 +92,7 @@ function escapeHtml(str: string): string {
 
 // ── Typing Indicator ─────────────────────────────────────────
 
-function TypingIndicator() {
+function TypingIndicator({ label }: { label: string }) {
   return (
     <div className="flex items-center gap-1.5 px-4 py-3">
       <div className="flex gap-1">
@@ -107,7 +107,7 @@ function TypingIndicator() {
           />
         ))}
       </div>
-      <span className="text-xs text-ink-faint ml-2">Thinking...</span>
+      <span className="text-xs text-ink-faint ml-2">{label}</span>
       <style>{`
         @keyframes typing-bounce {
           0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
@@ -223,6 +223,15 @@ export function StudyAssistant() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isStreaming]);
+
+  // Focus the textarea on mount and whenever streaming completes so
+  // students can keep typing without re-clicking the input
+  // (UAT 2026-04-26 HIGH-D — Shahla reported "could not type properly").
+  useEffect(() => {
+    if (!isStreaming) {
+      inputRef.current?.focus();
+    }
+  }, [isStreaming]);
 
   const handleSubmit = useCallback(async (queryText?: string) => {
     const query = queryText ?? input.trim();
@@ -606,7 +615,7 @@ export function StudyAssistant() {
                       )}
                     </>
                   ) : message.role === "assistant" && !message.content ? (
-                    <TypingIndicator />
+                    <TypingIndicator label={t("thinking")} />
                   ) : (
                     <p className="text-[15px] leading-relaxed whitespace-pre-wrap">{message.content}</p>
                   )}
@@ -627,9 +636,10 @@ export function StudyAssistant() {
           <div className="relative flex-1">
             <textarea
               ref={inputRef}
+              autoFocus
+              dir="auto"
               className="w-full resize-none rounded-xl px-4 py-3 pr-12 text-sm focus:outline-none transition-all min-h-[44px] max-h-[120px]"
               style={{ background: "#142230", border: "1px solid #1E3A4F", color: "#E8EEF2" }}
-              disabled={isStreaming}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder={t("placeholder")}
