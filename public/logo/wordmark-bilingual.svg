@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 320" role="img" aria-label="AlphaSeekers — آلفاسیکرز">
+  <title>AlphaSeekers — آلفاسیکرز</title>
+  <defs>
+    <linearGradient id="bil-stroke" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00E676"/>
+      <stop offset="55%" stop-color="#00E5FF"/>
+      <stop offset="100%" stop-color="#2979FF"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Mark -->
+  <rect x="0" y="0" width="240" height="240" rx="48" fill="#0A1118"/>
+  <circle cx="120" cy="48" r="9" fill="url(#bil-stroke)"/>
+  <circle cx="120" cy="48" r="16" fill="#00E676" fill-opacity="0.18"/>
+  <g stroke="url(#bil-stroke)" stroke-width="22" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <path d="M 60 192 L 120 76 L 180 192"/>
+    <path d="M 86 142 L 154 142"/>
+  </g>
+
+  <!-- English wordmark (left → right) -->
+  <text x="288" y="120" font-family="'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif"
+        font-weight="800" font-size="76" letter-spacing="-1.5" fill="#E8EEF2">Alpha<tspan fill="#00E676">Seekers</tspan></text>
+  <text x="290" y="156" font-family="'Inter', system-ui, sans-serif"
+        font-weight="500" font-size="18" letter-spacing="0.5" fill="#8899A6">
+    Free education for Afghan students
+  </text>
+
+  <!-- Hairline divider -->
+  <line x1="288" y1="184" x2="820" y2="184" stroke="#1A2D3D" stroke-width="1"/>
+
+  <!-- Dari wordmark (right → left, dir=rtl) -->
+  <text x="820" y="240" font-family="'Vazirmatn', 'Noto Sans Arabic', system-ui, sans-serif"
+        font-weight="700" font-size="64" fill="#E8EEF2" text-anchor="end" direction="rtl">آلفاسیکرز</text>
+  <text x="820" y="278" font-family="'Vazirmatn', 'Noto Sans Arabic', system-ui, sans-serif"
+        font-weight="500" font-size="18" fill="#8899A6" text-anchor="end" direction="rtl">آموزش رایگان برای دانش‌آموزان افغان</text>
+</svg>

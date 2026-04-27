@@ -95,9 +95,15 @@ export function MobileNav({ navItems, authItems, user, logoutCallbackUrl, logout
         {/* Panel header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-line-soft">
           <div className="flex items-center gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500 to-brand-600 text-sm font-bold text-white shadow-md">
-              A
-            </span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/logo/mark-light.svg"
+              alt=""
+              aria-hidden="true"
+              width={40}
+              height={40}
+              className="rounded-xl shadow-md"
+            />
             <span className="text-lg font-bold text-ink-main font-display">AlphaSeekers</span>
           </div>
           <button

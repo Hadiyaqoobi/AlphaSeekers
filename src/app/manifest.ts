@@ -8,13 +8,19 @@ export default function manifest(): MetadataRoute.Manifest {
     start_url: "/fa",
     scope: "/",
     display: "standalone",
-    background_color: "#f8fafc",
-    theme_color: "#0369a1",
+    background_color: "#0A1118",
+    theme_color: "#00E676",
     lang: "fa",
     dir: "rtl",
     categories: ["education"],
     prefer_related_applications: false,
     icons: [
+      {
+        src: "/logo/favicon.svg",
+        sizes: "any",
+        type: "image/svg+xml",
+        purpose: "any",
+      },
       {
         src: "/favicon.ico",
         sizes: "any",

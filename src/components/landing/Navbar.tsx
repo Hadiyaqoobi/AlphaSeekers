@@ -63,7 +63,15 @@ export function Navbar({ locale, signedIn, loginLabel, registerLabel }: NavbarPr
       >
         <div className="mx-auto max-w-7xl px-6 lg:px-8 h-full flex items-center justify-between">
           <Link href={`/${locale}`} className="flex items-center gap-3 group">
-            <span className={`flex h-10 w-10 items-center justify-center rounded-xl text-sm font-bold shadow-md transition-all duration-300 ${scrolled ? 'bg-gradient-to-br from-land-green-600 to-land-green-700 text-white' : 'bg-dark-100/10 backdrop-blur-sm border border-white/20 text-white'}`}>A</span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/logo/mark-light.svg"
+              alt=""
+              aria-hidden="true"
+              width={40}
+              height={40}
+              className="rounded-xl shadow-md"
+            />
             <span className={`hidden sm:inline text-xl font-extrabold tracking-tight transition-colors duration-300 ${scrolled ? 'text-gray-900' : 'text-white'}`} style={{ fontFamily: 'var(--font-landing), var(--font-display-latin), sans-serif' }}>AlphaSeekers</span>
           </Link>
           <nav className="hidden lg:flex lg:items-center lg:gap-1">
@@ -89,7 +97,15 @@ export function Navbar({ locale, signedIn, loginLabel, registerLabel }: NavbarPr
       <div className={`fixed inset-0 z-[70] bg-land-dark lg:hidden flex flex-col transition-opacity duration-300 ${mobileOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} role="dialog" aria-modal={mobileOpen} aria-label="Navigation menu">
         <div className="flex items-center justify-between px-6 h-20">
           <span className="flex items-center gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-dark-100/10 border border-white/20 text-sm font-bold text-white">A</span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/logo/mark-light.svg"
+              alt=""
+              aria-hidden="true"
+              width={40}
+              height={40}
+              className="rounded-xl"
+            />
             <span className="text-xl font-extrabold text-white tracking-tight" style={{ fontFamily: 'var(--font-landing)' }}>AlphaSeekers</span>
           </span>
           <button onClick={closeMobile} className="flex h-11 w-11 items-center justify-center rounded-xl text-white/60 hover:text-white hover:bg-dark-100/10 transition-colors" aria-label="Close menu">

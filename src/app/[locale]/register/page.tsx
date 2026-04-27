@@ -117,9 +117,15 @@ export default function RegisterPage() {
 
         {/* Top logo */}
         <div className="relative z-10 flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-dark-100/15 text-base font-bold backdrop-blur-sm">
-            A
-          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/logo/mark-light.svg"
+            alt=""
+            aria-hidden="true"
+            width={40}
+            height={40}
+            className="rounded-xl"
+          />
           <span className="text-lg font-semibold tracking-tight">AlphaSeekers</span>
         </div>
 
@@ -184,9 +190,15 @@ export default function RegisterPage() {
       <div className="flex min-h-screen flex-col items-center justify-center bg-[var(--bg-base)] px-6 py-12 lg:min-h-0 lg:overflow-y-auto lg:px-16">
         {/* Mobile-only branding header */}
         <div className="mb-8 flex flex-col items-center lg:hidden">
-          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-neon-600 to-teal-700 text-lg font-bold text-white shadow-lg shadow-emerald-200/50">
-            A
-          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/logo/mark-light.svg"
+            alt=""
+            aria-hidden="true"
+            width={48}
+            height={48}
+            className="mb-3 rounded-xl shadow-lg shadow-emerald-200/50"
+          />
           <span className="text-sm font-semibold tracking-tight text-ink-main">AlphaSeekers</span>
         </div>
 

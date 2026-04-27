@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" aria-label="AlphaSeekers">
+  <title>AlphaSeekers</title>
+  <defs>
+    <linearGradient id="as-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00E676"/>
+      <stop offset="55%" stop-color="#00E5FF"/>
+      <stop offset="100%" stop-color="#2979FF"/>
+    </linearGradient>
+    <radialGradient id="as-glow" cx="50%" cy="20%" r="60%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Background tile: rounded square, gradient sky -->
+  <rect width="240" height="240" rx="48" fill="url(#as-bg)"/>
+  <rect width="240" height="240" rx="48" fill="url(#as-glow)"/>
+
+  <!-- Guiding star (the goal — education / aspiration) -->
+  <circle cx="120" cy="48" r="9" fill="#FFFFFF"/>
+  <circle cx="120" cy="48" r="16" fill="#FFFFFF" fill-opacity="0.18"/>
+
+  <!-- The A mark: mountain peak rising, crossbar as horizon line -->
+  <g stroke="#FFFFFF" stroke-width="22" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <path d="M 60 192 L 120 76 L 180 192"/>
+    <path d="M 86 142 L 154 142"/>
+  </g>
+</svg>

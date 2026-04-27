@@ -118,9 +118,15 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
                     className="flex items-center gap-3 text-lg font-bold text-ink-main transition-opacity hover:opacity-80"
                     href={`/${locale}`}
                   >
-                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500 to-brand-600 text-sm font-bold text-white shadow-md shadow-brand-500/20">
-                      A
-                    </span>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src="/logo/mark-light.svg"
+                      alt=""
+                      aria-hidden="true"
+                      width={40}
+                      height={40}
+                      className="rounded-xl shadow-md shadow-brand-500/20"
+                    />
                     <span className="hidden sm:inline font-display text-xl tracking-tight">AlphaSeekers</span>
                   </Link>
 

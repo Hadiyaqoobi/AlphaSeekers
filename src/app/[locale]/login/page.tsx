@@ -213,16 +213,16 @@ export default function LoginPage() {
                 filter: "blur(6px)",
               }}
             />
-            <div
-              className="relative w-14 h-14 rounded-2xl flex items-center justify-center text-xl font-bold"
-              style={{
-                background: "#00E676",
-                color: "#080D12",
-                boxShadow: "0 0 0 1px rgba(0,230,118,0.4) inset",
-              }}
-            >
-              A
-            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/logo/mark-light.svg"
+              alt=""
+              aria-hidden="true"
+              width={56}
+              height={56}
+              className="relative rounded-2xl"
+              style={{ boxShadow: "0 0 0 1px rgba(0,230,118,0.4) inset" }}
+            />
           </div>
           <span className="text-base font-bold tracking-tight" style={{ color: "#FFFFFF" }}>
             AlphaSeekers

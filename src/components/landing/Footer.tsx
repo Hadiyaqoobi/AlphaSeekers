@@ -22,9 +22,15 @@ export function Footer({ locale, signedIn }: FooterProps) {
           {/* Brand */}
           <div className="sm:col-span-2 lg:col-span-1">
             <div className="flex items-center gap-3 mb-5">
-              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-dark-100/10 border border-white/10 text-sm font-bold text-white">
-                A
-              </span>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/logo/mark-light.svg"
+                alt=""
+                aria-hidden="true"
+                width={40}
+                height={40}
+                className="rounded-xl"
+              />
               <span
                 className="text-xl font-bold text-white tracking-tight"
                 style={{ fontFamily: 'var(--font-landing), var(--font-display-latin), sans-serif' }}

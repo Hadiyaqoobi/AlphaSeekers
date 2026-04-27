@@ -55,7 +55,8 @@ function PlatformMockup() {
         key={cycle}
       >
         <div className="flex items-center gap-2 mb-4 pb-3 border-b border-white/[0.06]">
-          <div className="w-7 h-7 rounded-lg bg-[#1DB964] flex items-center justify-center text-[10px] font-bold text-white">A</div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo/mark-light.svg" alt="" aria-hidden="true" width={28} height={28} className="rounded-lg" />
           <span className="text-xs font-bold text-white">{t('myClasses')}</span>
           <span className="ml-auto text-[10px] text-white/30">{t('welcomeBack')}</span>
         </div>

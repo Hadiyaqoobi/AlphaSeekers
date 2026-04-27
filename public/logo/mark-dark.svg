@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" aria-label="AlphaSeekers">
+  <title>AlphaSeekers</title>
+  <defs>
+    <linearGradient id="as-stroke" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00E676"/>
+      <stop offset="55%" stop-color="#00E5FF"/>
+      <stop offset="100%" stop-color="#2979FF"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background tile: deep slate, matches site dark surfaces -->
+  <rect width="240" height="240" rx="48" fill="#0A1118"/>
+
+  <!-- Guiding star -->
+  <circle cx="120" cy="48" r="9" fill="url(#as-stroke)"/>
+  <circle cx="120" cy="48" r="16" fill="#00E676" fill-opacity="0.18"/>
+
+  <!-- The A mark -->
+  <g stroke="url(#as-stroke)" stroke-width="22" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <path d="M 60 192 L 120 76 L 180 192"/>
+    <path d="M 86 142 L 154 142"/>
+  </g>
+</svg>

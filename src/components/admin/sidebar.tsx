@@ -81,12 +81,16 @@ export function Sidebar({ locale, userName, userRole, userEmail }: SidebarProps)
     <div className="flex flex-col h-full" style={{ background: '#0A1118' }}>
       {/* Logo */}
       <div className="flex items-center gap-3 px-5 py-5" style={{ borderBottom: '1px solid #1A2D3D' }}>
-        <span
-          className="flex h-9 w-9 items-center justify-center rounded-xl text-sm font-bold"
-          style={{ background: '#00E676', color: '#080D12', boxShadow: '0 0 12px rgba(0,230,118,0.3)' }}
-        >
-          A
-        </span>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/logo/mark-light.svg"
+          alt=""
+          aria-hidden="true"
+          width={36}
+          height={36}
+          className="rounded-xl"
+          style={{ boxShadow: '0 0 12px rgba(0,230,118,0.3)' }}
+        />
         <span className="text-lg font-bold tracking-tight" style={{ color: '#E8EEF2' }}>AlphaSeekers</span>
       </div>
 
