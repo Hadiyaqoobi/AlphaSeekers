@@ -443,7 +443,21 @@
     "submit": "ورود",
     "error": "ایمیل یا رمز عبور نادرست است",
     "pending": "حساب شما در حال بررسی است. لطفاً بعد از تایید دوباره تلاش کنید.",
-    "requestAccess": "درخواست دسترسی"
+    "requestAccess": "درخواست دسترسی",
+    "secureSignIn": "ورود امن",
+    "welcomeLine1": "خوش آمدید",
+    "welcomeLine2": "به خانه برگشتید.",
+    "tagline": "صنف‌های شما، دستیار هوش مصنوعی شما، پیشرفت شما.",
+    "emailPlaceholder": "you@example.com",
+    "forgot": "فراموش کرده‌اید؟",
+    "signingIn": "در حال ورود…",
+    "signIn": "ورود",
+    "or": "یا",
+    "magicLink": "لینک ورود را برایم بفرستید",
+    "showPassword": "نمایش رمز عبور",
+    "hidePassword": "مخفی‌کردن رمز عبور",
+    "newToPlatform": "تازه به AlphaSeekers پیوسته‌اید؟",
+    "requestAccessArrow": "درخواست دسترسی ←"
   },
   "register": {
     "eyebrow": "درخواست دسترسی",
@@ -461,7 +475,20 @@
     "emailInvalid": "لطفاً یک آدرس ایمیل معتبر وارد کنید.",
     "emailTldMissing": "ایمیل پسوند دامنه ندارد (مانند .com).",
     "emailTldShape": "پسوند دامنه ایمیل اشتباه است. فقط از حروف استفاده کنید، مانند .com یا .org.",
-    "emailTldTypo": "این پسوند دامنه (.{tld}) درست به نظر نمی‌رسد. منظور شما .com است؟"
+    "emailTldTypo": "این پسوند دامنه (.{tld}) درست به نظر نمی‌رسد. منظور شما .com است؟",
+    "panelHeadlineTop": "شروع آموزش",
+    "panelHeadlineBottom": "به‌صورت رایگان.",
+    "panelTagline": "به هزاران شاگرد و استاد بپیوندید که آینده‌ی بهتری را از طریق آموزش می‌سازند.",
+    "panelTrust1Title": "امن و خصوصی",
+    "panelTrust1Body": "اطلاعات شما محفوظ است",
+    "panelTrust2Title": "۱۰۰٪ رایگان",
+    "panelTrust2Body": "بدون هیچ هزینه‌ی پنهان",
+    "panelTrust3Title": "استادان داوطلب از +۱۲ کشور",
+    "panelTrust3Body": "یک جامعه‌ی جهانی واقعی",
+    "panelQuote": "«یک کودک، یک استاد، یک کتاب و یک قلم می‌تواند جهان را تغییر دهد.»",
+    "mobileTrust1": "امن",
+    "mobileTrust2": "۱۰۰٪ رایگان",
+    "mobileTrust3": "+۱۲ کشور"
   },
   "pending": {
     "eyebrow": "دسترسی",
@@ -638,6 +665,7 @@
     "registerButton": "ثبت‌نام",
     "registeredStatus": "ثبت‌نام شد",
     "registrationFailed": "ثبت‌نام ناموفق بود",
+    "signInToRegister": "برای ثبت‌نام وارد شوید",
     "comingSoon": {
       "kicker": "به زودی",
       "title": "وبینارهای زنده در راه هستند",

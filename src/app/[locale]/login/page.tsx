@@ -249,14 +249,14 @@ export default function LoginPage() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
             </svg>
             <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: "#00E676" }}>
-              Secure sign-in
+              {t("secureSignIn")}
             </span>
           </div>
           <h1
             className="text-4xl sm:text-5xl font-bold tracking-tight leading-[1.05]"
             style={{ color: "#FFFFFF" }}
           >
-            Welcome
+            {t("welcomeLine1")}
             <br />
             <span
               style={{
@@ -266,11 +266,11 @@ export default function LoginPage() {
                 backgroundClip: "text",
               }}
             >
-              back home.
+              {t("welcomeLine2")}
             </span>
           </h1>
           <p className="mt-4 text-sm" style={{ color: "#8899A6" }}>
-            Your classes, your AI tutor, your progress.
+            {t("tagline")}
           </p>
         </div>
 
@@ -338,7 +338,7 @@ export default function LoginPage() {
               {/* Email with icon */}
               <div>
                 <label className="block text-[11px] font-bold uppercase tracking-[0.12em] mb-2" style={{ color: "#8899A6" }}>
-                  Email
+                  {t("email")}
                 </label>
                 <div className="relative">
                   {/* Icon */}
@@ -369,7 +369,7 @@ export default function LoginPage() {
                     onChange={(e) => setEmail(e.target.value)}
                     onFocus={() => setEmailFocused(true)}
                     onBlur={() => setEmailFocused(false)}
-                    placeholder="you@example.com"
+                    placeholder={t("emailPlaceholder")}
                     className="relative w-full pl-11 pr-4 py-3.5 rounded-xl text-sm focus:outline-none transition-all"
                     style={{
                       background: "#0F1A24",
@@ -395,7 +395,7 @@ export default function LoginPage() {
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <label className="block text-[11px] font-bold uppercase tracking-[0.12em]" style={{ color: "#8899A6" }}>
-                    Password
+                    {t("password")}
                   </label>
                   <button
                     type="button"
@@ -404,7 +404,7 @@ export default function LoginPage() {
                     onMouseEnter={(e) => { e.currentTarget.style.color = "#00E676"; }}
                     onMouseLeave={(e) => { e.currentTarget.style.color = "#556677"; }}
                   >
-                    Forgot?
+                    {t("forgot")}
                   </button>
                 </div>
                 <div className="relative">
@@ -449,7 +449,7 @@ export default function LoginPage() {
                     type="button"
                     onClick={() => setShowPassword((p) => !p)}
                     tabIndex={-1}
-                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    aria-label={showPassword ? t("hidePassword") : t("showPassword")}
                     className="absolute inset-y-0 right-0 flex items-center pr-3 transition-colors"
                     style={{ color: "#556677" }}
                     onMouseEnter={(e) => { e.currentTarget.style.color = "#00E676"; }}
@@ -535,11 +535,11 @@ export default function LoginPage() {
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                       </svg>
-                      <span>Signing in…</span>
+                      <span>{t("signingIn")}</span>
                     </>
                   ) : (
                     <>
-                      <span>Sign in</span>
+                      <span>{t("signIn")}</span>
                       <svg className="w-4 h-4 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
                       </svg>
@@ -551,7 +551,7 @@ export default function LoginPage() {
               {/* Divider */}
               <div className="flex items-center gap-3 pt-1">
                 <div className="flex-1 h-px" style={{ background: "linear-gradient(90deg, transparent, #1E3A4F, transparent)" }} />
-                <span className="text-[10px] uppercase tracking-wider" style={{ color: "#556677" }}>or</span>
+                <span className="text-[10px] uppercase tracking-wider" style={{ color: "#556677" }}>{t("or")}</span>
                 <div className="flex-1 h-px" style={{ background: "linear-gradient(90deg, transparent, #1E3A4F, transparent)" }} />
               </div>
 
@@ -576,7 +576,7 @@ export default function LoginPage() {
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
                 </svg>
-                Send me a magic link
+                {t("magicLink")}
               </button>
             </div>
           </form>
@@ -591,7 +591,7 @@ export default function LoginPage() {
           }}
         >
           <p className="text-sm" style={{ color: "#8899A6" }}>
-            New to AlphaSeekers?{" "}
+            {t("newToPlatform")}{" "}
             <Link
               href={`/${locale}/register`}
               className="font-bold transition-colors"
@@ -599,7 +599,7 @@ export default function LoginPage() {
               onMouseEnter={(e) => { e.currentTarget.style.color = "#3DFFA0"; }}
               onMouseLeave={(e) => { e.currentTarget.style.color = "#00E676"; }}
             >
-              Request access →
+              {t("requestAccessArrow")}
             </Link>
           </p>
 

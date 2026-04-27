@@ -1,5 +1,4 @@
 import { getTranslations } from "next-intl/server";
-import { redirect } from "next/navigation";
 
 import { WebinarsComingSoon } from "@/components/coming-soon/webinars-coming-soon";
 import { formatDateTime } from "@/lib/format-date";
@@ -25,10 +24,8 @@ export default async function WebinarsPage({ params }: WebinarsPageProps) {
     return <WebinarsComingSoon />;
   }
 
-  // If there IS content but user isn't logged in, send to login
-  if (!user && items.length > 0) {
-    redirect(`/${locale}/login`);
-  }
+  // Anonymous users see the public listing; the meet link stays gated
+  // behind enrollment in the cards below (Antigravity 2026-04-26 PUB-08).
   const registeredIds = user ? new Set(await listRegisteredWebinarIds(user.id)) : new Set<string>();
 
   return (
@@ -114,9 +111,9 @@ export default async function WebinarsPage({ params }: WebinarsPageProps) {
                 )}
 
                 {/* Registration Status */}
-                {user ? (
-                  <div className="mt-5 flex items-center justify-between gap-2 border-t border-gray-50 pt-4">
-                    {registeredIds.has(item.id) ? (
+                <div className="mt-5 flex items-center justify-between gap-2 border-t border-gray-50 pt-4">
+                  {user ? (
+                    registeredIds.has(item.id) ? (
                       <span className="inline-flex items-center gap-1.5 rounded-full bg-neon-50 px-3 py-1 text-xs font-semibold text-neon-700">
                         <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20">
                           <path
@@ -129,12 +126,19 @@ export default async function WebinarsPage({ params }: WebinarsPageProps) {
                       </span>
                     ) : (
                       <WebinarRegisterButton webinarId={item.id} />
-                    )}
-                    {user.role === "ADMIN" ? (
-                      <DeleteContentButton id={item.id} kind="webinar" />
-                    ) : null}
-                  </div>
-                ) : null}
+                    )
+                  ) : (
+                    <a
+                      className="text-sm font-semibold text-sky-600 hover:text-sky-700"
+                      href={`/${locale}/login?next=${encodeURIComponent(`/${locale}/webinars`)}`}
+                    >
+                      {t("signInToRegister")}
+                    </a>
+                  )}
+                  {user?.role === "ADMIN" ? (
+                    <DeleteContentButton id={item.id} kind="webinar" />
+                  ) : null}
+                </div>
               </div>
             </article>
           ))}

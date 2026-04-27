@@ -443,7 +443,21 @@
     "submit": "Log in",
     "error": "Invalid email or password",
     "pending": "Your account is pending review. Please check back after it is approved.",
-    "requestAccess": "Request access"
+    "requestAccess": "Request access",
+    "secureSignIn": "Secure sign-in",
+    "welcomeLine1": "Welcome",
+    "welcomeLine2": "back home.",
+    "tagline": "Your classes, your AI tutor, your progress.",
+    "emailPlaceholder": "you@example.com",
+    "forgot": "Forgot?",
+    "signingIn": "Signing in…",
+    "signIn": "Sign in",
+    "or": "or",
+    "magicLink": "Send me a magic link",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "newToPlatform": "New to AlphaSeekers?",
+    "requestAccessArrow": "Request access →"
   },
   "register": {
     "eyebrow": "Access request",
@@ -461,7 +475,20 @@
     "emailInvalid": "Please enter a valid email address.",
     "emailTldMissing": "Email is missing a domain extension (for example .com).",
     "emailTldShape": "Email domain extension looks wrong. Use letters only, like .com or .org.",
-    "emailTldTypo": "That domain extension (.{tld}) doesn't look right. Did you mean .com?"
+    "emailTldTypo": "That domain extension (.{tld}) doesn't look right. Did you mean .com?",
+    "panelHeadlineTop": "Start learning",
+    "panelHeadlineBottom": "for free.",
+    "panelTagline": "Join thousands of students and teachers building a brighter future through education.",
+    "panelTrust1Title": "Safe & private",
+    "panelTrust1Body": "Your data stays protected",
+    "panelTrust2Title": "100% Free",
+    "panelTrust2Body": "No hidden fees, ever",
+    "panelTrust3Title": "Volunteer teachers from 12+ countries",
+    "panelTrust3Body": "A truly global community",
+    "panelQuote": "\"One child, one teacher, one book, one pen can change the world.\"",
+    "mobileTrust1": "Safe",
+    "mobileTrust2": "100% Free",
+    "mobileTrust3": "12+ countries"
   },
   "pending": {
     "eyebrow": "Access",
@@ -638,6 +665,7 @@
     "registerButton": "Register",
     "registeredStatus": "Registered",
     "registrationFailed": "Registration failed",
+    "signInToRegister": "Sign in to register",
     "comingSoon": {
       "kicker": "Coming Soon",
       "title": "Live webinars are coming",

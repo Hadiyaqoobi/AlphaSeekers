@@ -127,10 +127,10 @@ export default function RegisterPage() {
         <div className="relative z-10 space-y-8">
           <div className="space-y-4">
             <h2 className="text-4xl font-extrabold leading-tight tracking-tight xl:text-5xl">
-              Start learning<br />for free.
+              {t("panelHeadlineTop")}<br />{t("panelHeadlineBottom")}
             </h2>
             <p className="max-w-sm text-lg leading-relaxed text-neon-100/80">
-              Join thousands of students and teachers building a brighter future through education.
+              {t("panelTagline")}
             </p>
           </div>
 
@@ -143,8 +143,8 @@ export default function RegisterPage() {
                 </svg>
               </div>
               <div>
-                <p className="text-sm font-semibold text-white">Safe &amp; private</p>
-                <p className="text-xs text-neon-200/60">Your data stays protected</p>
+                <p className="text-sm font-semibold text-white">{t("panelTrust1Title")}</p>
+                <p className="text-xs text-neon-200/60">{t("panelTrust1Body")}</p>
               </div>
             </div>
 
@@ -155,8 +155,8 @@ export default function RegisterPage() {
                 </svg>
               </div>
               <div>
-                <p className="text-sm font-semibold text-white">100% Free</p>
-                <p className="text-xs text-neon-200/60">No hidden fees, ever</p>
+                <p className="text-sm font-semibold text-white">{t("panelTrust2Title")}</p>
+                <p className="text-xs text-neon-200/60">{t("panelTrust2Body")}</p>
               </div>
             </div>
 
@@ -167,16 +167,16 @@ export default function RegisterPage() {
                 </svg>
               </div>
               <div>
-                <p className="text-sm font-semibold text-white">Volunteer teachers from 12+ countries</p>
-                <p className="text-xs text-neon-200/60">A truly global community</p>
+                <p className="text-sm font-semibold text-white">{t("panelTrust3Title")}</p>
+                <p className="text-xs text-neon-200/60">{t("panelTrust3Body")}</p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Bottom quote */}
+        {/* Bottom quote (Malala) */}
         <p className="relative z-10 max-w-xs text-sm italic leading-relaxed text-neon-200/60">
-          &ldquo;One child, one teacher, one book, one pen can change the world.&rdquo;
+          {t("panelQuote")}
         </p>
       </div>
 
@@ -322,19 +322,19 @@ export default function RegisterPage() {
               <svg xmlns="http://www.w3.org/2000/svg" className="mx-auto mb-1 h-5 w-5 text-neon-600" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
               </svg>
-              <p className="text-xs font-semibold text-neon-800">Safe</p>
+              <p className="text-xs font-semibold text-neon-800">{t("mobileTrust1")}</p>
             </div>
             <div className="rounded-xl bg-neon-50 px-3 py-3">
               <svg xmlns="http://www.w3.org/2000/svg" className="mx-auto mb-1 h-5 w-5 text-neon-600" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
               </svg>
-              <p className="text-xs font-semibold text-neon-800">100% Free</p>
+              <p className="text-xs font-semibold text-neon-800">{t("mobileTrust2")}</p>
             </div>
             <div className="rounded-xl bg-neon-50 px-3 py-3">
               <svg xmlns="http://www.w3.org/2000/svg" className="mx-auto mb-1 h-5 w-5 text-neon-600" viewBox="0 0 20 20" fill="currentColor">
                 <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838l-2.727 1.17 1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0z" />
               </svg>
-              <p className="text-xs font-semibold text-neon-800">12+ countries</p>
+              <p className="text-xs font-semibold text-neon-800">{t("mobileTrust3")}</p>
             </div>
           </div>
         </div>

@@ -25,11 +25,9 @@ export default async function LibraryPage({ params, searchParams }: LibraryPageP
     return <LibraryComingSoon />;
   }
 
-  // If there IS content but user isn't logged in, send to login
-  if (!user && items.length > 0) {
-    const { redirect } = await import("next/navigation");
-    redirect(`/${locale}/login`);
-  }
+  // Library resources are public-by-design (BRD §5.4): downloads and
+  // external links are non-sensitive. Anonymous users can browse and
+  // download — no auth gate needed (Antigravity 2026-04-26 PUB-08).
 
   return (
     <section className="mx-auto max-w-6xl px-6 py-10 lg:px-8">

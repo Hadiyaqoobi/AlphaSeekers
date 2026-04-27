@@ -1,6 +1,5 @@
 import { getTranslations } from "next-intl/server";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 
 import { formatDate } from "@/lib/format-date";
 import { DeleteContentButton } from "@/components/admin/delete-content-button";
@@ -30,10 +29,10 @@ export default async function OpportunitiesPage({ params, searchParams }: Opport
   const currentType = searchParams.type ?? "ALL";
   const items = await listOpportunities(currentType === "ALL" ? undefined : currentType);
 
-  // Allow unauthenticated users to see the page (content or empty state)
-  if (!user && items.length > 0) {
-    redirect(`/${locale}/login`);
-  }
+  // Opportunities are public-by-design (BRD §5.3): scholarships and grants
+  // should be browsable by every Afghan girl who lands on the site, signed
+  // in or not. The opportunity links are external URLs anyway — no auth
+  // gate needed (Antigravity 2026-04-26 PUB-08).
 
   return (
     <section className="mx-auto max-w-6xl px-6 py-10 lg:px-8">
