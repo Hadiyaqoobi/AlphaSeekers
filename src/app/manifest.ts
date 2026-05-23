@@ -16,9 +16,9 @@ export default function manifest(): MetadataRoute.Manifest {
     prefer_related_applications: false,
     icons: [
       {
-        src: "/logo/favicon.svg",
-        sizes: "any",
-        type: "image/svg+xml",
+        src: "/logo/favicon-48.png",
+        sizes: "48x48",
+        type: "image/png",
         purpose: "any",
       },
       {

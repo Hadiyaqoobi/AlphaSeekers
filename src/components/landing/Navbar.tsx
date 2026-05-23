@@ -65,14 +65,11 @@ export function Navbar({ locale, signedIn, loginLabel, registerLabel }: NavbarPr
           <Link href={`/${locale}`} className="flex items-center gap-3 group">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/logo/mark-light.svg"
-              alt=""
-              aria-hidden="true"
-              width={40}
+              src="/logo/wordmark-96.png"
+              alt="AlphaSeekers"
+              width={51}
               height={40}
-              className="rounded-xl shadow-md"
             />
-            <span className={`hidden sm:inline text-xl font-extrabold tracking-tight transition-colors duration-300 ${scrolled ? 'text-gray-900' : 'text-white'}`} style={{ fontFamily: 'var(--font-landing), var(--font-display-latin), sans-serif' }}>AlphaSeekers</span>
           </Link>
           <nav className="hidden lg:flex lg:items-center lg:gap-1">
             {links.map(link => (
@@ -99,14 +96,11 @@ export function Navbar({ locale, signedIn, loginLabel, registerLabel }: NavbarPr
           <span className="flex items-center gap-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/logo/mark-light.svg"
-              alt=""
-              aria-hidden="true"
-              width={40}
+              src="/logo/wordmark-96.png"
+              alt="AlphaSeekers"
+              width={51}
               height={40}
-              className="rounded-xl"
             />
-            <span className="text-xl font-extrabold text-white tracking-tight" style={{ fontFamily: 'var(--font-landing)' }}>AlphaSeekers</span>
           </span>
           <button onClick={closeMobile} className="flex h-11 w-11 items-center justify-center rounded-xl text-white/60 hover:text-white hover:bg-dark-100/10 transition-colors" aria-label="Close menu">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>

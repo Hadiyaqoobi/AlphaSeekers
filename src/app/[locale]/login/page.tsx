@@ -215,18 +215,13 @@ export default function LoginPage() {
             />
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/logo/mark-light.svg"
-              alt=""
-              aria-hidden="true"
-              width={56}
+              src="/logo/wordmark-192.png"
+              alt="AlphaSeekers"
+              width={71}
               height={56}
-              className="relative rounded-2xl"
-              style={{ boxShadow: "0 0 0 1px rgba(0,230,118,0.4) inset" }}
+              className="relative"
             />
           </div>
-          <span className="text-base font-bold tracking-tight" style={{ color: "#FFFFFF" }}>
-            AlphaSeekers
-          </span>
         </div>
 
         {/* Heading with security pill */}

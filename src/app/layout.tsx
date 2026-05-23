@@ -15,7 +15,8 @@ export const metadata: Metadata = {
   description: "Free education platform for Afghan students",
   icons: {
     icon: [
-      { url: "/logo/favicon.svg", type: "image/svg+xml" },
+      { url: "/logo/favicon-32.png", type: "image/png", sizes: "32x32" },
+      { url: "/logo/favicon-48.png", type: "image/png", sizes: "48x48" },
       { url: "/favicon.ico", sizes: "any" },
     ],
     apple: [{ url: "/icon-192.png", sizes: "192x192" }],

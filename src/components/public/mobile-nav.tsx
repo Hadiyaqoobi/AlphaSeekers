@@ -97,14 +97,11 @@ export function MobileNav({ navItems, authItems, user, logoutCallbackUrl, logout
           <div className="flex items-center gap-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/logo/mark-light.svg"
-              alt=""
-              aria-hidden="true"
-              width={40}
+              src="/logo/wordmark-96.png"
+              alt="AlphaSeekers"
+              width={51}
               height={40}
-              className="rounded-xl shadow-md"
             />
-            <span className="text-lg font-bold text-ink-main font-display">AlphaSeekers</span>
           </div>
           <button
             onClick={close}

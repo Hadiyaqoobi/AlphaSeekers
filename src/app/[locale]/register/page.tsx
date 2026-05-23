@@ -119,14 +119,11 @@ export default function RegisterPage() {
         <div className="relative z-10 flex items-center gap-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="/logo/mark-light.svg"
-            alt=""
-            aria-hidden="true"
-            width={40}
+            src="/logo/wordmark-96.png"
+            alt="AlphaSeekers"
+            width={51}
             height={40}
-            className="rounded-xl"
           />
-          <span className="text-lg font-semibold tracking-tight">AlphaSeekers</span>
         </div>
 
         {/* Center copy */}
@@ -192,14 +189,11 @@ export default function RegisterPage() {
         <div className="mb-8 flex flex-col items-center lg:hidden">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="/logo/mark-light.svg"
-            alt=""
-            aria-hidden="true"
-            width={48}
+            src="/logo/wordmark-192.png"
+            alt="AlphaSeekers"
+            width={61}
             height={48}
-            className="mb-3 rounded-xl shadow-lg shadow-emerald-200/50"
           />
-          <span className="text-sm font-semibold tracking-tight text-ink-main">AlphaSeekers</span>
         </div>
 
         <div className="w-full max-w-md animate-fade-in-up">

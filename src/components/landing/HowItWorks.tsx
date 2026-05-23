@@ -88,7 +88,7 @@ export function HowItWorks() {
                   <div className="px-5 pt-3 pb-3 border-b border-white/[0.06]">
                     <div className="flex items-center gap-2 mb-2">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src="/logo/mark-light.svg" alt="" aria-hidden="true" width={28} height={28} className="rounded-lg shadow-[0_0_10px_rgba(0,230,118,0.4)]" />
+                      <img src="/logo/icon-64.png" alt="" aria-hidden="true" width={28} height={28} className="rounded-lg shadow-[0_0_10px_rgba(0,230,118,0.4)]" />
                       <span className="text-xs font-bold text-white">AlphaSeekers</span>
                     </div>
                     <p className="text-[10px] text-white/40">{t('howItWorks.mockup.welcomeBack')}</p>

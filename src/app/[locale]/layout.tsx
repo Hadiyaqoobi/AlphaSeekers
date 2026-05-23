@@ -120,14 +120,11 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src="/logo/mark-light.svg"
-                      alt=""
-                      aria-hidden="true"
-                      width={40}
+                      src="/logo/wordmark-96.png"
+                      alt="AlphaSeekers"
+                      width={51}
                       height={40}
-                      className="rounded-xl shadow-md shadow-brand-500/20"
                     />
-                    <span className="hidden sm:inline font-display text-xl tracking-tight">AlphaSeekers</span>
                   </Link>
 
                   <nav className="hidden lg:flex lg:items-center lg:gap-1">
