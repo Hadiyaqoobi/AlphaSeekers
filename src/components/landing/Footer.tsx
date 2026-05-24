@@ -43,10 +43,10 @@ export function Footer({ locale, signedIn, socialLinks }: FooterProps) {
             <div className="flex items-center gap-3 mb-5">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src="/logo/wordmark-96.png"
+                src="/logo/wordmark-192.png"
                 alt="AlphaSeekers"
-                width={51}
-                height={40}
+                width={76}
+                height={60}
               />
             </div>
             <p className="text-sm text-white/40 max-w-xs leading-relaxed">

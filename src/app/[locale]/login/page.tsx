@@ -215,10 +215,10 @@ export default function LoginPage() {
             />
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/logo/wordmark-192.png"
+              src="/logo/wordmark-384.png"
               alt="AlphaSeekers"
-              width={71}
-              height={56}
+              width={101}
+              height={80}
               className="relative"
             />
           </div>

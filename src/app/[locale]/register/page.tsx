@@ -119,10 +119,10 @@ export default function RegisterPage() {
         <div className="relative z-10 flex items-center gap-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="/logo/wordmark-96.png"
+            src="/logo/wordmark-192.png"
             alt="AlphaSeekers"
-            width={51}
-            height={40}
+            width={76}
+            height={60}
           />
         </div>
 
@@ -191,8 +191,8 @@ export default function RegisterPage() {
           <img
             src="/logo/wordmark-192.png"
             alt="AlphaSeekers"
-            width={61}
-            height={48}
+            width={91}
+            height={72}
           />
         </div>
 

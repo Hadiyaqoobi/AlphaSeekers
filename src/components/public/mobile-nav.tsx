@@ -97,10 +97,10 @@ export function MobileNav({ navItems, authItems, user, logoutCallbackUrl, logout
           <div className="flex items-center gap-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/logo/wordmark-96.png"
+              src="/logo/wordmark-192.png"
               alt="AlphaSeekers"
-              width={51}
-              height={40}
+              width={76}
+              height={60}
             />
           </div>
           <button

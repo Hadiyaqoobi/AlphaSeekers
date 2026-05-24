@@ -65,10 +65,10 @@ export function Navbar({ locale, signedIn, loginLabel, registerLabel }: NavbarPr
           <Link href={`/${locale}`} className="flex items-center gap-3 group">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/logo/wordmark-96.png"
+              src="/logo/wordmark-192.png"
               alt="AlphaSeekers"
-              width={51}
-              height={40}
+              width={76}
+              height={60}
             />
           </Link>
           <nav className="hidden lg:flex lg:items-center lg:gap-1">
@@ -96,10 +96,10 @@ export function Navbar({ locale, signedIn, loginLabel, registerLabel }: NavbarPr
           <span className="flex items-center gap-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/logo/wordmark-96.png"
+              src="/logo/wordmark-192.png"
               alt="AlphaSeekers"
-              width={51}
-              height={40}
+              width={76}
+              height={60}
             />
           </span>
           <button onClick={closeMobile} className="flex h-11 w-11 items-center justify-center rounded-xl text-white/60 hover:text-white hover:bg-dark-100/10 transition-colors" aria-label="Close menu">

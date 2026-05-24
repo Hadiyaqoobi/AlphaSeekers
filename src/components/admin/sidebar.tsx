@@ -84,10 +84,10 @@ export function Sidebar({ locale, userName, userRole, userEmail }: SidebarProps)
       <div className="flex items-center gap-3 px-5 py-5" style={{ borderBottom: '1px solid #1A2D3D' }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src="/logo/wordmark-96.png"
+          src="/logo/wordmark-192.png"
           alt="AlphaSeekers"
-          width={46}
-          height={36}
+          width={66}
+          height={52}
         />
       </div>
 
