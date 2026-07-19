@@ -6,12 +6,12 @@
 #   with the pooler endpoint + a transactional email provider + SEPARATE dev/prod
 #   databases. See docs/DEPLOYMENT_RUNBOOK.md for the full breakdown.
 #
-#   CURRENT ROLLOUT (deliberate): this file is pinned to a COST-NEUTRAL posture —
-#   `starter` web plan and NO cron services — so the initial rollout ships the code
-#   without changing your monthly bill. The automation backbone (job queue, event
-#   bus, handlers) is fully present in the code but DORMANT until the crons at the
-#   bottom of this file are re-enabled. Flip `plan: standard` and uncomment the
-#   cron block when you're ready to turn automation on.
+#   CURRENT ROLLOUT: web service on the `starter` plan with the full AUTOMATION
+#   suite ENABLED (the 7 crons at the bottom). Each cron is a separately-billed
+#   Render service. The crons are self-configuring — CRON_SECRET is copied from the
+#   web service via `fromService` and APP_BASE_URL points at the stable Render URL —
+#   so they work on deploy with no manual env setup. Upgrade the web service to
+#   `standard` when steady traffic warrants it.
 
 services:
   - type: web
@@ -109,71 +109,127 @@ services:
       - key: GOOGLE_OAUTH_REDIRECT_URI
         sync: false
 
-# --- Scheduled jobs (DEFERRED — automation is dormant until these are enabled) ---
-#
-# The automation backbone (Postgres job queue with FOR UPDATE SKIP LOCKED, retry/
-# backoff/dead-letter/dedupe, event bus, handlers) is fully implemented in the code
-# but nothing DRAINS the queue until a worker runs. To turn automation ON, uncomment
-# the crons below (each curls a /api/cron/* endpoint with the CRON_SECRET bearer) and
-# set APP_BASE_URL + CRON_SECRET on EACH cron service to match the web service. Each
-# cron is a separately-billed Render service, so this is opt-in. See ADR-0004/0006
-# and docs/DEPLOYMENT_RUNBOOK.md.
-#
-#   - type: cron        # job worker drain — the heart of the automation backbone
-#     name: alphaseekers-worker
-#     runtime: node
-#     region: oregon
-#     plan: starter
-#     schedule: "* * * * *"                       # every minute — drain due jobs
-#     buildCommand: ""
-#     startCommand: curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" "$APP_BASE_URL/api/cron/worker"
-#     envVars:
-#       - key: APP_BASE_URL
-#         sync: false
-#       - key: CRON_SECRET
-#         sync: false
-#   - type: cron        # reminders (enqueue-only; worker delivers)
-#     name: alphaseekers-reminders
-#     schedule: "*/10 * * * *"
-#     startCommand: curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" "$APP_BASE_URL/api/cron/reminders"
-#   - type: cron        # instructor-managed session scheduler (hourly)
-#     name: alphaseekers-scheduler
-#     schedule: "0 * * * *"
-#     startCommand: curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" "$APP_BASE_URL/api/cron/scheduler"
-#   - type: cron        # AI session prep (every 15 min; 25-45 min look-ahead window)
-#     name: alphaseekers-ai-prep
-#     schedule: "*/15 * * * *"
-#     startCommand: curl -fsS -H "Authorization: Bearer $CRON_SECRET" "$APP_BASE_URL/api/cron/ai-prep"
-#   - type: cron        # nightly data retention / job prune
-#     name: alphaseekers-data-retention
-#     schedule: "30 3 * * *"
-#     startCommand: curl -fsS -H "Authorization: Bearer $CRON_SECRET" "$APP_BASE_URL/api/cron/data-retention"
-#   - type: cron        # keep Neon compute warm
-#     name: alphaseekers-neon-warm
-#     schedule: "*/5 * * * *"
-#     startCommand: curl -fsS -H "Authorization: Bearer $CRON_SECRET" "$APP_BASE_URL/api/cron/neon-warm"
-#   - type: cron        # daily super-admin KPI digest
-#     name: alphaseekers-kpi-digest
-#     schedule: "0 6 * * *"
-#     startCommand: curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" "$APP_BASE_URL/api/cron/kpi-digest"
-#
-# --- ALTERNATIVE (scale-up): dedicated always-on Background Worker -----------
-# At higher job volume, REPLACE the per-minute worker cron with a dedicated Render
-# Background Worker running the long-lived runWorker() loop (scripts/worker.mjs). It
-# polls continuously, claims jobs the instant they are due (near-zero latency), and
-# because claiming uses FOR UPDATE SKIP LOCKED you can run several replicas safely.
-#
-#   - type: worker
-#     name: alphaseekers-jobs
-#     runtime: node
-#     region: oregon
-#     plan: starter
-#     buildCommand: npm install && npx prisma generate && npm run build
-#     startCommand: node scripts/worker.mjs
-#     envVars:
-#       - key: NODE_VERSION
-#         value: "20.18.1"
-#       - key: ALPHASEEKERS_MODE
-#         value: production
-#       - key: DATABASE_URL
-#         sync: false
+# --- Scheduled jobs (ENABLED) --------------------------------------------------
+# Each cron curls a /api/cron/* endpoint with the CRON_SECRET bearer token. The
+# secret is copied from the web service via `fromService` and APP_BASE_URL points
+# at the stable Render URL, so every cron is self-configuring on deploy. Each cron
+# is a separately-billed Render service. See ADR-0004/0006 + docs/DEPLOYMENT_RUNBOOK.md.
+
+  - type: cron
+    name: alphaseekers-worker
+    runtime: node
+    region: oregon
+    plan: starter
+    schedule: "* * * * *" # every minute — drain the durable job queue
+    buildCommand: ""
+    startCommand: curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" "$APP_BASE_URL/api/cron/worker"
+    envVars:
+      - key: APP_BASE_URL
+        value: https://alphaseekers.onrender.com
+      - key: CRON_SECRET
+        fromService:
+          type: web
+          name: alphaseekers
+          envVarKey: CRON_SECRET
+
+  - type: cron
+    name: alphaseekers-reminders
+    runtime: node
+    region: oregon
+    plan: starter
+    schedule: "*/10 * * * *" # every 10 minutes — enqueue session reminders
+    buildCommand: ""
+    startCommand: curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" "$APP_BASE_URL/api/cron/reminders"
+    envVars:
+      - key: APP_BASE_URL
+        value: https://alphaseekers.onrender.com
+      - key: CRON_SECRET
+        fromService:
+          type: web
+          name: alphaseekers
+          envVarKey: CRON_SECRET
+
+  - type: cron
+    name: alphaseekers-scheduler
+    runtime: node
+    region: oregon
+    plan: starter
+    schedule: "0 * * * *" # hourly — auto-schedule sessions from teacher availability
+    buildCommand: ""
+    startCommand: curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" "$APP_BASE_URL/api/cron/scheduler"
+    envVars:
+      - key: APP_BASE_URL
+        value: https://alphaseekers.onrender.com
+      - key: CRON_SECRET
+        fromService:
+          type: web
+          name: alphaseekers
+          envVarKey: CRON_SECRET
+
+  - type: cron
+    name: alphaseekers-ai-prep
+    runtime: node
+    region: oregon
+    plan: starter
+    schedule: "*/15 * * * *" # every 15 min — prep sessions starting in the next 25-45 min
+    buildCommand: ""
+    startCommand: curl -fsS -H "Authorization: Bearer $CRON_SECRET" "$APP_BASE_URL/api/cron/ai-prep"
+    envVars:
+      - key: APP_BASE_URL
+        value: https://alphaseekers.onrender.com
+      - key: CRON_SECRET
+        fromService:
+          type: web
+          name: alphaseekers
+          envVarKey: CRON_SECRET
+
+  - type: cron
+    name: alphaseekers-data-retention
+    runtime: node
+    region: oregon
+    plan: starter
+    schedule: "30 3 * * *" # nightly 03:30 UTC — data retention / job prune
+    buildCommand: ""
+    startCommand: curl -fsS -H "Authorization: Bearer $CRON_SECRET" "$APP_BASE_URL/api/cron/data-retention"
+    envVars:
+      - key: APP_BASE_URL
+        value: https://alphaseekers.onrender.com
+      - key: CRON_SECRET
+        fromService:
+          type: web
+          name: alphaseekers
+          envVarKey: CRON_SECRET
+
+  - type: cron
+    name: alphaseekers-neon-warm
+    runtime: node
+    region: oregon
+    plan: starter
+    schedule: "*/5 * * * *" # every 5 min — keep Neon compute warm
+    buildCommand: ""
+    startCommand: curl -fsS -H "Authorization: Bearer $CRON_SECRET" "$APP_BASE_URL/api/cron/neon-warm"
+    envVars:
+      - key: APP_BASE_URL
+        value: https://alphaseekers.onrender.com
+      - key: CRON_SECRET
+        fromService:
+          type: web
+          name: alphaseekers
+          envVarKey: CRON_SECRET
+
+  - type: cron
+    name: alphaseekers-kpi-digest
+    runtime: node
+    region: oregon
+    plan: starter
+    schedule: "0 6 * * *" # daily 06:00 UTC — super-admin KPI digest
+    buildCommand: ""
+    startCommand: curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" "$APP_BASE_URL/api/cron/kpi-digest"
+    envVars:
+      - key: APP_BASE_URL
+        value: https://alphaseekers.onrender.com
+      - key: CRON_SECRET
+        fromService:
+          type: web
+          name: alphaseekers
+          envVarKey: CRON_SECRET

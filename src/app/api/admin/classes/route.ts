@@ -3,20 +3,30 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
 import { createClass, listAdminClasses, parseInteger } from "@/lib/platform/store";
+import { resolveTeacherId } from "@/lib/platform/teacher-invite";
 import { AccessError, requirePermission } from "@/lib/security/permissions";
 import { getSessionUser, unauthorized } from "@/lib/security/session";
 
-const createClassSchema = z.object({
-  name: z.string().trim().min(1).max(200),
-  subjectCategory: z.string().trim().min(1).max(100),
-  description: z.string().trim().min(1).max(5000),
-  teacherId: z.string().trim().min(1).max(100),
-  maxStudents: z.number().int().min(1).max(1000),
-  durationMinutes: z.number().int().min(30).max(600).optional(),
-  schedulePreference: z.string().trim().min(1).max(200),
-  language: z.string().trim().min(1).max(50).optional(),
-  schedulingMode: z.enum(["AUTO", "MANUAL"]).optional(),
-});
+const createClassSchema = z
+  .object({
+    name: z.string().trim().min(1).max(200),
+    subjectCategory: z.string().trim().min(1).max(100),
+    description: z.string().trim().min(1).max(5000),
+    // Either an existing teacherId OR a new teacher's name+email (invite). Enforced by .refine below.
+    teacherId: z.string().trim().min(1).max(100).optional(),
+    newTeacherName: z.string().trim().min(2).max(120).optional(),
+    newTeacherEmail: z.string().trim().email().max(200).optional(),
+    newTeacherPhone: z.string().trim().max(40).optional(),
+    maxStudents: z.number().int().min(1).max(1000),
+    durationMinutes: z.number().int().min(30).max(600).optional(),
+    schedulePreference: z.string().trim().min(1).max(200),
+    language: z.string().trim().min(1).max(50).optional(),
+    schedulingMode: z.enum(["AUTO", "MANUAL"]).optional(),
+  })
+  .refine((d) => Boolean(d.teacherId) || Boolean(d.newTeacherName && d.newTeacherEmail), {
+    message: "Provide an existing teacher or a new teacher's name and email.",
+    path: ["teacherId"],
+  });
 
 export async function GET(request: NextRequest) {
   try {
@@ -79,12 +89,25 @@ export async function POST(request: NextRequest) {
 
   const input = parsed.data;
 
+  // Resolve the instructor: existing teacher, or invite a new one (creates the
+  // account + emails onboarding). Same helper the staff create route uses.
+  const resolved = await resolveTeacherId({
+    teacherId: input.teacherId,
+    newTeacherName: input.newTeacherName,
+    newTeacherEmail: input.newTeacherEmail,
+    newTeacherPhone: input.newTeacherPhone,
+  });
+
+  if (!resolved.ok) {
+    return NextResponse.json({ message: resolved.message }, { status: resolved.status });
+  }
+
   try {
     const created = await createClass({
       name: input.name,
       subjectCategory: input.subjectCategory,
       description: input.description,
-      teacherId: input.teacherId,
+      teacherId: resolved.teacherId,
       maxStudents: input.maxStudents,
       durationMinutes: input.durationMinutes ?? 60,
       schedulePreference: input.schedulePreference,
@@ -92,7 +115,7 @@ export async function POST(request: NextRequest) {
       schedulingMode: input.schedulingMode ?? "AUTO",
     });
 
-    return NextResponse.json(created, { status: 201 });
+    return NextResponse.json({ ...created, invitedTeacher: resolved.invited }, { status: 201 });
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
       // Foreign key violation — most likely an invalid teacherId.

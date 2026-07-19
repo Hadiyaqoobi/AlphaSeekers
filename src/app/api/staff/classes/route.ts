@@ -1,14 +1,9 @@
-import crypto from "node:crypto";
-
 import { NextRequest, NextResponse } from "next/server";
 
 import { createClassWithSession } from "@/lib/platform/store";
-import { deliverWithFallback } from "@/lib/integrations/notifications";
+import { resolveTeacherId } from "@/lib/platform/teacher-invite";
 import { guardPermission } from "@/lib/security/api-guard";
-import { hashPassword } from "@/lib/security/passwords";
-import { encryptPhone } from "@/lib/security/phone-crypto";
 import { getSessionUser } from "@/lib/security/session";
-import { prisma } from "@/lib/prisma";
 
 export async function GET() {
     const user = await getSessionUser();
@@ -45,64 +40,20 @@ export async function POST(request: NextRequest) {
     }
     const schedulingMode: "AUTO" | "MANUAL" = body.schedulingMode === "MANUAL" ? "MANUAL" : "AUTO";
 
-    // Resolve teacher ID — either existing teacher or invite new one
-    let teacherId: string;
+    // Resolve the instructor: existing teacher, or invite a new one (creates the
+    // account + emails onboarding credentials). Shared with /api/admin/classes.
+    const resolved = await resolveTeacherId({
+        teacherId: body.teacherId,
+        newTeacherName: body.newTeacherName,
+        newTeacherEmail: body.newTeacherEmail,
+        newTeacherPhone: body.newTeacherPhone,
+    });
 
-    if (body.newTeacherEmail && body.newTeacherName) {
-        const email = String(body.newTeacherEmail).trim().toLowerCase();
-        const name = String(body.newTeacherName).trim();
-
-        // Check if user already exists
-        const existing = await prisma.user.findUnique({ where: { email } });
-
-        if (existing) {
-            if (existing.role !== "TEACHER") {
-                return NextResponse.json(
-                    { message: `${email} already has an account with role ${existing.role}. Cannot assign as teacher.` },
-                    { status: 400 },
-                );
-            }
-            teacherId = existing.id;
-        } else {
-            // Create new teacher account with temp password
-            const tempPassword = crypto.randomBytes(6).toString("base64url");
-            const newTeacher = await prisma.user.create({
-                data: {
-                    name,
-                    email,
-                    passwordHash: await hashPassword(tempPassword),
-                    phone: body.newTeacherPhone ? encryptPhone(String(body.newTeacherPhone).trim()) : null,
-                    role: "TEACHER",
-                    language: "FA",
-                    timezone: "Asia/Kabul",
-                    approvedAt: new Date(),
-                },
-            });
-
-            teacherId = newTeacher.id;
-
-            // Send onboarding notification with credentials + availability link
-            const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3005";
-            const onboardingContent =
-                `Welcome to AlphaSeekers, ${name}!\n` +
-                `Your account has been created.\n` +
-                `Email: ${email}\n` +
-                `Temporary password: ${tempPassword}\n` +
-                `Please log in and set your availability: ${baseUrl}/fa/teacher/availability\n` +
-                `Change your password after first login.`;
-
-            deliverWithFallback(
-                { userId: newTeacher.id, email: newTeacher.email, phone: newTeacher.phone, telegramChatId: newTeacher.telegramChatId, pushSubscription: newTeacher.pushSubscription },
-                onboardingContent,
-            ).catch((err) => {
-                console.error("Failed to send teacher onboarding notification:", err);
-            });
-        }
-    } else if (body.teacherId) {
-        teacherId = String(body.teacherId).trim();
-    } else {
-        return NextResponse.json({ message: "Missing required field: teacherId or newTeacherEmail" }, { status: 400 });
+    if (!resolved.ok) {
+        return NextResponse.json({ message: resolved.message }, { status: resolved.status });
     }
+
+    const teacherId = resolved.teacherId;
 
     const result = await createClassWithSession({
         name: String(body.name).trim(),

@@ -20,7 +20,10 @@ type FormState = {
   name: string;
   subjectCategory: string;
   description: string;
+  teacherMode: "existing" | "invite";
   teacherId: string;
+  newTeacherName: string;
+  newTeacherEmail: string;
   maxStudents: string;
   durationMinutes: string;
   schedulePreference: string;
@@ -32,7 +35,10 @@ const DEFAULT_FORM: FormState = {
   name: "",
   subjectCategory: "Languages",
   description: "",
+  teacherMode: "existing",
   teacherId: "",
+  newTeacherName: "",
+  newTeacherEmail: "",
   maxStudents: "50",
   durationMinutes: "60",
   schedulePreference: "Tue 6:00 PM",
@@ -43,6 +49,8 @@ const DEFAULT_FORM: FormState = {
 export function AdminClassForm({ teachers }: AdminClassFormProps) {
   const router = useRouter();
   const t = useTranslations("adminForms");
+  // Reuse the staff form's already-translated invite labels (both locales).
+  const ts = useTranslations("staffForms");
   const [form, setForm] = useState<FormState>({
     ...DEFAULT_FORM,
     teacherId: teachers[0]?.id ?? "",
@@ -59,15 +67,28 @@ export function AdminClassForm({ teachers }: AdminClassFormProps) {
     setSaving(true);
     setMessage(null);
 
+    // Send ONLY the relevant instructor field for the chosen mode — sending empty
+    // strings for the invite fields would fail the server-side email/min-length checks.
+    const teacherFields =
+      form.teacherMode === "invite"
+        ? { newTeacherName: form.newTeacherName, newTeacherEmail: form.newTeacherEmail }
+        : { teacherId: form.teacherId };
+
     const response = await fetch("/api/admin/classes", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        ...form,
+        name: form.name,
+        subjectCategory: form.subjectCategory,
+        description: form.description,
+        schedulePreference: form.schedulePreference,
+        language: form.language,
+        schedulingMode: form.schedulingMode,
         maxStudents: Number(form.maxStudents),
         durationMinutes: Number(form.durationMinutes),
+        ...teacherFields,
       }),
     });
 
@@ -115,17 +136,62 @@ export function AdminClassForm({ teachers }: AdminClassFormProps) {
         value={form.description}
       />
 
-      <select
-        className="select-field"
-        onChange={(event) => setForm((current) => ({ ...current, teacherId: event.target.value }))}
-        value={form.teacherId}
-      >
-        {teachers.map((teacher) => (
-          <option key={teacher.id} value={teacher.id}>
-            {teacher.name}
-          </option>
-        ))}
-      </select>
+      <div className="space-y-2">
+        <label className="text-xs font-bold uppercase tracking-wide text-ink-faint">{ts("lecturer")}</label>
+        <div className="flex gap-2">
+          <button
+            className={`rounded-full px-4 py-1.5 text-xs font-semibold transition ${
+              form.teacherMode === "existing" ? "bg-neon-500 text-black" : "bg-dark-100 text-ink-soft"
+            }`}
+            onClick={() => setForm((current) => ({ ...current, teacherMode: "existing" }))}
+            type="button"
+          >
+            {ts("existingTeacher")}
+          </button>
+          <button
+            className={`rounded-full px-4 py-1.5 text-xs font-semibold transition ${
+              form.teacherMode === "invite" ? "bg-neon-500 text-black" : "bg-dark-100 text-ink-soft"
+            }`}
+            onClick={() => setForm((current) => ({ ...current, teacherMode: "invite" }))}
+            type="button"
+          >
+            {ts("inviteNew")}
+          </button>
+        </div>
+
+        {form.teacherMode === "existing" ? (
+          <select
+            className="select-field"
+            onChange={(event) => setForm((current) => ({ ...current, teacherId: event.target.value }))}
+            value={form.teacherId}
+          >
+            {teachers.map((teacher) => (
+              <option key={teacher.id} value={teacher.id}>
+                {teacher.name}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <div className="space-y-2">
+            <input
+              className="field"
+              onChange={(event) => setForm((current) => ({ ...current, newTeacherName: event.target.value }))}
+              placeholder={ts("newTeacherNamePlaceholder")}
+              required
+              value={form.newTeacherName}
+            />
+            <input
+              className="field"
+              onChange={(event) => setForm((current) => ({ ...current, newTeacherEmail: event.target.value }))}
+              placeholder={ts("newTeacherEmailPlaceholder")}
+              required
+              type="email"
+              value={form.newTeacherEmail}
+            />
+            <p className="text-xs text-ink-soft">{ts("inviteHint")}</p>
+          </div>
+        )}
+      </div>
 
       <input
         className="field"
