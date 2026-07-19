@@ -13,9 +13,36 @@ export async function OPTIONS(request: Request) {
 }
 
 export async function GET(request: Request, { params }: { params: { slug: string } }) {
+  // Explicit select (NEVER spread the raw record): authorId / reviewedBy / reviewedAt
+  // / reviewNotes must never reach this PUBLIC endpoint — leaking authorId lets anyone
+  // build an id→name map from non-anonymous posts and de-anonymize a student who
+  // published a sensitive story as "anonymous".
   const post = await prisma.studentPost.findUnique({
     where: { slug: params.slug },
-    include: {
+    select: {
+      id: true,
+      type: true,
+      title: true,
+      titleDari: true,
+      slug: true,
+      content: true,
+      contentDari: true,
+      excerpt: true,
+      excerptDari: true,
+      coverImageUrl: true,
+      galleryUrls: true,
+      language: true,
+      category: true,
+      tags: true,
+      readTimeMin: true,
+      status: true,
+      publishedAt: true,
+      featured: true,
+      anonymous: true,
+      viewCount: true,
+      likeCount: true,
+      createdAt: true,
+      updatedAt: true,
       author: { select: { name: true } },
     },
   });

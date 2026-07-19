@@ -35,6 +35,9 @@ export async function GET(_: Request, { params }: Params) {
     ? selected
     : {
         ...selected,
+        // Private join details are for enrolled students / staff only. The WhatsApp
+        // group invite and Meet links must not leak to any approved-but-not-enrolled user.
+        whatsappGroupUrl: null,
         sessions: selected.sessions.map((session) => ({
           ...session,
           meetLink: null,

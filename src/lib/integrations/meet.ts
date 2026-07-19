@@ -7,6 +7,7 @@ import { getGoogleOAuthClient } from "@/lib/integrations/google-auth";
 import { prisma } from "@/lib/prisma";
 import { runtime, warnIfInsecureProductionConfig } from "@/lib/runtime";
 import { NonRetryableError, retryWithBackoff } from "@/lib/retry";
+import { decryptFromRest, encryptToRest } from "@/lib/security/crypto";
 
 export type MeetGenerationResult = {
   link: string | null;
@@ -118,9 +119,12 @@ async function getCalendarClient(teacherId?: string): Promise<CalendarSetupResul
     return { ok: false, reason: "not-linked" };
   }
 
+  // Tokens are stored ENCRYPTED at rest (crypto.ts) by the OAuth callback, so they
+  // must be decrypted before handing them to Google — otherwise Google receives
+  // ciphertext and every calendar call fails with invalid_grant.
   oauthClient.setCredentials({
-    refresh_token: accountLink.refreshToken,
-    access_token: accountLink.accessToken ?? undefined,
+    refresh_token: decryptFromRest(accountLink.refreshToken),
+    access_token: accountLink.accessToken ? decryptFromRest(accountLink.accessToken) : undefined,
     expiry_date: accountLink.expiryDate?.getTime(),
   });
 
@@ -148,7 +152,11 @@ async function persistRefreshedCredentials(
   await prisma.googleAccountLink.update({
     where: { userId: accountLink.userId },
     data: {
-      accessToken: latestCredentials.access_token ?? accountLink.accessToken,
+      // Re-encrypt the refreshed access token so it stays encrypted at rest (matching
+      // the callback's write path); keep the prior stored value if none was refreshed.
+      accessToken: latestCredentials.access_token
+        ? encryptToRest(latestCredentials.access_token)
+        : accountLink.accessToken,
       scope: latestCredentials.scope ?? accountLink.scope,
       expiryDate: latestCredentials.expiry_date
         ? new Date(latestCredentials.expiry_date)
