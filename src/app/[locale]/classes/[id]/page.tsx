@@ -95,6 +95,23 @@ export default async function ClassDetailPage({ params }: ClassDetailPageProps) 
             <EnrollButton classId={record.id} initiallyEnrolled={studentEnrolled} />
           </div>
         ) : null}
+
+        {canAccessPrivateDetails && (record as { whatsappGroupUrl?: string | null }).whatsappGroupUrl ? (
+          <div className="mt-3">
+            <a
+              className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-bold text-white"
+              href={(record as { whatsappGroupUrl?: string | null }).whatsappGroupUrl as string}
+              rel="noreferrer"
+              style={{ backgroundColor: "#25D366" }}
+              target="_blank"
+            >
+              <svg aria-hidden="true" fill="currentColor" height="18" viewBox="0 0 24 24" width="18">
+                <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38c1.45.79 3.08 1.21 4.79 1.21h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0012.04 2zm5.8 14.2c-.24.68-1.42 1.31-1.95 1.35-.5.04-1.13.2-3.86-.81-3.26-1.29-5.35-4.58-5.51-4.79-.16-.21-1.32-1.76-1.32-3.36 0-1.6.84-2.38 1.14-2.71.3-.32.65-.4.87-.4.22 0 .43 0 .62.01.2.01.47-.08.73.56.27.65.91 2.25.99 2.41.08.16.13.35.02.56-.11.21-.16.35-.32.53-.16.19-.34.42-.48.56-.16.16-.33.34-.14.66.19.32.84 1.39 1.81 2.25 1.24 1.11 2.29 1.45 2.61 1.61.32.16.51.13.7-.08.19-.21.81-.94 1.02-1.26.21-.32.43-.27.72-.16.29.11 1.86.88 2.18 1.04.32.16.53.24.61.37.08.13.08.76-.16 1.44z" />
+              </svg>
+              WhatsApp
+            </a>
+          </div>
+        ) : null}
       </header>
 
       <section className="panel panel-strong p-4 sm:p-5">

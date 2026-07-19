@@ -32,6 +32,7 @@ type FormState = {
     language: string;
     materialUrl: string;
     registrationFormUrl: string;
+    whatsappGroupUrl: string;
     schedulingMode: "AUTO" | "MANUAL";
 };
 
@@ -82,6 +83,7 @@ const DEFAULT_FORM: FormState = {
     language: "Dari",
     materialUrl: "",
     registrationFormUrl: "",
+    whatsappGroupUrl: "",
     schedulingMode: "AUTO",
 };
 
@@ -128,6 +130,7 @@ export function StaffClassForm({ teachers }: StaffClassFormProps) {
             schedulePreference,
             language: form.language,
             registrationFormUrl: form.registrationFormUrl || undefined,
+            whatsappGroupUrl: form.whatsappGroupUrl || undefined,
             schedulingMode: form.schedulingMode,
         };
 
@@ -539,6 +542,15 @@ export function StaffClassForm({ teachers }: StaffClassFormProps) {
                     placeholder={t("formUrlPlaceholder")}
                     type="url"
                     value={form.registrationFormUrl}
+                />
+
+                <input
+                    className="field"
+                    id="staff-class-whatsapp-url"
+                    onChange={(event) => setForm((current) => ({ ...current, whatsappGroupUrl: event.target.value }))}
+                    placeholder="WhatsApp group link — https://chat.whatsapp.com/…"
+                    type="url"
+                    value={form.whatsappGroupUrl}
                 />
             </fieldset>
 

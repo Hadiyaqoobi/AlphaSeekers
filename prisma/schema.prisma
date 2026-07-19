@@ -131,6 +131,7 @@ model Class {
   schedulePreference    String?
   language              String                @default("Dari")
   registrationFormUrl   String?
+  whatsappGroupUrl      String?
   published             Boolean               @default(true)
   status                ClassStatus           @default(ACTIVE)
   schedulingMode        SchedulingMode        @default(AUTO)

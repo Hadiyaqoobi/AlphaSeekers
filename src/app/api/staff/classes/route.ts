@@ -65,6 +65,7 @@ export async function POST(request: NextRequest) {
         schedulePreference: String(body.schedulePreference).trim(),
         language: String(body.language || "Dari").trim(),
         registrationFormUrl: body.registrationFormUrl ? String(body.registrationFormUrl).trim() : undefined,
+        whatsappGroupUrl: body.whatsappGroupUrl ? String(body.whatsappGroupUrl).trim() : undefined,
         schedulingMode,
     });
 

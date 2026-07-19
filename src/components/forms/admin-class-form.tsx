@@ -28,6 +28,7 @@ type FormState = {
   durationMinutes: string;
   schedulePreference: string;
   language: string;
+  whatsappGroupUrl: string;
   schedulingMode: "AUTO" | "MANUAL";
 };
 
@@ -43,6 +44,7 @@ const DEFAULT_FORM: FormState = {
   durationMinutes: "60",
   schedulePreference: "Tue 6:00 PM",
   language: "Dari",
+  whatsappGroupUrl: "",
   schedulingMode: "AUTO",
 };
 
@@ -88,6 +90,7 @@ export function AdminClassForm({ teachers }: AdminClassFormProps) {
         schedulingMode: form.schedulingMode,
         maxStudents: Number(form.maxStudents),
         durationMinutes: Number(form.durationMinutes),
+        ...(form.whatsappGroupUrl.trim() ? { whatsappGroupUrl: form.whatsappGroupUrl.trim() } : {}),
         ...teacherFields,
       }),
     });
@@ -227,6 +230,14 @@ export function AdminClassForm({ teachers }: AdminClassFormProps) {
         placeholder={t("language")}
         required
         value={form.language}
+      />
+
+      <input
+        className="field"
+        onChange={(event) => setForm((current) => ({ ...current, whatsappGroupUrl: event.target.value }))}
+        placeholder="WhatsApp group link — https://chat.whatsapp.com/…"
+        type="url"
+        value={form.whatsappGroupUrl}
       />
 
       <div className="space-y-1">

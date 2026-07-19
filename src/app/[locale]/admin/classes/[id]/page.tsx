@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
 import { AdminClassActions } from "@/components/admin/admin-class-actions";
+import { ClassWhatsAppEditor } from "@/components/admin/class-whatsapp-editor";
 import { formatDateTime } from "@/lib/format-date";
 import { getClassById, listClassEnrollments, getClassAttendanceSummary } from "@/lib/platform/store";
 import { getAccessControl, can } from "@/lib/security/permissions";
@@ -74,6 +75,13 @@ export default async function AdminClassDetailPage({ params }: AdminClassDetailP
       </header>
 
       <AdminClassActions classId={record.id} />
+
+      {can(access, "classes.edit") ? (
+        <ClassWhatsAppEditor
+          classId={record.id}
+          initialUrl={(record as { whatsappGroupUrl?: string | null }).whatsappGroupUrl ?? null}
+        />
+      ) : null}
 
       <div className="grid gap-px bg-dark-200 rounded-lg overflow-hidden sm:grid-cols-4">
         <article className="bg-dark-100 p-4">

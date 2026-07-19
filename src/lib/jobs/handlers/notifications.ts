@@ -135,14 +135,16 @@ export async function welcomeStudent(payload: Record<string, unknown>): Promise<
 
   const [student, klass] = await Promise.all([
     prisma.user.findUnique({ where: { id: studentId }, select: notifiableSelect }),
-    prisma.class.findUnique({ where: { id: classId }, select: { name: true } }),
+    prisma.class.findUnique({ where: { id: classId }, select: { name: true, whatsappGroupUrl: true } }),
   ]);
   // Either side may have been deleted between enrollment and this run.
   if (!student || !klass) return;
 
+  const whatsapp = (klass as { whatsappGroupUrl?: string | null }).whatsappGroupUrl?.trim();
   const content =
     `Welcome to "${klass.name}"! You're all set. ` +
     `You'll get reminders before each session and can join from your dashboard. ` +
+    (whatsapp ? `Join the class WhatsApp group: ${whatsapp} ` : "") +
     `We're glad to have you.`;
 
   await deliverOrThrow(toTarget(student), content);

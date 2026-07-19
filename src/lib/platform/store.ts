@@ -79,6 +79,7 @@ export async function createClass(input: {
   schedulePreference: string;
   language: string;
   registrationFormUrl?: string;
+  whatsappGroupUrl?: string;
   schedulingMode?: "AUTO" | "MANUAL";
 }) {
   return viaDatabase(() => dbStore.createClass(input));
@@ -94,6 +95,7 @@ export async function createClassWithSession(input: {
   schedulePreference: string;
   language: string;
   registrationFormUrl?: string;
+  whatsappGroupUrl?: string;
   schedulingMode?: "AUTO" | "MANUAL";
 }) {
   return viaDatabase(() => dbStore.createClassWithSession(input));

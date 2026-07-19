@@ -26,6 +26,7 @@ type CreateClassInput = {
   schedulePreference: string;
   language: string;
   registrationFormUrl?: string;
+  whatsappGroupUrl?: string;
   // AUTO (default) = availability-driven auto-scheduler creates sessions.
   // MANUAL = the instructor sets/confirms exact session times; class creation
   // does NOT auto-create a session and the auto-scheduler skips this class.
@@ -865,6 +866,7 @@ export async function getClassById(classId: string) {
     durationMinutes: normalizeDurationMinutes(klass.durationMinutes),
     schedulePreference: klass.schedulePreference ?? "TBD",
     language: klass.language,
+    whatsappGroupUrl: (klass as { whatsappGroupUrl?: string | null }).whatsappGroupUrl ?? null,
     status: klass.status,
     createdAt: klass.createdAt.toISOString(),
     updatedAt: klass.updatedAt.toISOString(),
@@ -1168,6 +1170,7 @@ export async function createClass(input: CreateClassInput) {
       schedulingMode: input.schedulingMode ?? "AUTO",
       // These columns require prisma db push; cast to bypass generated types
       ...(input.registrationFormUrl ? { registrationFormUrl: input.registrationFormUrl } : {}),
+      ...(input.whatsappGroupUrl ? { whatsappGroupUrl: input.whatsappGroupUrl } : {}),
       ...(({ published: true }) as Record<string, unknown>),
     } as Parameters<typeof prisma.class.create>[0]["data"],
   });
@@ -1193,6 +1196,7 @@ export async function createClassWithSession(input: CreateClassInput) {
       schedulingMode,
       // These columns require prisma db push; cast to bypass generated types
       ...(input.registrationFormUrl ? { registrationFormUrl: input.registrationFormUrl } : {}),
+      ...(input.whatsappGroupUrl ? { whatsappGroupUrl: input.whatsappGroupUrl } : {}),
       ...(({ published: true }) as Record<string, unknown>),
     } as Parameters<typeof prisma.class.create>[0]["data"],
   });
@@ -1243,6 +1247,7 @@ export async function createClassWithSession(input: CreateClassInput) {
       },
       sessions: [],
       registrationFormUrl: (klass as Record<string, unknown>).registrationFormUrl ?? null,
+      whatsappGroupUrl: (klass as Record<string, unknown>).whatsappGroupUrl ?? null,
     };
   }
 
@@ -1356,6 +1361,7 @@ export async function createClassWithSession(input: CreateClassInput) {
     },
     sessions: createdSessions,
     registrationFormUrl: (klass as Record<string, unknown>).registrationFormUrl ?? null,
+    whatsappGroupUrl: (klass as Record<string, unknown>).whatsappGroupUrl ?? null,
   };
 }
 

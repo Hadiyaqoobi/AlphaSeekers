@@ -21,6 +21,7 @@ const createClassSchema = z
     durationMinutes: z.number().int().min(30).max(600).optional(),
     schedulePreference: z.string().trim().min(1).max(200),
     language: z.string().trim().min(1).max(50).optional(),
+    whatsappGroupUrl: z.string().trim().url().max(300).optional(),
     schedulingMode: z.enum(["AUTO", "MANUAL"]).optional(),
   })
   .refine((d) => Boolean(d.teacherId) || Boolean(d.newTeacherName && d.newTeacherEmail), {
@@ -112,6 +113,7 @@ export async function POST(request: NextRequest) {
       durationMinutes: input.durationMinutes ?? 60,
       schedulePreference: input.schedulePreference,
       language: input.language ?? "Dari",
+      whatsappGroupUrl: input.whatsappGroupUrl,
       schedulingMode: input.schedulingMode ?? "AUTO",
     });
 
