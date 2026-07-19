@@ -153,6 +153,11 @@ model Session {
   endTime               DateTime
   meetLink              String?
   meetLinkStatus        MeetLinkStatus        @default(PENDING)
+  // The Google Calendar event backing this session's Meet link, so a reschedule
+  // can PATCH the same event (preserving the link) and a cancel can delete it —
+  // instead of orphaning events + leaving old Meet links joinable.
+  googleEventId         String?
+  googleCalendarId      String?
   cancelled             Boolean               @default(false)
   // Set when the instructor explicitly set/confirmed this session's time.
   // null on an auto-proposed session awaiting confirmation.

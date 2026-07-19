@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useTranslations } from "next-intl";
+import { reportError } from "@/lib/observability/report";
 
 export default function LocaleError({
   error,
@@ -13,7 +14,7 @@ export default function LocaleError({
   const t = useTranslations("error");
 
   useEffect(() => {
-    console.error(error);
+    void reportError(error, { digest: error.digest, boundary: "locale" });
   }, [error]);
 
   return (

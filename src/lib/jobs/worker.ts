@@ -11,6 +11,8 @@
  */
 
 import { claim, markCompleted, markFailed, reapStalled, type ClaimedJob } from "@/lib/jobs/queue";
+import { logger } from "@/lib/observability/logger";
+import { reportError } from "@/lib/observability/report";
 
 export type JobContext = { jobId: string; attempt: number };
 export type JobHandler = (payload: Record<string, unknown>, ctx: JobContext) => Promise<void>;
@@ -66,7 +68,12 @@ async function runJob(job: ClaimedJob): Promise<"ok" | "retry" | "dead"> {
     await markCompleted(job.id);
     return "ok";
   } catch (error) {
-    return markFailed(job, error);
+    await reportError(error, { jobId: job.id, type: job.type, attempt: job.attempts + 1 });
+    const outcome = await markFailed(job, error);
+    if (outcome === "dead") {
+      logger.error("job dead-lettered", { jobId: job.id, type: job.type, attempts: job.attempts + 1 });
+    }
+    return outcome;
   }
 }
 

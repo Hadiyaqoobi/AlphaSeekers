@@ -1,11 +1,19 @@
 "use client";
 
+import { useEffect } from "react";
+import { reportError } from "@/lib/observability/report";
+
 export default function RootError({
+  error,
   reset,
 }: {
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  useEffect(() => {
+    void reportError(error, { digest: error.digest, boundary: "root" });
+  }, [error]);
+
   return (
     <html lang="en">
       <body style={{ fontFamily: "-apple-system, Segoe UI, Roboto, sans-serif", margin: 0, padding: "2rem", textAlign: "center" }}>

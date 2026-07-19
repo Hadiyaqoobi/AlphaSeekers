@@ -166,3 +166,68 @@ export async function queueStats(): Promise<Record<string, number>> {
   for (const g of groups) out[g.status] = g._count._all;
   return out;
 }
+
+/** A dead-lettered job, trimmed to the fields the ops panel renders. */
+export type DeadJob = {
+  id: string;
+  type: string;
+  attempts: number;
+  lastError: string | null;
+  updatedAt: Date;
+};
+
+/**
+ * Recent DEAD (retry-exhausted) jobs, newest first, for human inspection in the
+ * super console. `updatedAt` is when the job dead-lettered.
+ */
+export async function listDeadJobs(limit: number = 50): Promise<DeadJob[]> {
+  return prisma.job.findMany({
+    where: { status: "DEAD" },
+    orderBy: { updatedAt: "desc" },
+    take: limit,
+    select: { id: true, type: true, attempts: true, lastError: true, updatedAt: true },
+  });
+}
+
+/**
+ * Requeue a stuck job: reset it to PENDING and due now, clearing the attempt
+ * counter, lock and last error so a worker picks it up fresh. Scoped by
+ * `status IN (DEAD, FAILED)` in a single updateMany so a job that has since
+ * been COMPLETED or grabbed by a worker (ACTIVE) is never disturbed.
+ * `ok` is true only when a row actually transitioned.
+ */
+export async function requeueJob(id: string): Promise<{ ok: boolean }> {
+  const res = await prisma.job.updateMany({
+    where: { id, status: { in: ["DEAD", "FAILED"] } },
+    data: {
+      status: "PENDING",
+      runAt: new Date(),
+      attempts: 0,
+      lockedAt: null,
+      lockedBy: null,
+      lastError: null,
+    },
+  });
+  return { ok: res.count > 0 };
+}
+
+/**
+ * Queue health snapshot for ops dashboards: the per-status counts plus the age
+ * (ms) of the oldest PENDING job — a rising oldest-pending age is the earliest
+ * sign of a stalled or under-provisioned worker. Null when nothing is pending.
+ */
+export async function queueHealth(): Promise<{
+  counts: Record<string, number>;
+  oldestPendingAgeMs: number | null;
+}> {
+  const [counts, oldest] = await Promise.all([
+    queueStats(),
+    prisma.job.findFirst({
+      where: { status: "PENDING" },
+      orderBy: { createdAt: "asc" },
+      select: { createdAt: true },
+    }),
+  ]);
+  const oldestPendingAgeMs = oldest ? Date.now() - oldest.createdAt.getTime() : null;
+  return { counts, oldestPendingAgeMs };
+}

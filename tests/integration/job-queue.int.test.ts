@@ -8,7 +8,7 @@
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
 import { prisma } from "@/lib/prisma";
-import { backoffSeconds, claim, enqueue, markCompleted, markFailed, queueStats, reapStalled } from "@/lib/jobs/queue";
+import { backoffSeconds, claim, enqueue, listDeadJobs, markCompleted, markFailed, queueStats, reapStalled, requeueJob } from "@/lib/jobs/queue";
 import { drainOnce, registerHandler } from "@/lib/jobs/worker";
 import { emit } from "@/lib/events/bus";
 
@@ -163,6 +163,35 @@ d("job queue integration (real Postgres)", () => {
     // And it is now claimable again.
     const reclaimed = await claim("w", 10);
     expect(reclaimed.some((j) => j.id === id)).toBe(true);
+  });
+
+  it("requeueJob revives a DEAD job (and leaves COMPLETED jobs untouched)", async () => {
+    // Force a job to DEAD (maxAttempts=1 → one failure dead-letters it).
+    const { id: deadId } = await enqueue("test_fail", {}, { maxAttempts: 1 });
+    const [claimed] = await claim("w", 10);
+    await markFailed(claimed!, new Error("boom"));
+    let dead = await prisma.job.findUniqueOrThrow({ where: { id: deadId } });
+    expect(dead.status).toBe("DEAD");
+
+    // It shows up in the ops list, and requeue revives it to a claimable PENDING.
+    const deadList = await listDeadJobs(50);
+    expect(deadList.some((j) => j.id === deadId)).toBe(true);
+
+    const res = await requeueJob(deadId);
+    expect(res.ok).toBe(true);
+    dead = await prisma.job.findUniqueOrThrow({ where: { id: deadId } });
+    expect(dead.status).toBe("PENDING");
+    expect(dead.attempts).toBe(0);
+    const claimable = await claim("w", 10);
+    expect(claimable.some((j) => j.id === deadId)).toBe(true);
+
+    // Requeuing a COMPLETED job is a no-op (guarded by status filter).
+    const { id: doneId } = await enqueue("test_noop", {});
+    const [c2] = await claim("w2", 10);
+    await markCompleted(c2!.id);
+    const noop = await requeueJob(doneId);
+    expect(noop.ok).toBe(false);
+    expect((await prisma.job.findUniqueOrThrow({ where: { id: doneId } })).status).toBe("COMPLETED");
   });
 
   it("markCompleted clears the lock and error", async () => {

@@ -14,6 +14,7 @@ export function SuperSubnav({ locale }: { locale: string }) {
   const tabs: { href: string; label: string; exact?: boolean }[] = [
     { href: base, label: "Overview", exact: true },
     { href: `${base}/employees`, label: "Employees" },
+    { href: `${base}/jobs`, label: "Jobs" },
     { href: `${base}/audit`, label: "Audit log" },
     { href: `${base}/system`, label: "System" },
   ];

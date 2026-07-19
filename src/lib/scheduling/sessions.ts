@@ -15,7 +15,7 @@
 import { MeetLinkStatus } from "@prisma/client";
 
 import { emit } from "@/lib/events/bus";
-import { generateMeetLink } from "@/lib/integrations/meet";
+import { generateMeetLink, updateMeetEvent } from "@/lib/integrations/meet";
 import { prisma } from "@/lib/prisma";
 
 export type SchedulingResult = { ok: true; sessionId: string } | { ok: false; error: string };
@@ -69,6 +69,8 @@ export async function createManualSession(input: {
       endTime,
       meetLink: meet.link,
       meetLinkStatus: toMeetStatus(meet.status),
+      googleEventId: meet.eventId,
+      googleCalendarId: meet.calendarId,
       cancelled: false,
       confirmedAt: new Date(),
     },
@@ -91,7 +93,14 @@ export async function rescheduleSession(input: {
 
   const session = await prisma.session.findUnique({
     where: { id: input.sessionId },
-    select: { id: true, cancelled: true, class: { select: { name: true, teacherId: true, durationMinutes: true } } },
+    select: {
+      id: true,
+      cancelled: true,
+      meetLink: true,
+      googleEventId: true,
+      googleCalendarId: true,
+      class: { select: { name: true, teacherId: true, durationMinutes: true } },
+    },
   });
   if (!session) return { ok: false, error: "Session not found" };
   if (session.cancelled) return { ok: false, error: "Cannot reschedule a cancelled session" };
@@ -99,18 +108,34 @@ export async function rescheduleSession(input: {
   const duration = normalizeDuration(input.durationMinutes, session.class.durationMinutes);
   const endTime = new Date(input.startTime.getTime() + duration * 60_000);
 
-  const meet = await generateMeetLink(session.class.name, input.startTime.toISOString(), {
-    endIso: endTime.toISOString(),
-    teacherId: session.class.teacherId,
-  });
+  // If this session already has a backing Google Calendar event, PATCH it (which
+  // preserves the same Meet link) rather than minting a brand-new link. Only a
+  // first-time link goes through the create path.
+  const meet = session.googleEventId
+    ? await updateMeetEvent({
+        eventId: session.googleEventId,
+        calendarId: session.googleCalendarId ?? undefined,
+        teacherId: session.class.teacherId,
+        className: session.class.name,
+        startIso: input.startTime.toISOString(),
+        endIso: endTime.toISOString(),
+      })
+    : await generateMeetLink(session.class.name, input.startTime.toISOString(), {
+        endIso: endTime.toISOString(),
+        teacherId: session.class.teacherId,
+      });
 
   await prisma.session.update({
     where: { id: session.id },
     data: {
       startTime: input.startTime,
       endTime,
-      meetLink: meet.link,
+      // Preserve the existing link/event ids if the result did not return them
+      // (e.g. a defensive null on a PATCH that kept the same conference).
+      meetLink: meet.link ?? session.meetLink,
       meetLinkStatus: toMeetStatus(meet.status),
+      googleEventId: meet.eventId ?? session.googleEventId,
+      googleCalendarId: meet.calendarId ?? session.googleCalendarId,
       confirmedAt: new Date(),
     },
   });

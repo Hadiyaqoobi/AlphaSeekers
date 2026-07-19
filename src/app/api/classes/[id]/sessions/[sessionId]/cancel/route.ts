@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { prisma } from "@/lib/prisma";
+import { cancelMeetEvent } from "@/lib/integrations/meet";
 import { deliverWithFallback } from "@/lib/integrations/notifications";
 import { getClassById, listClassEnrollments } from "@/lib/platform/store";
 import { getSessionUser } from "@/lib/security/session";
@@ -60,6 +61,29 @@ export async function POST(_request: NextRequest, { params }: RouteContext) {
     }
   } catch {
     // Best-effort
+  }
+
+  // Best-effort: delete the backing Google Calendar event so the old Meet link is
+  // no longer joinable and we don't orphan calendar events. The session is already
+  // marked cancelled above — a Google failure must NEVER fail the cancellation.
+  try {
+    const record = await prisma.session.findUnique({
+      where: { id: params.sessionId },
+      select: {
+        googleEventId: true,
+        googleCalendarId: true,
+        class: { select: { teacherId: true } },
+      },
+    });
+    if (record?.googleEventId) {
+      await cancelMeetEvent({
+        eventId: record.googleEventId,
+        calendarId: record.googleCalendarId ?? undefined,
+        teacherId: record.class.teacherId,
+      });
+    }
+  } catch {
+    // Best-effort — cancellation already succeeded.
   }
 
   return NextResponse.json({ ok: true });
