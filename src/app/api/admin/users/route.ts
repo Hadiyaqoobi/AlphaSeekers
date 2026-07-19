@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { listAdminUsers, parseInteger } from "@/lib/platform/store";
+import { AccessError, requirePermission } from "@/lib/security/permissions";
 import { getSessionUser, unauthorized } from "@/lib/security/session";
 
 const ROLE_FILTERS = ["STUDENT", "TEACHER", "ADMIN", "ALL"] as const;
@@ -20,6 +21,13 @@ function parseStatusFilter(input: string | null): StatusFilter {
 }
 
 export async function GET(request: NextRequest) {
+  try {
+    await requirePermission("users.view");
+  } catch (e) {
+    if (e instanceof AccessError) return NextResponse.json({ message: e.message }, { status: e.status });
+    throw e;
+  }
+
   const user = await getSessionUser();
 
   if (!user) {

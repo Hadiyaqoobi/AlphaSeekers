@@ -6,9 +6,17 @@
  */
 
 import { prisma } from "@/lib/prisma";
+import { AccessError, requirePermission } from "@/lib/security/permissions";
 import { getSessionUser, unauthorized, forbidden, badRequest } from "@/lib/security/session";
 
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
+  try {
+    await requirePermission("content.moderate");
+  } catch (e) {
+    if (e instanceof AccessError) return Response.json({ message: e.message }, { status: e.status });
+    throw e;
+  }
+
   const user = await getSessionUser();
   if (!user) return unauthorized();
   if (user.role !== "ADMIN") return forbidden("Admin access required");

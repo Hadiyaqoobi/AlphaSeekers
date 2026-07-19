@@ -5,6 +5,7 @@
  * Teacher reviews before ingesting. Admin/teacher only.
  */
 
+import { AccessError, requirePermission } from "@/lib/security/permissions";
 import { getSessionUser, unauthorized, forbidden, badRequest } from "@/lib/security/session";
 import { generateGapMaterial } from "@/lib/ai/curriculum/material-generator";
 import type { CurriculumGap } from "@/lib/ai/curriculum/gap-detector";
@@ -14,6 +15,15 @@ export async function POST(request: Request) {
   if (!user) return unauthorized();
   if (user.role !== "ADMIN" && user.role !== "TEACHER") {
     return forbidden("Admin or teacher access required");
+  }
+  // Scope admin employees by permission; teachers keep their existing access.
+  if (user.role === "ADMIN") {
+    try {
+      await requirePermission("ai.manage");
+    } catch (e) {
+      if (e instanceof AccessError) return Response.json({ message: e.message }, { status: e.status });
+      throw e;
+    }
   }
 
   const body = (await request.json().catch(() => null)) as Partial<CurriculumGap> | null;

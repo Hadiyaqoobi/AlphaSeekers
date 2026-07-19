@@ -71,7 +71,9 @@ export async function POST(request: NextRequest) {
   const newHash = await hashPassword(parsed.data.newPassword);
   await prisma.user.update({
     where: { id: account.id },
-    data: { passwordHash: newHash },
+    // Clearing mustChangePassword lets an employee off the temp-password banner
+    // once they set a real password of their own.
+    data: { passwordHash: newHash, mustChangePassword: false },
   });
 
   return NextResponse.json({ ok: true });

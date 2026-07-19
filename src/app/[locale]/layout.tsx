@@ -7,11 +7,13 @@ import { notFound } from "next/navigation";
 
 import { Sidebar } from "@/components/admin/sidebar";
 import { LocaleSwitcher } from "@/components/locale-switcher";
+import { MustChangePasswordBanner } from "@/components/must-change-password-banner";
 import { MobileNav } from "@/components/public/mobile-nav";
 import { InstallPrompt } from "@/components/pwa/install-prompt";
 import { ServiceWorkerRegister } from "@/components/pwa/sw-register";
 import { routing } from "@/i18n/routing";
 import { isRtlLocale, type Locale } from "@/lib/i18n";
+import { getAccessControl } from "@/lib/security/permissions";
 import { getSessionUser } from "@/lib/security/session";
 import { Analytics } from "@vercel/analytics/react";
 
@@ -32,6 +34,7 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
   const messages = await getMessages({ locale });
   const t = await getTranslations({ locale, namespace: "nav" });
   const user = await getSessionUser();
+  const access = user ? await getAccessControl() : null;
   const typedLocale = locale as Locale;
 
   const navItems = [
@@ -92,7 +95,15 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
         {user ? (
           /* ── Authenticated: sidebar + utility header ── */
           <div className="flex min-h-screen">
-            <Sidebar locale={locale} userName={user.name ?? "User"} userRole={user.role} userEmail={user.email} />
+            <Sidebar
+              locale={locale}
+              userName={user.name ?? "User"}
+              userRole={user.role}
+              userEmail={user.email}
+              isSuper={access?.isSuper ?? false}
+              permissions={access ? Array.from(access.permissions) : []}
+              unrestricted={access?.unrestricted ?? false}
+            />
             <div className="flex-1 min-w-0 flex flex-col">
               <header
                 className="h-14 flex items-center justify-between px-6 flex-shrink-0"
@@ -104,6 +115,7 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
                   <span className="text-sm hidden sm:inline" style={{ color: '#8899A6' }}>{user.name}</span>
                 </div>
               </header>
+              {access?.mustChangePassword ? <MustChangePasswordBanner locale={locale} /> : null}
               <main id="main-content" className="flex-1 overflow-y-auto">{children}</main>
             </div>
           </div>

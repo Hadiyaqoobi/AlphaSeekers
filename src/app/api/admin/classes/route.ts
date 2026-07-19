@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
 import { createClass, listAdminClasses, parseInteger } from "@/lib/platform/store";
+import { AccessError, requirePermission } from "@/lib/security/permissions";
 import { getSessionUser, unauthorized } from "@/lib/security/session";
 
 const createClassSchema = z.object({
@@ -17,6 +18,13 @@ const createClassSchema = z.object({
 });
 
 export async function GET(request: NextRequest) {
+  try {
+    await requirePermission("classes.view");
+  } catch (e) {
+    if (e instanceof AccessError) return NextResponse.json({ message: e.message }, { status: e.status });
+    throw e;
+  }
+
   const user = await getSessionUser();
 
   if (!user) {
@@ -35,6 +43,13 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  try {
+    await requirePermission("classes.create");
+  } catch (e) {
+    if (e instanceof AccessError) return NextResponse.json({ message: e.message }, { status: e.status });
+    throw e;
+  }
+
   const user = await getSessionUser();
 
   if (!user) {

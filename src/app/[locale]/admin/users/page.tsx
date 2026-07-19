@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
 import { UserApprovals } from "@/components/admin/user-approvals";
-import { getSessionUser } from "@/lib/security/session";
+import { getAccessControl, can } from "@/lib/security/permissions";
 
 type AdminUsersPageProps = {
   params: { locale: string };
@@ -13,13 +13,13 @@ type AdminUsersPageProps = {
 export const dynamic = "force-dynamic";
 
 export default async function AdminUsersPage({ params }: AdminUsersPageProps) {
-  const user = await getSessionUser();
+  const access = await getAccessControl();
 
-  if (!user) {
+  if (!access) {
     redirect(`/${params.locale}/login`);
   }
 
-  if (user.role !== "ADMIN") {
+  if (!can(access, "users.view")) {
     redirect(`/${params.locale}/dashboard`);
   }
 

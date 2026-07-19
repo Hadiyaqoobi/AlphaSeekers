@@ -2,18 +2,16 @@ import { redirect } from "next/navigation";
 
 import { aiConfig } from "@/lib/ai/config";
 import { prisma } from "@/lib/prisma";
-import { getSessionUser } from "@/lib/security/session";
-import { isSuperAdmin } from "@/lib/security/superadmin";
+import { getAccessControl, isSuper } from "@/lib/security/permissions";
 
 type Props = { params: { locale: string } };
 
 export default async function AdminAIPage({ params }: Props) {
   const locale = params.locale;
-  const user = await getSessionUser();
-  if (!user) redirect(`/${locale}/login`);
-  if (user.role !== "ADMIN") redirect(`/${locale}/dashboard`);
+  const access = await getAccessControl();
+  if (!access) redirect(`/${locale}/login`);
   // Superadmin-only: AI Health exposes provider configs and internal stats
-  if (!isSuperAdmin(user.email)) redirect(`/${locale}/dashboard`);
+  if (!isSuper(access)) redirect(`/${locale}/dashboard`);
 
   const [cacheTotal, cacheHits, cacheAvgQuality] = await Promise.all([
     prisma.cachedResponse.count().catch(() => 0),

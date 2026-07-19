@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { setUserApproval } from "@/lib/platform/store";
+import { AccessError, requirePermission } from "@/lib/security/permissions";
 import { getSessionUser, unauthorized } from "@/lib/security/session";
 
 type Params = {
@@ -8,6 +9,13 @@ type Params = {
 };
 
 export async function PATCH(request: NextRequest, { params }: Params) {
+  try {
+    await requirePermission("users.approve");
+  } catch (e) {
+    if (e instanceof AccessError) return NextResponse.json({ message: e.message }, { status: e.status });
+    throw e;
+  }
+
   const user = await getSessionUser();
 
   if (!user) {

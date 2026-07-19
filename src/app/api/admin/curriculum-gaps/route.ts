@@ -5,6 +5,7 @@
  * had no good answers. Admin/teacher only.
  */
 
+import { AccessError, requirePermission } from "@/lib/security/permissions";
 import { getSessionUser, unauthorized, forbidden } from "@/lib/security/session";
 import { detectCurriculumGaps } from "@/lib/ai/curriculum/gap-detector";
 
@@ -13,6 +14,15 @@ export async function GET(request: Request) {
   if (!user) return unauthorized();
   if (user.role !== "ADMIN" && user.role !== "TEACHER") {
     return forbidden("Admin or teacher access required");
+  }
+  // Scope admin employees by permission; teachers keep their existing access.
+  if (user.role === "ADMIN") {
+    try {
+      await requirePermission("ai.manage");
+    } catch (e) {
+      if (e instanceof AccessError) return Response.json({ message: e.message }, { status: e.status });
+      throw e;
+    }
   }
 
   const { searchParams } = new URL(request.url);

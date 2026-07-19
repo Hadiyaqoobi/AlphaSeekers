@@ -8,20 +8,20 @@ import { AdminClassForm } from "@/components/forms/admin-class-form";
 import { RunRemindersButton } from "@/components/forms/run-reminders-button";
 import { RunSchedulerButton } from "@/components/forms/run-scheduler-button";
 import { listAdminClasses, listUsersByRole } from "@/lib/platform/store";
-import { getSessionUser } from "@/lib/security/session";
+import { getAccessControl, can } from "@/lib/security/permissions";
 
 type AdminClassesPageProps = {
   params: { locale: string };
 };
 
 export default async function AdminClassesPage({ params }: AdminClassesPageProps) {
-  const user = await getSessionUser();
+  const access = await getAccessControl();
 
-  if (!user) {
+  if (!access) {
     redirect(`/${params.locale}/login`);
   }
 
-  if (user.role !== "ADMIN") {
+  if (!can(access, "classes.view")) {
     redirect(`/${params.locale}/dashboard`);
   }
 

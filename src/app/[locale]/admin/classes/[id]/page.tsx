@@ -6,20 +6,20 @@ import { getTranslations } from "next-intl/server";
 import { AdminClassActions } from "@/components/admin/admin-class-actions";
 import { formatDateTime } from "@/lib/format-date";
 import { getClassById, listClassEnrollments, getClassAttendanceSummary } from "@/lib/platform/store";
-import { getSessionUser } from "@/lib/security/session";
+import { getAccessControl, can } from "@/lib/security/permissions";
 
 type AdminClassDetailPageProps = {
   params: { locale: string; id: string };
 };
 
 export default async function AdminClassDetailPage({ params }: AdminClassDetailPageProps) {
-  const user = await getSessionUser();
+  const access = await getAccessControl();
 
-  if (!user) {
+  if (!access) {
     redirect(`/${params.locale}/login`);
   }
 
-  if (user.role !== "ADMIN") {
+  if (!can(access, "classes.view")) {
     redirect(`/${params.locale}/dashboard`);
   }
 

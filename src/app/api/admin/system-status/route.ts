@@ -3,9 +3,17 @@ import { NextResponse } from "next/server";
 import { isDatabaseAvailable } from "@/lib/platform/db-store";
 import { getStoreFallbackState } from "@/lib/platform/fallback-state";
 import { runtime } from "@/lib/runtime";
+import { AccessError, requirePermission } from "@/lib/security/permissions";
 import { forbidden, getSessionUser, unauthorized } from "@/lib/security/session";
 
 export async function GET() {
+  try {
+    await requirePermission("ai.manage");
+  } catch (e) {
+    if (e instanceof AccessError) return NextResponse.json({ message: e.message }, { status: e.status });
+    throw e;
+  }
+
   const user = await getSessionUser();
 
   if (!user) {

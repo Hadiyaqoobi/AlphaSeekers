@@ -6,20 +6,20 @@ import { getTranslations } from "next-intl/server";
 import { LibraryForm } from "@/components/forms/library-form";
 import { OpportunityForm } from "@/components/forms/opportunity-form";
 import { WebinarForm } from "@/components/forms/webinar-form";
-import { getSessionUser } from "@/lib/security/session";
+import { getAccessControl, can } from "@/lib/security/permissions";
 
 type AdminContentPageProps = {
   params: { locale: string };
 };
 
 export default async function AdminContentPage({ params }: AdminContentPageProps) {
-  const user = await getSessionUser();
+  const access = await getAccessControl();
 
-  if (!user) {
+  if (!access) {
     redirect(`/${params.locale}/login`);
   }
 
-  if (user.role !== "ADMIN") {
+  if (!can(access, "content.view")) {
     redirect(`/${params.locale}/dashboard`);
   }
 

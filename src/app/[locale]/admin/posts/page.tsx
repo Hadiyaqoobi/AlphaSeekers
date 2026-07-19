@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { PostModeration } from "@/components/admin/post-moderation";
-import { getSessionUser } from "@/lib/security/session";
+import { getAccessControl, can } from "@/lib/security/permissions";
 
 export const dynamic = "force-dynamic";
 
@@ -10,9 +10,9 @@ interface PageProps {
 }
 
 export default async function AdminPostsPage({ params }: PageProps) {
-  const user = await getSessionUser();
-  if (!user) redirect(`/${params.locale}/login`);
-  if (user.role !== "ADMIN") redirect(`/${params.locale}`);
+  const access = await getAccessControl();
+  if (!access) redirect(`/${params.locale}/login`);
+  if (!can(access, "content.view")) redirect(`/${params.locale}/dashboard`);
 
   return (
     <main className="mx-auto max-w-5xl px-6 lg:px-8 py-8">

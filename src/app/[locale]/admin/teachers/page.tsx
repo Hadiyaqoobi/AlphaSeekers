@@ -7,20 +7,20 @@ import { getTranslations } from "next-intl/server";
 import { formatDateTime } from "@/lib/format-date";
 import { listUsersByRole } from "@/lib/platform/store";
 import { prisma } from "@/lib/prisma";
-import { getSessionUser } from "@/lib/security/session";
+import { getAccessControl, can } from "@/lib/security/permissions";
 
 type AdminTeachersPageProps = {
   params: { locale: string };
 };
 
 export default async function AdminTeachersPage({ params }: AdminTeachersPageProps) {
-  const user = await getSessionUser();
+  const access = await getAccessControl();
 
-  if (!user) {
+  if (!access) {
     redirect(`/${params.locale}/login`);
   }
 
-  if (user.role !== "ADMIN") {
+  if (!can(access, "users.view")) {
     redirect(`/${params.locale}/dashboard`);
   }
 

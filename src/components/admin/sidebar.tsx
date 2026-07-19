@@ -5,19 +5,31 @@ import { usePathname } from 'next/navigation';
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { LogoutButton } from '@/components/logout-button';
-import { isSuperAdmin } from '@/lib/security/superadmin';
 
 type SidebarProps = {
   locale: string;
   userName: string;
   userRole: string;
   userEmail?: string | null;
+  /** True for super admins — reveals the Super Admin console entry. */
+  isSuper?: boolean;
+  /** Granular "module.action" permissions for scoped employees. */
+  permissions?: string[];
+  /** Legacy full admin or super admin — sees every admin nav item. */
+  unrestricted?: boolean;
 };
 
 type NavItem = { href: string; label: string; icon: string };
 type NavGroup = { items: NavItem[] };
 
-export function Sidebar({ locale, userName, userRole, userEmail }: SidebarProps) {
+export function Sidebar({
+  locale,
+  userName,
+  userRole,
+  isSuper = false,
+  permissions = [],
+  unrestricted = false,
+}: SidebarProps) {
   const t = useTranslations('nav');
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -34,7 +46,11 @@ export function Sidebar({ locale, userName, userRole, userEmail }: SidebarProps)
 
   const isAdmin = userRole === 'ADMIN';
   const isTeacher = userRole === 'TEACHER' || isAdmin;
-  const isSuper = isSuperAdmin(userEmail);
+
+  // A scoped employee (role=ADMIN with explicit permissions) only sees the
+  // admin items it can actually use. Legacy/unrestricted admins see everything.
+  const permSet = new Set(permissions);
+  const canSee = (perm: string) => unrestricted || permSet.has(perm);
 
   const groups: NavGroup[] = [
     {
@@ -59,10 +75,10 @@ export function Sidebar({ locale, userName, userRole, userEmail }: SidebarProps)
     },
     ...(isAdmin ? [{
       items: [
-        { href: `/${locale}/admin/users`, label: t('users'), icon: 'M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128H9m6 0a5.97 5.97 0 00-.786-3.07M9 19.128v-.003c0-1.113.285-2.16.786-3.07M9 19.128H2.25a8.963 8.963 0 01-.727-3.071A3 3 0 014.5 10.365c.266-.068.54-.104.818-.104M9 19.128a5.97 5.97 0 01.786-3.07' },
-        { href: `/${locale}/admin/classes`, label: t('admin'), icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z' },
-        { href: `/${locale}/admin/posts`, label: t('stories'), icon: 'M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25' },
-        { href: `/${locale}/admin/analytics`, label: t('analytics'), icon: 'M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z' },
+        ...(canSee('users.view') ? [{ href: `/${locale}/admin/users`, label: t('users'), icon: 'M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128H9m6 0a5.97 5.97 0 00-.786-3.07M9 19.128v-.003c0-1.113.285-2.16.786-3.07M9 19.128H2.25a8.963 8.963 0 01-.727-3.071A3 3 0 014.5 10.365c.266-.068.54-.104.818-.104M9 19.128a5.97 5.97 0 01.786-3.07' }] : []),
+        ...(canSee('classes.view') ? [{ href: `/${locale}/admin/classes`, label: t('admin'), icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z' }] : []),
+        ...(canSee('content.view') ? [{ href: `/${locale}/admin/posts`, label: t('stories'), icon: 'M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25' }] : []),
+        ...(canSee('analytics.view') ? [{ href: `/${locale}/admin/analytics`, label: t('analytics'), icon: 'M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z' }] : []),
         // NOTE: the "Site settings" link (/admin/settings) is intentionally
         // omitted — the settings page/route and the nav.siteSettings translation
         // key do not exist yet, so linking here would 404 and crash on the
@@ -70,6 +86,12 @@ export function Sidebar({ locale, userName, userRole, userEmail }: SidebarProps)
         // the SiteSettings model).
         // AI Health is superadmin-only
         ...(isSuper ? [{ href: `/${locale}/admin/ai`, label: t('aiHealth'), icon: 'M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z' }] : []),
+      ],
+    }] : []),
+    // Super Admin console — internal staff tooling, super admins only.
+    ...(isSuper ? [{
+      items: [
+        { href: `/${locale}/super`, label: 'Super Admin', icon: 'M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z' },
       ],
     }] : []),
     ...(isTeacher ? [{
@@ -97,7 +119,7 @@ export function Sidebar({ locale, userName, userRole, userEmail }: SidebarProps)
 
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
-        {groups.map((group, gi) => (
+        {groups.filter((group) => group.items.length > 0).map((group, gi) => (
           <div key={gi} className="space-y-1">
             {group.items.map((item) => {
               const active = isActive(item.href);
