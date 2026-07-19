@@ -8,7 +8,7 @@
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
 import { prisma } from "@/lib/prisma";
-import { backoffSeconds, claim, enqueue, markCompleted, markFailed, queueStats } from "@/lib/jobs/queue";
+import { backoffSeconds, claim, enqueue, markCompleted, markFailed, queueStats, reapStalled } from "@/lib/jobs/queue";
 import { drainOnce, registerHandler } from "@/lib/jobs/worker";
 import { emit } from "@/lib/events/bus";
 
@@ -142,6 +142,27 @@ d("job queue integration (real Postgres)", () => {
     const jobs = await prisma.job.findMany({ where: { type: "welcome_student" } });
     expect(jobs.length).toBe(1);
     expect((jobs[0]!.payload as { studentId: string }).studentId).toBe("s1");
+  });
+
+  it("reapStalled recovers a job orphaned in ACTIVE by a dead worker", async () => {
+    const { id } = await enqueue("test_noop", {});
+    const [claimed] = await claim("dead-worker", 10);
+    expect(claimed).toBeTruthy();
+    // Simulate a worker that died mid-flight: the job is ACTIVE with an old lock.
+    await prisma.job.update({
+      where: { id },
+      data: { status: "ACTIVE", lockedAt: new Date(Date.now() - 10 * 60 * 1000) },
+    });
+
+    const reaped = await reapStalled(5 * 60 * 1000);
+    expect(reaped).toBeGreaterThanOrEqual(1);
+
+    const job = await prisma.job.findUniqueOrThrow({ where: { id } });
+    expect(job.status).toBe("FAILED"); // back to retryable, not stuck ACTIVE forever
+    expect(job.lockedBy).toBeNull();
+    // And it is now claimable again.
+    const reclaimed = await claim("w", 10);
+    expect(reclaimed.some((j) => j.id === id)).toBe(true);
   });
 
   it("markCompleted clears the lock and error", async () => {

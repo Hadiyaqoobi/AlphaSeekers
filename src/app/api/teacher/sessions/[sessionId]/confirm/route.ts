@@ -19,6 +19,7 @@ type RouteContext = { params: { sessionId: string } };
 
 /** Owning teacher, or a scoped employee holding classes.edit, may manage sessions. */
 function canManageClass(access: AccessControl, teacherId: string): boolean {
+  if (access.deactivated) return false;
   return access.userId === teacherId || can(access, "classes.edit");
 }
 

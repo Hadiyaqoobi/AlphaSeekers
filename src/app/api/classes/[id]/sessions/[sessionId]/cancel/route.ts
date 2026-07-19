@@ -25,16 +25,22 @@ export async function POST(_request: NextRequest, { params }: RouteContext) {
   if (!access) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const isOwner = access.userId === klass.teacherId;
+  const isOwner = !access.deactivated && access.userId === klass.teacherId;
   if (!isOwner && !can(access, "classes.edit")) {
     return NextResponse.json({ error: "Not your class" }, { status: 403 });
   }
 
   try {
-    await prisma.session.update({
-      where: { id: params.sessionId },
+    // Scope the update by BOTH ids so a sessionId that does not belong to this
+    // class matches zero rows — prevents cancelling another class's session via a
+    // forged /classes/{ownedClass}/sessions/{foreignSession}/cancel URL (IDOR).
+    const { count } = await prisma.session.updateMany({
+      where: { id: params.sessionId, classId: params.id },
       data: { cancelled: true },
     });
+    if (count === 0) {
+      return NextResponse.json({ error: "Session not found" }, { status: 404 });
+    }
   } catch {
     return NextResponse.json({ error: "Failed to cancel session" }, { status: 500 });
   }

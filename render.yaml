@@ -19,6 +19,8 @@ services:
     # Upgraded from `free` — see SIZING NOTE above. Free tier cannot serve the
     # target scale (cold starts, 512MB RAM cap, no scaling, sleeps when idle).
     plan: standard
+    # Render gates rollouts and restarts unhealthy instances on this endpoint.
+    healthCheckPath: /api/health
     # Run DB migrations on every deploy so schema changes ship atomically with code.
     buildCommand: npm install && npx prisma generate && npx prisma migrate deploy && npm run build
     startCommand: npm start

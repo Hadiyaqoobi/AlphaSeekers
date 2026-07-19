@@ -25,6 +25,9 @@ const bodySchema = z.object({
 
 /** Owning teacher, or a scoped employee holding classes.edit, may manage sessions. */
 function canManageClass(access: AccessControl, teacherId: string): boolean {
+  // Deactivated accounts have no access even via the owner shortcut (can() already
+  // denies deactivated users, but the owner branch would otherwise bypass it).
+  if (access.deactivated) return false;
   return access.userId === teacherId || can(access, "classes.edit");
 }
 

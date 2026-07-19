@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { registerAllHandlers } from "@/lib/jobs/handlers";
+import { reapStalled } from "@/lib/jobs/queue";
 import { drainOnce } from "@/lib/jobs/worker";
 import { assertCronAuthorized } from "@/lib/security/cron-auth";
 
@@ -19,7 +20,12 @@ export async function POST(request: NextRequest) {
   // Populate the handler registry before draining.
   registerAllHandlers();
 
-  const totals = { processed: 0, succeeded: 0, retried: 0, deadLettered: 0 };
+  // Recover jobs orphaned in ACTIVE by a worker that died mid-flight (deploy,
+  // OOM, runtime cap) — the cron-drain topology has no long-running loop to do
+  // this, so a job would otherwise be stuck ACTIVE (and never retried) forever.
+  const reaped = await reapStalled();
+
+  const totals = { processed: 0, succeeded: 0, retried: 0, deadLettered: 0, reaped };
 
   for (let i = 0; i < 5; i += 1) {
     const result = await drainOnce({ workerId: "cron-worker", batchSize: 25 });
