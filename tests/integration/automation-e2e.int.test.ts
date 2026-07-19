@@ -66,19 +66,23 @@ d("automation end-to-end (real Postgres)", () => {
       { studentId: student.id, classId: klass.id },
       { dedupeKey: `enrolled:${student.id}:${klass.id}` },
     );
-    expect(ids.length).toBe(1);
+    // student.enrolled fans out to welcome_student + welcome_teacher (single
+    // notification path — the inline db-store welcome was retired).
+    expect(ids.length).toBe(2);
 
     // A durable welcome_student job is now pending.
     const pending = await prisma.job.findFirst({ where: { type: "welcome_student", status: "PENDING" } });
     expect(pending).toBeTruthy();
 
-    // Worker side: drain and process it with the real handler.
+    // Worker side: drain and process both with the real handlers.
     const res = await drainOnce({ workerId: "test", batchSize: 10 });
-    expect(res.succeeded).toBe(1);
+    expect(res.succeeded).toBe(2);
     expect(res.deadLettered).toBe(0);
 
-    const job = await prisma.job.findFirstOrThrow({ where: { type: "welcome_student" } });
-    expect(job.status).toBe("COMPLETED");
+    const studentJob = await prisma.job.findFirstOrThrow({ where: { type: "welcome_student" } });
+    expect(studentJob.status).toBe("COMPLETED");
+    const teacherJob = await prisma.job.findFirstOrThrow({ where: { type: "welcome_teacher" } });
+    expect(teacherJob.status).toBe("COMPLETED");
   });
 
   it("kpi_digest job computes KPIs and completes when a super admin exists", async () => {

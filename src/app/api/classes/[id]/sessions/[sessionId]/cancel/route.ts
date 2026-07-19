@@ -4,31 +4,22 @@ import { prisma } from "@/lib/prisma";
 import { cancelMeetEvent } from "@/lib/integrations/meet";
 import { deliverWithFallback } from "@/lib/integrations/notifications";
 import { getClassById, listClassEnrollments } from "@/lib/platform/store";
-import { getSessionUser } from "@/lib/security/session";
-import { getAccessControl, can } from "@/lib/security/permissions";
+import { guardClassManagement } from "@/lib/security/api-guard";
 
 type RouteContext = { params: { id: string; sessionId: string } };
 
 export async function POST(_request: NextRequest, { params }: RouteContext) {
-  const user = await getSessionUser();
-  if (!user || (user.role !== "TEACHER" && user.role !== "ADMIN")) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  // Owning teacher keeps access; a non-owner (including a scoped employee with
+  // role=ADMIN) must hold classes.edit to cancel a session. The shared guard
+  // also enforces authentication, deactivation, and password-reset gating and
+  // returns 404 when the class does not exist.
+  const guard = await guardClassManagement(params.id);
+  if (!guard.ok) return guard.response;
 
+  // Re-load the richer class aggregate for the cancellation notification below.
   const klass = await getClassById(params.id);
   if (!klass) {
     return NextResponse.json({ error: "Class not found" }, { status: 404 });
-  }
-
-  // Owning teacher keeps access; a non-owner (including a scoped employee with
-  // role=ADMIN) must hold classes.edit to cancel a session.
-  const access = await getAccessControl();
-  if (!access) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-  const isOwner = !access.deactivated && access.userId === klass.teacherId;
-  if (!isOwner && !can(access, "classes.edit")) {
-    return NextResponse.json({ error: "Not your class" }, { status: 403 });
   }
 
   try {

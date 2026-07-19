@@ -1382,115 +1382,6 @@ export async function archiveClass(classId: string) {
   });
 }
 
-/**
- * Deliver enrollment notifications (to the student and the class teacher) as
- * best-effort background work. Split out of enrollStudentInClass so the request
- * path never blocks on sequential, retrying external sends.
- */
-async function deliverEnrollmentNotifications(params: {
-  student: {
-    id: string;
-    name: string;
-    email: string | null;
-    phone: string | null;
-    telegramChatId: string | null;
-    pushSubscription: string | null;
-  };
-  klass: {
-    id: string;
-    name: string;
-    teacherId: string;
-    maxStudents: number;
-    schedulePreference: string | null;
-  };
-  enrollmentId: string;
-  activeCount: number;
-}) {
-  const { student, klass } = params;
-
-  const teacher = await prisma.user.findUnique({
-    where: { id: klass.teacherId },
-    select: { id: true, name: true, email: true, phone: true, language: true, telegramChatId: true, pushSubscription: true, notificationPrefs: true },
-  });
-
-  const upcomingSessions = await prisma.session.findMany({
-    where: {
-      classId: klass.id,
-      startTime: { gte: new Date() },
-      cancelled: false,
-    },
-    orderBy: { startTime: "asc" },
-    take: 8,
-  });
-
-  let content = `You are enrolled in ${klass.name}!`;
-
-  if (teacher) {
-    content += ` Lecturer: ${teacher.name}.`;
-  }
-
-  if (klass.schedulePreference) {
-    content += ` Schedule: ${klass.schedulePreference}.`;
-  }
-
-  if (upcomingSessions.length > 0) {
-    content += ` Upcoming sessions:`;
-    upcomingSessions.forEach((session, index) => {
-      content += ` (${index + 1}) ${session.startTime.toISOString()} — ${session.meetLink ?? "Meet link pending"}.`;
-    });
-  } else {
-    content += ` Session schedule is being prepared.`;
-  }
-
-  const deliveries = await deliverWithFallback(
-    {
-      userId: student.id,
-      email: student.email,
-      phone: student.phone,
-      telegramChatId: student.telegramChatId,
-      pushSubscription: student.pushSubscription,
-    },
-    content,
-  );
-
-  if (deliveries.length > 0) {
-    await prisma.notification.createMany({
-      data: deliveries.map((delivery) => ({
-        userId: student.id,
-        channel: delivery.channel,
-        content,
-        status: delivery.status,
-        sentAt: new Date(),
-      })),
-    });
-  }
-
-  if (teacher) {
-    const teacherContent = teacher.language === "FA"
-      ? `شاگرد جدید "${student.name}" در صنف "${klass.name}" ثبت‌نام کرد. (${params.activeCount}/${klass.maxStudents})`
-      : `New student "${student.name}" enrolled in "${klass.name}". (${params.activeCount}/${klass.maxStudents} enrolled)`;
-
-    const teacherDeliveries = await deliverWithFallback(
-      { userId: teacher.id, email: teacher.email, phone: teacher.phone, telegramChatId: teacher.telegramChatId, pushSubscription: teacher.pushSubscription },
-      teacherContent,
-    );
-
-    if (teacherDeliveries.length > 0) {
-      await prisma.notification.createMany({
-        data: teacherDeliveries.map((delivery) => ({
-          userId: teacher.id,
-          dedupeKey: `enrollment_notify:${params.enrollmentId}:${teacher.id}`,
-          channel: delivery.channel,
-          content: teacherContent,
-          status: delivery.status,
-          sentAt: new Date(),
-        })),
-        skipDuplicates: true,
-      });
-    }
-  }
-}
-
 export async function enrollStudentInClass(studentId: string, classId: string) {
   await ensureSeededData();
 
@@ -1566,33 +1457,11 @@ export async function enrollStudentInClass(studentId: string, classId: string) {
 
   const enrollment = result.enrollment;
 
-  // The enrollment is committed. Dispatch notifications AFTER commit and OUTSIDE
-  // the request path — the previous code awaited sequential, retrying/backing-off
-  // external sends for both the student and the teacher inside the enroll request,
-  // so a slow or failing provider blocked the HTTP response for many seconds.
-  // Best-effort background delivery instead (see needs_ops_action: a durable queue
-  // is preferable in a serverless runtime that may freeze after the response).
-  void deliverEnrollmentNotifications({
-    student: {
-      id: student.id,
-      name: student.name,
-      email: student.email,
-      phone: student.phone,
-      telegramChatId: student.telegramChatId,
-      pushSubscription: student.pushSubscription,
-    },
-    klass: {
-      id: klass.id,
-      name: klass.name,
-      teacherId: klass.teacherId,
-      maxStudents: klass.maxStudents,
-      schedulePreference: klass.schedulePreference,
-    },
-    enrollmentId: enrollment.id,
-    activeCount: result.activeCount,
-  }).catch((err) => {
-    console.error("Failed to deliver enrollment notifications:", err);
-  });
+  // The enrollment is committed. Enrollment notifications (the student welcome and
+  // the teacher "new student enrolled" message) are NOT sent here anymore: the
+  // enroll route emits `student.enrolled` on the durable event bus, which fans out
+  // to the `welcome_student` and `welcome_teacher` job handlers. This keeps a single
+  // notification path off the request thread and out of db-store.
 
   return {
     enrollment: {

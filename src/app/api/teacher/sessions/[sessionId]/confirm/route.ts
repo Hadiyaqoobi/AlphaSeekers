@@ -9,45 +9,19 @@
 
 import { NextRequest, NextResponse } from "next/server";
 
-import { prisma } from "@/lib/prisma";
 import { confirmSession } from "@/lib/scheduling/sessions";
-import { can, getAccessControl, type AccessControl } from "@/lib/security/permissions";
+import { guardSessionManagement } from "@/lib/security/api-guard";
 
 export const dynamic = "force-dynamic";
 
 type RouteContext = { params: { sessionId: string } };
 
-/** Owning teacher, or a scoped employee holding classes.edit, may manage sessions. */
-function canManageClass(access: AccessControl, teacherId: string): boolean {
-  if (access.deactivated) return false;
-  return access.userId === teacherId || can(access, "classes.edit");
-}
-
 export async function POST(_request: NextRequest, { params }: RouteContext) {
   try {
-    const access = await getAccessControl();
-    if (!access) {
-      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-    }
-    if (access.mustChangePassword) {
-      return NextResponse.json(
-        { message: "PASSWORD_CHANGE_REQUIRED", code: "PASSWORD_CHANGE_REQUIRED" },
-        { status: 403 },
-      );
-    }
+    const guard = await guardSessionManagement(params.sessionId);
+    if (!guard.ok) return guard.response;
 
-    const session = await prisma.session.findUnique({
-      where: { id: params.sessionId },
-      select: { id: true, class: { select: { teacherId: true } } },
-    });
-    if (!session) {
-      return NextResponse.json({ message: "Session not found" }, { status: 404 });
-    }
-    if (!canManageClass(access, session.class.teacherId)) {
-      return NextResponse.json({ message: "You cannot manage this class" }, { status: 403 });
-    }
-
-    const result = await confirmSession(session.id);
+    const result = await confirmSession(guard.session.id);
     if (!result.ok) {
       return NextResponse.json({ message: result.error }, { status: 400 });
     }

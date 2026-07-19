@@ -26,7 +26,7 @@ export type DomainEvent =
 
 /** Maps an event to the handler job types that should run when it fires. */
 const SUBSCRIPTIONS: Record<DomainEvent, string[]> = {
-  "student.enrolled": ["welcome_student"],
+  "student.enrolled": ["welcome_student", "welcome_teacher"],
   "student.dropped": [],
   "session.starting_soon": ["session_reminder"],
   "session.scheduled": ["notify_session_scheduled"],

@@ -10,9 +10,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
-import { prisma } from "@/lib/prisma";
 import { createManualSession } from "@/lib/scheduling/sessions";
-import { can, getAccessControl, type AccessControl } from "@/lib/security/permissions";
+import { guardClassManagement } from "@/lib/security/api-guard";
 
 export const dynamic = "force-dynamic";
 
@@ -23,37 +22,10 @@ const bodySchema = z.object({
   durationMinutes: z.number().int().positive().optional(),
 });
 
-/** Owning teacher, or a scoped employee holding classes.edit, may manage sessions. */
-function canManageClass(access: AccessControl, teacherId: string): boolean {
-  // Deactivated accounts have no access even via the owner shortcut (can() already
-  // denies deactivated users, but the owner branch would otherwise bypass it).
-  if (access.deactivated) return false;
-  return access.userId === teacherId || can(access, "classes.edit");
-}
-
 export async function POST(request: NextRequest, { params }: RouteContext) {
   try {
-    const access = await getAccessControl();
-    if (!access) {
-      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-    }
-    if (access.mustChangePassword) {
-      return NextResponse.json(
-        { message: "PASSWORD_CHANGE_REQUIRED", code: "PASSWORD_CHANGE_REQUIRED" },
-        { status: 403 },
-      );
-    }
-
-    const klass = await prisma.class.findUnique({
-      where: { id: params.classId },
-      select: { id: true, teacherId: true },
-    });
-    if (!klass) {
-      return NextResponse.json({ message: "Class not found" }, { status: 404 });
-    }
-    if (!canManageClass(access, klass.teacherId)) {
-      return NextResponse.json({ message: "You cannot manage this class" }, { status: 403 });
-    }
+    const guard = await guardClassManagement(params.classId);
+    if (!guard.ok) return guard.response;
 
     let raw: unknown;
     try {
@@ -73,7 +45,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     }
 
     const result = await createManualSession({
-      classId: klass.id,
+      classId: params.classId,
       startTime,
       durationMinutes: parsed.data.durationMinutes,
     });

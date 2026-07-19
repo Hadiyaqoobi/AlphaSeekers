@@ -149,6 +149,51 @@ export async function welcomeStudent(payload: Record<string, unknown>): Promise<
 }
 
 /**
+ * "welcome_teacher" — tell a class teacher that a new student just enrolled.
+ * payload: { studentId, classId }
+ *
+ * Mirrors the message db-store used to send inline; it is now the sole
+ * teacher-side enrollment notification and is driven by the event bus (the
+ * student welcome is handled separately by `welcome_student`). Best-effort:
+ * returns quietly if the class, its teacher, or the student has since been
+ * deleted, since a retry cannot resurrect a missing row.
+ */
+export async function welcomeTeacher(payload: Record<string, unknown>): Promise<void> {
+  const studentId = str(payload.studentId);
+  const classId = str(payload.classId);
+  if (!studentId || !classId) return;
+
+  const klass = await prisma.class.findUnique({
+    where: { id: classId },
+    select: {
+      name: true,
+      maxStudents: true,
+      teacher: { select: { ...notifiableSelect, language: true } },
+    },
+  });
+  // The class or its teacher may have been removed since enrollment.
+  if (!klass || !klass.teacher) return;
+
+  const student = await prisma.user.findUnique({
+    where: { id: studentId },
+    select: { name: true },
+  });
+  if (!student) return;
+
+  // Current active headcount for the class (this enrollment is already committed).
+  const activeCount = await prisma.enrollment.count({
+    where: { classId, status: "ACTIVE" },
+  });
+
+  const content =
+    klass.teacher.language === "FA"
+      ? `شاگرد جدید "${student.name}" در صنف "${klass.name}" ثبت‌نام کرد. (${activeCount}/${klass.maxStudents})`
+      : `New student "${student.name}" enrolled in "${klass.name}". (${activeCount}/${klass.maxStudents} enrolled)`;
+
+  await deliverOrThrow(toTarget(klass.teacher), content);
+}
+
+/**
  * "welcome_employee" — notify a freshly provisioned staff account.
  * payload: { employeeId }
  *

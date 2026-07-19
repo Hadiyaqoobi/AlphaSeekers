@@ -18,6 +18,7 @@ import {
   sessionReminder,
   welcomeEmployee,
   welcomeStudent,
+  welcomeTeacher,
 } from "./notifications";
 import { notifySessionScheduled } from "./scheduling";
 
@@ -25,6 +26,7 @@ import { notifySessionScheduled } from "./scheduling";
 export const REGISTERED_JOB_TYPES: string[] = [
   "send_notification",
   "welcome_student",
+  "welcome_teacher",
   "welcome_employee",
   "session_reminder",
   "notify_homework_submitted",
@@ -44,6 +46,7 @@ export function registerAllHandlers(): void {
 
   registerHandler("send_notification", sendNotification);
   registerHandler("welcome_student", welcomeStudent);
+  registerHandler("welcome_teacher", welcomeTeacher);
   registerHandler("welcome_employee", welcomeEmployee);
   registerHandler("session_reminder", sessionReminder);
   registerHandler("notify_homework_submitted", notifyHomeworkSubmitted);

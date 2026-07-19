@@ -133,15 +133,17 @@ d("job queue integration (real Postgres)", () => {
   });
 
   it("event bus emits one durable job per subscriber, idempotently", async () => {
-    // student.enrolled -> [welcome_student]
+    // student.enrolled -> [welcome_student, welcome_teacher]
     const ids1 = await emit("student.enrolled", { studentId: "s1", classId: "c1" }, { dedupeKey: "enr:s1:c1" });
     const ids2 = await emit("student.enrolled", { studentId: "s1", classId: "c1" }, { dedupeKey: "enr:s1:c1" });
-    expect(ids1.length).toBe(1);
-    // Same dedupeKey -> the second emit reuses the same job.
+    expect(ids1.length).toBe(2); // one job per subscriber
+    // Same dedupeKey -> the second emit reuses the same jobs.
     expect(ids2).toEqual(ids1);
     const jobs = await prisma.job.findMany({ where: { type: "welcome_student" } });
     expect(jobs.length).toBe(1);
     expect((jobs[0]!.payload as { studentId: string }).studentId).toBe("s1");
+    const teacherJobs = await prisma.job.findMany({ where: { type: "welcome_teacher" } });
+    expect(teacherJobs.length).toBe(1);
   });
 
   it("reapStalled recovers a job orphaned in ACTIVE by a dead worker", async () => {
