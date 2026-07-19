@@ -26,6 +26,10 @@ type CreateClassInput = {
   schedulePreference: string;
   language: string;
   registrationFormUrl?: string;
+  // AUTO (default) = availability-driven auto-scheduler creates sessions.
+  // MANUAL = the instructor sets/confirms exact session times; class creation
+  // does NOT auto-create a session and the auto-scheduler skips this class.
+  schedulingMode?: "AUTO" | "MANUAL";
 };
 
 type UpdateClassInput = Partial<CreateClassInput>;
@@ -1145,6 +1149,7 @@ export async function createClass(input: CreateClassInput) {
       schedulePreference: input.schedulePreference,
       language: input.language,
       status: ClassStatus.ACTIVE,
+      schedulingMode: input.schedulingMode ?? "AUTO",
       // These columns require prisma db push; cast to bypass generated types
       ...(input.registrationFormUrl ? { registrationFormUrl: input.registrationFormUrl } : {}),
       ...(({ published: true }) as Record<string, unknown>),
@@ -1154,6 +1159,8 @@ export async function createClass(input: CreateClassInput) {
 
 export async function createClassWithSession(input: CreateClassInput) {
   await ensureSeededData();
+
+  const schedulingMode = input.schedulingMode ?? "AUTO";
 
   // 1. Create the class record
   const klass = await prisma.class.create({
@@ -1167,11 +1174,61 @@ export async function createClassWithSession(input: CreateClassInput) {
       schedulePreference: input.schedulePreference,
       language: input.language,
       status: ClassStatus.ACTIVE,
+      schedulingMode,
       // These columns require prisma db push; cast to bypass generated types
       ...(input.registrationFormUrl ? { registrationFormUrl: input.registrationFormUrl } : {}),
       ...(({ published: true }) as Record<string, unknown>),
     } as Parameters<typeof prisma.class.create>[0]["data"],
   });
+
+  // MANUAL scheduling: the instructor sets the exact session times themselves, so
+  // we do NOT auto-generate the initial session or Meet link here. We still notify
+  // the assigned teacher, but the message asks them to set their class times.
+  if (schedulingMode === "MANUAL") {
+    try {
+      const teacher = await prisma.user.findUnique({
+        where: { id: input.teacherId },
+        select: { id: true, email: true, phone: true, language: true, telegramChatId: true, pushSubscription: true, notificationPrefs: true },
+      });
+
+      if (teacher) {
+        const teacherContent =
+          `New class "${klass.name}" has been assigned to you.\n` +
+          `This class uses manual scheduling. Please set your class session times at /teacher/classes/${klass.id}/schedule.`;
+
+        const teacherDeliveries = await deliverWithFallback(
+          { userId: teacher.id, email: teacher.email, phone: teacher.phone, telegramChatId: teacher.telegramChatId, pushSubscription: teacher.pushSubscription },
+          teacherContent,
+        );
+
+        if (teacherDeliveries.length > 0) {
+          await prisma.notification.createMany({
+            data: teacherDeliveries.map((delivery) => ({
+              userId: teacher.id,
+              dedupeKey: `class_assigned:${klass.id}:${teacher.id}`,
+              channel: delivery.channel,
+              content: teacherContent,
+              status: delivery.status,
+              sentAt: new Date(),
+            })),
+            skipDuplicates: true,
+          });
+        }
+      }
+    } catch (err) {
+      console.error("Failed to notify teacher about new manual class:", err);
+    }
+
+    return {
+      class: {
+        ...klass,
+        createdAt: klass.createdAt.toISOString(),
+        updatedAt: klass.updatedAt.toISOString(),
+      },
+      sessions: [],
+      registrationFormUrl: (klass as Record<string, unknown>).registrationFormUrl ?? null,
+    };
+  }
 
   // 2. Calculate session start time from schedule preference
   const fallback = parseScheduleTime(input.schedulePreference ?? "5:00 PM");
@@ -2081,8 +2138,10 @@ export async function scheduleTeacherClasses(teacherId: string) {
   await ensureSeededData();
 
   const now = new Date();
+  // Only AUTO classes are auto-scheduled. MANUAL classes have instructor-set
+  // session times and must never receive auto-created sessions.
   const teacherClasses = await prisma.class.findMany({
-    where: { teacherId, status: ClassStatus.ACTIVE },
+    where: { teacherId, status: ClassStatus.ACTIVE, schedulingMode: "AUTO" },
   });
 
   let sessionsCreated = 0;
@@ -2204,6 +2263,9 @@ export async function runSchedulerBatch() {
   const activeClasses = await prisma.class.findMany({
     where: {
       status: ClassStatus.ACTIVE,
+      // Only AUTO classes are auto-scheduled. MANUAL classes have instructor-set
+      // session times and must never receive auto-created sessions.
+      schedulingMode: "AUTO",
     },
     orderBy: {
       createdAt: "asc",

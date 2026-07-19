@@ -34,6 +34,17 @@ export async function POST(request: NextRequest) {
         }
     }
 
+    // Optional scheduling mode: AUTO (default) lets the auto-scheduler create
+    // sessions; MANUAL means the instructor sets the session times themselves.
+    if (
+        body.schedulingMode !== undefined &&
+        body.schedulingMode !== "AUTO" &&
+        body.schedulingMode !== "MANUAL"
+    ) {
+        return NextResponse.json({ message: "schedulingMode must be AUTO or MANUAL" }, { status: 400 });
+    }
+    const schedulingMode: "AUTO" | "MANUAL" = body.schedulingMode === "MANUAL" ? "MANUAL" : "AUTO";
+
     // Resolve teacher ID — either existing teacher or invite new one
     let teacherId: string;
 
@@ -103,6 +114,7 @@ export async function POST(request: NextRequest) {
         schedulePreference: String(body.schedulePreference).trim(),
         language: String(body.language || "Dari").trim(),
         registrationFormUrl: body.registrationFormUrl ? String(body.registrationFormUrl).trim() : undefined,
+        schedulingMode,
     });
 
     const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3005";

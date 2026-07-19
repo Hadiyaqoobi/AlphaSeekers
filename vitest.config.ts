@@ -12,5 +12,9 @@ export default defineConfig({
     environment: "node",
     include: ["tests/**/*.test.ts"],
     globals: true,
+    // Integration tests share a single Postgres database and the Prisma client
+    // singleton, so their table cleanups must not race across files. Run test
+    // files serially (unit tests are unaffected; the cost is negligible).
+    fileParallelism: false,
   },
 });

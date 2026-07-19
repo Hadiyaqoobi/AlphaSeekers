@@ -25,6 +25,7 @@ type FormState = {
   durationMinutes: string;
   schedulePreference: string;
   language: string;
+  schedulingMode: "AUTO" | "MANUAL";
 };
 
 const DEFAULT_FORM: FormState = {
@@ -36,6 +37,7 @@ const DEFAULT_FORM: FormState = {
   durationMinutes: "60",
   schedulePreference: "Tue 6:00 PM",
   language: "Dari",
+  schedulingMode: "AUTO",
 };
 
 export function AdminClassForm({ teachers }: AdminClassFormProps) {
@@ -160,6 +162,28 @@ export function AdminClassForm({ teachers }: AdminClassFormProps) {
         required
         value={form.language}
       />
+
+      <div className="space-y-1">
+        <label className="text-xs font-bold uppercase tracking-wide text-ink-faint" htmlFor="admin-class-scheduling-mode">
+          Scheduling
+        </label>
+        <select
+          className="select-field"
+          id="admin-class-scheduling-mode"
+          onChange={(event) =>
+            setForm((current) => ({ ...current, schedulingMode: event.target.value as FormState["schedulingMode"] }))
+          }
+          value={form.schedulingMode}
+        >
+          <option value="AUTO">Automatic — sessions scheduled from teacher availability</option>
+          <option value="MANUAL">Manual — the instructor sets each session&apos;s date &amp; time</option>
+        </select>
+        {form.schedulingMode === "MANUAL" ? (
+          <p className="text-xs text-ink-soft">
+            The class is created with no sessions until the instructor adds them on their schedule page.
+          </p>
+        ) : null}
+      </div>
 
       <button className="btn-primary" disabled={saving} type="submit">
         {saving ? t("saving") : t("createClassBtn")}

@@ -199,6 +199,7 @@ export async function createClass(input: {
   schedulePreference: string;
   language: string;
   registrationFormUrl?: string;
+  schedulingMode?: "AUTO" | "MANUAL";
 }) {
   return runWrite(() => dbStore.createClass(input), () => memoryStore.createClass(input));
 }
@@ -213,6 +214,7 @@ export async function createClassWithSession(input: {
   schedulePreference: string;
   language: string;
   registrationFormUrl?: string;
+  schedulingMode?: "AUTO" | "MANUAL";
 }) {
   return runWrite(() => dbStore.createClassWithSession(input), () => memoryStore.createClassWithSession(input));
 }

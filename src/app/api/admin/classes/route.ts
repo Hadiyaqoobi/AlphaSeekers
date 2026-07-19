@@ -15,6 +15,7 @@ const createClassSchema = z.object({
   durationMinutes: z.number().int().min(30).max(600).optional(),
   schedulePreference: z.string().trim().min(1).max(200),
   language: z.string().trim().min(1).max(50).optional(),
+  schedulingMode: z.enum(["AUTO", "MANUAL"]).optional(),
 });
 
 export async function GET(request: NextRequest) {
@@ -88,6 +89,7 @@ export async function POST(request: NextRequest) {
       durationMinutes: input.durationMinutes ?? 60,
       schedulePreference: input.schedulePreference,
       language: input.language ?? "Dari",
+      schedulingMode: input.schedulingMode ?? "AUTO",
     });
 
     return NextResponse.json(created, { status: 201 });

@@ -181,6 +181,9 @@ type CreateClassInput = {
   schedulePreference: string;
   language: string;
   registrationFormUrl?: string;
+  // Accepted for signature parity with the database store. The in-memory demo
+  // store does not model scheduling modes, so this is ignored here.
+  schedulingMode?: "AUTO" | "MANUAL";
 };
 
 type UpdateClassInput = Partial<CreateClassInput>;

@@ -32,6 +32,7 @@ type FormState = {
     language: string;
     materialUrl: string;
     registrationFormUrl: string;
+    schedulingMode: "AUTO" | "MANUAL";
 };
 
 type CreatedResult = {
@@ -81,6 +82,7 @@ const DEFAULT_FORM: FormState = {
     language: "Dari",
     materialUrl: "",
     registrationFormUrl: "",
+    schedulingMode: "AUTO",
 };
 
 export function StaffClassForm({ teachers }: StaffClassFormProps) {
@@ -126,6 +128,7 @@ export function StaffClassForm({ teachers }: StaffClassFormProps) {
             schedulePreference,
             language: form.language,
             registrationFormUrl: form.registrationFormUrl || undefined,
+            schedulingMode: form.schedulingMode,
         };
 
         if (form.teacherMode === "invite") {
@@ -414,6 +417,34 @@ export function StaffClassForm({ teachers }: StaffClassFormProps) {
             {/* ── Schedule ──────── */}
             <fieldset className="space-y-3">
                 <legend className="text-xs font-bold uppercase tracking-wide text-ink-faint">{t("schedule")}</legend>
+
+                <div className="space-y-1">
+                    <label
+                        className="text-xs font-semibold text-ink-soft"
+                        htmlFor="staff-class-scheduling-mode"
+                    >
+                        Scheduling
+                    </label>
+                    <select
+                        className="select-field"
+                        id="staff-class-scheduling-mode"
+                        onChange={(event) =>
+                            setForm((current) => ({
+                                ...current,
+                                schedulingMode: event.target.value as FormState["schedulingMode"],
+                            }))
+                        }
+                        value={form.schedulingMode}
+                    >
+                        <option value="AUTO">Automatic — sessions scheduled from teacher availability</option>
+                        <option value="MANUAL">Manual — the instructor sets each session&apos;s date &amp; time</option>
+                    </select>
+                    {form.schedulingMode === "MANUAL" ? (
+                        <p className="text-xs text-ink-soft">
+                            The class is created with no sessions until the instructor adds them on their schedule page.
+                        </p>
+                    ) : null}
+                </div>
 
                 <div className="grid grid-cols-3 gap-3">
                     <select
