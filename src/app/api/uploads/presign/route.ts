@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
     const key = `${prefix}/${timestamp}-${sanitized}`;
 
     try {
-        const result = createPresignedUploadUrl(key, contentType, fileSize);
+        const result = await createPresignedUploadUrl(key, contentType, fileSize);
         if (!result) {
             return NextResponse.json({ message: "Upload service unavailable" }, { status: 503 });
         }

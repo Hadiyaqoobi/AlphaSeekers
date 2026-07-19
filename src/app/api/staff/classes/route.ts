@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
                 data: {
                     name,
                     email,
-                    passwordHash: hashPassword(tempPassword),
+                    passwordHash: await hashPassword(tempPassword),
                     phone: body.newTeacherPhone ? encryptPhone(String(body.newTeacherPhone).trim()) : null,
                     role: "TEACHER",
                     language: "FA",

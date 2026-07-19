@@ -84,7 +84,7 @@ async function withCircuitBreaker<T>(service: string, operation: () => Promise<T
  * MUST point SMTP_HOST/PORT/USER/PASS at a transactional ESP — do not rely on
  * Gmail for production reminder blasts.
  */
-let cachedTransporter: ReturnType<typeof nodemailer.createTransport> | null = null;
+let cachedTransporter: nodemailer.Transporter | null = null;
 let cachedTransporterKey = "";
 
 type SmtpSettings = {
@@ -116,7 +116,7 @@ function resolveSmtpSettings(): SmtpSettings | null {
   return { host, port, secure, user, pass, from };
 }
 
-function getTransporter(settings: SmtpSettings) {
+function getTransporter(settings: SmtpSettings): nodemailer.Transporter {
   // Key on the connection identity so a config change rebuilds the pool.
   const key = `${settings.host}:${settings.port}:${settings.secure}:${settings.user}`;
   if (cachedTransporter && cachedTransporterKey === key) {
@@ -138,7 +138,7 @@ function getTransporter(settings: SmtpSettings) {
     maxMessages: Number(process.env.SMTP_MAX_MESSAGES || 100),
     // Cap messages per second so we stay under ESP throttles.
     rateLimit: Number(process.env.SMTP_RATE_LIMIT || 10),
-  });
+  }) as nodemailer.Transporter;
   cachedTransporterKey = key;
   return cachedTransporter;
 }
