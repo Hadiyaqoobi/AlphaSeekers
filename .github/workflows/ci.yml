@@ -4,6 +4,7 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
 
 jobs:
   build-test:
@@ -57,3 +58,51 @@ jobs:
 
       - name: Production build
         run: npm run build
+
+  # Concurrency + scale stress suite. Heavier (seeds 10k students), so it runs on
+  # pushes to main and on manual dispatch rather than on every PR.
+  stress:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: alphaseekers_stress
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/alphaseekers_stress?schema=public&connection_limit=25
+      NEXTAUTH_SECRET: ci-dummy-secret-000000000000000000000000
+      # Production mode: DB-only paths, no demo seeding/fallback — the realistic path.
+      ALPHASEEKERS_MODE: production
+      RUN_STRESS: "1"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20.18.1"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Apply migrations
+        run: npx prisma migrate deploy
+
+      - name: Stress + concurrency + scale suite
+        run: npm run test:stress

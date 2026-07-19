@@ -12,6 +12,7 @@
     "stories": "npm run smoke",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:stress": "vitest run tests/stress --no-file-parallelism",
     "prisma:generate": "sh -c 'set -a; [ -f .env.local ] && . ./.env.local; set +a; npx -p node@20.18.1 node ./node_modules/.bin/prisma generate'",
     "prisma:migrate:deploy": "sh -c 'set -a; [ -f .env.local ] && . ./.env.local; set +a; npx -p node@20.18.1 node ./node_modules/.bin/prisma migrate deploy'",
     "prisma:migrate:dev": "sh -c 'set -a; [ -f .env.local ] && . ./.env.local; set +a; npx -p node@20.18.1 node ./node_modules/.bin/prisma migrate dev'"

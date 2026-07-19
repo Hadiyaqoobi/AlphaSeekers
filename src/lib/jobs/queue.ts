@@ -53,41 +53,32 @@ export async function enqueue(
   payload: Record<string, unknown> = {},
   options: EnqueueOptions = {},
 ): Promise<{ id: string; deduped: boolean }> {
-  if (options.dedupeKey) {
-    const existing = await prisma.job.findFirst({
-      where: {
-        dedupeKey: options.dedupeKey,
-        status: { in: ["PENDING", "ACTIVE", "FAILED"] },
-      },
-      select: { id: true },
-    });
-    if (existing) return { id: existing.id, deduped: true };
+  const data = {
+    type,
+    payload: payload as Prisma.InputJsonValue,
+    runAt: options.runAt ?? new Date(),
+    priority: options.priority ?? 0,
+    dedupeKey: options.dedupeKey ?? null,
+    maxAttempts: options.maxAttempts ?? 5,
+  };
+
+  // Fast path: no idempotency key ⇒ a plain insert (no conflict possible).
+  if (!options.dedupeKey) {
+    const job = await prisma.job.create({ data, select: { id: true } });
+    return { id: job.id, deduped: false };
   }
 
-  try {
-    const job = await prisma.job.create({
-      data: {
-        type,
-        payload: payload as Prisma.InputJsonValue,
-        runAt: options.runAt ?? new Date(),
-        priority: options.priority ?? 0,
-        dedupeKey: options.dedupeKey ?? null,
-        maxAttempts: options.maxAttempts ?? 5,
-      },
-      select: { id: true },
-    });
-    return { id: job.id, deduped: false };
-  } catch (error) {
-    // Unique violation on dedupeKey ⇒ a concurrent enqueue won the race; treat as deduped.
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002" && options.dedupeKey) {
-      const existing = await prisma.job.findFirst({
-        where: { dedupeKey: options.dedupeKey },
-        select: { id: true },
-      });
-      if (existing) return { id: existing.id, deduped: true };
-    }
-    throw error;
-  }
+  // Idempotent path: createMany({ skipDuplicates }) issues an
+  // INSERT ... ON CONFLICT DO NOTHING, so a thundering herd of identical keys
+  // dedupes WITHOUT throwing — and therefore without spamming the error log,
+  // unlike catching the unique-violation. Exactly one row ends up holding the
+  // key; read it back to return its id.
+  const inserted = await prisma.job.createMany({ data: [data], skipDuplicates: true });
+  const row = await prisma.job.findFirstOrThrow({
+    where: { dedupeKey: options.dedupeKey },
+    select: { id: true },
+  });
+  return { id: row.id, deduped: inserted.count === 0 };
 }
 
 /**
