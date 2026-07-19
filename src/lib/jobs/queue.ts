@@ -160,6 +160,24 @@ export async function reapStalled(staleMs: number = 5 * 60 * 1000): Promise<numb
   return res.count;
 }
 
+/**
+ * Prune terminal jobs older than `olderThanDays` (by `updatedAt`, which is when
+ * they reached their terminal state). Deletes only COMPLETED and DEAD rows,
+ * never PENDING/ACTIVE/FAILED, so no live or retryable work is touched. Bounds
+ * table growth AND frees retained `dedupeKey`s so a logical job with the same
+ * key can be enqueued again later. Returns the number of rows deleted.
+ */
+export async function pruneJobs(olderThanDays: number = 14): Promise<number> {
+  const cutoff = new Date(Date.now() - olderThanDays * 24 * 60 * 60 * 1000);
+  const res = await prisma.job.deleteMany({
+    where: {
+      status: { in: ["COMPLETED", "DEAD"] },
+      updatedAt: { lt: cutoff },
+    },
+  });
+  return res.count;
+}
+
 export async function queueStats(): Promise<Record<string, number>> {
   const groups = await prisma.job.groupBy({ by: ["status"], _count: { _all: true } });
   const out: Record<string, number> = { PENDING: 0, ACTIVE: 0, COMPLETED: 0, FAILED: 0, DEAD: 0 };

@@ -10,6 +10,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { aiConfig } from "@/lib/ai/config";
 import { generateCompletion } from "@/lib/ai/llm";
+import { emit } from "@/lib/events/bus";
 import { stripHtml } from "@/lib/security/sanitize";
 import { getSessionUser, unauthorized, forbidden, badRequest } from "@/lib/security/session";
 import { checkSessionAccess } from "@/lib/session-access";
@@ -71,6 +72,18 @@ export async function POST(
     runAiReview(submission.id, assignment.title, assignment.description, data.content).catch(
       (err) => console.error("[Homework AI review] failed:", err),
     );
+  }
+
+  // Fan out a domain event so the teacher gets notified (runs in the worker).
+  // Never let a queue hiccup break the submission itself.
+  try {
+    await emit(
+      "homework.submitted",
+      { homeworkId: submission.id, sessionId: params.sessionId, studentId: user.id },
+      { dedupeKey: `homework.submitted:${submission.id}` },
+    );
+  } catch (err) {
+    console.error("[Homework submit] emit failed:", err);
   }
 
   return Response.json({ ok: true, submission });

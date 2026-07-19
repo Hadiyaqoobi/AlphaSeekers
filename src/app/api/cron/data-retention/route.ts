@@ -6,6 +6,7 @@
  */
 
 import { enforceRetentionPolicies } from "@/lib/ai/privacy/data-retention";
+import { pruneJobs } from "@/lib/jobs/queue";
 import { assertCronAuthorized } from "@/lib/security/cron-auth";
 
 export async function GET(request: Request) {
@@ -13,5 +14,10 @@ export async function GET(request: Request) {
   if (denied) return denied;
 
   const result = await enforceRetentionPolicies();
-  return Response.json(result);
+
+  // Also bound job-queue growth: prune terminal (COMPLETED/DEAD) jobs older than
+  // 14 days, which frees their retained dedupeKeys too.
+  const jobsPruned = await pruneJobs(14);
+
+  return Response.json({ ...result, jobsPruned });
 }

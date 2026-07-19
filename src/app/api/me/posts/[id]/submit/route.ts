@@ -5,6 +5,7 @@
  * Sets status: draft → pending_review.
  */
 
+import { emit } from "@/lib/events/bus";
 import { prisma } from "@/lib/prisma";
 import { getSessionUser, unauthorized, forbidden } from "@/lib/security/session";
 
@@ -45,6 +46,18 @@ export async function POST(_request: Request, { params }: { params: { id: string
       reviewNotes: null, // Clear any previous rejection note
     },
   });
+
+  // Alert moderators there's a post awaiting review (delivered by the worker).
+  // A queue hiccup must never break the submit itself.
+  try {
+    await emit(
+      "post.pending_review",
+      { postId: updated.id },
+      { dedupeKey: `post.pending_review:${updated.id}` },
+    );
+  } catch (err) {
+    console.error("[Post submit] emit failed:", err);
+  }
 
   return Response.json(updated);
 }

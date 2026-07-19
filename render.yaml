@@ -169,7 +169,10 @@ services:
     runtime: node
     region: oregon
     plan: starter
-    schedule: "0 3 * * *" # nightly at 03:00 UTC
+    # Every 15 min: the ai-prep handler only prepares sessions starting in the next
+    # 25-45 min window, so it must run frequently to catch each upcoming session
+    # (a once-daily run almost never lands inside that window).
+    schedule: "*/15 * * * *"
     buildCommand: ""
     startCommand: curl -fsS -H "Authorization: Bearer $CRON_SECRET" "$APP_BASE_URL/api/cron/ai-prep"
     envVars:

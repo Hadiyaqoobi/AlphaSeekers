@@ -1968,10 +1968,16 @@ export async function replaceTeacherAvailability(
   return listTeacherAvailability(teacherId);
 }
 
-async function hasTeacherConflict(teacherId: string, startTime: Date, endTime: Date) {
+export async function hasTeacherConflict(
+  teacherId: string,
+  startTime: Date,
+  endTime: Date,
+  excludeSessionId?: string,
+) {
   const conflict = await prisma.session.findFirst({
     where: {
       cancelled: false,
+      ...(excludeSessionId ? { id: { not: excludeSessionId } } : {}),
       startTime: {
         lt: endTime,
       },

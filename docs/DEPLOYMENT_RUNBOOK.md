@@ -113,3 +113,264 @@ The `free` tier CANNOT serve this scale: services sleep after ~15 min idle
 - [ ] Switch email from Gmail SMTP to a transactional ESP.
 - [ ] Confirm boot logs show no insecure-toggle FATAL error (see `src/lib/runtime.ts`).
 - [ ] Verify security headers are present (CSP, HSTS, X-Frame-Options) via `curl -I`.
+
+---
+
+## 7. Backups & restore
+
+Taking backups is not the goal — being able to **restore** is. Treat any backup you
+have never restored as unproven. Rehearse a restore before go-live and on a schedule
+thereafter.
+
+### 7.1 Neon point-in-time recovery (primary)
+
+Neon retains WAL history and lets you branch from any moment inside the retention
+window (7 days on paid plans; confirm your plan's window and raise it if the RPO you
+need is longer). This is the fastest recovery path and requires no scheduled job.
+
+- **Recover to a moment:** in the Neon console (or CLI), create a branch from the
+  parent at the target timestamp — e.g. just before a bad migration or a bad bulk
+  delete. The branch is an independent, writable copy at that instant; the live
+  branch is untouched, so recovery is non-destructive to explore.
+  ```bash
+  # Example: branch the primary as it was 30 minutes ago
+  neonctl branches create --project-id "$NEON_PROJECT_ID" \
+    --name restore-$(date +%Y%m%d-%H%M) \
+    --parent main --timestamp "$(date -u -v-30M +%Y-%m-%dT%H:%M:%SZ)"
+  ```
+- **Cut over:** point the app at the recovered branch by swapping `DATABASE_URL`
+  (use that branch's **pooled** connection string) on the Render web service **and
+  every cron service** — they must all agree — then redeploy. Once verified, you may
+  promote the branch or keep it as the new primary. Keep the old branch until you are
+  certain, then delete it to stop paying for two computes.
+
+### 7.2 Scheduled logical backup (pg_dump, secondary / portability)
+
+PITR lives inside Neon. Keep an **independent, off-Neon** copy as defense against
+account loss, accidental project deletion, or provider outage, and for portability to
+another Postgres host.
+
+- Run against the **direct** (non-pooler) endpoint — long-running dumps do not belong
+  on the pooler. Include the schema; the pgvector extension and `vector` columns dump
+  cleanly.
+  ```bash
+  pg_dump --format=custom --no-owner --no-privileges \
+    "$DATABASE_URL_DIRECT" > alphaseekers-$(date +%Y%m%d).dump
+  ```
+- Schedule it off-platform (a CI cron, a small VM, or a Render cron running the
+  command above with `pg_dump` available) and upload the artifact to durable object
+  storage (e.g. R2/S3) with a retention/lifecycle policy. Encrypt at rest and restrict
+  access — a dump contains every row, including AES-GCM-encrypted PII columns.
+- Restore a `.dump` into a fresh database with `pg_restore`:
+  ```bash
+  pg_restore --no-owner --no-privileges --dbname "$TARGET_DATABASE_URL_DIRECT" \
+    alphaseekers-YYYYMMDD.dump
+  ```
+
+### 7.3 Rehearsed restore procedure
+
+Run this end-to-end at least once before launch, and re-run it periodically. The point
+is to measure your real RTO and to prove the artifact is usable.
+
+1. Pick a restore target: a Neon branch (PITR) or a throwaway database loaded from a
+   `pg_dump` artifact.
+2. Bring it up **isolated** — never point production traffic at an unverified copy.
+   Set `DATABASE_URL` for a scratch Render service (or a local run) to the recovered
+   endpoint.
+3. Verify integrity: `SELECT 1`; spot-check row counts on core tables (`User`,
+   `Enrollment`, `Session`); confirm the `DocumentChunk` HNSW index exists (see §8.3);
+   confirm encrypted columns **decrypt** with the current `DATA_ENCRYPTION_KEY` — a
+   restore is worthless if the key that unlocks its PII is gone (see §9.1).
+4. Smoke-test the app against the restored DB (auth + one enroll + one schedule).
+5. Record how long steps 1–4 took — that is your true RTO. File it in the runbook.
+6. Tear down the scratch resources so you are not billed for idle computes.
+
+---
+
+## 8. Migration safety
+
+Migrations run **inside the build step** (`render.yaml`):
+`npm install && npx prisma generate && npx prisma migrate deploy && npm run build`.
+`prisma migrate deploy` applies only committed migrations — no prompts, no drift — but
+because it runs during build, a bad migration fails the deploy. Design every migration
+to be safe to apply to the **currently running** version of the app, which is still
+serving traffic while the new build proceeds.
+
+### 8.1 Expand–contract (zero-downtime, non-destructive)
+
+Never rename or drop in the same deploy that changes read/write paths. Split every
+breaking schema change across releases so old and new code both work against the
+intermediate schema:
+
+1. **Expand** — add the new shape as **additive and nullable**: add a nullable column
+   (or a new table), never `NOT NULL` without a default, never a rename. The running
+   app ignores it; the new build tolerates it. This deploy is safe to roll back.
+2. **Backfill** — populate the new column for existing rows out-of-band (a one-off
+   script or a batched job), not inside the migration transaction, so a large table
+   never locks or times out the build.
+3. **Switch reads** — deploy code that reads the new column (falling back to the old
+   while both are populated). Once new writes also target the new column and the
+   backfill is complete, the old column is dead weight.
+4. **Contract (later)** — in a **separate, subsequent** deploy, drop the old column /
+   constraint. By now nothing reads or writes it, so the drop is non-destructive to
+   live behavior. Renames become add-new → backfill → switch → drop-old.
+
+The same discipline applies to `NOT NULL` (add nullable → backfill → add the
+constraint later) and to type changes (add new column of the new type → migrate →
+swap).
+
+### 8.2 If `prisma migrate deploy` fails mid-deploy
+
+Because migrations run in the build, a failure means the **new build never goes live** —
+Render keeps serving the previous version. That is the safe default, but the migration
+may be half-applied:
+
+- **Do not retry blindly.** Inspect `_prisma_migrations`: the failed migration is
+  recorded with `finished_at = NULL` and a non-null `logs`. Prisma will refuse further
+  deploys until it is resolved.
+- **If the migration was not partially applied**, mark it rolled back and fix the SQL:
+  `npx prisma migrate resolve --rolled-back <migration_name>`, correct the migration,
+  redeploy.
+- **If it partially applied**, finish or reverse the partial changes by hand against
+  the DB, then `npx prisma migrate resolve --applied <migration_name>` (or
+  `--rolled-back` after manual cleanup) so the ledger matches reality, and redeploy.
+- Because migrations are expand-contract and additive, the previous app version keeps
+  running correctly against the partially-migrated schema in nearly all cases — this
+  is exactly why step 8.1 forbids destructive changes in a single deploy.
+- If schema and data are truly corrupted, fall back to §7: restore to a Neon branch
+  from just before the deploy and cut over.
+
+### 8.3 pgvector index restore (raw SQL)
+
+The HNSW index on `"DocumentChunk"."embedding"` (`USING hnsw (embedding
+vector_cosine_ops)`, defined in
+`prisma/migrations/20260413000000_add_rag_vector_store/migration.sql`) is a raw-SQL /
+`vector`-type object Prisma does not model. Certain migrations that rebuild or reload
+the material-chunks table can drop it. **After such a migration, recreate it by hand**
+(it is not restored automatically):
+
+```sql
+CREATE INDEX IF NOT EXISTS "DocumentChunk_embedding_idx"
+  ON "DocumentChunk" USING hnsw (embedding vector_cosine_ops);
+```
+
+Without this index, RAG similarity search silently falls back to a sequential scan —
+correct results, but slow and load-heavy at scale. Verify with `\d "DocumentChunk"`
+(or `SELECT indexname FROM pg_indexes WHERE tablename = 'DocumentChunk';`) after any
+migration that touches chunks. The header comment in the production-hardening migration
+(`20260718000000_production_hardening/migration.sql`) documents this contract.
+
+---
+
+## 9. Secrets & data encryption
+
+### 9.1 `DATA_ENCRYPTION_KEY` — escrow it or lose data permanently
+
+`DATA_ENCRYPTION_KEY` is the AES-256-GCM master key for application-level field
+encryption (student **phone numbers**, **Google refresh tokens**, and other sensitive
+columns). The ciphertext lives in Postgres; the key does **not**. If the key is lost,
+those fields are **cryptographically unrecoverable** — no backup, PITR, or `pg_dump`
+can bring them back, because every restore contains only the ciphertext (see §7.3
+step 3).
+
+- **Escrow** the live value in a password manager / secrets vault the moment you
+  generate it (`openssl rand -base64 32`), with break-glass access for at least two
+  people. The Render dashboard is where it runs, not where it is safely archived.
+- **Rotation** is envelope-style, not a swap: you cannot change the key without
+  re-encrypting existing ciphertext. To rotate — (1) introduce the new key alongside
+  the old (support decrypt-with-old, encrypt-with-new), (2) re-encrypt every affected
+  row in a batched migration job, (3) retire the old key only once zero rows still
+  need it. Never delete an old key while any ciphertext still depends on it. Rotate on
+  suspected exposure or on a fixed schedule.
+
+### 9.2 Set every `sync: false` secret in the dashboard
+
+Secrets marked `sync: false` in `render.yaml` are intentionally **not** stored in the
+blueprint — Render cannot provision them, so a deploy with any of them unset will
+misbehave (auth failures, unsendable email, dead integrations). Set each one manually
+on the web service (and matching values on cron services where noted):
+
+- `DATABASE_URL` — Neon **pooled** endpoint (must match across web + all cron services).
+- `NEXTAUTH_SECRET`, `NEXTAUTH_URL`.
+- `CRON_SECRET` — **identical** on the web service and every cron service.
+- `DATA_ENCRYPTION_KEY` — see §9.1.
+- `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` — Web Push.
+- `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`,
+  `R2_PUBLIC_BASE_URL` — uploads / CSP allowlist.
+- SMTP / ESP credentials (`SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`) — a transactional ESP,
+  not Gmail (§5).
+- `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_OAUTH_REDIRECT_URI`,
+  `GOOGLE_API_KEY` — Google OAuth / integrations.
+- `SENTRY_DSN` — optional; enables external error tracking (§10).
+
+Rotating any of these follows the same swap-then-redeploy flow; for `CRON_SECRET`,
+update the web service and all cron services together so their bearer tokens stay
+matched.
+
+---
+
+## 10. Observability
+
+### 10.1 Structured logs
+
+The app logs one **structured JSON line per event** in production via
+`src/lib/observability/logger.ts` (`{ level, time, message, ...context }`), which
+Render's log stream and any aggregator ingest without parsing rules. In development the
+same logger prints a compact human-readable line. Import it anywhere — it is
+isomorphic and dependency-free.
+
+### 10.2 Error reporting (Sentry-ready)
+
+`reportError` / `captureMessage` in `src/lib/observability/report.ts` **always**
+structured-log, and **additionally** forward to an external tracker through an injected
+adapter — so nothing is lost even with no tracker installed. To activate Sentry:
+
+1. `npm install @sentry/node`.
+2. Set `SENTRY_DSN` in the dashboard (§9.2).
+3. In a server `instrumentation.ts`, init Sentry and register the seam via
+   `setErrorReporter({ captureException, captureMessage })` (the exact snippet is in
+   the `report.ts` header comment). Dependency injection keeps the codebase build-clean
+   until the package is actually installed.
+
+### 10.3 Queue health & dead-letter
+
+- The super-admin **Jobs panel** at `/super/jobs` shows live queue health (per-status
+  counts, oldest pending age) and supports **one-click requeue** of dead-lettered jobs
+  (`requeueJob` flips `DEAD`/`FAILED` back to `PENDING`).
+- The **daily KPI digest** (06:00 UTC cron) surfaces the **DEAD job count** in its
+  message (`src/lib/jobs/handlers/digest.ts`), so a stuck worker or dead-lettering job
+  is noticed without opening the console.
+
+### 10.4 Health check
+
+`GET /api/health` is the Render **health check** endpoint: unauthenticated, fast,
+leak-free. It runs `SELECT 1` and returns `200 {ok:true}` when healthy or `503`
+`degraded` when the DB is required but unreachable (in demo mode a missing DB is
+reported but not fatal, since the app serves from the memory store). Point Render's
+health check and any external uptime monitor at it.
+
+---
+
+## 11. Pre-launch go-live checklist
+
+A concise, ordered gate. Do not launch with any box unchecked.
+
+- [ ] **Separate production database** provisioned (its own Neon project/branch, never
+      the dev DB), `DATABASE_URL` set to the **pooled** endpoint.
+- [ ] **All `sync: false` secrets set** in the dashboard (§9.2), matched across web +
+      cron services where required (`CRON_SECRET`, `DATABASE_URL`).
+- [ ] `ALPHASEEKERS_MODE=production` on the web service (disables demo auth, seed, mock
+      Meet links, DB→memory fallback).
+- [ ] **Migrations applied** cleanly on deploy (`prisma migrate deploy` green in build
+      logs); `DocumentChunk` HNSW index present (§8.3).
+- [ ] **All cron services provisioned** with matching `CRON_SECRET` + `APP_BASE_URL`:
+      worker (every minute), reminders, scheduler, ai-prep, data-retention, kpi-digest,
+      neon-warm.
+- [ ] **Transactional ESP** configured (Resend/Postmark/SES) — not Gmail SMTP.
+- [ ] **Demo credentials rotated / removed** and seeded demo accounts purged.
+- [ ] **Restore rehearsed** (§7.3) — real RTO measured, encrypted columns proven to
+      decrypt with the current `DATA_ENCRYPTION_KEY`.
+- [ ] **Error tracking wired** — `SENTRY_DSN` set and the `instrumentation.ts` seam
+      registered (§10.2), or a conscious decision to run on structured logs only.
+- [ ] **Smoke test** on production: auth (sign in) → enroll → schedule a session →
+      receive a notification. `GET /api/health` returns `200 ok`.

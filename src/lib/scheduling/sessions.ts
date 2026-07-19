@@ -16,6 +16,7 @@ import { MeetLinkStatus } from "@prisma/client";
 
 import { emit } from "@/lib/events/bus";
 import { generateMeetLink, updateMeetEvent } from "@/lib/integrations/meet";
+import { hasTeacherConflict } from "@/lib/platform/db-store";
 import { prisma } from "@/lib/prisma";
 
 export type SchedulingResult = { ok: true; sessionId: string } | { ok: false; error: string };
@@ -33,8 +34,10 @@ function normalizeDuration(minutes: number | null | undefined, fallback: number 
 
 function isValidFutureLeeway(start: Date): boolean {
   // Reject clearly-invalid dates. Allow a small grace window into the past so a
-  // teacher scheduling "now" is not rejected by clock skew.
+  // teacher scheduling "now" is not rejected by clock skew, and reject times
+  // absurdly far in the future (more than 12 months ahead).
   if (Number.isNaN(start.getTime())) return false;
+  if (start.getTime() > Date.now() + 365 * 24 * 60 * 60 * 1000) return false;
   return start.getTime() > Date.now() - 5 * 60 * 1000;
 }
 
@@ -56,6 +59,10 @@ export async function createManualSession(input: {
 
   const duration = normalizeDuration(input.durationMinutes, klass.durationMinutes);
   const endTime = new Date(input.startTime.getTime() + duration * 60_000);
+
+  if (await hasTeacherConflict(klass.teacherId, input.startTime, endTime)) {
+    return { ok: false, error: "That time overlaps another of your sessions" };
+  }
 
   const meet = await generateMeetLink(klass.name, input.startTime.toISOString(), {
     endIso: endTime.toISOString(),
@@ -107,6 +114,10 @@ export async function rescheduleSession(input: {
 
   const duration = normalizeDuration(input.durationMinutes, session.class.durationMinutes);
   const endTime = new Date(input.startTime.getTime() + duration * 60_000);
+
+  if (await hasTeacherConflict(session.class.teacherId, input.startTime, endTime, session.id)) {
+    return { ok: false, error: "That time overlaps another of your sessions" };
+  }
 
   // If this session already has a backing Google Calendar event, PATCH it (which
   // preserves the same Meet link) rather than minting a brand-new link. Only a

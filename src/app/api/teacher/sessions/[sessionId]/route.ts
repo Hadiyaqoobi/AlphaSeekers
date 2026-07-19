@@ -20,7 +20,7 @@ type RouteContext = { params: { sessionId: string } };
 
 const bodySchema = z.object({
   startTime: z.string(),
-  durationMinutes: z.number().int().positive().optional(),
+  durationMinutes: z.number().int().min(15).max(480).optional(),
 });
 
 export async function PATCH(request: NextRequest, { params }: RouteContext) {
