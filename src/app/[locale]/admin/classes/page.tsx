@@ -7,7 +7,7 @@ import { ArchiveClassButton } from "@/components/admin/archive-class-button";
 import { AdminClassForm } from "@/components/forms/admin-class-form";
 import { RunRemindersButton } from "@/components/forms/run-reminders-button";
 import { RunSchedulerButton } from "@/components/forms/run-scheduler-button";
-import { listAdminClasses, listUsersByRole } from "@/lib/platform/store";
+import { getAdminClassStats, listAdminClasses, listUsersByRole } from "@/lib/platform/store";
 import { getAccessControl, can } from "@/lib/security/permissions";
 
 type AdminClassesPageProps = {
@@ -28,10 +28,11 @@ export default async function AdminClassesPage({ params }: AdminClassesPageProps
   const t = await getTranslations({ locale: params.locale, namespace: "admin" });
   const teachers = await listUsersByRole("TEACHER");
   const classes = await listAdminClasses({ page: 1, limit: 10 });
+  const classStats = await getAdminClassStats();
 
-  const totalClasses = classes.items.length;
-  const activeClasses = classes.items.filter((c) => c.status === "ACTIVE").length;
-  const archivedClasses = classes.items.filter((c) => c.status === "ARCHIVED").length;
+  const totalClasses = classStats.total;
+  const activeClasses = classStats.active;
+  const archivedClasses = classStats.archived;
 
   return (
     <section className="mx-auto max-w-6xl px-6 py-10 lg:px-8">

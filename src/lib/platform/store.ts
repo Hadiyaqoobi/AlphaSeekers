@@ -51,6 +51,10 @@ export async function listAdminClasses(params: { page?: number; limit?: number; 
   return viaDatabase(() => dbStore.listAdminClasses(params));
 }
 
+export async function getAdminClassStats() {
+  return viaDatabase(() => dbStore.getAdminClassStats());
+}
+
 export async function listAdminUsers(params: {
   page?: number;
   limit?: number;

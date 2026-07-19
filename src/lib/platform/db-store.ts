@@ -1068,6 +1068,22 @@ export async function setUserApproval(userId: string, approved: boolean) {
   }
 }
 
+/**
+ * Aggregate class counts for the admin control panel stat cards.
+ *
+ * These MUST be real table-wide counts, not derived from a paginated page of
+ * results (a `limit: 10` page would report at most 10 total). Mirrors the
+ * aggregate approach used by getSuperKpis so the two surfaces agree.
+ */
+export async function getAdminClassStats() {
+  const [total, active, archived] = await Promise.all([
+    prisma.class.count(),
+    prisma.class.count({ where: { status: ClassStatus.ACTIVE } }),
+    prisma.class.count({ where: { status: ClassStatus.ARCHIVED } }),
+  ]);
+  return { total, active, archived };
+}
+
 export async function listAdminClasses(params: ClassListParams = {}) {
   await ensureSeededData();
 

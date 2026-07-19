@@ -365,7 +365,7 @@ export async function getSuperKpis(): Promise<SuperKpis> {
     prisma.aIInteraction.count({ where: { createdAt: { gte: since7d } } }),
     prisma.aIInteraction.groupBy({ by: ["provider"], _count: { _all: true } }),
     prisma.aIInteraction.aggregate({ _avg: { responseMs: true } }),
-    prisma.notification.groupBy({ by: ["status"], _count: { _all: true } }),
+    prisma.notification.groupBy({ by: ["channel", "status"], _count: { _all: true } }),
     prisma.studentPost.count({ where: { status: "pending_review" } }),
     prisma.$queryRaw<Array<{ day: Date; count: bigint }>>`
       SELECT date_trunc('day', "createdAt") AS day, count(*) AS count
@@ -391,10 +391,21 @@ export async function getSuperKpis(): Promise<SuperKpis> {
     .filter((p) => (p.provider ?? "").toLowerCase() === "cache")
     .reduce((s, p) => s + p._count._all, 0);
 
-  const notifTotal = notifGroups.reduce((s, g) => s + g._count._all, 0);
-  const notifSent = notifGroups
-    .filter((g) => g.status === "SENT")
-    .reduce((s, g) => s + g._count._all, 0);
+  // Delivery health is scoped to CONFIGURED channels — those that have delivered at
+  // least one notification (>=1 SENT). Opt-in channels that were never set up (Web Push
+  // without VAPID keys, Telegram without a bot token) only ever produce FAILED rows;
+  // counting those as delivery failures would permanently mark an otherwise-healthy
+  // platform "degraded". Email (the always-on channel) therefore drives this metric.
+  const activeChannels = new Set(
+    notifGroups.filter((g) => g.status === "SENT" && g._count._all > 0).map((g) => g.channel),
+  );
+  const notifByStatus = new Map<string, number>();
+  for (const g of notifGroups) {
+    if (!activeChannels.has(g.channel)) continue;
+    notifByStatus.set(g.status, (notifByStatus.get(g.status) ?? 0) + g._count._all);
+  }
+  const notifTotal = [...notifByStatus.values()].reduce((s, n) => s + n, 0);
+  const notifSent = notifByStatus.get("SENT") ?? 0;
 
   return {
     generatedAt: new Date(now).toISOString(),
@@ -430,7 +441,7 @@ export async function getSuperKpis(): Promise<SuperKpis> {
       trend: bucketDays(aiTrendRows, 14),
     },
     ops: {
-      notifications: notifGroups.map((g) => ({ status: g.status, count: g._count._all })),
+      notifications: [...notifByStatus.entries()].map(([status, count]) => ({ status, count })),
       deliveryRate: notifTotal > 0 ? notifSent / notifTotal : 0,
       postsPendingReview,
       auditEvents24h: 0, // filled by the page via countRecentAudit to keep this query set lean
