@@ -698,9 +698,16 @@ model ClassAnnouncement {
 
 // Singleton row holding platform-wide settings as JSON.
 model SiteSettings {
-  id        String   @id @default("singleton")
-  data      Json
-  updatedAt DateTime @updatedAt
+  id           String   @id
+  instagramUrl String?
+  facebookUrl  String?
+  twitterUrl   String?
+  linkedinUrl  String?
+  youtubeUrl   String?
+  telegramUrl  String?
+  contactEmail String?
+  updatedAt    DateTime @updatedAt
+  updatedBy    String?
 }
 
 // ─── Background job queue (automation backbone) ──────────────────────────────

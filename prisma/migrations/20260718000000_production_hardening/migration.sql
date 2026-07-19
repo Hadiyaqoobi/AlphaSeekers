@@ -1,6 +1,6 @@
 -- Production Hardening migration.
 --
--- Adds three new tables (RateLimitBucket, ClassAnnouncement, SiteSettings) and a
+-- Adds two new tables (RateLimitBucket, ClassAnnouncement) and a
 -- set of covering indexes on hot query columns. This migration is ADDITIVE only.
 --
 -- IMPORTANT: This project restores the pgvector HNSW index on
@@ -35,14 +35,8 @@ CREATE TABLE IF NOT EXISTS "ClassAnnouncement" (
     CONSTRAINT "ClassAnnouncement_classId_fkey" FOREIGN KEY ("classId") REFERENCES "Class"("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
--- CreateTable
-CREATE TABLE IF NOT EXISTS "SiteSettings" (
-    "id" TEXT NOT NULL DEFAULT 'singleton',
-    "data" JSONB NOT NULL,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "SiteSettings_pkey" PRIMARY KEY ("id")
-);
+-- (SiteSettings is created by the earlier 20260505000000_add_site_settings
+-- migration with the real social/contact columns — not created here.)
 
 -- ─── Indexes for the new tables ──────────────────────────────────────────────
 

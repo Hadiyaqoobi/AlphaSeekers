@@ -27,7 +27,24 @@
     "stories": "صداها",
     "selfLearning": "یادگیری شخصی",
     "analytics": "تحلیل‌ها",
-    "aiHealth": "سلامت هوش مصنوعی"
+    "aiHealth": "سلامت هوش مصنوعی",
+    "siteSettings": "Site Settings"
+  },
+  "siteSettings": {
+    "title": "Site Settings",
+    "subtitle": "Manage public-facing social media links and contact information.",
+    "instagram": "Instagram URL",
+    "facebook": "Facebook URL",
+    "twitter": "X (Twitter) URL",
+    "linkedin": "LinkedIn URL",
+    "youtube": "YouTube URL",
+    "telegram": "Telegram URL",
+    "contactEmail": "Contact Email",
+    "save": "Save",
+    "saving": "Saving...",
+    "saved": "Saved",
+    "failed": "Could not save. Please try again.",
+    "helpUrl": "Paste the full URL for each social account. Leave a field blank to hide that icon from the public site."
   },
   "home": {
     "eyebrow": "صنف‌های رایگان برای دانش‌آموزان افغان",
