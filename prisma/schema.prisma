@@ -69,6 +69,19 @@ model User {
   phone                 String?
   passwordHash          String?
   role                  UserRole
+  // Staff access tier layered ON TOP of role. Only meaningful for role=ADMIN.
+  // Values: SUPER_ADMIN, ADMIN, CONTENT_MANAGER, FINANCE, MODERATOR, SUPPORT.
+  // Null on a legacy ADMIN = unrestricted full admin (backward compatible).
+  accessLevel           String?
+  // Granular per-module permission grants, e.g. ["users.view","classes.edit"].
+  // Null on a legacy ADMIN = unrestricted. See src/lib/security/permissions.ts.
+  permissions           Json?
+  // Employee lifecycle: set to deactivate an employee immediately (checked live).
+  deactivatedAt         DateTime?
+  // Force a password reset on next login (temp-password onboarding flow).
+  mustChangePassword    Boolean               @default(false)
+  // Which super-admin created this employee account (audit trail).
+  createdById           String?
   timezone              String                @default("Asia/Kabul")
   language              UserLanguage          @default(FA)
   approvedAt            DateTime?
@@ -94,6 +107,8 @@ model User {
   // scan large user tables; index the discriminators.
   @@index([role])
   @@index([approvedAt])
+  // Staff/employee listings filter by role=ADMIN + accessLevel present.
+  @@index([accessLevel])
 }
 
 model Class {
@@ -419,6 +434,7 @@ model AIEvaluation {
 model AuditLog {
   id          String   @id @default(cuid())
   actorId     String
+  actorEmail  String?
   action      String
   targetType  String
   targetId    String
@@ -429,6 +445,7 @@ model AuditLog {
   @@index([actorId, createdAt])
   @@index([action, createdAt])
   @@index([targetType, targetId])
+  @@index([createdAt])
 }
 
 // ─── Self Learning (open-topic AI-generated lessons) ───
