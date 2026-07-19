@@ -19,6 +19,7 @@ import {
   welcomeEmployee,
   welcomeStudent,
 } from "./notifications";
+import { notifySessionScheduled } from "./scheduling";
 
 /** Every job type wired up by `registerAllHandlers`, for reference/diagnostics. */
 export const REGISTERED_JOB_TYPES: string[] = [
@@ -31,6 +32,7 @@ export const REGISTERED_JOB_TYPES: string[] = [
   "run_reminders",
   "run_scheduler",
   "kpi_digest",
+  "notify_session_scheduled",
 ];
 
 let registered = false;
@@ -49,6 +51,7 @@ export function registerAllHandlers(): void {
   registerHandler("run_reminders", runReminders);
   registerHandler("run_scheduler", runScheduler);
   registerHandler("kpi_digest", kpiDigest);
+  registerHandler("notify_session_scheduled", notifySessionScheduled);
 
   registered = true;
 }

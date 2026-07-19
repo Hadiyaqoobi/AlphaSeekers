@@ -18,6 +18,8 @@ export type DomainEvent =
   | "student.enrolled"
   | "student.dropped"
   | "session.starting_soon"
+  | "session.scheduled"
+  | "session.rescheduled"
   | "homework.submitted"
   | "post.pending_review"
   | "employee.provisioned";
@@ -27,6 +29,8 @@ const SUBSCRIPTIONS: Record<DomainEvent, string[]> = {
   "student.enrolled": ["welcome_student"],
   "student.dropped": [],
   "session.starting_soon": ["session_reminder"],
+  "session.scheduled": ["notify_session_scheduled"],
+  "session.rescheduled": ["notify_session_scheduled"],
   "homework.submitted": ["notify_homework_submitted"],
   "post.pending_review": ["notify_moderation_queued"],
   "employee.provisioned": ["welcome_employee"],

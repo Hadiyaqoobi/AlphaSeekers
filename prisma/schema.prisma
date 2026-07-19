@@ -28,6 +28,15 @@ enum EnrollmentStatus {
   DROPPED
 }
 
+// How a class's sessions get their date/time.
+//  AUTO   = availability/preference-driven auto-scheduler (default; unchanged).
+//  MANUAL = the instructor sets/confirms exact session times themselves; the
+//           auto-scheduler skips these classes.
+enum SchedulingMode {
+  AUTO
+  MANUAL
+}
+
 enum MeetLinkStatus {
   GENERATED
   PENDING
@@ -124,6 +133,7 @@ model Class {
   registrationFormUrl   String?
   published             Boolean               @default(true)
   status                ClassStatus           @default(ACTIVE)
+  schedulingMode        SchedulingMode        @default(AUTO)
   termId                String?
   createdAt             DateTime              @default(now())
   updatedAt             DateTime              @updatedAt
@@ -144,6 +154,9 @@ model Session {
   meetLink              String?
   meetLinkStatus        MeetLinkStatus        @default(PENDING)
   cancelled             Boolean               @default(false)
+  // Set when the instructor explicitly set/confirmed this session's time.
+  // null on an auto-proposed session awaiting confirmation.
+  confirmedAt           DateTime?
   createdAt             DateTime              @default(now())
 
   // Attendance check-in: teacher generates a 4-digit code during class;
