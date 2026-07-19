@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
+import { emit } from "@/lib/events/bus";
 import { createEmployee, listEmployees } from "@/lib/platform/super-store";
 import { recordAudit } from "@/lib/security/audit";
 import { ACCESS_LEVELS, AccessError, requireSuperAdmin } from "@/lib/security/permissions";
@@ -83,6 +84,15 @@ export async function POST(request: NextRequest) {
       }),
       ipAddress: clientIp(request),
     });
+
+    // Fan out onboarding side effects (welcome email, etc.) via the durable
+    // event bus. Never include the temp password in the event — it stays in the
+    // one-time 201 response only. A queue hiccup must not fail employee creation.
+    try {
+      await emit("employee.provisioned", { employeeId: result.employee.id });
+    } catch (emitError) {
+      console.error("[super/employees] failed to emit employee.provisioned:", emitError);
+    }
 
     return NextResponse.json(
       { employee: result.employee, tempPassword: result.tempPassword },

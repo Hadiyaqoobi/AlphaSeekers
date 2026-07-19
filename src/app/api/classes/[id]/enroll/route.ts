@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { emit } from "@/lib/events/bus";
 import { prisma } from "@/lib/prisma";
 import { dropStudentFromClass, enrollStudentInClass } from "@/lib/platform/store";
 import { getSessionUser, isApproved, pendingApproval, roleAllowed, unauthorized } from "@/lib/security/session";
@@ -54,6 +55,21 @@ export async function POST(_: Request, { params }: Params) {
 
   try {
     const result = await enrollStudentInClass(user.id, params.id);
+
+    // Fan out follow-up side effects (welcome message, etc.) via the durable
+    // event bus. This only writes queue rows; the actual work runs in the worker.
+    // A queue hiccup must NEVER break or roll back a completed enrollment, so we
+    // swallow any failure here rather than let it reach the client.
+    try {
+      await emit(
+        "student.enrolled",
+        { studentId: user.id, classId: params.id },
+        { dedupeKey: `enrolled:${user.id}:${params.id}` },
+      );
+    } catch (emitError) {
+      console.error("[classes/enroll] failed to emit student.enrolled:", emitError);
+    }
+
     return NextResponse.json(result);
   } catch (error) {
     // Map known business errors to clean statuses; never leak internal

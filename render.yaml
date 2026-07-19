@@ -110,6 +110,30 @@ services:
   # blueprint, create these as "Cron Job" services in the dashboard using the
   # exact schedules/commands below — see docs/DEPLOYMENT_RUNBOOK.md.
 
+  # Job worker drain — the heart of the automation backbone. Every domain event
+  # (enrollment, homework submission, moderation, employee provisioning, session
+  # reminders) enqueues durable Jobs; this cron drains them by POSTing the worker
+  # endpoint once a minute. Each invocation claims a batch (FOR UPDATE SKIP LOCKED)
+  # and runs the registered handlers. See docs/adr/0006-postgres-job-queue.md.
+  # NOTE: this per-minute cron drain is the single-service run mode. At higher
+  # throughput, replace it with the dedicated Background Worker service defined in
+  # the commented block at the bottom of this file (runWorker() polling loop).
+  - type: cron
+    name: alphaseekers-worker
+    runtime: node
+    region: oregon
+    plan: starter
+    schedule: "* * * * *" # every minute — drain due jobs
+    buildCommand: ""
+    startCommand: curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" "$APP_BASE_URL/api/cron/worker"
+    envVars:
+      - key: APP_BASE_URL
+        sync: false
+      - key: CRON_SECRET
+        sync: false
+
+  # Reminders/scheduler now only ENQUEUE jobs (they no longer deliver inline); the
+  # worker cron above performs the actual sends. See ADR-0004 and ADR-0006.
   - type: cron
     name: alphaseekers-reminders
     runtime: node
@@ -179,3 +203,48 @@ services:
         sync: false
       - key: CRON_SECRET
         sync: false
+
+  # Daily super-admin KPI digest. Computes platform KPIs (getSuperKpis) and
+  # dispatches the digest once a day. Enqueue-only endpoint: the actual delivery
+  # runs on the worker cron above.
+  - type: cron
+    name: alphaseekers-kpi-digest
+    runtime: node
+    region: oregon
+    plan: starter
+    schedule: "0 6 * * *" # daily at 06:00 UTC
+    buildCommand: ""
+    startCommand: curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" "$APP_BASE_URL/api/cron/kpi-digest"
+    envVars:
+      - key: APP_BASE_URL
+        sync: false
+      - key: CRON_SECRET
+        sync: false
+
+  # --- ALTERNATIVE (scale-up): dedicated always-on Background Worker -----------
+  # The per-minute `alphaseekers-worker` cron above drains the queue in batches,
+  # which is simple and cheap but adds up to ~60s of polling latency and caps
+  # throughput at one batch per minute. When job volume outgrows that, REPLACE the
+  # worker cron with a dedicated Render Background Worker running the long-lived
+  # runWorker() loop (src/lib/jobs/worker.ts via scripts/worker.mjs). It polls
+  # continuously, claims jobs the instant they are due (near-zero latency), keeps
+  # draining while work exists, and reaps stalled jobs periodically. Because
+  # claiming uses FOR UPDATE SKIP LOCKED, you can run several replicas safely and
+  # they will never process the same job twice. Uncomment and remove the cron:
+  #
+  # - type: worker
+  #   name: alphaseekers-jobs
+  #   runtime: node
+  #   region: oregon
+  #   plan: starter
+  #   buildCommand: npm install && npx prisma generate && npm run build
+  #   startCommand: node scripts/worker.mjs
+  #   envVars:
+  #     # Shares the SAME env as the web service (DATABASE_URL must be the Neon
+  #     # pooled string; ALPHASEEKERS_MODE=production; provider/notification keys).
+  #     - key: NODE_VERSION
+  #       value: "20.18.1"
+  #     - key: ALPHASEEKERS_MODE
+  #       value: production
+  #     - key: DATABASE_URL
+  #       sync: false
