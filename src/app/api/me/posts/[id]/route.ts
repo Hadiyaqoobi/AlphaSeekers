@@ -8,6 +8,7 @@ import { z } from "zod";
 
 import { prisma } from "@/lib/prisma";
 import { getSessionUser, unauthorized, forbidden, badRequest } from "@/lib/security/session";
+import { getAccessControl, can } from "@/lib/security/permissions";
 import { stripHtml } from "@/lib/security/sanitize";
 import { estimateReadTime, generateExcerpt, isValidPostType } from "@/lib/stories/utils";
 
@@ -33,8 +34,13 @@ export async function GET(_request: Request, { params }: { params: { id: string 
 
   const post = await prisma.studentPost.findUnique({ where: { id: params.id } });
   if (!post) return Response.json({ message: "Not found" }, { status: 404 });
-  if (post.authorId !== user.id && user.role !== "ADMIN") {
-    return forbidden("You can only view your own posts");
+  // Authors always pass; otherwise require staff moderation permission so a
+  // scoped employee (role=ADMIN without content.moderate) cannot read the post.
+  if (post.authorId !== user.id) {
+    const access = await getAccessControl();
+    if (!access || !can(access, "content.moderate")) {
+      return forbidden("You can only view your own posts");
+    }
   }
 
   return Response.json(post);
@@ -100,8 +106,13 @@ export async function DELETE(_request: Request, { params }: { params: { id: stri
 
   const post = await prisma.studentPost.findUnique({ where: { id: params.id } });
   if (!post) return Response.json({ message: "Not found" }, { status: 404 });
-  if (post.authorId !== user.id && user.role !== "ADMIN") {
-    return forbidden("You can only delete your own posts");
+  // Authors always pass; otherwise require staff moderation permission so a
+  // scoped employee (role=ADMIN without content.moderate) cannot delete it.
+  if (post.authorId !== user.id) {
+    const access = await getAccessControl();
+    if (!access || !can(access, "content.moderate")) {
+      return forbidden("You can only delete your own posts");
+    }
   }
 
   await prisma.studentPost.delete({ where: { id: params.id } });

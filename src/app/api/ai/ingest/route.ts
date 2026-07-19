@@ -5,7 +5,8 @@ import { aiConfig } from "@/lib/ai/config";
 import { generateEmbeddings } from "@/lib/ai/embeddings";
 import { invalidateCache } from "@/lib/ai/response-cache";
 import { ensureVectorExtension, replaceChunksForSource } from "@/lib/ai/vector-store";
-import { getSessionUser, unauthorized, forbidden, badRequest } from "@/lib/security/session";
+import { guardPermission } from "@/lib/security/api-guard";
+import { badRequest } from "@/lib/security/session";
 
 const ingestSchema = z.object({
   sourceType: z.enum(["LIBRARY", "MATERIAL"]),
@@ -29,9 +30,8 @@ function generateChunkId(sourceId: string, chunkIndex: number): string {
  * replaced (upserted) to keep content fresh.
  */
 export async function POST(request: Request) {
-  const user = await getSessionUser();
-  if (!user) return unauthorized();
-  if (user.role !== "ADMIN") return forbidden("Only admins can ingest documents");
+  const g = await guardPermission("ai.manage");
+  if (!g.ok) return g.response;
 
   if (!aiConfig.enabled) {
     return Response.json(

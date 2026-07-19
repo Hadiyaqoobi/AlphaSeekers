@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { createClassWithSession } from "@/lib/platform/store";
 import { deliverWithFallback } from "@/lib/integrations/notifications";
+import { guardPermission } from "@/lib/security/api-guard";
 import { hashPassword } from "@/lib/security/passwords";
 import { encryptPhone } from "@/lib/security/phone-crypto";
 import { getSessionUser } from "@/lib/security/session";
@@ -20,11 +21,8 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-    const user = await getSessionUser();
-
-    if (!user || user.role !== "ADMIN") {
-        return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-    }
+    const g = await guardPermission("classes.create");
+    if (!g.ok) return g.response;
 
     const body = await request.json();
 

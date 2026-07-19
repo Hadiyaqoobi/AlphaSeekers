@@ -1,6 +1,6 @@
 import { aiConfig } from "@/lib/ai/config";
 import { getChunkStats, isVectorStoreReady } from "@/lib/ai/vector-store";
-import { getSessionUser, unauthorized, forbidden } from "@/lib/security/session";
+import { guardPermission } from "@/lib/security/api-guard";
 
 /**
  * GET /api/ai/status
@@ -10,9 +10,8 @@ import { getSessionUser, unauthorized, forbidden } from "@/lib/security/session"
  * and RAG pipeline parameters.
  */
 export async function GET() {
-  const user = await getSessionUser();
-  if (!user) return unauthorized();
-  if (user.role !== "ADMIN") return forbidden();
+  const g = await guardPermission("ai.manage");
+  if (!g.ok) return g.response;
 
   const vectorStoreReady = aiConfig.enabled
     ? await isVectorStoreReady().catch(() => false)

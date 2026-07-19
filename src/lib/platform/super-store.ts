@@ -189,52 +189,72 @@ export async function updateEmployeeAccess(
   id: string,
   input: UpdateEmployeeAccessInput,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  const target = await prisma.user.findUnique({
-    where: { id },
-    select: { role: true, accessLevel: true, deactivatedAt: true },
-  });
-  if (!target || target.role !== "ADMIN") return { ok: false, error: "Employee not found" };
+  // The last-super-admin guard and the write must be atomic: two concurrent
+  // demotions could each read count=2 and both proceed, locking everyone out.
+  // We run the check + write in one interactive transaction and take a row lock
+  // (SELECT … FOR UPDATE) on the active super-admin rows so a concurrent
+  // demotion/deactivation blocks until we commit.
+  return prisma.$transaction(async (tx) => {
+    const target = await tx.user.findUnique({
+      where: { id },
+      select: { role: true, accessLevel: true, deactivatedAt: true },
+    });
+    if (!target || target.role !== "ADMIN") return { ok: false, error: "Employee not found" };
 
-  // Guard against locking everyone out: never demote the last active super admin.
-  if (
-    target.accessLevel === "SUPER_ADMIN" &&
-    input.accessLevel &&
-    input.accessLevel !== "SUPER_ADMIN"
-  ) {
-    const supers = await countActiveSuperAdmins();
-    if (supers <= 1) return { ok: false, error: "Cannot demote the last super admin" };
-  }
+    // Guard against locking everyone out: never demote the last active super admin.
+    if (
+      target.accessLevel === "SUPER_ADMIN" &&
+      input.accessLevel &&
+      input.accessLevel !== "SUPER_ADMIN"
+    ) {
+      const lockedSupers = await tx.$queryRaw<Array<{ id: string }>>`
+        SELECT "id" FROM "User"
+        WHERE "role" = 'ADMIN' AND "accessLevel" = 'SUPER_ADMIN' AND "deactivatedAt" IS NULL
+        FOR UPDATE
+      `;
+      if (lockedSupers.length <= 1) return { ok: false, error: "Cannot demote the last super admin" };
+    }
 
-  await prisma.user.update({
-    where: { id },
-    data: {
-      ...(input.accessLevel ? { accessLevel: input.accessLevel } : {}),
-      ...(input.permissions ? { permissions: input.permissions.filter(isValidPermission) } : {}),
-    },
+    await tx.user.update({
+      where: { id },
+      data: {
+        ...(input.accessLevel ? { accessLevel: input.accessLevel } : {}),
+        ...(input.permissions ? { permissions: input.permissions.filter(isValidPermission) } : {}),
+      },
+    });
+    return { ok: true };
   });
-  return { ok: true };
 }
 
 export async function setEmployeeDeactivated(
   id: string,
   deactivated: boolean,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  const target = await prisma.user.findUnique({
-    where: { id },
-    select: { role: true, accessLevel: true },
-  });
-  if (!target || target.role !== "ADMIN") return { ok: false, error: "Employee not found" };
+  // Same atomicity requirement as updateEmployeeAccess: run the last-super-admin
+  // guard and the write in one interactive transaction, taking a row lock on the
+  // active super-admin rows so concurrent demotions/deactivations serialize.
+  return prisma.$transaction(async (tx) => {
+    const target = await tx.user.findUnique({
+      where: { id },
+      select: { role: true, accessLevel: true },
+    });
+    if (!target || target.role !== "ADMIN") return { ok: false, error: "Employee not found" };
 
-  if (deactivated && target.accessLevel === "SUPER_ADMIN") {
-    const supers = await countActiveSuperAdmins();
-    if (supers <= 1) return { ok: false, error: "Cannot deactivate the last super admin" };
-  }
+    if (deactivated && target.accessLevel === "SUPER_ADMIN") {
+      const lockedSupers = await tx.$queryRaw<Array<{ id: string }>>`
+        SELECT "id" FROM "User"
+        WHERE "role" = 'ADMIN' AND "accessLevel" = 'SUPER_ADMIN' AND "deactivatedAt" IS NULL
+        FOR UPDATE
+      `;
+      if (lockedSupers.length <= 1) return { ok: false, error: "Cannot deactivate the last super admin" };
+    }
 
-  await prisma.user.update({
-    where: { id },
-    data: { deactivatedAt: deactivated ? new Date() : null },
+    await tx.user.update({
+      where: { id },
+      data: { deactivatedAt: deactivated ? new Date() : null },
+    });
+    return { ok: true };
   });
-  return { ok: true };
 }
 
 // ─── KPIs ─────────────────────────────────────────────────────────────────────
@@ -315,6 +335,7 @@ export async function getSuperKpis(): Promise<SuperKpis> {
     attendanceTotal,
     attendanceAttended,
     activeCapacityAgg,
+    activeEnrollmentsInActiveClasses,
     aiTotal,
     aiRecent,
     aiByProvider,
@@ -339,6 +360,7 @@ export async function getSuperKpis(): Promise<SuperKpis> {
     prisma.attendance.count(),
     prisma.attendance.count({ where: { attended: true } }),
     prisma.class.aggregate({ where: { status: "ACTIVE" }, _sum: { maxStudents: true } }),
+    prisma.enrollment.count({ where: { status: "ACTIVE", class: { status: "ACTIVE" } } }),
     prisma.aIInteraction.count(),
     prisma.aIInteraction.count({ where: { createdAt: { gte: since7d } } }),
     prisma.aIInteraction.groupBy({ by: ["provider"], _count: { _all: true } }),
@@ -392,7 +414,10 @@ export async function getSuperKpis(): Promise<SuperKpis> {
       upcomingSessions,
       teachers,
       attendanceRate: attendanceTotal > 0 ? attendanceAttended / attendanceTotal : 0,
-      capacityFill: capacity > 0 ? Math.min(activeEnrollments / capacity, 1) : 0,
+      // capacityFill = active enrollments in ACTIVE classes ÷ summed seats of those
+      // same ACTIVE classes (same scope on both sides), clamped to [0,1].
+      capacityFill:
+        capacity > 0 ? Math.min(Math.max(activeEnrollmentsInActiveClasses / capacity, 0), 1) : 0,
     },
     ai: {
       totalInteractions: aiTotal,

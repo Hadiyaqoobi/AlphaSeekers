@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClassAnnouncement, getClassById, listClassAnnouncements, listClassEnrollments } from "@/lib/platform/store";
 import { deliverWithFallback } from "@/lib/integrations/notifications";
 import { getSessionUser } from "@/lib/security/session";
+import { getAccessControl, can } from "@/lib/security/permissions";
 
 type RouteContext = { params: { id: string } };
 
@@ -31,7 +32,14 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     return NextResponse.json({ error: "Class not found" }, { status: 404 });
   }
 
-  if (user.role === "TEACHER" && user.id !== klass.teacherId) {
+  // Keep teacher-ownership access, but require the permission on the non-owner
+  // path so a scoped employee (role=ADMIN without classes.edit) cannot post.
+  const access = await getAccessControl();
+  if (!access) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const isOwner = access.userId === klass.teacherId;
+  if (!isOwner && !can(access, "classes.edit")) {
     return NextResponse.json({ error: "Not your class" }, { status: 403 });
   }
 

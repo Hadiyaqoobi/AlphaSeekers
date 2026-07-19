@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { createClassMaterial, getClassById, isStudentEnrolledInClass, listClassMaterials } from "@/lib/platform/store";
 import { getSessionUser, isApproved, pendingApproval, roleAllowed, unauthorized } from "@/lib/security/session";
+import { getAccessControl, can } from "@/lib/security/permissions";
 
 type Params = {
   params: { id: string };
@@ -57,7 +58,14 @@ export async function POST(request: NextRequest, { params }: Params) {
     return NextResponse.json({ message: "Class not found" }, { status: 404 });
   }
 
-  if (user.role === "TEACHER" && user.id !== klass.teacherId) {
+  // Owning teacher keeps access; any non-owner (including a scoped employee
+  // with role=ADMIN) must hold classes.edit to upload.
+  const access = await getAccessControl();
+  if (!access) {
+    return unauthorized();
+  }
+  const isOwner = access.userId === klass.teacherId;
+  if (!isOwner && !can(access, "classes.edit")) {
     return NextResponse.json({ message: "Only the assigned teacher can upload materials" }, { status: 403 });
   }
 

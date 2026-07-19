@@ -246,14 +246,29 @@ function EmployeeModal({
 }) {
   const employee = mode.kind === "edit" ? mode.employee : null;
   const editing = employee !== null;
-  const initialLevel: AccessLevel = employee ? employee.accessLevel ?? "SUPPORT" : "SUPPORT";
+
+  // A legacy "unrestricted" admin carries no access level and no explicit grants —
+  // it is effectively full-access today. Opening edit will convert it into a scoped
+  // account, so we must warn and seed the grid from the full ADMIN preset (never an
+  // empty/SUPPORT default, which would silently strip the account to near-zero perms).
+  const isLegacyUnrestricted =
+    employee !== null && employee.accessLevel === null && employee.permissions.length === 0;
+
+  // Editing pre-fills the level from the employee's current access level (defaulting
+  // a legacy unrestricted admin to ADMIN); create defaults to SUPPORT.
+  const initialLevel: AccessLevel = employee ? employee.accessLevel ?? "ADMIN" : "SUPPORT";
 
   const [name, setName] = useState(employee ? employee.name : "");
   const [email, setEmail] = useState(employee ? employee.email : "");
   const [level, setLevel] = useState<AccessLevel>(initialLevel);
-  const [perms, setPerms] = useState<Set<string>>(
-    () => new Set(employee ? employee.permissions : permissionsForLevel(initialLevel)),
-  );
+  const [perms, setPerms] = useState<Set<string>>(() => {
+    // Create: seed from the chosen level's preset.
+    if (employee === null) return new Set(permissionsForLevel(initialLevel));
+    // Edit a legacy unrestricted admin: preserve broad access with the ADMIN preset.
+    if (isLegacyUnrestricted) return new Set(permissionsForLevel("ADMIN"));
+    // Edit a scoped account: pre-fill from its CURRENT granular permissions.
+    return new Set(employee.permissions);
+  });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [tempPassword, setTempPassword] = useState<string | null>(null);
@@ -386,6 +401,15 @@ function EmployeeModal({
             {error && (
               <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
                 {error}
+              </div>
+            )}
+
+            {isLegacyUnrestricted && (
+              <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800" role="alert">
+                <span className="font-semibold">Heads up:</span> This is a legacy unrestricted admin with full
+                access and no scoped permissions. Saving converts them into a scoped account limited to the
+                permissions selected below. The grid has been pre-filled with the full Admin preset to preserve
+                their access — adjust it before saving if you want to narrow it.
               </div>
             )}
 

@@ -2,14 +2,11 @@ import { NextResponse } from "next/server";
 
 import { aiConfig } from "@/lib/ai/config";
 import { prisma } from "@/lib/prisma";
-import { getSessionUser } from "@/lib/security/session";
-import { isSuperAdmin } from "@/lib/security/superadmin";
+import { guardPermission } from "@/lib/security/api-guard";
 
 export async function GET() {
-  const user = await getSessionUser();
-  if (!user || user.role !== "ADMIN" || !isSuperAdmin(user.email)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
+  const g = await guardPermission("ai.manage");
+  if (!g.ok) return g.response;
 
   const [cacheTotal, cacheHits, cacheAvgQuality] = await Promise.all([
     prisma.cachedResponse.count().catch(() => 0),

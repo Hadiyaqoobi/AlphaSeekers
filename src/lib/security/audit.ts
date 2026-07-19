@@ -51,8 +51,11 @@ export async function listAuditLog(opts: { limit?: number; cursor?: string } = {
   nextCursor: string | null;
 }> {
   const limit = Math.min(Math.max(opts.limit ?? 50, 1), 200);
+  // createdAt is not unique, so it alone is an unstable sort for id-cursored
+  // pagination (rows can be skipped or duplicated across pages). Break ties on the
+  // unique id to make the order a stable total order that matches the cursor.
   const rows = await prisma.auditLog.findMany({
-    orderBy: { createdAt: "desc" },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     take: limit + 1,
     ...(opts.cursor ? { cursor: { id: opts.cursor }, skip: 1 } : {}),
   });

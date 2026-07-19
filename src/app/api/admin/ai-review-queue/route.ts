@@ -6,17 +6,18 @@
  */
 
 import { prisma } from "@/lib/prisma";
-import { getSessionUser, unauthorized, forbidden, badRequest } from "@/lib/security/session";
-import { isSuperAdmin } from "@/lib/security/superadmin";
+import { guardPermission } from "@/lib/security/api-guard";
+import { getSessionUser, unauthorized, badRequest } from "@/lib/security/session";
 import { logAuditEvent } from "@/lib/ai/privacy/audit-trail";
 
 export async function GET() {
   const user = await getSessionUser();
   if (!user) return unauthorized();
-  // Teachers can review (for class-level calibration). Admins must be superadmin.
-  const allowed = user.role === "TEACHER" || (user.role === "ADMIN" && isSuperAdmin(user.email));
-  if (!allowed) {
-    return forbidden("Teacher or superadmin access required");
+  // Teachers can review (for class-level calibration). Non-teachers must hold
+  // the ai.manage permission (super admins and explicitly-granted employees).
+  if (user.role !== "TEACHER") {
+    const g = await guardPermission("ai.manage");
+    if (!g.ok) return g.response;
   }
 
   const items = await prisma.aIEvaluation.findMany({
@@ -36,9 +37,9 @@ export async function GET() {
 export async function POST(request: Request) {
   const user = await getSessionUser();
   if (!user) return unauthorized();
-  const allowed = user.role === "TEACHER" || (user.role === "ADMIN" && isSuperAdmin(user.email));
-  if (!allowed) {
-    return forbidden("Teacher or superadmin access required");
+  if (user.role !== "TEACHER") {
+    const g = await guardPermission("ai.manage");
+    if (!g.ok) return g.response;
   }
 
   const body = await request.json().catch(() => null);

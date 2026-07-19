@@ -6,15 +6,11 @@
  */
 
 import { prisma } from "@/lib/prisma";
-import { getSessionUser, unauthorized, forbidden } from "@/lib/security/session";
-import { isSuperAdmin } from "@/lib/security/superadmin";
+import { guardPermission } from "@/lib/security/api-guard";
 
 export async function GET(request: Request) {
-  const user = await getSessionUser();
-  if (!user) return unauthorized();
-  if (user.role !== "ADMIN" || !isSuperAdmin(user.email)) {
-    return forbidden("Superadmin access required");
-  }
+  const g = await guardPermission("ai.manage");
+  if (!g.ok) return g.response;
 
   const { searchParams } = new URL(request.url);
   const days = parseInt(searchParams.get("days") || "7", 10);

@@ -160,6 +160,12 @@ export class AccessError extends Error {
 export async function requireSuperAdmin(): Promise<AccessControl> {
   const access = await getAccessControl();
   if (!access) throw new AccessError(401, "Unauthorized");
+  // Hard gate: an employee still on their temporary password cannot exercise ANY
+  // permission (super included) until they reset it. The change-password flow
+  // itself does not go through these guards, so this does not lock them out.
+  if (access.mustChangePassword) {
+    throw new AccessError(403, "PASSWORD_CHANGE_REQUIRED");
+  }
   if (!isSuper(access)) throw new AccessError(403, "Super admin access required");
   return access;
 }
@@ -170,6 +176,11 @@ export async function requireSuperAdmin(): Promise<AccessControl> {
 export async function requirePermission(permission: string): Promise<AccessControl> {
   const access = await getAccessControl();
   if (!access) throw new AccessError(401, "Unauthorized");
+  // Hard gate: a temp-password employee cannot exercise any permission until
+  // they reset it (see requireSuperAdmin). Enforced before the permission check.
+  if (access.mustChangePassword) {
+    throw new AccessError(403, "PASSWORD_CHANGE_REQUIRED");
+  }
   if (!can(access, permission)) {
     throw new AccessError(403, `Missing permission: ${permission}`);
   }

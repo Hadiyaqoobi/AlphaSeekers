@@ -8,13 +8,19 @@
 import { prisma } from "@/lib/prisma";
 import { generateAnswerPack } from "@/lib/ai/offline/pack-generator";
 import { getSessionUser, unauthorized, forbidden } from "@/lib/security/session";
+import { getAccessControl, can } from "@/lib/security/permissions";
 
 export async function GET(_request: Request, { params }: { params: { id: string } }) {
   const user = await getSessionUser();
   if (!user) return unauthorized();
 
-  // Verify enrollment (admins can download any pack)
-  if (user.role !== "ADMIN") {
+  const access = await getAccessControl();
+  if (!access) return unauthorized();
+
+  // Staff with class-content management (classes.edit) can download any pack;
+  // everyone else must be an active enrollee. A scoped employee (role=ADMIN
+  // without classes.edit) no longer bypasses the enrollment check.
+  if (!can(access, "classes.edit")) {
     const enrollment = await prisma.enrollment.findUnique({
       where: { studentId_classId: { studentId: user.id, classId: params.id } },
     });

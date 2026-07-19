@@ -120,6 +120,7 @@ export const authOptions: NextAuthOptions = {
               role: true,
               passwordHash: true,
               approvedAt: true,
+              deactivatedAt: true,
             },
           });
 
@@ -128,6 +129,15 @@ export const authOptions: NextAuthOptions = {
           }
 
           if (!(await verifyPassword(parsed.data.password, dbUser.passwordHash))) {
+            return null;
+          }
+
+          // A deactivated employee cannot authenticate at all — deny even with
+          // valid credentials, before any token is issued. Enforcing this at the
+          // auth layer (not just the API guards) stops a deactivated account from
+          // logging in and riding a fresh 7-day JWT. Checked after password
+          // verification so timing matches a normal login (no user enumeration).
+          if (dbUser.deactivatedAt) {
             return null;
           }
 
@@ -184,16 +194,28 @@ export const authOptions: NextAuthOptions = {
         try {
           const dbUser = await prisma.user.findUnique({
             where: { id: token.sub },
-            select: { id: true, role: true, approvedAt: true },
+            select: {
+              id: true,
+              role: true,
+              approvedAt: true,
+              deactivatedAt: true,
+              mustChangePassword: true,
+            },
           });
 
-          if (!dbUser) {
-            // User was deleted → drop all authorization.
+          if (!dbUser || dbUser.deactivatedAt) {
+            // User was deleted OR deactivated → drop all authorization via the
+            // same revocation path. A deactivation now takes effect within
+            // REVALIDATE_INTERVAL_MS instead of persisting for the JWT lifetime.
             return revokeToken(token);
           }
 
           token.role = dbUser.role;
           token.approved = dbUser.role === "ADMIN" || dbUser.approvedAt != null;
+          // Carry the forced-password-reset flag so the session can surface it.
+          // The JWT interface extends Record<string, unknown>, so this extra
+          // claim is type-safe without touching the (unowned) type augmentation.
+          token.mustChangePassword = dbUser.mustChangePassword;
           token.lastValidatedAt = Date.now();
         } catch {
           // Transient DB error: keep the current claims but leave
@@ -210,6 +232,13 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.sub;
         session.user.role = (token.role as UserRole | undefined) ?? "STUDENT";
         session.user.approved = Boolean(token.approved ?? session.user.role === "ADMIN");
+        // Surface the forced-password-reset flag for UI. Set via a cast (as with
+        // other extra claims) since the session.user type augmentation is owned
+        // by an unowned .d.ts; authorization itself never trusts this — the
+        // guards re-read the live DB row on every privileged request.
+        (session.user as Record<string, unknown>).mustChangePassword = Boolean(
+          token.mustChangePassword,
+        );
       }
 
       return session;

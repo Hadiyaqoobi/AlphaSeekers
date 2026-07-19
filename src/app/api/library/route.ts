@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { createLibraryResource, listLibraryResources } from "@/lib/platform/store";
+import { guardPermission } from "@/lib/security/api-guard";
 import { withCors, corsPreflight } from "@/lib/security/cors";
 import { getSessionUser, isApproved, pendingApproval, unauthorized } from "@/lib/security/session";
 
@@ -24,11 +25,8 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const user = await getSessionUser();
-
-  if (!user || user.role !== "ADMIN") {
-    return NextResponse.json({ message: "Admin access only" }, { status: 403 });
-  }
+  const g = await guardPermission("library.edit");
+  if (!g.ok) return g.response;
 
   const body = (await request.json()) as {
     title?: string;
