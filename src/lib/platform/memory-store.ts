@@ -4,6 +4,7 @@ import { DEMO_USERS } from "@/lib/constants";
 import { generateMeetLink } from "@/lib/integrations/meet";
 import { deliverWithFallback } from "@/lib/integrations/notifications";
 import { classCatalog } from "@/lib/mock-data";
+import { runtime } from "@/lib/runtime";
 
 type Role = UserRole;
 
@@ -455,7 +456,36 @@ function buildTeacherSessionReminderContent(input: {
   return `${base}\nAfter a ${SEGMENT_BREAK_MINUTES}-minute break, the next segment starts at ${nextWhen}.\nNext link: ${nextLink}`;
 }
 
+function createEmptyStore(): PlatformStore {
+  return {
+    users: [],
+    classes: [],
+    sessions: [],
+    enrollments: [],
+    teacherAvailability: [],
+    materials: [],
+    webinars: [],
+    webinarRegistrations: [],
+    opportunities: [],
+    libraryResources: [],
+    notifications: [],
+    schedulerJobs: [],
+    attendanceRecords: [],
+    announcements: [],
+  };
+}
+
 function createInitialStore(): PlatformStore {
+  // The in-memory store ships with a demo catalog: fake classes, ~120 sample
+  // students, sample teachers, and randomly-generated Google Meet links. This
+  // mock data must NEVER be presented as real. It is only ever seeded when
+  // auto-seeding is enabled (demo/dev). In production (runtime.allowAutoSeed ===
+  // false) the memory store starts empty, so even if it is somehow reached it can
+  // never serve fabricated classes/students/links as though they were genuine.
+  if (!runtime.allowAutoSeed) {
+    return createEmptyStore();
+  }
+
   const now = new Date().toISOString();
 
   const adminUser: PlatformUser = {

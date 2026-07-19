@@ -3,7 +3,8 @@ import { z } from "zod";
 import { chunkDocument } from "@/lib/ai/chunker";
 import { aiConfig } from "@/lib/ai/config";
 import { generateEmbeddings } from "@/lib/ai/embeddings";
-import { deleteChunksBySource, ensureVectorExtension, insertChunks } from "@/lib/ai/vector-store";
+import { invalidateCache } from "@/lib/ai/response-cache";
+import { ensureVectorExtension, replaceChunksForSource } from "@/lib/ai/vector-store";
 import { getSessionUser, unauthorized, forbidden, badRequest } from "@/lib/security/session";
 
 const ingestSchema = z.object({
@@ -52,12 +53,6 @@ export async function POST(request: Request) {
 
     const { sourceType, sourceId, sourceTitle, content, classId } = parsed.data;
 
-    // Delete existing chunks for this source (supports re-ingestion)
-    const deleted = await deleteChunksBySource(sourceType, sourceId);
-    if (deleted > 0) {
-      console.log(`[AI] Removed ${deleted} existing chunks for ${sourceType}:${sourceId}`);
-    }
-
     // Chunk the document
     const chunks = chunkDocument({ content, sourceType, sourceId, sourceTitle });
 
@@ -65,10 +60,11 @@ export async function POST(request: Request) {
       return Response.json({ message: "No chunks generated from content.", chunksCreated: 0 });
     }
 
-    // Generate embeddings for all chunks
+    // ORDERING FIX: generate embeddings BEFORE touching existing data. If
+    // embedding fails, the previously-ingested chunks are left untouched (the
+    // source stays retrievable) instead of being deleted up-front.
     const embeddings = await generateEmbeddings(chunks.map((c) => c.content));
 
-    // Insert into vector store
     const chunksWithEmbeddings = chunks.map((chunk, i) => ({
       id: generateChunkId(sourceId, chunk.chunkIndex),
       sourceType: chunk.sourceType,
@@ -81,7 +77,13 @@ export async function POST(request: Request) {
       classId: classId || null,
     }));
 
-    const inserted = await insertChunks(chunksWithEmbeddings);
+    // Atomically swap old chunks for new ones (delete + insert in one
+    // transaction) so re-ingestion never leaves the source empty on failure.
+    const inserted = await replaceChunksForSource(sourceType, sourceId, chunksWithEmbeddings);
+
+    // Materials changed → expire cached answers so stale responses don't
+    // outlive the content they were derived from.
+    await invalidateCache().catch(() => {});
 
     return Response.json({
       message: "Document ingested successfully.",

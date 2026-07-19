@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 
 import { EnrollButton } from "@/components/classes/enroll-button";
 import { formatDateTime } from "@/lib/format-date";
-import { isStudentEnrolledInClass, listClasses } from "@/lib/platform/store";
+import { listClasses, listStudentClasses } from "@/lib/platform/store";
 import { getSessionUser } from "@/lib/security/session";
 
 type ClassesPageProps = {
@@ -51,16 +51,16 @@ export default async function ClassesPage({ params, searchParams }: ClassesPageP
     search,
   });
 
+  // Resolve the student's enrolled classes in a single query and check
+  // membership in memory, instead of one enrollment lookup per rendered card
+  // (an N+1 that scaled with page size). listStudentClasses returns exactly the
+  // active enrollments in active classes, which is the same predicate the old
+  // per-card isStudentEnrolledInClass check used.
   const enrolledSet = new Set<string>();
   if (user.role === "STUDENT") {
-    const checks = await Promise.all(
-      result.items.map(async (item) => ({
-        id: item.id,
-        enrolled: await isStudentEnrolledInClass(user.id, item.id),
-      })),
-    );
-    for (const c of checks) {
-      if (c.enrolled) enrolledSet.add(c.id);
+    const enrolledClasses = await listStudentClasses(user.id);
+    for (const klass of enrolledClasses) {
+      enrolledSet.add(klass.id);
     }
   }
 

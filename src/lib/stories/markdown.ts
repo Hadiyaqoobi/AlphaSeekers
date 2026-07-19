@@ -1,15 +1,74 @@
 /**
- * Lightweight server-side markdown renderer (no dependencies).
+ * Lightweight server-side markdown renderer.
  *
  * Supports: headings (h2/h3/h4), paragraphs, bold, italic, inline code,
  * code blocks, unordered + ordered lists, blockquotes, links.
  *
- * Output is HTML-escaped before transformation.
+ * Output is HTML-escaped before transformation, then passed through
+ * sanitize-html with a strict allowlist as a defense-in-depth step so
+ * that student-supplied content can never inject script, event handlers,
+ * or dangerous URLs (stored XSS).
  */
+
+import sanitizeHtml from "sanitize-html";
 
 function escapeHtml(str: string): string {
   return str
     .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+/**
+ * True if the string contains any ASCII control character (code point < 0x20)
+ * or DEL (0x7f). Such characters can smuggle URL schemes (e.g. "java\tscript:")
+ * or break out of an HTML attribute, so URLs containing them are rejected.
+ */
+function hasControlChar(value: string): boolean {
+  for (let i = 0; i < value.length; i += 1) {
+    const code = value.charCodeAt(i);
+    if (code < 0x20 || code === 0x7f) return true;
+  }
+  return false;
+}
+
+/**
+ * Validate + normalize a markdown link URL.
+ *
+ * Only http/https/mailto are permitted. Anything else (javascript:, data:,
+ * vbscript:, relative/ambiguous, or unparseable) returns null so the link
+ * is rendered as inert text instead of an anchor.
+ */
+function safeLinkHref(rawUrl: string): string | null {
+  const url = rawUrl.trim();
+  if (!url || /\s/.test(url) || hasControlChar(url)) return null;
+
+  let scheme: string;
+  try {
+    const parsed = new URL(url);
+    scheme = parsed.protocol.toLowerCase();
+  } catch {
+    return null;
+  }
+
+  if (scheme !== "http:" && scheme !== "https:" && scheme !== "mailto:") {
+    return null;
+  }
+  return url;
+}
+
+/**
+ * Percent/entity-encode a value so it is safe to place inside a double-quoted
+ * HTML attribute. `encodeURI` keeps the URL functional while neutralizing the
+ * characters ("<>) that could break out of the attribute or start a tag.
+ */
+function encodeAttr(value: string): string {
+  return encodeURI(value)
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
 }
@@ -53,8 +112,22 @@ export function renderMarkdown(text: string): string {
     return `<ul class="story-list">${match}</ul>`;
   });
 
-  // Links [text](url) — only allow http/https
-  html = html.replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '<a href="$2" rel="noopener noreferrer" target="_blank" class="story-link">$1</a>');
+  // Links [text](url) — validate + encode the URL so it cannot break out of
+  // the href attribute or carry a dangerous scheme. Invalid URLs degrade to
+  // the plain (already-escaped) link text.
+  html = html.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_m, text, rawUrl) => {
+    // The URL was HTML-escaped upstream; decode the handful of entities we
+    // produce so the real URL can be validated, then re-encode for output.
+    const decodedUrl = String(rawUrl)
+      .replace(/&amp;/g, "&")
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">");
+    const safe = safeLinkHref(decodedUrl);
+    if (!safe) return String(text);
+    return `<a href="${encodeAttr(safe)}" rel="noopener noreferrer nofollow" target="_blank" class="story-link">${text}</a>`;
+  });
 
   // Paragraphs (blank line separated)
   const blocks = html.split(/\n\n+/).map((block) => {
@@ -66,5 +139,52 @@ export function renderMarkdown(text: string): string {
     return `<p class="story-paragraph">${trimmed.replace(/\n/g, "<br />")}</p>`;
   });
 
-  return blocks.join("\n");
+  const rendered = blocks.join("\n");
+
+  // Defense-in-depth: re-parse and strip anything outside the strict allowlist.
+  // Even if a transformation above were bypassed, no <script>, event handler,
+  // or non-http(s)/mailto URL can survive this pass.
+  return sanitizeHtml(rendered, {
+    allowedTags: [
+      "h2",
+      "h3",
+      "h4",
+      "p",
+      "br",
+      "strong",
+      "em",
+      "code",
+      "pre",
+      "blockquote",
+      "ul",
+      "ol",
+      "li",
+      "a",
+    ],
+    allowedAttributes: {
+      a: ["href", "rel", "target", "class"],
+      code: ["class"],
+      pre: ["class"],
+      h2: ["class"],
+      h3: ["class"],
+      h4: ["class"],
+      p: ["class"],
+      ul: ["class"],
+      ol: ["class"],
+      li: ["class"],
+      blockquote: ["class"],
+    },
+    allowedSchemes: ["http", "https", "mailto"],
+    allowedSchemesByTag: { a: ["http", "https", "mailto"] },
+    allowProtocolRelative: false,
+    disallowedTagsMode: "discard",
+    enforceHtmlBoundary: false,
+    transformTags: {
+      // Guarantee safe rel/target on every surviving anchor.
+      a: sanitizeHtml.simpleTransform("a", {
+        rel: "noopener noreferrer nofollow",
+        target: "_blank",
+      }),
+    },
+  });
 }

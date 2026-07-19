@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { ClassStatus, EnrollmentStatus } from "@prisma/client";
 import { getTranslations } from "next-intl/server";
 
 import { formatDateTime } from "@/lib/format-date";
-import { listUsersByRole, listTeacherClasses, listTeacherAvailability } from "@/lib/platform/store";
+import { listUsersByRole } from "@/lib/platform/store";
+import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/security/session";
 
 type AdminTeachersPageProps = {
@@ -25,20 +27,57 @@ export default async function AdminTeachersPage({ params }: AdminTeachersPagePro
   const { locale } = params;
   const t = await getTranslations({ locale, namespace: "adminTeachers" });
   const teachers = await listUsersByRole("TEACHER");
+  const teacherIds = teachers.map((teacher) => teacher.id);
 
-  const teacherDetails = await Promise.all(
-    teachers.map(async (teacher) => {
-      const classes = await listTeacherClasses(teacher.id);
-      const availability = await listTeacherAvailability(teacher.id);
-      return {
-        ...teacher,
-        classCount: classes.length,
-        totalStudents: classes.reduce((sum, c) => sum + c.enrolledCount, 0),
-        hasAvailability: availability.length > 0,
-        availabilitySlots: availability.length,
-      };
-    }),
-  );
+  // Previously this ran two sequential queries per teacher (classes +
+  // availability) — an N+1 that scaled with the teacher count. Instead we run
+  // two batched aggregate queries over all teachers at once and fold the
+  // results in memory. Active classes carry their active-enrollment count so we
+  // derive both classCount and totalStudents from a single scan.
+  const [teacherClasses, availabilityCounts] = teacherIds.length
+    ? await Promise.all([
+        prisma.class.findMany({
+          where: { teacherId: { in: teacherIds }, status: ClassStatus.ACTIVE },
+          select: {
+            teacherId: true,
+            _count: {
+              select: { enrollments: { where: { status: EnrollmentStatus.ACTIVE } } },
+            },
+          },
+        }),
+        prisma.teacherAvailability.groupBy({
+          by: ["teacherId"],
+          where: { teacherId: { in: teacherIds } },
+          _count: { _all: true },
+        }),
+      ])
+    : [[], []];
+
+  const classCountMap = new Map<string, number>();
+  const studentCountMap = new Map<string, number>();
+  for (const klass of teacherClasses) {
+    classCountMap.set(klass.teacherId, (classCountMap.get(klass.teacherId) ?? 0) + 1);
+    studentCountMap.set(
+      klass.teacherId,
+      (studentCountMap.get(klass.teacherId) ?? 0) + klass._count.enrollments,
+    );
+  }
+
+  const availabilityMap = new Map<string, number>();
+  for (const row of availabilityCounts) {
+    availabilityMap.set(row.teacherId, row._count._all);
+  }
+
+  const teacherDetails = teachers.map((teacher) => {
+    const availabilitySlots = availabilityMap.get(teacher.id) ?? 0;
+    return {
+      ...teacher,
+      classCount: classCountMap.get(teacher.id) ?? 0,
+      totalStudents: studentCountMap.get(teacher.id) ?? 0,
+      hasAvailability: availabilitySlots > 0,
+      availabilitySlots,
+    };
+  });
 
   return (
     <section className="space-y-4 sm:space-y-5">

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { exchangeGoogleCode, verifyGoogleState } from "@/lib/integrations/google-auth";
 import { prisma } from "@/lib/prisma";
+import { encryptToRest } from "@/lib/security/crypto";
 import { getSessionUser, unauthorized } from "@/lib/security/session";
 
 export async function GET(request: NextRequest) {
@@ -39,6 +40,14 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Encrypt OAuth tokens at rest. These grant calendar-write access, so
+    // they must never sit in the DB as plaintext. Read sites decrypt with
+    // decryptFromRest (see needs_ops_action for the meet.ts read site).
+    const encryptedRefreshToken = encryptToRest(refreshToken);
+    const encryptedAccessToken = tokens.access_token
+      ? encryptToRest(tokens.access_token)
+      : null;
+
     await prisma.googleAccountLink.upsert({
       where: {
         userId: user.id,
@@ -46,15 +55,15 @@ export async function GET(request: NextRequest) {
       create: {
         userId: user.id,
         googleEmail: email,
-        refreshToken,
-        accessToken: tokens.access_token ?? null,
+        refreshToken: encryptedRefreshToken,
+        accessToken: encryptedAccessToken,
         scope: tokens.scope ?? null,
         expiryDate: tokens.expiry_date ? new Date(tokens.expiry_date) : null,
       },
       update: {
         googleEmail: email,
-        refreshToken,
-        accessToken: tokens.access_token ?? null,
+        refreshToken: encryptedRefreshToken,
+        accessToken: encryptedAccessToken,
         scope: tokens.scope ?? null,
         expiryDate: tokens.expiry_date ? new Date(tokens.expiry_date) : null,
       },

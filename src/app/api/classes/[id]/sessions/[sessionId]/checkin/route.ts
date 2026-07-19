@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { prisma } from "@/lib/prisma";
+import { isStudentEnrolledInClass } from "@/lib/platform/store";
 import { checkRateLimit } from "@/lib/security/rate-limit";
 import { getSessionUser, unauthorized } from "@/lib/security/session";
 
@@ -64,6 +65,24 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
 
   if (!session || session.classId !== params.id) {
     return NextResponse.json({ message: "Session not found" }, { status: 404 });
+  }
+
+  // Only students enrolled in this class may check in. Without this, any
+  // authenticated user who learns the 4-digit code could record attendance
+  // for a class they're not part of. Admins are exempt (QA / impersonation),
+  // consistent with the rest of the platform.
+  if (user.role !== "ADMIN") {
+    const enrolled = await isStudentEnrolledInClass(user.id, session.classId);
+    if (!enrolled) {
+      return NextResponse.json(
+        {
+          success: false,
+          code: "not_enrolled",
+          message: "You are not enrolled in this class.",
+        },
+        { status: 403 },
+      );
+    }
   }
 
   if (!session.checkinCode) {

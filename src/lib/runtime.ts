@@ -5,8 +5,17 @@ function normalizeMode(raw: string | undefined | null): AlphaSeekersMode {
   if (value === "production" || value === "prod") {
     return "production";
   }
+  if (value === "demo") {
+    return "demo";
+  }
 
-  // Default to demo to preserve local/dev UX even when NODE_ENV=production (e.g. `next start`).
+  // When ALPHASEEKERS_MODE is unset/unrecognized, derive a SAFE default from NODE_ENV.
+  // A production build must never silently fall into demo mode (which would enable demo
+  // auth, auto-seeding, mock Meet links, and DB→memory fallback). Only non-production
+  // environments default to demo to preserve local/dev UX.
+  if (process.env.NODE_ENV === "production") {
+    return "production";
+  }
   return "demo";
 }
 
@@ -41,30 +50,40 @@ export function warnIfInsecureProductionConfig() {
   warned = true;
 
   const runningProdBuild = process.env.NODE_ENV === "production";
+  const knowinglyDemo = process.env.ALPHASEEKERS_I_KNOW_THIS_IS_DEMO === "true";
 
   if (runningProdBuild && runtime.mode !== "production") {
-    // This is intentionally loud: deploys should opt into production mode explicitly.
-    // Local `next start` often runs with NODE_ENV=production, so we only warn (not throw).
+    // With the NODE_ENV-derived default, a prod build only lands here when the operator
+    // explicitly set ALPHASEEKERS_MODE=demo. Stay loud so it never goes unnoticed.
     console.warn(
       "[AlphaSeekers] WARNING: NODE_ENV=production but ALPHASEEKERS_MODE is not 'production'. Running in demo mode.",
     );
   }
 
-  if (runtime.mode === "production") {
-    const insecure = [
-      runtime.allowDemoAuth ? "ALPHASEEKERS_ALLOW_DEMO_AUTH" : null,
-      runtime.allowAutoSeed ? "ALPHASEEKERS_AUTO_SEED" : null,
-      runtime.allowMockMeetLinks ? "ALPHASEEKERS_ALLOW_MOCK_MEET_LINKS" : null,
-      runtime.allowDbFallback ? "ALPHASEEKERS_ALLOW_DB_FALLBACK" : null,
-    ].filter(Boolean);
+  const insecure = [
+    runtime.allowDemoAuth ? "ALPHASEEKERS_ALLOW_DEMO_AUTH" : null,
+    runtime.allowAutoSeed ? "ALPHASEEKERS_AUTO_SEED" : null,
+    runtime.allowMockMeetLinks ? "ALPHASEEKERS_ALLOW_MOCK_MEET_LINKS" : null,
+    runtime.allowDbFallback ? "ALPHASEEKERS_ALLOW_DB_FALLBACK" : null,
+  ].filter(Boolean);
 
-    if (insecure.length > 0) {
-      console.error(
-        `[AlphaSeekers] SECURITY WARNING: production mode enabled but insecure demo toggles are on: ${insecure.join(
-          ", ",
-        )}.`,
-      );
-    }
+  if (runningProdBuild && insecure.length > 0 && !knowinglyDemo) {
+    // Fail fast at boot: a production build must never run with insecure demo toggles on.
+    // Operators who genuinely want a demo on a prod build must set
+    // ALPHASEEKERS_I_KNOW_THIS_IS_DEMO=true to acknowledge the risk.
+    throw new Error(
+      `[AlphaSeekers] FATAL: NODE_ENV=production but insecure demo toggles are enabled: ${insecure.join(
+        ", ",
+      )}. Disable them for production, or set ALPHASEEKERS_I_KNOW_THIS_IS_DEMO=true to override.`,
+    );
+  }
+
+  if (runtime.mode === "production" && insecure.length > 0) {
+    console.error(
+      `[AlphaSeekers] SECURITY WARNING: production mode enabled but insecure demo toggles are on: ${insecure.join(
+        ", ",
+      )}.`,
+    );
   }
 }
 

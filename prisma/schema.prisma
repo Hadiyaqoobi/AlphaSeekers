@@ -89,6 +89,11 @@ model User {
   telegramChatId        String?
   pushSubscription      String?
   notificationPrefs     String?               // JSON: { telegram: bool, webPush: bool, email: bool }
+
+  // Role-filtered lists/counts (teachers, students) and approval-queue filters
+  // scan large user tables; index the discriminators.
+  @@index([role])
+  @@index([approvedAt])
 }
 
 model Class {
@@ -113,6 +118,7 @@ model Class {
   enrollments           Enrollment[]
   materials             Material[]
   documentChunks        DocumentChunk[]
+  announcements         ClassAnnouncement[]
 }
 
 model Session {
@@ -136,6 +142,12 @@ model Session {
   summary               SessionSummary?
   notes                 SessionNote[]
   homeworkAssignments   HomeworkAssignment[]
+
+  // Hot paths: filter by class (schedule/join-now), by time window (reminder/today
+  // batches), and by both together (per-class upcoming lookups).
+  @@index([classId])
+  @@index([startTime])
+  @@index([classId, startTime])
 }
 
 model Enrollment {
@@ -149,6 +161,9 @@ model Enrollment {
   class                 Class                 @relation(fields: [classId], references: [id], onDelete: Cascade)
 
   @@unique([studentId, classId])
+  // Roster/count queries filter by classId first; the unique above is studentId-first
+  // and does not serve these, so add an explicit classId index.
+  @@index([classId])
 }
 
 model Attendance {
@@ -166,6 +181,10 @@ model Attendance {
   student               User                  @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@unique([sessionId, studentId])
+  // sessionId-first lookups (session attendance) are already served by the
+  // composite unique above. Student-centric aggregates (attendance history) need
+  // a studentId-first index.
+  @@index([studentId])
 }
 
 model TeacherAvailability {
@@ -256,6 +275,8 @@ model Notification {
   user                  User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, status])
+  // Per-user notification feed is ordered newest-first; index (userId, createdAt).
+  @@index([userId, createdAt])
   @@unique([dedupeKey, channel])
 }
 
@@ -611,4 +632,38 @@ model AIConversation {
   updatedAt DateTime @updatedAt
 
   @@index([userId, sessionId])
+}
+
+// ─── Production Hardening (rate limiting, persisted announcements, site settings) ───
+
+// Fixed-window distributed rate limiting. One row per bucket key; the window
+// resets by overwriting `resetAt`/`count`. See src/lib/security/rate-limit.ts.
+model RateLimitBucket {
+  key     String   @id
+  count   Int      @default(0)
+  resetAt DateTime
+
+  @@index([resetAt])
+}
+
+// Persisted class announcements (previously an in-memory array that was lost on
+// every server restart). See src/lib/platform/db-store.ts.
+model ClassAnnouncement {
+  id         String   @id @default(cuid())
+  classId    String
+  authorId   String
+  authorName String
+  content    String
+  createdAt  DateTime @default(now())
+
+  klass      Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+
+  @@index([classId, createdAt])
+}
+
+// Singleton row holding platform-wide settings as JSON.
+model SiteSettings {
+  id        String   @id @default("singleton")
+  data      Json
+  updatedAt DateTime @updatedAt
 }

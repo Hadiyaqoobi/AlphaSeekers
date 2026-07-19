@@ -6,6 +6,14 @@ import type { NotificationTarget } from "./notifications";
 
 let vapidConfigured = false;
 
+/**
+ * Whether VAPID keys are present. Callers can use this to skip the web-push
+ * channel entirely instead of triggering a failed-delivery per recipient.
+ */
+export function isWebPushConfigured(): boolean {
+  return Boolean(process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY && process.env.VAPID_SUBJECT);
+}
+
 function ensureVapid() {
   if (vapidConfigured) return;
 
@@ -13,6 +21,8 @@ function ensureVapid() {
   const privateKey = process.env.VAPID_PRIVATE_KEY;
   const subject = process.env.VAPID_SUBJECT;
 
+  // Degrade gracefully: a NonRetryableError is caught by the fallback chain and
+  // does NOT trigger retry storms. We simply skip the channel when unconfigured.
   if (!publicKey || !privateKey || !subject) {
     throw new NonRetryableError("VAPID keys not configured");
   }
@@ -28,13 +38,26 @@ export async function sendWebPush(target: NotificationTarget, content: string): 
 
   ensureVapid();
 
-  const subscription = JSON.parse(target.pushSubscription) as webpush.PushSubscription;
+  let subscription: webpush.PushSubscription;
+  try {
+    subscription = JSON.parse(target.pushSubscription) as webpush.PushSubscription;
+  } catch {
+    // A malformed stored subscription can never succeed — don't retry it.
+    throw new NonRetryableError("Malformed push subscription");
+  }
 
+  const body = content.length > 200 ? content.slice(0, 197) + "..." : content;
+  const url = "/fa/dashboard";
+
+  // Payload shape aligned with the service worker's `push` / `notificationclick`
+  // handlers (sw.js): the SW reads title/body/icon/badge and opens `data.url`.
   const payload = JSON.stringify({
     title: "AlphaSeekers",
-    body: content.length > 200 ? content.slice(0, 197) + "..." : content,
+    body,
     icon: "/icon-192.png",
-    url: "/fa/dashboard",
+    badge: "/icon-192.png",
+    url,
+    data: { url },
   });
 
   const result = await webpush.sendNotification(subscription, payload);

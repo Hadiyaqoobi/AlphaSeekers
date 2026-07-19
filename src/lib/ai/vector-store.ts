@@ -97,28 +97,114 @@ export async function insertChunks(
   return inserted;
 }
 
+type IngestChunk = {
+  id: string;
+  sourceType: string;
+  sourceId: string;
+  sourceTitle: string;
+  content: string;
+  chunkIndex: number;
+  tokenCount: number;
+  embedding: number[];
+  classId?: string | null;
+};
+
+const INSERT_CHUNK_SQL = `INSERT INTO "DocumentChunk" (id, "sourceType", "sourceId", "sourceTitle", content, "chunkIndex", "tokenCount", "classId", embedding, "createdAt")
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::vector, NOW())
+       ON CONFLICT (id) DO UPDATE SET
+         content = EXCLUDED.content,
+         "sourceTitle" = EXCLUDED."sourceTitle",
+         "tokenCount" = EXCLUDED."tokenCount",
+         "classId" = EXCLUDED."classId",
+         embedding = EXCLUDED.embedding`;
+
+/**
+ * Atomically replace all chunks for a source: delete the old chunks and insert
+ * the new ones inside a single transaction.
+ *
+ * ORDERING (SECURITY/CORRECTNESS): callers MUST generate embeddings FIRST and
+ * only then call this. Because delete + insert happen in one transaction, a
+ * mid-ingest failure rolls back and never leaves the source with zero
+ * retrievable chunks (which would silently break RAG for that material).
+ */
+export async function replaceChunksForSource(
+  sourceType: string,
+  sourceId: string,
+  chunks: Array<IngestChunk>,
+): Promise<number> {
+  return prisma.$transaction(async (tx) => {
+    await tx.$executeRawUnsafe(
+      `DELETE FROM "DocumentChunk" WHERE "sourceType" = $1 AND "sourceId" = $2`,
+      sourceType,
+      sourceId,
+    );
+
+    let inserted = 0;
+    for (const chunk of chunks) {
+      const embeddingStr = `[${chunk.embedding.join(",")}]`;
+      await tx.$executeRawUnsafe(
+        INSERT_CHUNK_SQL,
+        chunk.id,
+        chunk.sourceType,
+        chunk.sourceId,
+        chunk.sourceTitle,
+        chunk.content,
+        chunk.chunkIndex,
+        chunk.tokenCount,
+        chunk.classId ?? null,
+        embeddingStr,
+      );
+      inserted += 1;
+    }
+
+    return inserted;
+  });
+}
+
 /**
  * Cosine similarity search against the vector store.
  * Returns the top-K most similar chunks above the similarity threshold.
+ *
+ * SCOPING (SECURITY): this function is used for UNSCOPED / no-enrollment
+ * lookups, so by default it only returns GENERAL material (classId IS NULL) —
+ * shared library content available to everyone. It NEVER returns class-specific
+ * material for a query with no proven enrollment, which would leak a course a
+ * student is not enrolled in. Pass `allowedClassIds` to additionally include
+ * material from classes the caller has verified the student is enrolled in.
  */
 export async function similaritySearch(
   queryEmbedding: number[],
   topK?: number,
   threshold?: number,
+  allowedClassIds?: string[] | null,
 ): Promise<StoredChunk[]> {
   const k = topK ?? aiConfig.rag.topK;
   const minSimilarity = threshold ?? aiConfig.rag.similarityThreshold;
   const embeddingStr = `[${queryEmbedding.join(",")}]`;
 
+  const allowed = (allowedClassIds ?? []).filter(
+    (c): c is string => typeof c === "string" && c.length > 0,
+  );
+
+  // Default scope: general/library material only (classId IS NULL).
+  const params: unknown[] = [embeddingStr];
+  let scopeClause = `"classId" IS NULL`;
+  if (allowed.length > 0) {
+    const placeholders = allowed.map((_, i) => `$${i + 2}`).join(", ");
+    scopeClause = `("classId" IS NULL OR "classId" IN (${placeholders}))`;
+    params.push(...allowed);
+  }
+  const limitPlaceholder = `$${params.length + 1}`;
+  params.push(k);
+
   const results = await prisma.$queryRawUnsafe<StoredChunk[]>(
     `SELECT id, content, "sourceTitle", "sourceId", "sourceType", "chunkIndex",
             1 - (embedding <=> $1::vector) as similarity
      FROM "DocumentChunk"
-     WHERE embedding IS NOT NULL
+     WHERE embedding IS NOT NULL AND ${scopeClause}
      ORDER BY embedding <=> $1::vector
-     LIMIT $2`,
-    embeddingStr,
-    k,
+     LIMIT ${limitPlaceholder}`,
+    ...params,
   );
 
   // Filter by minimum similarity threshold
@@ -129,10 +215,13 @@ export async function similaritySearch(
  * Two-stage enrollment-aware similarity search.
  *
  * Stage 1: Search within the student's enrolled class materials (higher relevance).
- * Stage 2: If not enough results, fill from the general pool.
+ * Stage 2: If not enough results, fill from the GENERAL pool ONLY (material with
+ *          no class attached, classId IS NULL) — shared library content.
  *
- * This means a student enrolled in "English A2" who asks about grammar
- * gets answers from their English A2 textbook, not from Korean class materials.
+ * SECURITY: the stage-2 fallback must never cross the enrollment boundary. A
+ * student enrolled in "English A2" who asks about grammar gets answers from
+ * their English A2 textbook plus general library material, but NEVER from a
+ * class they are not enrolled in (e.g. Korean class materials).
  */
 export async function enrollmentAwareSearch(
   queryEmbedding: number[],
@@ -164,23 +253,24 @@ export async function enrollmentAwareSearch(
     results = enrolledResults.filter((r) => r.similarity >= minSimilarity);
   }
 
-  // Stage 2: Fill remaining slots from global pool
+  // Stage 2: Fill remaining slots from the GENERAL pool ONLY (classId IS NULL).
+  // Never fall back to other classes' materials — that would leak content from
+  // courses the student is not enrolled in.
   if (results.length < k) {
-    const remaining = k - results.length;
     const existingIds = new Set(results.map((r) => r.id));
 
-    const globalResults = await prisma.$queryRawUnsafe<StoredChunk[]>(
+    const generalResults = await prisma.$queryRawUnsafe<StoredChunk[]>(
       `SELECT id, content, "sourceTitle", "sourceId", "sourceType", "chunkIndex",
               1 - (embedding <=> $1::vector) as similarity
        FROM "DocumentChunk"
-       WHERE embedding IS NOT NULL
+       WHERE embedding IS NOT NULL AND "classId" IS NULL
        ORDER BY embedding <=> $1::vector
        LIMIT $2`,
       embeddingStr,
-      remaining + results.length, // fetch extra to account for overlap
+      k, // fetch up to k general chunks; we de-dupe and cap below
     );
 
-    for (const r of globalResults) {
+    for (const r of generalResults) {
       if (results.length >= k) break;
       if (!existingIds.has(r.id) && r.similarity >= minSimilarity) {
         results.push(r);

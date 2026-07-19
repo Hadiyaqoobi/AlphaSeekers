@@ -1,9 +1,9 @@
 import type { UserRole } from "@prisma/client";
-import { ClassStatus, EnrollmentStatus, MeetLinkStatus, NotificationStatus, SchedulerJobStatus } from "@prisma/client";
+import { ClassStatus, EnrollmentStatus, MeetLinkStatus, NotificationChannel, NotificationStatus, SchedulerJobStatus } from "@prisma/client";
 
 import { DEMO_USERS } from "@/lib/constants";
 import { generateMeetLink } from "@/lib/integrations/meet";
-import { deliverWithFallback } from "@/lib/integrations/notifications";
+import { deliverWithFallback, type NotificationDelivery, type NotificationTarget } from "@/lib/integrations/notifications";
 import { classCatalog } from "@/lib/mock-data";
 import { prisma } from "@/lib/prisma";
 import { runtime, warnIfInsecureProductionConfig } from "@/lib/runtime";
@@ -63,7 +63,22 @@ type CreateMaterialInput = {
   uploadedBy: string;
 };
 
-const MAX_PAGE_SIZE = 10;
+// Default page size when a caller does not request one. The hard cap is separate
+// so admin screens can page through large tables (e.g. 10k users) in bigger chunks.
+const DEFAULT_PAGE_SIZE = 10;
+const MAX_PAGE_SIZE = 100;
+// Bounded default/cap for per-user notification history (avoid returning a user's
+// entire lifetime of notifications).
+const DEFAULT_NOTIFICATION_LIMIT = 50;
+const MAX_NOTIFICATION_LIMIT = 100;
+// Asia/Kabul is UTC+04:30 with no DST. All schedule/availability wall-clock values
+// on the platform are interpreted in this timezone (see nextWeekdayDate).
+const KABUL_OFFSET_MINUTES = 4 * 60 + 30;
+// Bounded concurrency for fanning out external notification deliveries.
+const DELIVERY_CONCURRENCY = 10;
+// Fixed key for the scheduler's transaction advisory lock (serializes overlapping
+// cron invocations so they claim disjoint work slices instead of duplicating them).
+const SCHEDULER_ADVISORY_LOCK_KEY = 918273645;
 const FREE_MEET_SEGMENT_MINUTES = 60;
 const SEGMENT_BREAK_MINUTES = 10;
 const SEGMENT_TRANSITION_WINDOW_MINUTES = 15;
@@ -116,13 +131,36 @@ function parseScheduleDay(schedulePreference: string) {
   return dayMap[match[1]];
 }
 
+/**
+ * Compute the next occurrence of a weekly wall-clock time and return it as a true
+ * UTC Date suitable for storage/comparison.
+ *
+ * CONVENTION: (dayOfWeek, hour, minute) are Asia/Kabul LOCAL wall-clock values —
+ * this is what teachers pick and what schedule strings ("Sat 5:00 PM") mean.
+ * Previously these were written straight into setUTCHours(), so a 5:00 PM Kabul
+ * class was stored as 17:00 UTC (= 9:30 PM Kabul once rendered), shifting every
+ * session by the 4h30 offset. We now interpret the wall-clock in Kabul time and
+ * convert to UTC.
+ *
+ * Also fixes the old `% 7 || 7` bug: when today already IS the target weekday, the
+ * `|| 7` forced scheduling a full week out even if the time had not yet passed.
+ * We now allow same-day scheduling and only roll forward a week when the local
+ * time is already in the past.
+ */
 function nextWeekdayDate(dayOfWeek: number, hour: number, minute: number) {
   const now = new Date();
-  const next = new Date(now);
-  const daysToAdd = (dayOfWeek - now.getUTCDay() + 7) % 7 || 7;
-  next.setUTCDate(now.getUTCDate() + daysToAdd);
-  next.setUTCHours(hour, minute, 0, 0);
-  return next;
+  // Shift into Kabul-local space so getUTC*/setUTC* operate on Kabul wall clock.
+  const nowLocal = new Date(now.getTime() + KABUL_OFFSET_MINUTES * 60 * 1000);
+  const targetLocal = new Date(nowLocal);
+  const daysToAdd = (dayOfWeek - nowLocal.getUTCDay() + 7) % 7;
+  targetLocal.setUTCDate(nowLocal.getUTCDate() + daysToAdd);
+  targetLocal.setUTCHours(hour, minute, 0, 0);
+  // If the resulting local instant is not strictly in the future, roll a week.
+  if (targetLocal.getTime() <= nowLocal.getTime()) {
+    targetLocal.setUTCDate(targetLocal.getUTCDate() + 7);
+  }
+  // Convert the Kabul-local instant back to true UTC.
+  return new Date(targetLocal.getTime() - KABUL_OFFSET_MINUTES * 60 * 1000);
 }
 
 function normalizeDurationMinutes(input: number | null | undefined) {
@@ -178,7 +216,40 @@ function buildSegmentWindows(startDate: Date, totalMinutes: number) {
 }
 
 function clampLimit(limit?: number) {
-  return Math.min(MAX_PAGE_SIZE, Math.max(1, limit ?? MAX_PAGE_SIZE));
+  return Math.min(MAX_PAGE_SIZE, Math.max(1, limit ?? DEFAULT_PAGE_SIZE));
+}
+
+/**
+ * Run an async mapper over `items` with a bounded number of in-flight promises.
+ * Never rejects — each result is a PromiseSettledResult so a single failed
+ * delivery cannot abort the batch. Used to fan out external notification sends.
+ */
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  limit: number,
+  fn: (item: T, index: number) => Promise<R>,
+): Promise<PromiseSettledResult<R>[]> {
+  const results: PromiseSettledResult<R>[] = new Array(items.length);
+  let cursor = 0;
+  const poolSize = Math.max(1, Math.min(limit, items.length));
+
+  async function worker() {
+    while (true) {
+      const index = cursor;
+      cursor += 1;
+      if (index >= items.length) {
+        return;
+      }
+      try {
+        results[index] = { status: "fulfilled", value: await fn(items[index], index) };
+      } catch (reason) {
+        results[index] = { status: "rejected", reason };
+      }
+    }
+  }
+
+  await Promise.all(Array.from({ length: poolSize }, () => worker()));
+  return results;
 }
 
 function normalizeSearch(input?: string) {
@@ -605,6 +676,11 @@ export async function ensureSeededData() {
     return;
   }
 
+  // HARD GATE: never inject mock users/classes/sessions into a real database. Auto
+  // seeding is demo-only. runtime.allowAutoSeed is false in production mode (and a
+  // production build fails to boot if ALPHASEEKERS_AUTO_SEED is forced on — see
+  // warnIfInsecureProductionConfig). Returning here BEFORE any write guarantees a
+  // production DB is never touched by the seeder, even the approval backfill below.
   if (!runtime.allowAutoSeed) {
     seeded = true;
     return;
@@ -755,13 +831,17 @@ export async function getClassById(classId: string) {
   }
 
   const [sessions, materials, enrollmentCount] = await Promise.all([
+    // Bound eager loads: a long-running class accumulates hundreds of sessions and
+    // materials, but the detail view renders only a handful. Cap both.
     prisma.session.findMany({
       where: { classId },
       orderBy: { startTime: "asc" },
+      take: 200,
     }),
     prisma.material.findMany({
       where: { classId },
       orderBy: { createdAt: "desc" },
+      take: 200,
     }),
     prisma.enrollment.count({
       where: {
@@ -799,24 +879,44 @@ export async function getClassById(classId: string) {
   };
 }
 
-// Announcements are stored in-memory (no DB table yet)
-// They persist for the server lifetime and get delivered as notifications
-const announcementStore: Array<{ id: string; classId: string; authorId: string; authorName: string; content: string; createdAt: string }> = [];
+// Announcements are persisted in the ClassAnnouncement table so they survive
+// restarts (they were previously a module-level in-memory array — every deploy or
+// cold start silently dropped every announcement).
+export async function listClassAnnouncements(classId: string) {
+  const rows = await prisma.classAnnouncement.findMany({
+    where: { classId },
+    orderBy: { createdAt: "desc" },
+    take: 100,
+  });
 
-export function listClassAnnouncements(classId: string) {
-  return announcementStore
-    .filter((a) => a.classId === classId)
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  return rows.map((row) => ({
+    id: row.id,
+    classId: row.classId,
+    authorId: row.authorId,
+    authorName: row.authorName,
+    content: row.content,
+    createdAt: row.createdAt.toISOString(),
+  }));
 }
 
-export function createClassAnnouncement(input: { classId: string; authorId: string; authorName: string; content: string }) {
-  const record = {
-    id: `announcement_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-    ...input,
-    createdAt: new Date().toISOString(),
+export async function createClassAnnouncement(input: { classId: string; authorId: string; authorName: string; content: string }) {
+  const row = await prisma.classAnnouncement.create({
+    data: {
+      classId: input.classId,
+      authorId: input.authorId,
+      authorName: input.authorName,
+      content: input.content,
+    },
+  });
+
+  return {
+    id: row.id,
+    classId: row.classId,
+    authorId: row.authorId,
+    authorName: row.authorName,
+    content: row.content,
+    createdAt: row.createdAt.toISOString(),
   };
-  announcementStore.unshift(record);
-  return record;
 }
 
 export async function listClassEnrollments(classId: string) {
@@ -849,6 +949,17 @@ export async function listUsersByRole(role: Role) {
   });
 
   return users;
+}
+
+/**
+ * Count users of a role without loading rows. Use this for dashboard tiles /
+ * headline numbers instead of `listUsersByRole(role).length`, which would drag
+ * the entire (up to 10k-row) student table over the wire just to count it.
+ */
+export async function countUsersByRole(role: Role) {
+  await ensureSeededData();
+
+  return prisma.user.count({ where: { role } });
 }
 
 type AdminUserStatusFilter = "PENDING" | "APPROVED" | "ALL";
@@ -1214,85 +1325,45 @@ export async function archiveClass(classId: string) {
   });
 }
 
-export async function enrollStudentInClass(studentId: string, classId: string) {
-  await ensureSeededData();
+/**
+ * Deliver enrollment notifications (to the student and the class teacher) as
+ * best-effort background work. Split out of enrollStudentInClass so the request
+ * path never blocks on sequential, retrying external sends.
+ */
+async function deliverEnrollmentNotifications(params: {
+  student: {
+    id: string;
+    name: string;
+    email: string | null;
+    phone: string | null;
+    telegramChatId: string | null;
+    pushSubscription: string | null;
+  };
+  klass: {
+    id: string;
+    name: string;
+    teacherId: string;
+    maxStudents: number;
+    schedulePreference: string | null;
+  };
+  enrollmentId: string;
+  activeCount: number;
+}) {
+  const { student, klass } = params;
 
-  const student = await prisma.user.findUnique({ where: { id: studentId } });
-
-  if (!student || student.role !== "STUDENT") {
-    throw new Error("Student not found");
-  }
-
-  const klass = await prisma.class.findUnique({ where: { id: classId } });
-
-  if (!klass || klass.status !== ClassStatus.ACTIVE) {
-    throw new Error("Class not found");
-  }
-
-  const existing = await prisma.enrollment.findUnique({
-    where: {
-      studentId_classId: {
-        studentId,
-        classId,
-      },
-    },
+  const teacher = await prisma.user.findUnique({
+    where: { id: klass.teacherId },
+    select: { id: true, name: true, email: true, phone: true, language: true, telegramChatId: true, pushSubscription: true, notificationPrefs: true },
   });
-
-  if (existing?.status === EnrollmentStatus.ACTIVE) {
-    return {
-      enrollment: {
-        ...existing,
-        enrolledAt: existing.enrolledAt.toISOString(),
-      },
-      state: "ALREADY_ENROLLED" as const,
-    };
-  }
-
-  const activeCount = await prisma.enrollment.count({
-    where: {
-      classId,
-      status: EnrollmentStatus.ACTIVE,
-    },
-  });
-
-  if (activeCount >= klass.maxStudents) {
-    throw new Error("Class is full");
-  }
-
-  const enrollment = existing
-    ? await prisma.enrollment.update({
-      where: {
-        studentId_classId: {
-          studentId,
-          classId,
-        },
-      },
-      data: {
-        status: EnrollmentStatus.ACTIVE,
-        enrolledAt: new Date(),
-      },
-    })
-    : await prisma.enrollment.create({
-      data: {
-        studentId,
-        classId,
-        status: EnrollmentStatus.ACTIVE,
-      },
-    });
 
   const upcomingSessions = await prisma.session.findMany({
     where: {
-      classId,
+      classId: klass.id,
       startTime: { gte: new Date() },
       cancelled: false,
     },
     orderBy: { startTime: "asc" },
     take: 8,
-  });
-
-  const teacher = await prisma.user.findUnique({
-    where: { id: klass.teacherId },
-    select: { id: true, name: true, email: true, phone: true, language: true, telegramChatId: true, pushSubscription: true, notificationPrefs: true },
   });
 
   let content = `You are enrolled in ${klass.name}!`;
@@ -1337,36 +1408,134 @@ export async function enrollStudentInClass(studentId: string, classId: string) {
     });
   }
 
-  // Notify teacher about new enrollment
-  try {
-    if (teacher) {
-      const currentCount = activeCount + 1;
-      const teacherContent = teacher.language === "FA"
-        ? `شاگرد جدید "${student.name}" در صنف "${klass.name}" ثبت‌نام کرد. (${currentCount}/${klass.maxStudents})`
-        : `New student "${student.name}" enrolled in "${klass.name}". (${currentCount}/${klass.maxStudents} enrolled)`;
+  if (teacher) {
+    const teacherContent = teacher.language === "FA"
+      ? `شاگرد جدید "${student.name}" در صنف "${klass.name}" ثبت‌نام کرد. (${params.activeCount}/${klass.maxStudents})`
+      : `New student "${student.name}" enrolled in "${klass.name}". (${params.activeCount}/${klass.maxStudents} enrolled)`;
 
-      const teacherDeliveries = await deliverWithFallback(
-        { userId: teacher.id, email: teacher.email, phone: teacher.phone, telegramChatId: teacher.telegramChatId, pushSubscription: teacher.pushSubscription },
-        teacherContent,
-      );
+    const teacherDeliveries = await deliverWithFallback(
+      { userId: teacher.id, email: teacher.email, phone: teacher.phone, telegramChatId: teacher.telegramChatId, pushSubscription: teacher.pushSubscription },
+      teacherContent,
+    );
 
-      if (teacherDeliveries.length > 0) {
-        await prisma.notification.createMany({
-          data: teacherDeliveries.map((delivery) => ({
-            userId: teacher.id,
-            dedupeKey: `enrollment_notify:${enrollment.id}:${teacher.id}`,
-            channel: delivery.channel,
-            content: teacherContent,
-            status: delivery.status,
-            sentAt: new Date(),
-          })),
-          skipDuplicates: true,
-        });
-      }
+    if (teacherDeliveries.length > 0) {
+      await prisma.notification.createMany({
+        data: teacherDeliveries.map((delivery) => ({
+          userId: teacher.id,
+          dedupeKey: `enrollment_notify:${params.enrollmentId}:${teacher.id}`,
+          channel: delivery.channel,
+          content: teacherContent,
+          status: delivery.status,
+          sentAt: new Date(),
+        })),
+        skipDuplicates: true,
+      });
     }
-  } catch (err) {
-    console.error("Failed to notify teacher about enrollment:", err);
   }
+}
+
+export async function enrollStudentInClass(studentId: string, classId: string) {
+  await ensureSeededData();
+
+  const student = await prisma.user.findUnique({ where: { id: studentId } });
+
+  if (!student || student.role !== "STUDENT") {
+    throw new Error("Student not found");
+  }
+
+  const klass = await prisma.class.findUnique({ where: { id: classId } });
+
+  if (!klass || klass.status !== ClassStatus.ACTIVE) {
+    throw new Error("Class not found");
+  }
+
+  // Capacity guard MUST be atomic. The old check-then-insert (count, compare,
+  // insert) races under concurrency: N simultaneous requests each read
+  // activeCount < maxStudents and all insert, oversubscribing the class. We take
+  // a per-class transaction advisory lock so the count-then-insert is serialized
+  // for THIS class; the lock is released on commit (safe under PgBouncer
+  // transaction pooling, unlike a session-level lock).
+  const result = await prisma.$transaction(async (tx) => {
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`enroll:${classId}`}))`;
+
+    const current = await tx.enrollment.findUnique({
+      where: { studentId_classId: { studentId, classId } },
+    });
+
+    if (current?.status === EnrollmentStatus.ACTIVE) {
+      return { enrollment: current, state: "ALREADY_ENROLLED" as const, activeCount: 0 };
+    }
+
+    // Re-read capacity inside the transaction so a concurrent maxStudents change
+    // (or archival) is honored.
+    const klassInTx = await tx.class.findUnique({
+      where: { id: classId },
+      select: { maxStudents: true, status: true },
+    });
+
+    if (!klassInTx || klassInTx.status !== ClassStatus.ACTIVE) {
+      throw new Error("Class not found");
+    }
+
+    const activeCount = await tx.enrollment.count({
+      where: { classId, status: EnrollmentStatus.ACTIVE },
+    });
+
+    if (activeCount >= klassInTx.maxStudents) {
+      throw new Error("Class is full");
+    }
+
+    const enrollment = current
+      ? await tx.enrollment.update({
+        where: { studentId_classId: { studentId, classId } },
+        data: { status: EnrollmentStatus.ACTIVE, enrolledAt: new Date() },
+      })
+      : await tx.enrollment.create({
+        data: { studentId, classId, status: EnrollmentStatus.ACTIVE },
+      });
+
+    return { enrollment, state: "ENROLLED" as const, activeCount: activeCount + 1 };
+  });
+
+  if (result.state === "ALREADY_ENROLLED") {
+    return {
+      enrollment: {
+        ...result.enrollment,
+        enrolledAt: result.enrollment.enrolledAt.toISOString(),
+      },
+      state: "ALREADY_ENROLLED" as const,
+    };
+  }
+
+  const enrollment = result.enrollment;
+
+  // The enrollment is committed. Dispatch notifications AFTER commit and OUTSIDE
+  // the request path — the previous code awaited sequential, retrying/backing-off
+  // external sends for both the student and the teacher inside the enroll request,
+  // so a slow or failing provider blocked the HTTP response for many seconds.
+  // Best-effort background delivery instead (see needs_ops_action: a durable queue
+  // is preferable in a serverless runtime that may freeze after the response).
+  void deliverEnrollmentNotifications({
+    student: {
+      id: student.id,
+      name: student.name,
+      email: student.email,
+      phone: student.phone,
+      telegramChatId: student.telegramChatId,
+      pushSubscription: student.pushSubscription,
+    },
+    klass: {
+      id: klass.id,
+      name: klass.name,
+      teacherId: klass.teacherId,
+      maxStudents: klass.maxStudents,
+      schedulePreference: klass.schedulePreference,
+    },
+    enrollmentId: enrollment.id,
+    activeCount: result.activeCount,
+  }).catch((err) => {
+    console.error("Failed to deliver enrollment notifications:", err);
+  });
 
   return {
     enrollment: {
@@ -1374,7 +1543,9 @@ export async function enrollStudentInClass(studentId: string, classId: string) {
       enrolledAt: enrollment.enrolledAt.toISOString(),
     },
     state: "ENROLLED" as const,
-    deliveries,
+    // Deliveries are dispatched asynchronously after commit, so there are no
+    // synchronously-known results; the key is retained for response-shape stability.
+    deliveries: [] as NotificationDelivery[],
   };
 }
 
@@ -1529,12 +1700,19 @@ export async function getStudentProfileSummary(studentId: string) {
   const classIds = enrollments.map((item) => item.classId);
   const now = new Date();
   const weekAhead = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+  // Window the profile's session scan: recent history feeds progress %, the next
+  // ~3 months feed the upcoming list. Bounding this prevents scanning every session
+  // ever created for the student's classes. Progress for classes older than the
+  // lookback reflects sessions within the window.
+  const profileWindowStart = new Date(now.getTime() - 400 * 24 * 60 * 60 * 1000);
+  const profileWindowEnd = new Date(now.getTime() + 120 * 24 * 60 * 60 * 1000);
 
   const sessions = classIds.length
     ? await prisma.session.findMany({
       where: {
         classId: { in: classIds },
         cancelled: false,
+        startTime: { gte: profileWindowStart, lte: profileWindowEnd },
       },
       include: {
         class: {
@@ -1546,6 +1724,7 @@ export async function getStudentProfileSummary(studentId: string) {
       orderBy: {
         startTime: "asc",
       },
+      take: 500,
     })
     : [];
 
@@ -1705,9 +1884,15 @@ function findContinuationSegment(
   );
 }
 
-export async function listStudentSchedule(studentId: string) {
-  await ensureSeededData();
-
+/**
+ * Fetch a student's non-cancelled sessions within a bounded time window and attach
+ * continuation segments. Windowing + take keep this from scanning every session
+ * the student has ever had (which grows without bound over a class's lifetime).
+ */
+async function buildStudentSchedule(
+  studentId: string,
+  window: { from: Date; to: Date; take: number },
+) {
   const enrollments = await prisma.enrollment.findMany({
     where: {
       studentId,
@@ -1725,6 +1910,7 @@ export async function listStudentSchedule(studentId: string) {
       where: {
         classId: { in: classIds },
         cancelled: false,
+        startTime: { gte: window.from, lte: window.to },
       },
       include: {
         class: {
@@ -1736,6 +1922,7 @@ export async function listStudentSchedule(studentId: string) {
       orderBy: {
         startTime: "asc",
       },
+      take: window.take,
     })
     : [];
 
@@ -1765,10 +1952,34 @@ export async function listStudentSchedule(studentId: string) {
   });
 }
 
+export async function listStudentSchedule(studentId: string) {
+  await ensureSeededData();
+
+  const now = Date.now();
+  // Bound the schedule to a relevant window: a small lookback so an in-progress
+  // session still appears, out to two months ahead. Cap the row count as a hard
+  // safety net.
+  return buildStudentSchedule(studentId, {
+    from: new Date(now - 3 * 60 * 60 * 1000),
+    to: new Date(now + 60 * 24 * 60 * 60 * 1000),
+    take: 300,
+  });
+}
+
 export async function getJoinNowSession(studentId: string) {
-  const schedule = await listStudentSchedule(studentId);
+  await ensureSeededData();
+
   const now = Date.now();
   const lookback = 15 * 60 * 1000;
+
+  // Only sessions around "now" matter for a join-now prompt — never scan the full
+  // history. A short window (a few hours back to an hour ahead) covers an
+  // in-progress session and its continuation segment.
+  const schedule = await buildStudentSchedule(studentId, {
+    from: new Date(now - 6 * 60 * 60 * 1000),
+    to: new Date(now + 60 * 60 * 1000),
+    take: 50,
+  });
 
   const activeOrUpcoming =
     schedule.find((item) => {
@@ -1999,26 +2210,49 @@ export async function runSchedulerBatch() {
     },
   });
 
-  let job = await prisma.schedulerJob.findFirst({
-    where: {
-      status: SchedulerJobStatus.RUNNING,
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
-  });
+  // Atomically claim a disjoint work slice. The previous code read the RUNNING job
+  // and sliced [processedCount, +10) WITHOUT synchronization: two overlapping cron
+  // runs both read the same processedCount, created duplicate SchedulerJobs, and
+  // processed the SAME classes — producing duplicate sessions and notifications.
+  // We now take a transaction advisory lock and advance processedCount inside the
+  // transaction, so concurrent runs receive non-overlapping slices. Only the short
+  // claim is inside the transaction; the slow session/meet/notification work runs
+  // after commit.
+  const claim = await prisma.$transaction(async (tx) => {
+    await tx.$executeRawUnsafe(`SELECT pg_advisory_xact_lock(${SCHEDULER_ADVISORY_LOCK_KEY})`);
 
-  if (!job) {
-    job = await prisma.schedulerJob.create({
+    let current = await tx.schedulerJob.findFirst({
+      where: { status: SchedulerJobStatus.RUNNING },
+      orderBy: { createdAt: "desc" },
+    });
+
+    if (!current) {
+      current = await tx.schedulerJob.create({
+        data: {
+          status: SchedulerJobStatus.RUNNING,
+          processedCount: 0,
+          totalCount: activeClasses.length,
+        },
+      });
+    }
+
+    const start = current.processedCount;
+    const end = Math.min(start + 10, activeClasses.length);
+    const complete = end >= current.totalCount;
+
+    const updated = await tx.schedulerJob.update({
+      where: { id: current.id },
       data: {
-        status: SchedulerJobStatus.RUNNING,
-        processedCount: 0,
-        totalCount: activeClasses.length,
+        processedCount: end,
+        status: complete ? SchedulerJobStatus.COMPLETED : SchedulerJobStatus.RUNNING,
+        lastRunAt: new Date(),
       },
     });
-  }
 
-  const batch = activeClasses.slice(job.processedCount, job.processedCount + 10);
+    return { job: updated, start, end, complete };
+  });
+
+  const batch = activeClasses.slice(claim.start, claim.end);
 
   for (const klass of batch) {
     const hasUpcoming = await prisma.session.findFirst({
@@ -2119,7 +2353,9 @@ export async function runSchedulerBatch() {
       },
     });
 
-    for (const enrollment of activeEnrollments) {
+    // Fan out deliveries with bounded concurrency rather than a fully sequential
+    // await-per-student loop (which took minutes for large classes).
+    await mapWithConcurrency(activeEnrollments, DELIVERY_CONCURRENCY, async (enrollment) => {
       const content = secondSession
         ? `New session scheduled: ${klass.name} on ${firstSession.startTime.toISOString()}. Segment 1 link: ${firstSession.meetLink ?? "Meet link pending"
         }. After a ${SEGMENT_BREAK_MINUTES}-minute break, segment 2 starts at ${secondSession.startTime.toISOString()}. Next link: ${secondSession.meetLink ?? "Meet link pending"
@@ -2147,20 +2383,10 @@ export async function runSchedulerBatch() {
           })),
         });
       }
-    }
+    });
   }
 
-  const processedCount = job.processedCount + batch.length;
-  const complete = processedCount >= job.totalCount;
-
-  const updatedJob = await prisma.schedulerJob.update({
-    where: { id: job.id },
-    data: {
-      processedCount,
-      status: complete ? SchedulerJobStatus.COMPLETED : SchedulerJobStatus.RUNNING,
-      lastRunAt: new Date(),
-    },
-  });
+  const updatedJob = claim.job;
 
   return {
     job: {
@@ -2170,10 +2396,17 @@ export async function runSchedulerBatch() {
       updatedAt: updatedJob.updatedAt.toISOString(),
     },
     batchProcessed: batch.length,
-    completed: complete,
+    completed: claim.complete,
     remaining: Math.max(0, updatedJob.totalCount - updatedJob.processedCount),
   };
 }
+
+type ReminderTask = {
+  userId: string;
+  dedupeKey: string;
+  content: string;
+  target: NotificationTarget;
+};
 
 export async function runReminderBatch() {
   await ensureSeededData();
@@ -2212,155 +2445,206 @@ export async function runReminderBatch() {
     orderBy: { startTime: "asc" },
   });
 
-  let remindersCreated = 0;
-  let deliveriesSent = 0;
+  if (sessions.length === 0) {
+    return {
+      windowStart: windowStart.toISOString(),
+      windowEnd: windowEnd.toISOString(),
+      sessionsFound: 0,
+      remindersCreated: 0,
+      deliveriesSent: 0,
+    };
+  }
+
+  const classIds = Array.from(new Set(sessions.map((session) => session.classId)));
+
+  // Continuation candidates (next segment starting within the transition window
+  // after a session ends). Fetch once for all classes instead of the old
+  // per-session findFirst — that was part of the N+1.
+  const maxEnd = sessions.reduce((max, session) => (session.endTime > max ? session.endTime : max), sessions[0].endTime);
+  const continuationCandidates = await prisma.session.findMany({
+    where: {
+      classId: { in: classIds },
+      cancelled: false,
+      startTime: {
+        gt: windowStart,
+        lte: new Date(maxEnd.getTime() + SEGMENT_TRANSITION_WINDOW_MINUTES * 60 * 1000),
+      },
+    },
+    select: { id: true, classId: true, startTime: true, endTime: true, meetLink: true },
+    orderBy: { startTime: "asc" },
+  });
+
+  const findContinuation = (session: (typeof sessions)[number]) =>
+    continuationCandidates.find(
+      (candidate) =>
+        candidate.classId === session.classId &&
+        candidate.id !== session.id &&
+        candidate.startTime.getTime() > session.endTime.getTime() &&
+        candidate.startTime.getTime() <= session.endTime.getTime() + SEGMENT_TRANSITION_WINDOW_MINUTES * 60 * 1000,
+    ) ?? null;
+
+  // Batch all enrollments for the window's classes in a single query and group by
+  // class (was one findMany per session inside the loop).
+  const enrollments = await prisma.enrollment.findMany({
+    where: { classId: { in: classIds }, status: EnrollmentStatus.ACTIVE },
+    include: {
+      student: {
+        select: {
+          id: true,
+          email: true,
+          phone: true,
+          timezone: true,
+          language: true,
+          telegramChatId: true,
+          pushSubscription: true,
+          notificationPrefs: true,
+        },
+      },
+    },
+  });
+
+  const enrollmentsByClass = new Map<string, typeof enrollments>();
+  for (const enrollment of enrollments) {
+    const list = enrollmentsByClass.get(enrollment.classId);
+    if (list) {
+      list.push(enrollment);
+    } else {
+      enrollmentsByClass.set(enrollment.classId, [enrollment]);
+    }
+  }
+
+  // Build every reminder task (students + teacher) with pre-rendered content.
+  const tasks: ReminderTask[] = [];
 
   for (const session of sessions) {
-    const continuation = await prisma.session.findFirst({
-      where: {
-        classId: session.classId,
-        cancelled: false,
-        startTime: {
-          gt: session.endTime,
-          lte: new Date(session.endTime.getTime() + SEGMENT_TRANSITION_WINDOW_MINUTES * 60 * 1000),
-        },
-      },
-      orderBy: { startTime: "asc" },
-    });
+    const continuation = findContinuation(session);
+    const continuationInput = continuation
+      ? { startTime: continuation.startTime, meetLink: continuation.meetLink }
+      : null;
 
-    const enrollments = await prisma.enrollment.findMany({
-      where: {
-        classId: session.classId,
-        status: EnrollmentStatus.ACTIVE,
-      },
-      include: {
-        student: {
-          select: {
-            id: true,
-            email: true,
-            phone: true,
-            timezone: true,
-            language: true,
-            telegramChatId: true,
-            pushSubscription: true,
-            notificationPrefs: true,
-          },
-        },
-      },
-    });
-
-    for (const enrollment of enrollments) {
-      const dedupeKey = `session_reminder:${session.id}:${enrollment.student.id}`;
-
-      const existing = await prisma.notification.findFirst({
-        where: {
-          dedupeKey,
-          status: { not: NotificationStatus.FAILED },
-        },
-        select: { id: true },
-      });
-
-      if (existing) {
-        continue;
-      }
-
-      const content = buildSessionReminderContent({
-        language: enrollment.student.language,
-        timezone: enrollment.student.timezone,
-        className: session.class.name,
-        teacherName: session.class.teacher.name,
-        startTime: session.startTime,
-        meetLink: session.meetLink,
-        continuation: continuation
-          ? {
-            startTime: continuation.startTime,
-            meetLink: continuation.meetLink,
-          }
-          : null,
-      });
-
-      const deliveries = await deliverWithFallback(
-        {
+    for (const enrollment of enrollmentsByClass.get(session.classId) ?? []) {
+      tasks.push({
+        userId: enrollment.student.id,
+        dedupeKey: `session_reminder:${session.id}:${enrollment.student.id}`,
+        content: buildSessionReminderContent({
+          language: enrollment.student.language,
+          timezone: enrollment.student.timezone,
+          className: session.class.name,
+          teacherName: session.class.teacher.name,
+          startTime: session.startTime,
+          meetLink: session.meetLink,
+          continuation: continuationInput,
+        }),
+        target: {
           userId: enrollment.student.id,
           email: enrollment.student.email,
           phone: enrollment.student.phone,
           telegramChatId: enrollment.student.telegramChatId,
           pushSubscription: enrollment.student.pushSubscription,
         },
-        content,
-      );
-
-      remindersCreated += 1;
-      if (deliveries.some((delivery) => delivery.status === "SENT")) {
-        deliveriesSent += 1;
-      }
-
-      if (deliveries.length > 0) {
-        await prisma.notification.createMany({
-          data: deliveries.map((delivery) => ({
-            userId: enrollment.student.id,
-            channel: delivery.channel,
-            content,
-            status: delivery.status,
-            sentAt: new Date(),
-            dedupeKey,
-          })),
-          skipDuplicates: true,
-        });
-      }
+      });
     }
 
-    // Teacher reminder for this session
-    try {
-      const teacherUser = session.class.teacher;
-      const teacherDedupeKey = `session_reminder:${session.id}:teacher:${teacherUser.id}`;
+    const teacher = session.class.teacher;
+    tasks.push({
+      userId: teacher.id,
+      dedupeKey: `session_reminder:${session.id}:teacher:${teacher.id}`,
+      content: buildTeacherSessionReminderContent({
+        language: teacher.language,
+        timezone: teacher.timezone,
+        className: session.class.name,
+        startTime: session.startTime,
+        meetLink: session.meetLink,
+        continuation: continuationInput,
+      }),
+      target: {
+        userId: teacher.id,
+        email: teacher.email,
+        phone: teacher.phone,
+        telegramChatId: teacher.telegramChatId,
+        pushSubscription: teacher.pushSubscription,
+      },
+    });
+  }
 
-      const existingTeacherReminder = await prisma.notification.findFirst({
-        where: {
-          dedupeKey: teacherDedupeKey,
-          status: { not: NotificationStatus.FAILED },
+  // Batch the dedupe lookups: a single query for every candidate key, instead of a
+  // findFirst per recipient.
+  const dedupeKeys = tasks.map((task) => task.dedupeKey);
+  const existingRows = await prisma.notification.findMany({
+    where: { dedupeKey: { in: dedupeKeys }, status: { not: NotificationStatus.FAILED } },
+    select: { dedupeKey: true },
+  });
+  const alreadyHandled = new Set(
+    existingRows.map((row) => row.dedupeKey).filter((key): key is string => key !== null),
+  );
+
+  const pending = tasks.filter((task) => !alreadyHandled.has(task.dedupeKey));
+
+  // Claim-then-send: reserve the reminder with an atomic conditional insert on the
+  // unique (dedupeKey, channel) BEFORE performing the external send. The previous
+  // code sent first and wrote the dedupe row afterwards, so two overlapping cron
+  // runs (or a slow provider) double-sent every reminder. Now a second run's claim
+  // insert conflicts and it skips. Deliveries fan out with bounded concurrency
+  // rather than a sequential await-per-recipient loop.
+  const claimAndSend = async (task: ReminderTask): Promise<{ claimed: boolean; sent: boolean }> => {
+    const claim = await prisma.notification.createMany({
+      data: [
+        {
+          userId: task.userId,
+          dedupeKey: task.dedupeKey,
+          channel: NotificationChannel.PLATFORM,
+          content: task.content,
+          status: NotificationStatus.PENDING,
         },
-        select: { id: true },
-      });
+      ],
+      skipDuplicates: true,
+    });
 
-      if (!existingTeacherReminder) {
-        const teacherContent = buildTeacherSessionReminderContent({
-          language: teacherUser.language,
-          timezone: teacherUser.timezone,
-          className: session.class.name,
-          startTime: session.startTime,
-          meetLink: session.meetLink,
-          continuation: continuation
-            ? { startTime: continuation.startTime, meetLink: continuation.meetLink }
-            : null,
+    if (claim.count === 0) {
+      // Another overlapping run already owns this reminder.
+      return { claimed: false, sent: false };
+    }
+
+    try {
+      const deliveries = await deliverWithFallback(task.target, task.content);
+      const sent = deliveries.some((delivery) => delivery.status === "SENT");
+
+      if (sent) {
+        await prisma.notification.updateMany({
+          where: { dedupeKey: task.dedupeKey, channel: NotificationChannel.PLATFORM },
+          data: { status: NotificationStatus.SENT, sentAt: new Date() },
         });
-
-        const teacherDeliveries = await deliverWithFallback(
-          { userId: teacherUser.id, email: teacherUser.email, phone: teacherUser.phone, telegramChatId: teacherUser.telegramChatId, pushSubscription: teacherUser.pushSubscription },
-          teacherContent,
-        );
-
-        remindersCreated += 1;
-        if (teacherDeliveries.some((d) => d.status === "SENT")) {
-          deliveriesSent += 1;
-        }
-
-        if (teacherDeliveries.length > 0) {
-          await prisma.notification.createMany({
-            data: teacherDeliveries.map((delivery) => ({
-              userId: teacherUser.id,
-              channel: delivery.channel,
-              content: teacherContent,
-              status: delivery.status,
-              sentAt: new Date(),
-              dedupeKey: teacherDedupeKey,
-            })),
-            skipDuplicates: true,
-          });
-        }
+        return { claimed: true, sent: true };
       }
+
+      // No channel succeeded: release the claim so a later batch can retry (this
+      // preserves the old "retry when not already SENT" behavior) without leaving a
+      // non-FAILED row that would permanently block the reclaim.
+      await prisma.notification.deleteMany({
+        where: { dedupeKey: task.dedupeKey, channel: NotificationChannel.PLATFORM, status: NotificationStatus.PENDING },
+      });
+      return { claimed: true, sent: false };
     } catch (err) {
-      console.error("Failed to send teacher reminder:", err);
+      console.error("Reminder delivery failed:", err);
+      await prisma.notification.deleteMany({
+        where: { dedupeKey: task.dedupeKey, channel: NotificationChannel.PLATFORM, status: NotificationStatus.PENDING },
+      });
+      return { claimed: true, sent: false };
+    }
+  };
+
+  const results = await mapWithConcurrency(pending, DELIVERY_CONCURRENCY, claimAndSend);
+
+  let remindersCreated = 0;
+  let deliveriesSent = 0;
+  for (const result of results) {
+    if (result.status === "fulfilled") {
+      if (result.value.claimed) {
+        remindersCreated += 1;
+      }
+      if (result.value.sent) {
+        deliveriesSent += 1;
+      }
     }
   }
 
@@ -2448,6 +2732,7 @@ export async function listWebinars() {
 
   const items = await prisma.webinar.findMany({
     orderBy: { startsAt: "asc" },
+    take: 200,
   });
 
   return items.map((item) => ({
@@ -2569,6 +2854,7 @@ export async function listOpportunities(type?: string) {
     orderBy: {
       deadline: "asc",
     },
+    take: 200,
   });
 
   const now = Date.now();
@@ -2627,6 +2913,7 @@ export async function listLibraryResources(query?: string) {
       }
       : {},
     orderBy: { createdAt: "desc" },
+    take: 200,
   });
 
   return items.map((item) => ({
@@ -2694,12 +2981,18 @@ export async function createClassMaterial(input: CreateMaterialInput) {
   };
 }
 
-export async function listUserNotifications(userId: string) {
+export async function listUserNotifications(userId: string, limit: number = DEFAULT_NOTIFICATION_LIMIT) {
   await ensureSeededData();
+
+  // Return only the most recent slice, newest first. Previously this loaded the
+  // user's ENTIRE notification history (unbounded, growing forever). Order by
+  // createdAt so PENDING rows (sentAt = null) are not sorted to the bottom.
+  const take = Math.min(MAX_NOTIFICATION_LIMIT, Math.max(1, Math.floor(limit)));
 
   const rows = await prisma.notification.findMany({
     where: { userId },
-    orderBy: { sentAt: "desc" },
+    orderBy: { createdAt: "desc" },
+    take,
   });
 
   return rows.map((item) => ({
@@ -2827,21 +3120,16 @@ export async function markAttendance(
  * Get attendance summary for all sessions in a class.
  */
 export async function getClassAttendanceSummary(classId: string) {
+  // Aggregate in the database instead of pulling every attendance row and matching
+  // in JS (which was O(students × sessions) and loaded the full attendance table
+  // for the class). Attendance is unique per (sessionId, studentId), so counting
+  // rows equals counting distinct sessions attended/verified.
   const sessions = await prisma.session.findMany({
     where: { classId, cancelled: false },
-    orderBy: { startTime: "asc" },
-    select: {
-      id: true,
-      startTime: true,
-      attendance: {
-        select: {
-          studentId: true,
-          attended: true,
-          checkinVerified: true,
-        },
-      },
-    },
+    select: { id: true },
   });
+  const sessionIds = sessions.map((s) => s.id);
+  const totalSessions = sessionIds.length;
 
   const enrollments = await prisma.enrollment.findMany({
     where: { classId, status: EnrollmentStatus.ACTIVE },
@@ -2852,15 +3140,27 @@ export async function getClassAttendanceSummary(classId: string) {
     },
   });
 
-  const totalSessions = sessions.length;
+  const [attendedGroups, verifiedGroups] = sessionIds.length
+    ? await Promise.all([
+      prisma.attendance.groupBy({
+        by: ["studentId"],
+        where: { sessionId: { in: sessionIds }, attended: true },
+        _count: { _all: true },
+      }),
+      prisma.attendance.groupBy({
+        by: ["studentId"],
+        where: { sessionId: { in: sessionIds }, checkinVerified: true },
+        _count: { _all: true },
+      }),
+    ])
+    : [[], []];
+
+  const attendedMap = new Map(attendedGroups.map((g) => [g.studentId, g._count._all]));
+  const verifiedMap = new Map(verifiedGroups.map((g) => [g.studentId, g._count._all]));
+
   const studentStats = enrollments.map((e) => {
-    let present = 0;
-    let verified = 0;
-    for (const session of sessions) {
-      const record = session.attendance.find((a) => a.studentId === e.student.id);
-      if (record?.attended) present++;
-      if (record?.checkinVerified) verified++;
-    }
+    const present = attendedMap.get(e.student.id) ?? 0;
+    const verified = verifiedMap.get(e.student.id) ?? 0;
     return {
       studentId: e.student.id,
       studentName: e.student.name,
@@ -2920,32 +3220,54 @@ export async function getStudentAttendanceHistory(studentId: string) {
     },
   });
 
-  const classAttendance = await Promise.all(
-    enrollments.map(async (e) => {
-      const sessions = await prisma.session.findMany({
-        where: { classId: e.class.id, cancelled: false },
-        select: { id: true },
-      });
+  const classIds = enrollments.map((e) => e.class.id);
 
-      const attended = await prisma.attendance.count({
-        where: {
-          studentId,
-          sessionId: { in: sessions.map((s) => s.id) },
-          attended: true,
-        },
-      });
+  // Replace the per-class N+1 (two queries per enrolled class) with three total
+  // queries: sessions for all classes, then this student's attended rows across
+  // all of those sessions.
+  const sessions = classIds.length
+    ? await prisma.session.findMany({
+      where: { classId: { in: classIds }, cancelled: false },
+      select: { id: true, classId: true },
+    })
+    : [];
 
-      const totalSessions = sessions.length;
+  const sessionClassMap = new Map(sessions.map((s) => [s.id, s.classId]));
+  const totalByClass = new Map<string, number>();
+  for (const s of sessions) {
+    totalByClass.set(s.classId, (totalByClass.get(s.classId) ?? 0) + 1);
+  }
 
-      return {
-        classId: e.class.id,
-        className: e.class.name,
-        totalSessions,
-        sessionsAttended: attended,
-        attendanceRate: totalSessions > 0 ? Math.round((attended / totalSessions) * 100) : 0,
-      };
-    }),
-  );
+  const attendedRows = sessions.length
+    ? await prisma.attendance.findMany({
+      where: {
+        studentId,
+        attended: true,
+        sessionId: { in: sessions.map((s) => s.id) },
+      },
+      select: { sessionId: true },
+    })
+    : [];
+
+  const attendedByClass = new Map<string, number>();
+  for (const row of attendedRows) {
+    const classId = sessionClassMap.get(row.sessionId);
+    if (classId) {
+      attendedByClass.set(classId, (attendedByClass.get(classId) ?? 0) + 1);
+    }
+  }
+
+  const classAttendance = enrollments.map((e) => {
+    const totalSessions = totalByClass.get(e.class.id) ?? 0;
+    const attended = attendedByClass.get(e.class.id) ?? 0;
+    return {
+      classId: e.class.id,
+      className: e.class.name,
+      totalSessions,
+      sessionsAttended: attended,
+      attendanceRate: totalSessions > 0 ? Math.round((attended / totalSessions) * 100) : 0,
+    };
+  });
 
   const totalSessions = classAttendance.reduce((sum, c) => sum + c.totalSessions, 0);
   const totalAttended = classAttendance.reduce((sum, c) => sum + c.sessionsAttended, 0);

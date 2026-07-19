@@ -77,13 +77,14 @@ export async function GET() {
       `SELECT COUNT(*)::bigint as count FROM "DocumentChunk"`,
     ),
     prisma.opportunity.count(),
-    prisma.aIInteraction
-      .findMany({
-        where: { createdAt: { gte: sevenDaysAgo } },
-        select: { userId: true },
-        distinct: ["userId"],
-      })
-      .then((r) => r.length),
+    prisma
+      .$queryRawUnsafe<Array<{ count: bigint }>>(
+        `SELECT COUNT(DISTINCT "userId")::bigint as count
+         FROM "AIInteraction"
+         WHERE "createdAt" >= $1`,
+        sevenDaysAgo,
+      )
+      .then((r) => Number(r[0]?.count ?? 0)),
     prisma.user.count({
       where: {
         role: "STUDENT",

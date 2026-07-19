@@ -16,6 +16,7 @@ import { prisma } from "@/lib/prisma";
 import { aiConfig } from "@/lib/ai/config";
 import { buildStudentContext } from "@/lib/ai/student-context";
 import { classifyContent } from "@/lib/ai/safety/content-classifier";
+import { checkRateLimitDistributed } from "@/lib/security/rate-limit";
 import { getSessionUser, unauthorized, forbidden, badRequest } from "@/lib/security/session";
 
 const VISION_MODEL = process.env.GEMINI_VISION_MODEL ?? "gemini-2.0-flash-exp";
@@ -30,6 +31,20 @@ export async function POST(request: NextRequest) {
     return Response.json(
       { message: "Homework review requires a Google AI Studio key (GEMMA_API_KEY)." },
       { status: 503 },
+    );
+  }
+
+  // Per-user rate limit — vision calls are the most expensive AI operation, so a
+  // single student must not be able to exhaust the shared quota.
+  const rl = await checkRateLimitDistributed(
+    `ai-homework:${user.id}`,
+    aiConfig.rateLimits.reviewHomework,
+  );
+  if (!rl.allowed) {
+    const retryAfter = Math.ceil(rl.retryAfterMs / 1000);
+    return Response.json(
+      { message: "You've reviewed a lot of homework recently. Please try again shortly.", retryAfter },
+      { status: 429, headers: { "Retry-After": String(retryAfter) } },
     );
   }
 
@@ -69,31 +84,48 @@ export async function POST(request: NextRequest) {
       instructions,
     );
 
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${VISION_MODEL}:generateContent?key=${aiConfig.gemma.apiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                { text: reviewPrompt },
-                { inlineData: { mimeType: image.type, data: base64Image } },
-              ],
+    // Bound the vision call with an AbortController timeout so a hung upstream
+    // generation cannot pin the instance.
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), aiConfig.timeouts.visionMs);
+    let response: Response;
+    try {
+      response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${VISION_MODEL}:generateContent?key=${aiConfig.gemma.apiKey}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [
+                  { text: reviewPrompt },
+                  { inlineData: { mimeType: image.type, data: base64Image } },
+                ],
+              },
+            ],
+            generationConfig: {
+              temperature: 0.3,
+              maxOutputTokens: 1500,
             },
-          ],
-          generationConfig: {
-            temperature: 0.3,
-            maxOutputTokens: 1500,
-          },
-        }),
-      },
-    );
+          }),
+          signal: controller.signal,
+        },
+      );
+    } catch (fetchErr) {
+      const timedOut = fetchErr instanceof Error && fetchErr.name === "AbortError";
+      console.error("[Homework] Vision API request failed:", timedOut ? "timeout" : fetchErr);
+      return Response.json(
+        { message: "The review took too long. Please try again with a clearer photo." },
+        { status: 504 },
+      );
+    } finally {
+      clearTimeout(timer);
+    }
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error("[Homework] Vision API error:", response.status, errorText);
+      const errorText = await response.text().catch(() => "");
+      console.error("[Homework] Vision API error:", response.status, errorText.slice(0, 500));
       return Response.json(
         { message: "Failed to analyze the image. Please try again with a clearer photo." },
         { status: 500 },

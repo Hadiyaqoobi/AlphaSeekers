@@ -6,12 +6,11 @@
  */
 
 import { enforceRetentionPolicies } from "@/lib/ai/privacy/data-retention";
+import { assertCronAuthorized } from "@/lib/security/cron-auth";
 
 export async function GET(request: Request) {
-  const authHeader = request.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    return new Response("Unauthorized", { status: 401 });
-  }
+  const denied = await assertCronAuthorized(request);
+  if (denied) return denied;
 
   const result = await enforceRetentionPolicies();
   return Response.json(result);

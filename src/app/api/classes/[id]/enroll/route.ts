@@ -56,9 +56,30 @@ export async function POST(_: Request, { params }: Params) {
     const result = await enrollStudentInClass(user.id, params.id);
     return NextResponse.json(result);
   } catch (error) {
+    // Map known business errors to clean statuses; never leak internal
+    // messages/stack details to the client — log them server-side instead.
+    const reason = error instanceof Error ? error.message : "";
+
+    if (reason === "Class is full") {
+      return NextResponse.json(
+        { message: "This class is full.", code: "CLASS_FULL" },
+        { status: 409 },
+      );
+    }
+    if (reason === "Class not found") {
+      return NextResponse.json({ message: "Class not found." }, { status: 404 });
+    }
+    if (reason === "Student not found") {
+      return NextResponse.json(
+        { message: "Only approved students can enroll." },
+        { status: 403 },
+      );
+    }
+
+    console.error("[classes/enroll] enrollment failed:", error);
     return NextResponse.json(
-      { message: error instanceof Error ? error.message : "Enrollment failed" },
-      { status: 400 },
+      { message: "Enrollment failed. Please try again." },
+      { status: 500 },
     );
   }
 }

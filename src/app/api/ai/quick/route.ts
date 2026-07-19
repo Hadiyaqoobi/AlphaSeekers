@@ -12,8 +12,8 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { aiConfig } from "@/lib/ai/config";
 import { generateEmbedding } from "@/lib/ai/embeddings";
-import { generateCompletion } from "@/lib/ai/llm";
-import { checkRateLimit } from "@/lib/security/rate-limit";
+import { generateCompletion, isLlmUnavailable } from "@/lib/ai/llm";
+import { checkRateLimitDistributed } from "@/lib/security/rate-limit";
 import { getSessionUser, unauthorized, forbidden, badRequest } from "@/lib/security/session";
 import { enrollmentAwareSearch, similaritySearch } from "@/lib/ai/vector-store";
 
@@ -32,10 +32,15 @@ export async function POST(request: Request) {
     return Response.json({ message: "AI features not configured" }, { status: 503 });
   }
 
-  // Tighter rate limit for quick AI: 30 per 5 min
-  const rl = checkRateLimit(`ai-quick:${user.id}`, { limit: 30, windowMs: 5 * 60 * 1000 });
+  // Per-user rate limit (distributed, DB-backed with in-memory fallback) so a
+  // single student can't exhaust the shared AI quota / instance memory.
+  const rl = await checkRateLimitDistributed(`ai-quick:${user.id}`, aiConfig.rateLimits.quick);
   if (!rl.allowed) {
-    return Response.json({ message: "Slow down — give me a sec to catch up." }, { status: 429 });
+    const retryAfter = Math.ceil(rl.retryAfterMs / 1000);
+    return Response.json(
+      { message: "Slow down — give me a sec to catch up.", retryAfter },
+      { status: 429, headers: { "Retry-After": String(retryAfter) } },
+    );
   }
 
   const body = await request.json().catch(() => null);
@@ -45,17 +50,31 @@ export async function POST(request: Request) {
   const { query, classId, locale } = parsed.data;
 
   try {
-    // 1. Embed and search (scoped to classId if provided)
+    // SCOPING (SECURITY): only scope to a classId the student is actually
+    // enrolled in. An unenrolled/spoofed classId must not unlock that class's
+    // materials — fall back to general/library material instead.
+    let scopedClassId: string | null = null;
+    if (classId) {
+      const enrollment = await prisma.enrollment.findUnique({
+        where: { studentId_classId: { studentId: user.id, classId } },
+        select: { status: true },
+      });
+      if (enrollment && enrollment.status === "ACTIVE") {
+        scopedClassId = classId;
+      }
+    }
+
+    // 1. Embed and search within the authorized scope only
     const embedding = await generateEmbedding(query);
-    const chunks = classId
-      ? await enrollmentAwareSearch(embedding, [classId], 3)
+    const chunks = scopedClassId
+      ? await enrollmentAwareSearch(embedding, [scopedClassId], 3)
       : await similaritySearch(embedding, 3);
 
-    // 2. Get class name for context
+    // 2. Get class name for context (only for the authorized class)
     let className: string | null = null;
-    if (classId) {
+    if (scopedClassId) {
       const cls = await prisma.class.findUnique({
-        where: { id: classId },
+        where: { id: scopedClassId },
         select: { name: true },
       });
       className = cls?.name || null;
@@ -94,7 +113,7 @@ ${context}`;
           query,
           answer,
           mode: "quick",
-          classIds: classId || null,
+          classIds: scopedClassId,
           provider: "groq",
         },
       })
@@ -108,9 +127,17 @@ ${context}`;
       })),
     });
   } catch (err) {
+    // ERROR LEAKAGE FIX: log details server-side, return a generic, safe message
+    // to the student. Surface a clean 503 when the AI providers are exhausted.
     console.error("[Quick AI] failed:", err);
+    if (isLlmUnavailable(err)) {
+      return Response.json(
+        { message: "The AI is busy right now. Please try again in a moment." },
+        { status: 503 },
+      );
+    }
     return Response.json(
-      { message: (err as Error).message || "Quick AI failed" },
+      { message: "Quick AI is unavailable right now. Please try again." },
       { status: 500 },
     );
   }

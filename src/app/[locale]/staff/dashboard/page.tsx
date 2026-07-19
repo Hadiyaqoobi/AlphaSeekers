@@ -3,7 +3,8 @@ import { redirect } from "next/navigation";
 
 import { getTranslations } from "next-intl/server";
 
-import { listAdminClasses, listUsersByRole } from "@/lib/platform/store";
+import { listAdminClasses } from "@/lib/platform/store";
+import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/security/session";
 
 type StaffDashboardProps = {
@@ -22,9 +23,14 @@ export default async function StaffDashboardPage({ params }: StaffDashboardProps
     }
 
     const t = await getTranslations({ locale: params.locale, namespace: "staff" });
-    const teachers = await listUsersByRole("TEACHER");
-    const classes = await listAdminClasses({ page: 1, limit: 10 });
-    const students = await listUsersByRole("STUDENT");
+
+    // The stat tiles only need counts, so query counts directly instead of
+    // loading every teacher/student row into memory just to read `.length`.
+    const [teacherCount, studentCount, classes] = await Promise.all([
+        prisma.user.count({ where: { role: "TEACHER" } }),
+        prisma.user.count({ where: { role: "STUDENT" } }),
+        listAdminClasses({ page: 1, limit: 10 }),
+    ]);
 
     const activeClasses = classes.items.filter(
         (item: { status: string }) => item.status === "ACTIVE",
@@ -58,11 +64,11 @@ export default async function StaffDashboardPage({ params }: StaffDashboardProps
                     <p className="mt-1 text-sm font-semibold text-ink-soft">{t("activeClasses")}</p>
                 </div>
                 <div className="panel panel-strong p-4 text-center">
-                    <p className="text-3xl font-black text-neon-600">{teachers.length}</p>
+                    <p className="text-3xl font-black text-neon-600">{teacherCount}</p>
                     <p className="mt-1 text-sm font-semibold text-ink-soft">{t("teachers")}</p>
                 </div>
                 <div className="panel panel-strong p-4 text-center">
-                    <p className="text-3xl font-black text-amber-600">{students.length}</p>
+                    <p className="text-3xl font-black text-amber-600">{studentCount}</p>
                     <p className="mt-1 text-sm font-semibold text-ink-soft">{t("students")}</p>
                 </div>
             </div>

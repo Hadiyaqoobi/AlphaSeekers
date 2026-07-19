@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 
 export type PostCardData = {
@@ -84,12 +83,17 @@ export function PostCard({ post, locale }: PostCardProps) {
       >
         <div className="relative aspect-[4/5] bg-dark-100 overflow-hidden">
           {post.coverImageUrl ? (
-            <Image
+            // Plain <img> for user-uploaded R2 images: Next's image optimizer has
+            // no remotePatterns entry for the R2 host (would throw) and is known
+            // to 504 on these on Render.
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
               src={post.coverImageUrl}
               alt={post.title}
-              fill
-              className="object-cover group-hover:scale-105 transition-transform duration-500"
-              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+              width={800}
+              height={1000}
+              loading="lazy"
+              className="absolute inset-0 h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
             />
           ) : (
             <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-violet-100 to-rose-100">
@@ -125,7 +129,15 @@ export function PostCard({ post, locale }: PostCardProps) {
         <div className="flex items-center gap-3 mb-4">
           <div className="relative w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-neon-400 to-teal-600 flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
             {post.coverImageUrl ? (
-              <Image src={post.coverImageUrl} alt={authorName} fill className="object-cover" />
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={post.coverImageUrl}
+                alt={authorName}
+                width={48}
+                height={48}
+                loading="lazy"
+                className="absolute inset-0 h-full w-full object-cover"
+              />
             ) : (
               initial
             )}
@@ -154,12 +166,17 @@ export function PostCard({ post, locale }: PostCardProps) {
     >
       <div className="relative aspect-[16/9] bg-dark-100 overflow-hidden">
         {post.coverImageUrl ? (
-          <Image
+          // Plain <img> for user-uploaded R2 images: Next's image optimizer has
+          // no remotePatterns entry for the R2 host (would throw) and is known
+          // to 504 on these on Render.
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
             src={post.coverImageUrl}
             alt={post.title}
-            fill
-            className="object-cover group-hover:scale-105 transition-transform duration-500"
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            width={1280}
+            height={720}
+            loading="lazy"
+            className="absolute inset-0 h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
           />
         ) : (
           <div className="absolute inset-0 bg-gradient-to-br from-neon-100 via-teal-50 to-sky-100">

@@ -1,15 +1,41 @@
+# Render blueprint for AlphaSeekers.
+#
+# SIZING NOTE (from production readiness audit):
+#   The `free` plan CANNOT serve the target scale. Free web services sleep after
+#   ~15 min of inactivity (cold starts of 30s+), cap RAM at 512MB, and have no
+#   horizontal scaling — unacceptable for a live education platform with cron jobs,
+#   AI/RAG workloads, and Neon connections. Minimum recommended floor is ~$70-90/mo:
+#     - Render Standard web service (this file) — sized for steady traffic.
+#     - Neon paid plan WITH the pooler endpoint (-pooler host) for DATABASE_URL.
+#     - A transactional email provider (ESP) for reminders.
+#     - Separate dev/prod databases (do NOT share one Neon DB across environments).
+#   See docs/DEPLOYMENT_RUNBOOK.md for the full breakdown.
+
 services:
   - type: web
     name: alphaseekers
     runtime: node
     region: oregon
-    plan: free
-    buildCommand: npm install && npx prisma generate && npm run build
+    # Upgraded from `free` — see SIZING NOTE above. Free tier cannot serve the
+    # target scale (cold starts, 512MB RAM cap, no scaling, sleeps when idle).
+    plan: standard
+    # Run DB migrations on every deploy so schema changes ship atomically with code.
+    buildCommand: npm install && npx prisma generate && npx prisma migrate deploy && npm run build
     startCommand: npm start
     envVars:
       - key: NODE_VERSION
         value: "20.18.1"
+      # Force production runtime posture: disables demo auth, auto-seed, mock Meet
+      # links, and DB→memory fallback. Without this the app can silently run in demo mode.
+      - key: ALPHASEEKERS_MODE
+        value: production
+      # DATABASE_URL MUST be the Neon POOLED (-pooler) connection string, with
+      # ?sslmode=require. Optionally append ?connection_limit=5 (or set
+      # DATABASE_CONNECTION_LIMIT below). See src/lib/prisma.ts.
       - key: DATABASE_URL
+        sync: false
+      # Optional: per-instance Prisma connection cap appended to DATABASE_URL.
+      - key: DATABASE_CONNECTION_LIMIT
         sync: false
       - key: NEXTAUTH_URL
         sync: false
@@ -17,6 +43,50 @@ services:
         generateValue: true
       - key: CRON_SECRET
         generateValue: true
+      # AES-256-GCM master key for at-rest field encryption (base64, 32 bytes).
+      # Generate: openssl rand -base64 32
+      - key: DATA_ENCRYPTION_KEY
+        sync: false
+      # Shared secret Telegram sends back in the X-Telegram-Bot-Api-Secret-Token header.
+      - key: TELEGRAM_WEBHOOK_SECRET
+        sync: false
+      # Web Push (VAPID). Generate with `npx web-push generate-vapid-keys`.
+      - key: VAPID_PUBLIC_KEY
+        sync: false
+      - key: VAPID_PRIVATE_KEY
+        sync: false
+      - key: VAPID_SUBJECT
+        sync: false
+      # --- AI provider keys (see src/lib/ai/config.ts) ---
+      # Primary LLM. Get from console.groq.com (free tier available).
+      - key: GROQ_API_KEY
+        sync: false
+      # Fallback LLM (Google AI Studio / Gemma). Some deployments use
+      # GOOGLE_GENERATIVE_AI_API_KEY / GEMINI_API_KEY instead — set whichever the
+      # provider client expects; the app currently reads GEMMA_API_KEY.
+      - key: GEMMA_API_KEY
+        sync: false
+      # Alias envs some AI SDKs read (Gemini). Declared for forward-compat; safe to leave unset.
+      - key: GOOGLE_GENERATIVE_AI_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      # Embeddings (HuggingFace Inference API).
+      - key: HF_API_TOKEN
+        sync: false
+      # --- Cloudflare R2 (object storage) — names aligned with the code (Bundle E) ---
+      - key: R2_ACCOUNT_ID
+        sync: false
+      - key: R2_ACCESS_KEY_ID
+        sync: false
+      - key: R2_SECRET_ACCESS_KEY
+        sync: false
+      - key: R2_BUCKET
+        sync: false
+      # Public base URL for serving R2 assets (also used by next.config.mjs image/CSP allowlist).
+      - key: R2_PUBLIC_BASE_URL
+        sync: false
+      # --- Email / OAuth ---
       - key: SMTP_USER
         sync: false
       - key: SMTP_PASS
@@ -30,4 +100,82 @@ services:
       - key: GOOGLE_API_KEY
         sync: false
       - key: GOOGLE_OAUTH_REDIRECT_URI
+        sync: false
+
+  # --- Scheduled jobs -------------------------------------------------------
+  # Render cron jobs run a command on a schedule. These curl the app's cron
+  # endpoints with the CRON_SECRET bearer token. Set APP_BASE_URL and CRON_SECRET
+  # on EACH cron service to the same values as the web service (CRON_SECRET must
+  # match). If your Render plan/region does not support the `cron` type in a
+  # blueprint, create these as "Cron Job" services in the dashboard using the
+  # exact schedules/commands below — see docs/DEPLOYMENT_RUNBOOK.md.
+
+  - type: cron
+    name: alphaseekers-reminders
+    runtime: node
+    region: oregon
+    plan: starter
+    schedule: "*/10 * * * *" # every 10 minutes
+    buildCommand: ""
+    startCommand: curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" "$APP_BASE_URL/api/cron/reminders"
+    envVars:
+      - key: APP_BASE_URL
+        sync: false
+      - key: CRON_SECRET
+        sync: false
+
+  - type: cron
+    name: alphaseekers-scheduler
+    runtime: node
+    region: oregon
+    plan: starter
+    schedule: "0 * * * *" # hourly
+    buildCommand: ""
+    startCommand: curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" "$APP_BASE_URL/api/cron/scheduler"
+    envVars:
+      - key: APP_BASE_URL
+        sync: false
+      - key: CRON_SECRET
+        sync: false
+
+  - type: cron
+    name: alphaseekers-ai-prep
+    runtime: node
+    region: oregon
+    plan: starter
+    schedule: "0 3 * * *" # nightly at 03:00 UTC
+    buildCommand: ""
+    startCommand: curl -fsS -H "Authorization: Bearer $CRON_SECRET" "$APP_BASE_URL/api/cron/ai-prep"
+    envVars:
+      - key: APP_BASE_URL
+        sync: false
+      - key: CRON_SECRET
+        sync: false
+
+  - type: cron
+    name: alphaseekers-data-retention
+    runtime: node
+    region: oregon
+    plan: starter
+    schedule: "30 3 * * *" # nightly at 03:30 UTC
+    buildCommand: ""
+    startCommand: curl -fsS -H "Authorization: Bearer $CRON_SECRET" "$APP_BASE_URL/api/cron/data-retention"
+    envVars:
+      - key: APP_BASE_URL
+        sync: false
+      - key: CRON_SECRET
+        sync: false
+
+  - type: cron
+    name: alphaseekers-neon-warm
+    runtime: node
+    region: oregon
+    plan: starter
+    schedule: "*/5 * * * *" # every 5 minutes — keep Neon compute warm
+    buildCommand: ""
+    startCommand: curl -fsS -H "Authorization: Bearer $CRON_SECRET" "$APP_BASE_URL/api/cron/neon-warm"
+    envVars:
+      - key: APP_BASE_URL
+        sync: false
+      - key: CRON_SECRET
         sync: false

@@ -50,12 +50,28 @@ export default async function DashboardPage({ params, searchParams }: DashboardP
 
   const t = await getTranslations({ locale, namespace: "dashboard" });
 
-  const stats = await getDashboardStats();
-  const todaySessions = (await listTodaySessions()).slice(0, 8);
-  const joinNow = user.role === "STUDENT" ? await getJoinNowSession(user.id) : null;
-  const myClasses = user.role === "STUDENT" ? (await listStudentClasses(user.id)).slice(0, 4) : [];
-  const teacherClasses = user.role === "TEACHER" ? await listTeacherClasses(user.id) : [];
-  const notifications = (await listUserNotifications(user.id)).slice(0, 6);
+  const isStudent = user.role === "STUDENT";
+  const isTeacher = user.role === "TEACHER";
+  const isAdmin = user.role === "ADMIN";
+
+  // Fetch every independent data source concurrently instead of awaiting them
+  // one-by-one. Role-specific queries are skipped (resolved to empty) when the
+  // current role never renders them — in particular today's sessions are only
+  // fetched for admins, which is also the sole consumer of the list, so we no
+  // longer redundantly query today's sessions for students/teachers.
+  const [stats, notificationsRaw, joinNow, myClassesRaw, teacherClasses, todaySessionsRaw] =
+    await Promise.all([
+      getDashboardStats(),
+      listUserNotifications(user.id),
+      isStudent ? getJoinNowSession(user.id) : Promise.resolve(null),
+      isStudent ? listStudentClasses(user.id) : Promise.resolve([]),
+      isTeacher ? listTeacherClasses(user.id) : Promise.resolve([]),
+      isAdmin ? listTodaySessions() : Promise.resolve([]),
+    ]);
+
+  const notifications = notificationsRaw.slice(0, 6);
+  const myClasses = myClassesRaw.slice(0, 4);
+  const todaySessions = todaySessionsRaw.slice(0, 8);
 
   const firstName = (user.name ?? "").split(" ")[0] || "User";
   const greeting = locale === "fa" ? getGreetingDari() : getGreeting();

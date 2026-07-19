@@ -65,9 +65,15 @@ const MODE_COLORS: Record<string, string> = {
 // ── Simple Markdown Renderer ──────────────────────────────────
 
 function renderMarkdown(text: string): string {
-  let html = text
+  // SECURITY (XSS): escape ALL HTML in the model output FIRST. The model reply
+  // can contain attacker-controlled text (prompt injection), so nothing it
+  // emits may reach dangerouslySetInnerHTML as live markup. After escaping, the
+  // only tags in the string are the fixed, safe ones we add below. The code
+  // capture is already escaped by this first step, so it must NOT be escaped
+  // again (that would double-encode it).
+  let html = escapeHtml(text)
     .replace(/```(\w+)?\n([\s\S]*?)```/g, (_m, lang, code) =>
-      `<pre class="ai-code-block"><code class="language-${lang || ''}">${escapeHtml(code.trim())}</code></pre>`)
+      `<pre class="ai-code-block"><code class="language-${(lang || '').replace(/[^a-zA-Z0-9]/g, '')}">${code.trim()}</code></pre>`)
     .replace(/`([^`]+)`/g, '<code class="ai-inline-code">$1</code>')
     .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
     .replace(/\*([^*]+)\*/g, '<em>$1</em>')

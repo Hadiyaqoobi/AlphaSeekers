@@ -1,7 +1,20 @@
+import { Prisma } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 
 import { createClass, listAdminClasses, parseInteger } from "@/lib/platform/store";
 import { getSessionUser, unauthorized } from "@/lib/security/session";
+
+const createClassSchema = z.object({
+  name: z.string().trim().min(1).max(200),
+  subjectCategory: z.string().trim().min(1).max(100),
+  description: z.string().trim().min(1).max(5000),
+  teacherId: z.string().trim().min(1).max(100),
+  maxStudents: z.number().int().min(1).max(1000),
+  durationMinutes: z.number().int().min(30).max(600).optional(),
+  schedulePreference: z.string().trim().min(1).max(200),
+  language: z.string().trim().min(1).max(50).optional(),
+});
 
 export async function GET(request: NextRequest) {
   const user = await getSessionUser();
@@ -32,40 +45,50 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ message: "Admin access only" }, { status: 403 });
   }
 
-  const body = (await request.json()) as {
-    name?: string;
-    subjectCategory?: string;
-    description?: string;
-    teacherId?: string;
-    maxStudents?: number;
-    durationMinutes?: number;
-    schedulePreference?: string;
-    language?: string;
-  };
+  const raw = await request.json().catch(() => null);
+  const parsed = createClassSchema.safeParse(raw);
 
-  if (
-    !body.name ||
-    !body.subjectCategory ||
-    !body.description ||
-    !body.teacherId ||
-    !body.maxStudents ||
-    !body.schedulePreference
-  ) {
-    return NextResponse.json({ message: "Missing required fields" }, { status: 400 });
+  if (!parsed.success) {
+    return NextResponse.json(
+      {
+        message: "Invalid class payload",
+        errors: parsed.error.issues.map((issue) => ({
+          field: issue.path.join("."),
+          message: issue.message,
+        })),
+      },
+      { status: 400 },
+    );
   }
 
-  const durationMinutes = Math.max(30, Math.floor(body.durationMinutes ?? 60));
+  const input = parsed.data;
 
-  const created = await createClass({
-    name: body.name,
-    subjectCategory: body.subjectCategory,
-    description: body.description,
-    teacherId: body.teacherId,
-    maxStudents: body.maxStudents,
-    durationMinutes,
-    schedulePreference: body.schedulePreference,
-    language: body.language ?? "Dari",
-  });
+  try {
+    const created = await createClass({
+      name: input.name,
+      subjectCategory: input.subjectCategory,
+      description: input.description,
+      teacherId: input.teacherId,
+      maxStudents: input.maxStudents,
+      durationMinutes: input.durationMinutes ?? 60,
+      schedulePreference: input.schedulePreference,
+      language: input.language ?? "Dari",
+    });
 
-  return NextResponse.json(created, { status: 201 });
+    return NextResponse.json(created, { status: 201 });
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      // Foreign key violation — most likely an invalid teacherId.
+      if (error.code === "P2003") {
+        return NextResponse.json({ message: "Invalid teacherId." }, { status: 400 });
+      }
+      // Unique constraint violation.
+      if (error.code === "P2002") {
+        return NextResponse.json({ message: "A class with these details already exists." }, { status: 409 });
+      }
+    }
+
+    console.error("[admin/classes] createClass failed:", error);
+    return NextResponse.json({ message: "Failed to create class." }, { status: 500 });
+  }
 }

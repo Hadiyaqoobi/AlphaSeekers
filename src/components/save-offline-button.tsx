@@ -4,6 +4,9 @@ import { useCallback, useEffect, useState } from "react";
 
 import { useTranslations } from "next-intl";
 
+// MUST stay in sync with MATERIAL_CACHE in public/sw.js. Files stored here are
+// served cache-first by the service worker (and are never wiped on load), so
+// "Save offline" now actually serves the file when the network is unavailable.
 const MATERIAL_CACHE = "alphaseekers-materials-v1";
 
 type SaveOfflineButtonProps = {

@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { validateEmailStrict } from "@/lib/security/email";
 import { hashPassword } from "@/lib/security/passwords";
 import { encryptPhone } from "@/lib/security/phone-crypto";
-import { checkRateLimit, getClientIp } from "@/lib/security/rate-limit";
+import { checkRateLimitDistributed, getClientIp } from "@/lib/security/rate-limit";
 import { stripHtml } from "@/lib/security/sanitize";
 
 const registerSchema = z.object({
@@ -29,11 +29,15 @@ const registerSchema = z.object({
     }),
   password: z
     .string()
-    .min(6, "Password must be at least 6 characters.")
-    .max(72, "Password is too long."),
-  role: z.enum(["STUDENT", "TEACHER"], {
-    message: "Please choose Student or Teacher.",
-  }),
+    .min(8, "Password must be at least 8 characters.")
+    .max(72, "Password is too long.")
+    .refine((value) => /[A-Za-z]/.test(value) && /[0-9]/.test(value), {
+      message: "Password must include at least one letter and one number.",
+    }),
+  // Accepted for backward-compat with existing clients but IGNORED: public
+  // registration always creates a STUDENT. Teacher/admin accounts are created
+  // or elevated by an admin (privilege escalation prevention).
+  role: z.enum(["STUDENT", "TEACHER"]).optional(),
   phone: z
     .string()
     .trim()
@@ -46,7 +50,7 @@ const registerSchema = z.object({
 
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request);
-  const rl = checkRateLimit(`register:${ip}`);
+  const rl = await checkRateLimitDistributed(`register:${ip}`);
 
   if (!rl.allowed) {
     return NextResponse.json(
@@ -76,6 +80,7 @@ export async function POST(request: NextRequest) {
   }
 
   const email = parsed.data.email.toLowerCase();
+  const passwordHash = await hashPassword(parsed.data.password);
 
   try {
     const created = await prisma.user.create({
@@ -83,8 +88,9 @@ export async function POST(request: NextRequest) {
         name: parsed.data.name,
         email,
         phone: parsed.data.phone ? encryptPhone(parsed.data.phone) : null,
-        role: parsed.data.role,
-        passwordHash: hashPassword(parsed.data.password),
+        // Force STUDENT regardless of client input — no self-service teacher/admin.
+        role: "STUDENT",
+        passwordHash,
         approvedAt: null,
         language: parsed.data.language ?? "FA",
         timezone: parsed.data.timezone ?? "Asia/Kabul",

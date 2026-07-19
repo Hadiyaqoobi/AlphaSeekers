@@ -57,3 +57,69 @@ export async function deleteStudentAIData(studentId: string): Promise<{
 
   return { interactionsDeleted: interactions.count };
 }
+
+/**
+ * Best-effort deletion / anonymization of ALL of a user's AI-generated data.
+ *
+ * Called by the account-deletion endpoint (right to erasure). Each step is
+ * isolated so a single failure never blocks the rest of the wipe. Covers:
+ *   - AI safety logs tied to the user's interactions (no FK cascade)
+ *   - AI interactions (cascades AIEvaluation via FK)
+ *   - AI conversation memory
+ *   - AI-generated spaced-repetition / vocabulary items
+ *   - AI-generated learning paths (cascades LessonProgress via FK)
+ *
+ * NOTE: DocumentChunk rows are shared COURSE MATERIAL, not the user's personal
+ * data, so they are intentionally NOT deleted here. Cached answers are keyed by
+ * a hash that embeds the user id (see response-cache.ts) and are not queryable
+ * by user id under the current schema; they carry a TTL and can never be served
+ * to another user, so they expire on their own. See needs_ops_action for adding
+ * a userId column to CachedResponse if hard per-user purge is later required.
+ */
+export async function deleteAllUserData(userId: string): Promise<void> {
+  // 1. Safety logs reference interactionId as a plain column (no FK cascade),
+  //    so collect the user's interaction ids and delete their logs first.
+  try {
+    const interactions = await prisma.aIInteraction.findMany({
+      where: { userId },
+      select: { id: true },
+    });
+    const interactionIds = interactions.map((i) => i.id);
+    if (interactionIds.length > 0) {
+      await prisma.aISafetyLog.deleteMany({
+        where: { interactionId: { in: interactionIds } },
+      });
+    }
+  } catch (err) {
+    console.error("[Retention] Failed to delete safety logs for user:", (err as Error).message);
+  }
+
+  // 2. Interactions (AIEvaluation cascades via its FK to AIInteraction).
+  try {
+    const res = await prisma.aIInteraction.deleteMany({ where: { userId } });
+    console.log(`[Retention] Deleted ${res.count} interactions for user ${userId}`);
+  } catch (err) {
+    console.error("[Retention] Failed to delete interactions for user:", (err as Error).message);
+  }
+
+  // 3. Conversation memory.
+  try {
+    await prisma.aIConversation.deleteMany({ where: { userId } });
+  } catch (err) {
+    console.error("[Retention] Failed to delete conversations for user:", (err as Error).message);
+  }
+
+  // 4. AI-generated spaced-repetition / vocabulary items.
+  try {
+    await prisma.spacedRepetitionItem.deleteMany({ where: { userId } });
+  } catch (err) {
+    console.error("[Retention] Failed to delete SRS items for user:", (err as Error).message);
+  }
+
+  // 5. AI-generated learning paths (LessonProgress cascades via FK to path).
+  try {
+    await prisma.learningPath.deleteMany({ where: { userId } });
+  } catch (err) {
+    console.error("[Retention] Failed to delete learning paths for user:", (err as Error).message);
+  }
+}

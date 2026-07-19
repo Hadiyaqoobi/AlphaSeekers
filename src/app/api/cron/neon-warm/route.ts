@@ -1,27 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { prisma } from "@/lib/prisma";
-import { getSessionUser } from "@/lib/security/session";
-
-async function hasCronAccess(request: NextRequest) {
-  const configuredSecret = process.env.CRON_SECRET;
-
-  if (!configuredSecret) {
-    return true;
-  }
-
-  if (request.headers.get("x-cron-secret") === configuredSecret) {
-    return true;
-  }
-
-  const user = await getSessionUser();
-  return user?.role === "ADMIN";
-}
+import { assertCronAuthorized } from "@/lib/security/cron-auth";
 
 export async function GET(request: NextRequest) {
-  if (!(await hasCronAccess(request))) {
-    return NextResponse.json({ message: "Unauthorized cron call" }, { status: 401 });
-  }
+  const denied = await assertCronAuthorized(request);
+  if (denied) return denied;
 
   const start = Date.now();
 

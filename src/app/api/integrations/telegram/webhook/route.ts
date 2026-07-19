@@ -1,28 +1,74 @@
+import { createHash, timingSafeEqual } from "crypto";
+
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 
 import { linkTokens } from "@/lib/integrations/telegram-link-tokens";
 import { prisma } from "@/lib/prisma";
+import { runtime } from "@/lib/runtime";
 import { aiConfig } from "@/lib/ai/config";
 import { ragQuery } from "@/lib/ai/rag-pipeline";
 
-type TelegramUpdate = {
-  message?: {
-    chat?: { id?: number };
-    text?: string;
-    from?: { first_name?: string };
-  };
-};
+/** Constant-time string compare over fixed-length digests. */
+function timingSafeEqualStrings(a: string, b: string): boolean {
+  const aHash = createHash("sha256").update(a).digest();
+  const bHash = createHash("sha256").update(b).digest();
+  return timingSafeEqual(aHash, bHash);
+}
+
+/**
+ * Verify the request actually came from Telegram. On setWebhook we register a
+ * `secret_token`; Telegram echoes it back in this header on every update. Any
+ * request without the matching header is a spoof and must be rejected — the
+ * webhook drives the (paid) RAG pipeline and can impersonate linked users.
+ */
+function isFromTelegram(request: NextRequest): boolean {
+  const configured = process.env.TELEGRAM_WEBHOOK_SECRET;
+  const provided = request.headers.get("x-telegram-bot-api-secret-token") ?? "";
+
+  if (configured) {
+    return timingSafeEqualStrings(provided, configured);
+  }
+
+  // No secret configured: permit only outside production so local testing
+  // works; in production a missing secret denies (fail closed).
+  return runtime.mode !== "production";
+}
+
+// Only the fields we actually use; unknown fields (photos, edits, etc.) are
+// allowed through and simply ignored.
+const telegramUpdateSchema = z
+  .object({
+    message: z
+      .object({
+        chat: z.object({ id: z.number() }),
+        text: z.string(),
+        from: z.object({ first_name: z.string().optional() }).passthrough().optional(),
+      })
+      .passthrough()
+      .optional(),
+  })
+  .passthrough();
 
 export async function POST(request: NextRequest) {
-  const update = (await request.json().catch(() => null)) as TelegramUpdate | null;
+  if (!isFromTelegram(request)) {
+    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  }
 
-  if (!update?.message?.chat?.id || !update.message.text) {
+  const raw = await request.json().catch(() => null);
+  const parsed = telegramUpdateSchema.safeParse(raw);
+
+  if (!parsed.success || !parsed.data.message) {
+    // Authentic Telegram update we don't handle (no text message) — ack so
+    // Telegram doesn't retry.
     return NextResponse.json({ ok: true });
   }
 
-  const chatId = String(update.message.chat.id);
-  const text = update.message.text.trim();
-  const firstName = update.message.from?.first_name ?? "";
+  const message = parsed.data.message;
+
+  const chatId = String(message.chat.id);
+  const text = message.text.trim();
+  const firstName = message.from?.first_name ?? "";
 
   // Handle /start {linkToken} command
   if (text.startsWith("/start ")) {

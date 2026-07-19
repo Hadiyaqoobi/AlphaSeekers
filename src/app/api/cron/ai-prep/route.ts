@@ -16,15 +16,14 @@
 
 import { prisma } from "@/lib/prisma";
 import { sendTelegram } from "@/lib/integrations/telegram";
+import { assertCronAuthorized } from "@/lib/security/cron-auth";
 
 const PREP_WINDOW_MIN = 25; // minutes
 const PREP_WINDOW_MAX = 45;
 
 export async function GET(request: Request) {
-  const authHeader = request.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    return new Response("Unauthorized", { status: 401 });
-  }
+  const denied = await assertCronAuthorized(request);
+  if (denied) return denied;
 
   const now = new Date();
   const windowStart = new Date(now.getTime() + PREP_WINDOW_MIN * 60 * 1000);

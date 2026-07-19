@@ -13,12 +13,18 @@ import { z } from "zod";
 
 import { prisma } from "@/lib/prisma";
 import { hashPassword, verifyPassword } from "@/lib/security/passwords";
-import { checkRateLimit, getClientIp } from "@/lib/security/rate-limit";
+import { checkRateLimitDistributed, getClientIp } from "@/lib/security/rate-limit";
 import { getSessionUser, unauthorized } from "@/lib/security/session";
 
 const schema = z.object({
   currentPassword: z.string().min(1).max(200),
-  newPassword: z.string().min(6).max(72),
+  newPassword: z
+    .string()
+    .min(8, "Password must be at least 8 characters.")
+    .max(72, "Password is too long.")
+    .refine((value) => /[A-Za-z]/.test(value) && /[0-9]/.test(value), {
+      message: "Password must include at least one letter and one number.",
+    }),
 });
 
 export async function POST(request: NextRequest) {
@@ -26,7 +32,7 @@ export async function POST(request: NextRequest) {
   if (!user) return unauthorized();
 
   const ip = getClientIp(request);
-  const rl = checkRateLimit(`password-change:${user.id}:${ip}`);
+  const rl = await checkRateLimitDistributed(`password-change:${user.id}:${ip}`);
   if (!rl.allowed) {
     return NextResponse.json(
       { message: "Too many attempts. Please try again later." },
@@ -37,10 +43,9 @@ export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => null);
   const parsed = schema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json(
-      { code: "too_short", message: "Password must be at least 6 characters." },
-      { status: 400 },
-    );
+    const message =
+      parsed.error.issues[0]?.message ?? "Password must be at least 8 characters.";
+    return NextResponse.json({ code: "weak_password", message }, { status: 400 });
   }
 
   const account = await prisma.user.findUnique({
@@ -49,7 +54,7 @@ export async function POST(request: NextRequest) {
   });
   if (!account) return unauthorized();
 
-  if (!verifyPassword(parsed.data.currentPassword, account.passwordHash)) {
+  if (!(await verifyPassword(parsed.data.currentPassword, account.passwordHash))) {
     return NextResponse.json(
       { code: "wrong_current", message: "Current password is incorrect." },
       { status: 400 },
@@ -63,9 +68,10 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const newHash = await hashPassword(parsed.data.newPassword);
   await prisma.user.update({
     where: { id: account.id },
-    data: { passwordHash: hashPassword(parsed.data.newPassword) },
+    data: { passwordHash: newHash },
   });
 
   return NextResponse.json({ ok: true });

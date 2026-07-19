@@ -67,32 +67,97 @@ async function withCircuitBreaker<T>(service: string, operation: () => Promise<T
   }
 }
 
+/**
+ * Reusable, pooled SMTP transporter — cached at module scope.
+ *
+ * The previous implementation created a brand-new transporter (and therefore a
+ * fresh TLS handshake) for EVERY message, sequentially. Under the reminder
+ * batch that meant hundreds of handshakes and hit provider connection limits.
+ *
+ * With `pool: true` nodemailer keeps a small bank of connections open and
+ * reuses them, and `rateLimit`/`maxMessages` keep us under provider throttles.
+ *
+ * The provider is configurable via env so this can point at a transactional ESP
+ * (SES / Postmark / Resend SMTP) instead of Gmail.
+ *
+ * IMPORTANT: Gmail SMTP is capped at ~500 recipients/day. At any real scale you
+ * MUST point SMTP_HOST/PORT/USER/PASS at a transactional ESP — do not rely on
+ * Gmail for production reminder blasts.
+ */
+let cachedTransporter: ReturnType<typeof nodemailer.createTransport> | null = null;
+let cachedTransporterKey = "";
+
+type SmtpSettings = {
+  host: string;
+  port: number;
+  secure: boolean;
+  user: string;
+  pass: string;
+  from: string;
+};
+
+function resolveSmtpSettings(): SmtpSettings | null {
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASS;
+
+  if (!user || !pass) {
+    return null;
+  }
+
+  // Default to Gmail for local/dev convenience; override via env for an ESP.
+  const host = process.env.SMTP_HOST || "smtp.gmail.com";
+  const port = Number(process.env.SMTP_PORT || 465);
+  // secure=true for implicit TLS (465); STARTTLS ports (587/25) use secure=false.
+  const secure = process.env.SMTP_SECURE
+    ? ["1", "true", "yes", "on"].includes(process.env.SMTP_SECURE.trim().toLowerCase())
+    : port === 465;
+  const from = process.env.SMTP_FROM || user;
+
+  return { host, port, secure, user, pass, from };
+}
+
+function getTransporter(settings: SmtpSettings) {
+  // Key on the connection identity so a config change rebuilds the pool.
+  const key = `${settings.host}:${settings.port}:${settings.secure}:${settings.user}`;
+  if (cachedTransporter && cachedTransporterKey === key) {
+    return cachedTransporter;
+  }
+
+  cachedTransporter = nodemailer.createTransport({
+    host: settings.host,
+    port: settings.port,
+    secure: settings.secure,
+    auth: {
+      user: settings.user,
+      pass: settings.pass,
+    },
+    // Connection pooling: reuse a small bank of connections instead of one
+    // handshake per message.
+    pool: true,
+    maxConnections: Number(process.env.SMTP_MAX_CONNECTIONS || 5),
+    maxMessages: Number(process.env.SMTP_MAX_MESSAGES || 100),
+    // Cap messages per second so we stay under ESP throttles.
+    rateLimit: Number(process.env.SMTP_RATE_LIMIT || 10),
+  });
+  cachedTransporterKey = key;
+  return cachedTransporter;
+}
+
 async function sendEmail(target: NotificationTarget, content: string) {
   if (!target.email) {
     throw new NonRetryableError("Missing email address");
   }
 
-  const smtpUser = process.env.SMTP_USER;
-  const smtpPass = process.env.SMTP_PASS;
+  const settings = resolveSmtpSettings();
 
-  if (!smtpUser || !smtpPass) {
+  if (!settings) {
     throw new NonRetryableError("SMTP_USER or SMTP_PASS missing");
   }
 
-  const from = process.env.SMTP_FROM || smtpUser;
-
-  const transporter = nodemailer.createTransport({
-    host: "smtp.gmail.com",
-    port: 465,
-    secure: true,
-    auth: {
-      user: smtpUser,
-      pass: smtpPass,
-    },
-  });
+  const transporter = getTransporter(settings);
 
   const info = await transporter.sendMail({
-    from,
+    from: settings.from,
     to: target.email,
     subject: "AlphaSeekers notification",
     text: content,

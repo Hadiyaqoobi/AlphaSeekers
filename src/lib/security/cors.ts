@@ -26,28 +26,41 @@
  * cross-origin requests are blocked by default (safe).
  */
 
+import { runtime } from "@/lib/runtime";
+
 const ALLOWED_ORIGINS = (process.env.CORS_ALLOWED_ORIGINS ?? "")
   .split(",")
   .map((o) => o.trim())
   .filter(Boolean);
 
-function isAllowed(origin: string | null): origin is string {
-  if (!origin) return false;
-  if (ALLOWED_ORIGINS.includes("*")) return true;
-  return ALLOWED_ORIGINS.includes(origin);
+/**
+ * The "*" wildcard is only honoured OUTSIDE production. Reflecting an arbitrary
+ * origin back with `Access-Control-Allow-Credentials: true` would let any site
+ * make credentialed cross-origin requests (a CSRF/exfiltration hole), and the
+ * CORS spec forbids `Access-Control-Allow-Origin: *` together with credentials.
+ * In production a stray "*" therefore blocks all cross-origin requests (safe).
+ */
+function wildcardEnabled(): boolean {
+  return ALLOWED_ORIGINS.includes("*") && runtime.mode !== "production";
 }
 
 function buildHeaders(origin: string | null): Record<string, string> {
   const headers: Record<string, string> = {
     "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
-    "Access-Control-Allow-Credentials": "true",
     "Access-Control-Max-Age": "86400",
     Vary: "Origin",
   };
-  if (isAllowed(origin)) {
+
+  if (origin && ALLOWED_ORIGINS.includes(origin)) {
+    // Explicit allowlist match → safe to permit credentialed requests.
+    headers["Access-Control-Allow-Origin"] = origin;
+    headers["Access-Control-Allow-Credentials"] = "true";
+  } else if (origin && wildcardEnabled()) {
+    // Dev-only wildcard → reflect the origin but do NOT enable credentials.
     headers["Access-Control-Allow-Origin"] = origin;
   }
+
   return headers;
 }
 

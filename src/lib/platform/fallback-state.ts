@@ -56,3 +56,20 @@ export function reportUsingMemory(reason: string, error?: unknown) {
 export function getStoreFallbackState(): StoreFallbackState {
   return { ...state };
 }
+
+/**
+ * Reset the observed storage mode back to "database".
+ *
+ * The store treats the database as the source of truth; memory is only ever a
+ * read-time, demo-mode fallback. Once the database is confirmed reachable again
+ * this clears any stale "memory" marker so operators aren't misled by an old
+ * transient blip. `reportUsingDatabase()` already performs this transition on a
+ * successful DB op; this explicit clear exists for callers/tests that want to
+ * reset the observable state directly.
+ */
+export function clearStoreFallbackState() {
+  state.mode = "database";
+  state.switchedAt = null;
+  state.reason = null;
+  state.error = null;
+}
