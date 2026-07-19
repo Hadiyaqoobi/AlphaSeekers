@@ -16,7 +16,7 @@ import {
   isValidPermission,
   permissionsForLevel,
   type AccessLevel,
-} from "@/lib/security/permissions";
+} from "@/lib/security/permission-catalog";
 
 // ─── Employees ────────────────────────────────────────────────────────────────
 
