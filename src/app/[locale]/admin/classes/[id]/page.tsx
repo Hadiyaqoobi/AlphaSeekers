@@ -130,7 +130,7 @@ export default async function AdminClassDetailPage({ params }: AdminClassDetailP
                       <td className="py-2">{formatDateTime(student.enrolledAt, locale)}</td>
                       <td className="py-2">
                         {stats ? (
-                          <span className={stats.attendanceRate >= 70 ? "text-neon-700" : stats.attendanceRate >= 40 ? "text-amber-700" : "text-red-600"}>
+                          <span className={stats.attendanceRate >= 70 ? "text-neon-400" : stats.attendanceRate >= 40 ? "text-amber-300" : "text-red-300"}>
                             {stats.sessionsAttended}/{stats.totalSessions} ({stats.attendanceRate}%)
                           </span>
                         ) : (
@@ -158,7 +158,7 @@ export default async function AdminClassDetailPage({ params }: AdminClassDetailP
                 <p className="text-sm font-semibold text-ink-main">
                   {formatDateTime(session.startTime, locale)}
                   {session.cancelled ? (
-                    <span className="ml-2 text-xs font-normal text-red-500">{t("cancelled")}</span>
+                    <span className="ml-2 text-xs font-normal text-red-300">{t("cancelled")}</span>
                   ) : null}
                 </p>
                 <p className="text-xs text-ink-soft">
@@ -167,7 +167,7 @@ export default async function AdminClassDetailPage({ params }: AdminClassDetailP
               </div>
               {session.meetLink && !session.cancelled ? (
                 <a
-                  className="text-xs font-semibold text-neon-700 hover:underline"
+                  className="text-xs font-semibold text-neon-400 hover:underline"
                   href={session.meetLink}
                   rel="noreferrer"
                   target="_blank"

@@ -22,8 +22,8 @@ export default async function SuperAuditPage() {
   return (
     <div className="space-y-5">
       <div>
-        <h2 className="text-xl font-bold tracking-tight text-gray-900">Audit log</h2>
-        <p className="mt-0.5 text-sm text-gray-500">
+        <h2 className="text-xl font-bold tracking-tight text-ink-main">Audit log</h2>
+        <p className="mt-0.5 text-sm text-ink-soft">
           Every privileged staff action — provisioning, access changes and deactivations.
         </p>
       </div>

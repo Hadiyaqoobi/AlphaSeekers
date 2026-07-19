@@ -64,32 +64,32 @@ export default async function TeacherClassSchedulePage({ params }: SchedulePageP
 
   return (
     <section className="space-y-4">
-      <header className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
+      <header className="rounded-xl border border-white/5 bg-dark-100 p-5 sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+            <p className="text-xs font-semibold uppercase tracking-wide text-ink-soft">
               Manage schedule
             </p>
-            <h1 className="mt-1 text-2xl font-black text-gray-900 sm:text-3xl">{klass.name}</h1>
+            <h1 className="mt-1 text-2xl font-black text-ink-main sm:text-3xl">{klass.name}</h1>
           </div>
           <span
             className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${
               isManual
-                ? "border-neon-200 bg-neon-50 text-neon-700"
-                : "border-gray-200 bg-gray-50 text-gray-600"
+                ? "border-neon-500/20 bg-neon-500/10 text-neon-300"
+                : "border-white/10 bg-white/5 text-ink-soft"
             }`}
           >
             {isManual ? "Manual scheduling" : "Auto scheduling"}
           </span>
         </div>
-        <p className="mt-2 max-w-2xl text-sm text-gray-500">
+        <p className="mt-2 max-w-2xl text-sm text-ink-soft">
           {isManual
             ? "You set and confirm each session time. The auto-scheduler will not create sessions for this class."
             : "Sessions are proposed automatically from availability. You can still add, reschedule, confirm, or cancel them below."}
         </p>
         <div className="mt-4">
           <Link
-            className="text-sm font-medium text-gray-500 hover:text-gray-900"
+            className="text-sm font-medium text-ink-soft hover:text-ink-main"
             href={`/${locale}/teacher/classes`}
           >
             &larr; Back to classes

@@ -37,40 +37,40 @@ export default async function AdminClassesPage({ params }: AdminClassesPageProps
     <section className="mx-auto max-w-6xl px-6 py-10 lg:px-8">
       {/* Page Header */}
       <header className="mb-10">
-        <p className="text-xs font-semibold uppercase tracking-widest text-neon-600">
+        <p className="text-xs font-semibold uppercase tracking-widest text-neon-400">
           {t("title")}
         </p>
-        <h1 className="mt-2 text-4xl font-bold tracking-tight text-gray-900">
+        <h1 className="mt-2 text-4xl font-bold tracking-tight text-ink-main">
           {t("controlPanel")}
         </h1>
-        <p className="mt-2 text-base text-gray-500">{t("controlPanelSubtitle")}</p>
+        <p className="mt-2 text-base text-ink-soft">{t("controlPanelSubtitle")}</p>
         <div className="mt-6 flex flex-wrap gap-3">
           <Link
-            className="inline-flex items-center rounded-xl border border-gray-200 bg-dark-100 px-5 py-2.5 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 hover:shadow-md"
+            className="inline-flex items-center rounded-xl border border-white/10 bg-dark-100 px-5 py-2.5 text-sm font-semibold text-ink-main transition hover:bg-white/5"
             href={`/${params.locale}/admin/users`}
           >
             {t("userApprovals")}
           </Link>
           <Link
-            className="inline-flex items-center rounded-xl border border-gray-200 bg-dark-100 px-5 py-2.5 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 hover:shadow-md"
+            className="inline-flex items-center rounded-xl border border-white/10 bg-dark-100 px-5 py-2.5 text-sm font-semibold text-ink-main transition hover:bg-white/5"
             href={`/${params.locale}/admin/teachers`}
           >
             {t("teachers")}
           </Link>
           <Link
-            className="inline-flex items-center rounded-xl border border-gray-200 bg-dark-100 px-5 py-2.5 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 hover:shadow-md"
+            className="inline-flex items-center rounded-xl border border-white/10 bg-dark-100 px-5 py-2.5 text-sm font-semibold text-ink-main transition hover:bg-white/5"
             href={`/${params.locale}/admin/content`}
           >
             {t("content")}
           </Link>
           <Link
-            className="inline-flex items-center rounded-xl border border-gray-200 bg-dark-100 px-5 py-2.5 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 hover:shadow-md"
+            className="inline-flex items-center rounded-xl border border-white/10 bg-dark-100 px-5 py-2.5 text-sm font-semibold text-ink-main transition hover:bg-white/5"
             href={`/${params.locale}/admin/analytics`}
           >
             {t("analytics")}
           </Link>
           <Link
-            className="inline-flex items-center rounded-xl border border-gray-200 bg-dark-100 px-5 py-2.5 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 hover:shadow-md"
+            className="inline-flex items-center rounded-xl border border-white/10 bg-dark-100 px-5 py-2.5 text-sm font-semibold text-ink-main transition hover:bg-white/5"
             href={`/${params.locale}/dashboard`}
           >
             {t("dashboard")}
@@ -80,17 +80,17 @@ export default async function AdminClassesPage({ params }: AdminClassesPageProps
 
       {/* Stats Row */}
       <div className="mb-8 grid grid-cols-1 gap-5 sm:grid-cols-3">
-        <div className="rounded-2xl border border-gray-100 bg-dark-100 p-6 shadow-sm">
-          <p className="text-sm font-medium text-gray-500">Total Classes</p>
-          <p className="mt-2 text-3xl font-bold text-gray-900">{totalClasses}</p>
+        <div className="rounded-2xl border border-white/5 bg-dark-100 p-6">
+          <p className="text-sm font-medium text-ink-soft">Total Classes</p>
+          <p className="mt-2 text-3xl font-bold text-ink-main">{totalClasses}</p>
         </div>
-        <div className="rounded-2xl border border-gray-100 bg-dark-100 p-6 shadow-sm">
-          <p className="text-sm font-medium text-gray-500">Active</p>
-          <p className="mt-2 text-3xl font-bold text-neon-600">{activeClasses}</p>
+        <div className="rounded-2xl border border-white/5 bg-dark-100 p-6">
+          <p className="text-sm font-medium text-ink-soft">Active</p>
+          <p className="mt-2 text-3xl font-bold text-neon-400">{activeClasses}</p>
         </div>
-        <div className="rounded-2xl border border-gray-100 bg-dark-100 p-6 shadow-sm">
-          <p className="text-sm font-medium text-gray-500">Archived</p>
-          <p className="mt-2 text-3xl font-bold text-gray-400">{archivedClasses}</p>
+        <div className="rounded-2xl border border-white/5 bg-dark-100 p-6">
+          <p className="text-sm font-medium text-ink-soft">Archived</p>
+          <p className="mt-2 text-3xl font-bold text-ink-faint">{archivedClasses}</p>
         </div>
       </div>
 
@@ -102,14 +102,14 @@ export default async function AdminClassesPage({ params }: AdminClassesPageProps
       </div>
 
       {/* Classes Table */}
-      <section className="rounded-2xl border border-gray-100 bg-dark-100 shadow-sm">
-        <div className="border-b border-gray-100 px-6 py-5">
-          <h2 className="text-lg font-bold text-gray-900">{t("recentClasses")}</h2>
+      <section className="rounded-2xl border border-white/5 bg-dark-100">
+        <div className="border-b border-white/5 px-6 py-5">
+          <h2 className="text-lg font-bold text-ink-main">{t("recentClasses")}</h2>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[700px] text-left text-sm">
             <thead>
-              <tr className="bg-gray-50 text-xs font-semibold uppercase tracking-wider text-gray-500">
+              <tr className="bg-white/5 text-xs font-semibold uppercase tracking-wider text-ink-soft">
                 <th className="px-6 py-4" scope="col">{t("name")}</th>
                 <th className="px-6 py-4" scope="col">{t("teacher")}</th>
                 <th className="px-6 py-4" scope="col">{t("schedule")}</th>
@@ -119,25 +119,25 @@ export default async function AdminClassesPage({ params }: AdminClassesPageProps
                 <th className="px-6 py-4 text-right" scope="col">{t("actions")}</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-50">
+            <tbody className="divide-y divide-white/5">
               {classes.items.map((item) => (
                 <tr
-                  className="transition-colors hover:bg-gray-50"
+                  className="transition-colors hover:bg-white/5"
                   key={item.id}
                 >
-                  <td className="px-6 py-4 font-semibold text-gray-900">{item.name}</td>
-                  <td className="px-6 py-4 text-gray-600">{item.teacherName}</td>
-                  <td className="px-6 py-4 text-gray-600">{item.schedulePreference}</td>
-                  <td className="px-6 py-4 text-gray-600">
+                  <td className="px-6 py-4 font-semibold text-ink-main">{item.name}</td>
+                  <td className="px-6 py-4 text-ink-soft">{item.teacherName}</td>
+                  <td className="px-6 py-4 text-ink-soft">{item.schedulePreference}</td>
+                  <td className="px-6 py-4 text-ink-soft">
                     {item.durationMinutes} {t("min")}
                   </td>
-                  <td className="px-6 py-4 text-gray-600">{item.enrolledCount}</td>
+                  <td className="px-6 py-4 text-ink-soft">{item.enrolledCount}</td>
                   <td className="px-6 py-4">
                     <span
                       className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
                         item.status === "ACTIVE"
-                          ? "bg-neon-50 text-neon-700"
-                          : "bg-gray-100 text-gray-500"
+                          ? "bg-neon-500/10 text-neon-300 border border-neon-500/20"
+                          : "bg-white/5 text-ink-soft"
                       }`}
                     >
                       {item.status}
@@ -146,7 +146,7 @@ export default async function AdminClassesPage({ params }: AdminClassesPageProps
                   <td className="px-6 py-4 text-right">
                     <div className="flex flex-wrap items-center justify-end gap-2">
                       <Link
-                        className="inline-flex items-center rounded-lg border border-gray-200 bg-dark-100 px-4 py-2 text-xs font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 hover:shadow"
+                        className="inline-flex items-center rounded-lg border border-white/10 bg-dark-100 px-4 py-2 text-xs font-semibold text-ink-main transition hover:bg-white/5"
                         href={`/${params.locale}/admin/classes/${item.id}`}
                       >
                         {t("view")}
@@ -164,7 +164,7 @@ export default async function AdminClassesPage({ params }: AdminClassesPageProps
           {classes.items.length === 0 && (
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <svg
-                className="mx-auto h-12 w-12 text-gray-300"
+                className="mx-auto h-12 w-12 text-ink-faint"
                 fill="none"
                 stroke="currentColor"
                 strokeWidth={1.5}
@@ -176,7 +176,7 @@ export default async function AdminClassesPage({ params }: AdminClassesPageProps
                   strokeLinejoin="round"
                 />
               </svg>
-              <p className="mt-4 text-sm font-medium text-gray-500">
+              <p className="mt-4 text-sm font-medium text-ink-soft">
                 No classes found. Create your first class above.
               </p>
             </div>

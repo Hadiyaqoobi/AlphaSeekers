@@ -73,7 +73,7 @@ export function OfflineSchedule() {
   }
 
   if (!data && offline) {
-    return <p className="text-sm text-amber-700">{t("offlineNoCache")}</p>;
+    return <p className="text-sm text-amber-300">{t("offlineNoCache")}</p>;
   }
 
   const generatedAt = data ? new Date(data.generatedAt) : null;
@@ -86,7 +86,7 @@ export function OfflineSchedule() {
       <header className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="text-sm font-black text-ink-main">{t("title")}</h3>
         {offline ? (
-          <p className="text-xs font-semibold text-amber-700">
+          <p className="text-xs font-semibold text-amber-300">
             {generatedAt
               ? t("offlineModeWithTime", { time: generatedAt.toLocaleString() })
               : t("offlineMode")}
@@ -97,7 +97,7 @@ export function OfflineSchedule() {
       </header>
 
       {offline && stale ? (
-        <p className="text-xs font-semibold text-amber-800">
+        <p className="text-xs font-semibold text-amber-300">
           {t("staleWarning", { days: STALE_AFTER_DAYS })}
         </p>
       ) : null}
@@ -108,7 +108,7 @@ export function OfflineSchedule() {
             <p className="text-sm font-semibold text-ink-main">{item.className}</p>
             <p className="text-xs text-ink-soft">{new Date(item.startTime).toLocaleString()}</p>
             {item.meetLink ? (
-              <a className="text-xs font-semibold text-sky-700 underline-offset-2 hover:underline" href={item.meetLink} rel="noreferrer" target="_blank">
+              <a className="text-xs font-semibold text-sky-400 underline-offset-2 hover:underline" href={item.meetLink} rel="noreferrer" target="_blank">
                 {t("joinLink")}
               </a>
             ) : (

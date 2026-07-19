@@ -99,22 +99,22 @@ export default async function AdminTeachersPage({ params }: AdminTeachersPagePro
         </article>
         <article className="bg-dark-100 p-4">
           <p className="text-sm text-ink-soft">{t("stats.withAvailability")}</p>
-          <p className="mt-1 text-2xl font-bold text-neon-700">
+          <p className="mt-1 text-2xl font-bold text-neon-400">
             {teacherDetails.filter((t) => t.hasAvailability).length}
           </p>
         </article>
         <article className="bg-dark-100 p-4">
           <p className="text-sm text-ink-soft">{t("stats.noAvailability")}</p>
-          <p className="mt-1 text-2xl font-bold text-red-600">
+          <p className="mt-1 text-2xl font-bold text-red-300">
             {teacherDetails.filter((t) => !t.hasAvailability).length}
           </p>
         </article>
       </div>
 
       {teacherDetails.filter((t) => !t.hasAvailability).length > 0 ? (
-        <section className="rounded-lg border border-amber-200 bg-amber-50 p-4">
-          <h2 className="font-semibold text-amber-900">{t("needsSetup")}</h2>
-          <p className="mt-1 text-sm text-amber-800">{t("needsSetupDesc")}</p>
+        <section className="rounded-lg border border-amber-500/20 bg-amber-500/10 p-4">
+          <h2 className="font-semibold text-amber-200">{t("needsSetup")}</h2>
+          <p className="mt-1 text-sm text-amber-300">{t("needsSetupDesc")}</p>
           <div className="mt-3 space-y-2">
             {teacherDetails
               .filter((t) => !t.hasAvailability)
@@ -124,7 +124,7 @@ export default async function AdminTeachersPage({ params }: AdminTeachersPagePro
                     <p className="text-sm font-medium text-ink-main">{teacher.name}</p>
                     <p className="text-xs text-ink-soft">{teacher.email}</p>
                   </div>
-                  <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
+                  <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-300">
                     {t("pendingSetup")}
                   </span>
                 </div>
@@ -156,20 +156,20 @@ export default async function AdminTeachersPage({ params }: AdminTeachersPagePro
                   <td className="py-2">{teacher.totalStudents}</td>
                   <td className="py-2">
                     {teacher.hasAvailability ? (
-                      <span className="rounded-full bg-neon-100 px-2 py-0.5 text-xs font-medium text-neon-800">
+                      <span className="rounded-full bg-neon-500/10 px-2 py-0.5 text-xs font-medium text-neon-300">
                         {teacher.availabilitySlots} {t("slots")}
                       </span>
                     ) : (
-                      <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
+                      <span className="rounded-full bg-red-500/10 px-2 py-0.5 text-xs font-medium text-red-300">
                         {t("notSet")}
                       </span>
                     )}
                   </td>
                   <td className="py-2">
                     {teacher.approvedAt ? (
-                      <span className="text-xs text-neon-700">{formatDateTime(teacher.approvedAt, locale)}</span>
+                      <span className="text-xs text-neon-400">{formatDateTime(teacher.approvedAt, locale)}</span>
                     ) : (
-                      <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
+                      <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-300">
                         {t("pending")}
                       </span>
                     )}

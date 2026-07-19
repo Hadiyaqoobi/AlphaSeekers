@@ -29,11 +29,11 @@ const MAX_DURATION = 480;
 const PILL_BASE =
   "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold";
 const INPUT =
-  "rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:border-neon-500 focus:outline-none focus:ring-2 focus:ring-neon-100";
+  "rounded-lg border border-white/10 bg-dark-200 px-3 py-2 text-sm text-ink-main placeholder-ink-faint focus:border-neon-500 focus:outline-none";
 const BTN_PRIMARY =
-  "inline-flex items-center rounded-lg bg-neon-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-neon-700 disabled:cursor-not-allowed disabled:opacity-50";
+  "inline-flex items-center rounded-lg bg-neon-600 px-3 py-1.5 text-sm font-semibold text-black hover:bg-neon-500 disabled:cursor-not-allowed disabled:opacity-50";
 const BTN_SECONDARY =
-  "inline-flex items-center rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50";
+  "inline-flex items-center rounded-lg border border-white/10 px-3 py-1.5 text-sm font-medium text-ink-main hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-50";
 
 function pad(value: number): string {
   return String(value).padStart(2, "0");
@@ -74,7 +74,7 @@ function StatusPill({ session }: { session: SchedulerSession }) {
     if (session.meetLink) {
       return (
         <a
-          className={`${PILL_BASE} border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100`}
+          className={`${PILL_BASE} border-neon-500/20 bg-neon-500/10 text-neon-300 hover:bg-neon-500/20`}
           href={session.meetLink}
           rel="noreferrer"
           target="_blank"
@@ -84,20 +84,20 @@ function StatusPill({ session }: { session: SchedulerSession }) {
       );
     }
     return (
-      <span className={`${PILL_BASE} border-emerald-200 bg-emerald-50 text-emerald-700`}>
+      <span className={`${PILL_BASE} border-neon-500/20 bg-neon-500/10 text-neon-300`}>
         Meet ready
       </span>
     );
   }
   if (session.meetLinkStatus === "PENDING") {
     return (
-      <span className={`${PILL_BASE} border-amber-200 bg-amber-50 text-amber-700`}>
+      <span className={`${PILL_BASE} border-amber-500/20 bg-amber-500/10 text-amber-300`}>
         link pending
       </span>
     );
   }
   return (
-    <span className={`${PILL_BASE} border-red-200 bg-red-50 text-red-700`}>link failed</span>
+    <span className={`${PILL_BASE} border-red-500/20 bg-red-500/10 text-red-300`}>link failed</span>
   );
 }
 
@@ -253,10 +253,10 @@ export function SessionScheduler({
   return (
     <div
       aria-label={`Sessions for ${className}`}
-      className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6"
+      className="rounded-xl border border-white/5 bg-dark-100 p-5 sm:p-6"
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-lg font-bold text-gray-900">Sessions</h2>
+        <h2 className="text-lg font-bold text-ink-main">Sessions</h2>
         {!addOpen ? (
           <button className={BTN_PRIMARY} disabled={busyAny} onClick={openAdd} type="button">
             Add session
@@ -265,7 +265,7 @@ export function SessionScheduler({
       </div>
 
       {schedulingMode === "AUTO" ? (
-        <p className="mt-1 text-sm text-gray-500">
+        <p className="mt-1 text-sm text-ink-soft">
           This class is on automatic scheduling. Adding a session here creates a confirmed,
           instructor-set session alongside any auto-proposed ones.
         </p>
@@ -273,12 +273,12 @@ export function SessionScheduler({
 
       {addOpen ? (
         <form
-          className="mt-4 rounded-lg border border-gray-200 bg-gray-50 p-4"
+          className="mt-4 rounded-lg border border-white/10 bg-dark-200 p-4"
           onSubmit={submitAdd}
         >
           <div className="flex flex-wrap items-end gap-4">
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-semibold text-gray-700" htmlFor="add-start">
+              <label className="text-xs font-semibold text-ink-main" htmlFor="add-start">
                 Date &amp; time
               </label>
               <input
@@ -291,7 +291,7 @@ export function SessionScheduler({
               />
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-semibold text-gray-700" htmlFor="add-duration">
+              <label className="text-xs font-semibold text-ink-main" htmlFor="add-duration">
                 Duration (minutes)
               </label>
               <input
@@ -323,13 +323,13 @@ export function SessionScheduler({
       ) : null}
 
       {error ? (
-        <p className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
+        <p className="mt-4 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-300" role="alert">
           {error}
         </p>
       ) : null}
 
       {sessions.length === 0 ? (
-        <p className="mt-4 text-sm text-gray-500">No sessions yet. Add one to get started.</p>
+        <p className="mt-4 text-sm text-ink-soft">No sessions yet. Add one to get started.</p>
       ) : (
         <ul className="mt-4 space-y-3">
           {sessions.map((session) => {
@@ -341,23 +341,23 @@ export function SessionScheduler({
 
             return (
               <li
-                className={`rounded-lg border border-gray-200 p-4 ${
-                  session.cancelled ? "bg-gray-50 opacity-70" : "bg-white"
+                className={`rounded-lg border border-white/10 p-4 ${
+                  session.cancelled ? "bg-white/5 opacity-70" : "bg-dark-200"
                 }`}
                 key={session.id}
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="font-semibold text-gray-900" suppressHydrationWarning>
+                    <p className="font-semibold text-ink-main" suppressHydrationWarning>
                       {formatWhen(session.startTime)}
                     </p>
-                    <p className="mt-1 text-sm text-gray-500">
+                    <p className="mt-1 text-sm text-ink-soft">
                       {durationMinutes(session.startTime, session.endTime)} min
                     </p>
                     <div className="mt-2 flex flex-wrap items-center gap-2">
                       {session.cancelled ? (
                         <span
-                          className={`${PILL_BASE} border-gray-200 bg-gray-100 text-gray-500`}
+                          className={`${PILL_BASE} border-white/10 bg-white/5 text-ink-soft`}
                         >
                           Cancelled
                         </span>
@@ -366,13 +366,13 @@ export function SessionScheduler({
                           <StatusPill session={session} />
                           {isConfirmed ? (
                             <span
-                              className={`${PILL_BASE} border-neon-200 bg-neon-50 text-neon-700`}
+                              className={`${PILL_BASE} border-neon-500/20 bg-neon-500/10 text-neon-300`}
                             >
                               Confirmed
                             </span>
                           ) : (
                             <span
-                              className={`${PILL_BASE} border-amber-200 bg-amber-50 text-amber-700`}
+                              className={`${PILL_BASE} border-white/10 bg-white/5 text-ink-soft`}
                             >
                               Proposed
                             </span>
@@ -405,7 +405,7 @@ export function SessionScheduler({
                         </button>
                       ) : null}
                       <button
-                        className="inline-flex items-center rounded-lg px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="inline-flex items-center rounded-lg px-3 py-1.5 text-sm font-medium text-red-300 hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-50"
                         disabled={busyAny}
                         onClick={() => cancel(session.id)}
                         type="button"
@@ -418,13 +418,13 @@ export function SessionScheduler({
 
                 {isRescheduling && !session.cancelled ? (
                   <form
-                    className="mt-4 rounded-lg border border-gray-200 bg-gray-50 p-4"
+                    className="mt-4 rounded-lg border border-white/10 bg-dark-200 p-4"
                     onSubmit={(event) => submitReschedule(event, session.id)}
                   >
                     <div className="flex flex-wrap items-end gap-4">
                       <div className="flex flex-col gap-1">
                         <label
-                          className="text-xs font-semibold text-gray-700"
+                          className="text-xs font-semibold text-ink-main"
                           htmlFor={`reschedule-start-${session.id}`}
                         >
                           New date &amp; time
@@ -440,7 +440,7 @@ export function SessionScheduler({
                       </div>
                       <div className="flex flex-col gap-1">
                         <label
-                          className="text-xs font-semibold text-gray-700"
+                          className="text-xs font-semibold text-ink-main"
                           htmlFor={`reschedule-duration-${session.id}`}
                         >
                           Duration (minutes)

@@ -44,9 +44,9 @@ export default async function TeamPage({ params }: TeamPageProps) {
               return (
                 <div key={member.id} className="group relative">
                   {/* Card */}
-                  <div className="relative rounded-2xl overflow-hidden bg-dark-100 shadow-sm ring-1 ring-gray-100 transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+                  <div className="relative rounded-2xl overflow-hidden bg-dark-100 ring-1 ring-white/5 transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
                     {/* Photo */}
-                    <div className="relative aspect-[4/5] overflow-hidden bg-gray-50">
+                    <div className="relative aspect-[4/5] overflow-hidden bg-dark-200">
                       {member.photo ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
@@ -64,7 +64,7 @@ export default async function TeamPage({ params }: TeamPageProps) {
                       <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black/50 to-transparent" />
                       {/* Co-Founder badge */}
                       {isCoFounder && (
-                        <span className="absolute top-4 left-4 inline-flex items-center gap-1.5 bg-dark-100/95 backdrop-blur-sm text-land-green-700 text-xs font-semibold px-3 py-1.5 rounded-full shadow-sm">
+                        <span className="absolute top-4 left-4 inline-flex items-center gap-1.5 bg-dark-100/95 backdrop-blur-sm text-land-green-400 text-xs font-semibold px-3 py-1.5 rounded-full shadow-sm">
                           <span className="w-1.5 h-1.5 rounded-full bg-land-green-500" />
                           Co-Founder
                         </span>
@@ -72,9 +72,9 @@ export default async function TeamPage({ params }: TeamPageProps) {
                     </div>
                     {/* Info */}
                     <div className="p-6">
-                      <h3 className="text-xl font-bold text-gray-900">{isDari ? member.nameDari : member.name}</h3>
-                      <p className="text-sm font-semibold text-land-green-600 mt-1">{isDari ? member.roleDari : member.role}</p>
-                      <p className="text-sm text-gray-500 mt-3 leading-relaxed">{isDari ? member.bioDari : member.bio}</p>
+                      <h3 className="text-xl font-bold text-ink-main">{isDari ? member.nameDari : member.name}</h3>
+                      <p className="text-sm font-semibold text-land-green-500 mt-1">{isDari ? member.roleDari : member.role}</p>
+                      <p className="text-sm text-ink-soft mt-3 leading-relaxed">{isDari ? member.bioDari : member.bio}</p>
                     </div>
                   </div>
                 </div>
@@ -90,8 +90,8 @@ export default async function TeamPage({ params }: TeamPageProps) {
           <h2 className="text-3xl font-bold text-white tracking-tight" style={{ fontFamily: 'var(--font-landing), var(--font-display-latin), sans-serif' }}>{t("ctaTitle")}</h2>
           <p className="text-lg text-white/55 mt-4 max-w-xl mx-auto">{t("ctaBody")}</p>
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link href={`/${locale}/register`} className="inline-flex items-center px-8 py-4 rounded-xl bg-dark-100 text-land-green-700 text-base font-bold transition-all duration-200 hover:-translate-y-1 hover:shadow-xl active:translate-y-0">{t("ctaVolunteer")}</Link>
-            <Link href={`/${locale}/register`} className="inline-flex items-center px-8 py-4 rounded-xl border-2 border-white/25 text-white text-base font-semibold transition-all duration-200 hover:bg-dark-100/10 hover:-translate-y-1 active:translate-y-0">{t("ctaJoin")}</Link>
+            <Link href={`/${locale}/register`} className="inline-flex items-center px-8 py-4 rounded-xl bg-land-green-500 text-black text-base font-bold transition-all duration-200 hover:-translate-y-1 hover:shadow-xl active:translate-y-0">{t("ctaVolunteer")}</Link>
+            <Link href={`/${locale}/register`} className="inline-flex items-center px-8 py-4 rounded-xl border-2 border-white/25 text-white text-base font-semibold transition-all duration-200 hover:bg-white/10 hover:-translate-y-1 active:translate-y-0">{t("ctaJoin")}</Link>
           </div>
         </div>
       </section>

@@ -47,16 +47,16 @@ export function AuditTable({
   return (
     <div className="space-y-4">
       {error && (
-        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+        <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300" role="alert">
           {error}
         </div>
       )}
 
-      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+      <div className="overflow-hidden rounded-xl border border-white/5 bg-dark-100">
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 text-sm">
-            <thead className="bg-gray-50">
-              <tr className="text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+          <table className="min-w-full divide-y divide-white/5 text-sm">
+            <thead className="bg-white/5">
+              <tr className="text-left text-xs font-semibold uppercase tracking-wider text-ink-soft">
                 <th className="px-4 py-3">Time</th>
                 <th className="px-4 py-3">Actor</th>
                 <th className="px-4 py-3">Action</th>
@@ -64,36 +64,36 @@ export function AuditTable({
                 <th className="px-4 py-3">Details</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-white/5">
               {items.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-4 py-10 text-center text-sm text-gray-400">
+                  <td colSpan={5} className="px-4 py-10 text-center text-sm text-ink-faint">
                     No audit activity recorded yet.
                   </td>
                 </tr>
               ) : (
                 items.map((row) => (
-                  <tr key={row.id} className="align-top">
-                    <td className="whitespace-nowrap px-4 py-3 text-xs text-gray-500">
+                  <tr key={row.id} className="align-top hover:bg-white/5">
+                    <td className="whitespace-nowrap px-4 py-3 text-xs text-ink-soft">
                       {new Date(row.createdAt).toLocaleString()}
                     </td>
-                    <td className="px-4 py-3 text-gray-700">
-                      {row.actorEmail ?? <span className="text-gray-400">{row.actorId}</span>}
+                    <td className="px-4 py-3 text-ink-main">
+                      {row.actorEmail ?? <span className="text-ink-faint">{row.actorId}</span>}
                     </td>
                     <td className="px-4 py-3">
-                      <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 font-mono text-xs font-semibold text-gray-700">
+                      <span className="inline-flex items-center rounded-full bg-white/5 px-2.5 py-1 font-mono text-xs font-semibold text-ink-soft">
                         {row.action}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-xs text-gray-500">
-                      <span className="font-medium text-gray-700">{row.targetType}</span>
-                      <span className="text-gray-400"> · {row.targetId}</span>
+                    <td className="px-4 py-3 text-xs text-ink-soft">
+                      <span className="font-medium text-ink-main">{row.targetType}</span>
+                      <span className="text-ink-faint"> · {row.targetId}</span>
                     </td>
-                    <td className="max-w-xs px-4 py-3 text-xs text-gray-500">
+                    <td className="max-w-xs px-4 py-3 text-xs text-ink-soft">
                       {row.details ? (
                         <span className="break-words">{row.details}</span>
                       ) : (
-                        <span className="text-gray-300">—</span>
+                        <span className="text-ink-faint">—</span>
                       )}
                     </td>
                   </tr>
@@ -110,12 +110,12 @@ export function AuditTable({
             type="button"
             onClick={loadMore}
             disabled={loading}
-            className="rounded-xl border border-gray-200 bg-white px-5 py-2.5 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-xl border border-white/10 bg-dark-100 px-5 py-2.5 text-sm font-semibold text-ink-main transition hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {loading ? "Loading…" : "Load more"}
           </button>
         ) : (
-          items.length > 0 && <p className="text-xs text-gray-400">End of audit log.</p>
+          items.length > 0 && <p className="text-xs text-ink-faint">End of audit log.</p>
         )}
       </div>
     </div>

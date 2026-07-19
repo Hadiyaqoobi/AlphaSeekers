@@ -34,21 +34,21 @@ export default async function AdminAIPage({ params }: Props) {
   return (
     <section className="mx-auto max-w-6xl px-6 py-10 lg:px-8">
       <header className="mb-10">
-        <p className="text-xs font-semibold uppercase tracking-widest text-neon-600">Admin</p>
-        <h1 className="mt-2 text-4xl font-bold tracking-tight text-gray-900">AI System Health</h1>
+        <p className="text-xs font-semibold uppercase tracking-widest text-neon-400">Admin</p>
+        <h1 className="mt-2 text-4xl font-bold tracking-tight text-ink-main">AI System Health</h1>
       </header>
 
       {/* Provider Cards */}
       <div className="grid gap-5 sm:grid-cols-3 mb-10">
         {providers.map((p) => (
-          <div key={p.name} className="rounded-2xl border border-gray-100 bg-dark-100 p-6 shadow-sm">
+          <div key={p.name} className="rounded-2xl border border-white/5 bg-dark-100 p-6">
             <div className="flex items-center gap-3 mb-3">
               <span className={`h-3 w-3 rounded-full ${p.configured ? "bg-neon-500" : "bg-red-400"}`} />
-              <h3 className="text-lg font-bold text-gray-900">{p.name}</h3>
+              <h3 className="text-lg font-bold text-ink-main">{p.name}</h3>
             </div>
-            <p className="text-sm text-gray-500">{p.role}</p>
-            <p className="text-xs text-gray-400 mt-1 font-mono">{p.model}</p>
-            <p className={`mt-3 text-sm font-semibold ${p.configured ? "text-neon-600" : "text-red-500"}`}>
+            <p className="text-sm text-ink-soft">{p.role}</p>
+            <p className="text-xs text-ink-faint mt-1 font-mono">{p.model}</p>
+            <p className={`mt-3 text-sm font-semibold ${p.configured ? "text-neon-400" : "text-red-300"}`}>
               {p.configured ? "Configured" : "Not configured"}
             </p>
           </div>
@@ -56,20 +56,20 @@ export default async function AdminAIPage({ params }: Props) {
       </div>
 
       {/* Cache Stats */}
-      <div className="rounded-2xl border border-gray-100 bg-dark-100 p-6 shadow-sm">
-        <h2 className="text-lg font-bold text-gray-900 mb-6">Response Cache</h2>
+      <div className="rounded-2xl border border-white/5 bg-dark-100 p-6">
+        <h2 className="text-lg font-bold text-ink-main mb-6">Response Cache</h2>
         <div className="grid gap-5 sm:grid-cols-3">
           <div>
-            <p className="text-sm text-gray-500">Cached Responses</p>
-            <p className="text-3xl font-bold text-gray-900 mt-1">{cacheTotal}</p>
+            <p className="text-sm text-ink-soft">Cached Responses</p>
+            <p className="text-3xl font-bold text-ink-main mt-1">{cacheTotal}</p>
           </div>
           <div>
-            <p className="text-sm text-gray-500">Total Cache Hits</p>
-            <p className="text-3xl font-bold text-gray-900 mt-1">{cacheHits}</p>
+            <p className="text-sm text-ink-soft">Total Cache Hits</p>
+            <p className="text-3xl font-bold text-ink-main mt-1">{cacheHits}</p>
           </div>
           <div>
-            <p className="text-sm text-gray-500">Avg Quality Score</p>
-            <p className="text-3xl font-bold text-gray-900 mt-1">
+            <p className="text-sm text-ink-soft">Avg Quality Score</p>
+            <p className="text-3xl font-bold text-ink-main mt-1">
               {cacheAvgQuality != null ? `${(cacheAvgQuality * 100).toFixed(0)}%` : "—"}
             </p>
           </div>
@@ -77,13 +77,13 @@ export default async function AdminAIPage({ params }: Props) {
       </div>
 
       {/* RAG Config */}
-      <div className="mt-5 rounded-2xl border border-gray-100 bg-dark-100 p-6 shadow-sm">
-        <h2 className="text-lg font-bold text-gray-900 mb-4">RAG Configuration</h2>
+      <div className="mt-5 rounded-2xl border border-white/5 bg-dark-100 p-6">
+        <h2 className="text-lg font-bold text-ink-main mb-4">RAG Configuration</h2>
         <div className="grid gap-4 sm:grid-cols-4 text-sm">
-          <div><span className="text-gray-400">Chunk Size</span><p className="font-mono font-bold text-gray-900">{aiConfig.rag.chunkSize}</p></div>
-          <div><span className="text-gray-400">Chunk Overlap</span><p className="font-mono font-bold text-gray-900">{aiConfig.rag.chunkOverlap}</p></div>
-          <div><span className="text-gray-400">Top K</span><p className="font-mono font-bold text-gray-900">{aiConfig.rag.topK}</p></div>
-          <div><span className="text-gray-400">Similarity Threshold</span><p className="font-mono font-bold text-gray-900">{aiConfig.rag.similarityThreshold}</p></div>
+          <div><span className="text-ink-faint">Chunk Size</span><p className="font-mono font-bold text-ink-main">{aiConfig.rag.chunkSize}</p></div>
+          <div><span className="text-ink-faint">Chunk Overlap</span><p className="font-mono font-bold text-ink-main">{aiConfig.rag.chunkOverlap}</p></div>
+          <div><span className="text-ink-faint">Top K</span><p className="font-mono font-bold text-ink-main">{aiConfig.rag.topK}</p></div>
+          <div><span className="text-ink-faint">Similarity Threshold</span><p className="font-mono font-bold text-ink-main">{aiConfig.rag.similarityThreshold}</p></div>
         </div>
       </div>
     </section>

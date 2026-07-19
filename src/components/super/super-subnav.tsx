@@ -25,7 +25,7 @@ export function SuperSubnav({ locale }: { locale: string }) {
   };
 
   return (
-    <nav className="flex flex-wrap gap-1 border-b border-gray-200" aria-label="Super Admin sections">
+    <nav className="flex flex-wrap gap-1 border-b border-white/10" aria-label="Super Admin sections">
       {tabs.map((tab) => {
         const active = isActive(tab.href, tab.exact);
         return (
@@ -35,8 +35,8 @@ export function SuperSubnav({ locale }: { locale: string }) {
             aria-current={active ? "page" : undefined}
             className={`-mb-px border-b-2 px-4 py-2.5 text-sm font-semibold transition ${
               active
-                ? "border-neon-600 text-neon-700"
-                : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-800"
+                ? "border-neon-500 text-neon-400"
+                : "border-transparent text-ink-soft hover:border-white/20 hover:text-ink-main"
             }`}
           >
             {tab.label}

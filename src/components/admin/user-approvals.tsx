@@ -164,8 +164,8 @@ export function UserApprovals() {
       </form>
 
       {selected.size > 0 ? (
-        <div className="flex items-center gap-3 rounded-lg border border-neon-200 bg-neon-50 px-3 py-2">
-          <p className="text-sm font-medium text-neon-900">{selected.size} selected</p>
+        <div className="flex items-center gap-3 rounded-lg border border-neon-500/20 bg-neon-500/10 px-3 py-2">
+          <p className="text-sm font-medium text-neon-300">{selected.size} selected</p>
           <button
             className="btn-primary"
             disabled={bulkApproving}

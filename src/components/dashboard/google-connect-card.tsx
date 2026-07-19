@@ -61,11 +61,11 @@ export function GoogleConnectCard({ locale, notice }: GoogleConnectCardProps) {
       <h3 className="text-sm font-black text-ink-main">{t("title")}</h3>
 
       {notice === "connected" ? (
-        <p className="mt-2 text-xs text-neon-700">{t("noticeConnected")}</p>
+        <p className="mt-2 text-xs text-neon-400">{t("noticeConnected")}</p>
       ) : null}
 
       {notice === "failed" ? (
-        <p className="mt-2 text-xs text-rose-700">{t("noticeFailed")}</p>
+        <p className="mt-2 text-xs text-red-300">{t("noticeFailed")}</p>
       ) : null}
 
       {loading ? <p className="mt-2 text-xs text-ink-soft">{t("checking")}</p> : null}

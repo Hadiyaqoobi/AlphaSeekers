@@ -141,80 +141,80 @@ export default async function DashboardPage({ params, searchParams }: DashboardP
 
           {/* Classes / Sessions */}
           {user.role === "STUDENT" ? (
-            <section className="rounded-xl border border-gray-100 bg-dark-100 p-6">
+            <section className="rounded-xl border border-white/5 bg-dark-100 p-6">
               <div className="flex items-center justify-between mb-5">
-                <h3 className="text-base font-semibold text-gray-900">{t("sections.myClasses")}</h3>
-                <Link className="text-sm text-neon-600 hover:text-neon-700" href={`/${locale}/classes`}>{t("actions.viewAll")}</Link>
+                <h3 className="text-base font-semibold text-ink-main">{t("sections.myClasses")}</h3>
+                <Link className="text-sm text-neon-400 hover:text-neon-300" href={`/${locale}/classes`}>{t("actions.viewAll")}</Link>
               </div>
               {myClasses.length > 0 ? (
                 <div className="space-y-3">
                   {myClasses.map((item) => (
-                    <div className="flex items-center gap-4 rounded-lg p-3 hover:bg-gray-50 transition-colors" key={item.id}>
-                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-neon-50 text-neon-600 flex-shrink-0">
+                    <div className="flex items-center gap-4 rounded-lg p-3 hover:bg-white/5 transition-colors" key={item.id}>
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-neon-500/10 text-neon-400 flex-shrink-0">
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900">{item.name}</p>
-                        <p className="text-xs text-gray-500">{item.teacherName} &middot; {item.schedule}</p>
+                        <p className="text-sm font-medium text-ink-main">{item.name}</p>
+                        <p className="text-xs text-ink-soft">{item.teacherName} &middot; {item.schedule}</p>
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="rounded-lg bg-gray-50 p-8 text-center">
-                  <svg className="mx-auto w-8 h-8 text-gray-300 mb-2" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
-                  <p className="text-sm text-gray-500">{t("empty.noEnrollments")}</p>
-                  <Link className="text-xs text-neon-600 font-medium mt-2 inline-block" href={`/${locale}/classes`}>{t("actions.viewAll")}</Link>
+                <div className="rounded-lg bg-white/5 p-8 text-center">
+                  <svg className="mx-auto w-8 h-8 text-ink-faint mb-2" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+                  <p className="text-sm text-ink-soft">{t("empty.noEnrollments")}</p>
+                  <Link className="text-xs text-neon-400 font-medium mt-2 inline-block" href={`/${locale}/classes`}>{t("actions.viewAll")}</Link>
                 </div>
               )}
             </section>
           ) : user.role === "TEACHER" ? (
-            <section className="rounded-xl border border-gray-100 bg-dark-100 p-6">
+            <section className="rounded-xl border border-white/5 bg-dark-100 p-6">
               <div className="flex items-center justify-between mb-5">
-                <h3 className="text-base font-semibold text-gray-900">{t("sections.myClasses")}</h3>
-                <Link className="text-sm text-neon-600 hover:text-neon-700" href={`/${locale}/teacher/classes`}>{t("actions.viewAll")}</Link>
+                <h3 className="text-base font-semibold text-ink-main">{t("sections.myClasses")}</h3>
+                <Link className="text-sm text-neon-400 hover:text-neon-300" href={`/${locale}/teacher/classes`}>{t("actions.viewAll")}</Link>
               </div>
               {teacherClasses.length > 0 ? (
                 <div className="space-y-3">
                   {teacherClasses.map((klass) => (
-                    <Link href={`/${locale}/classes/${klass.id}`} className="flex items-center gap-4 rounded-lg p-3 hover:bg-gray-50 transition-colors" key={klass.id}>
-                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600 flex-shrink-0">
+                    <Link href={`/${locale}/classes/${klass.id}`} className="flex items-center gap-4 rounded-lg p-3 hover:bg-white/5 transition-colors" key={klass.id}>
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10 text-blue-400 flex-shrink-0">
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0112 13.489a50.702 50.702 0 017.74-3.342M6.75 15a.75.75 0 100-1.5.75.75 0 000 1.5zm0 0v-3.675A55.378 55.378 0 0112 8.443m-7.007 11.55A5.981 5.981 0 006.75 15.75v-1.5" /></svg>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900">{klass.name}</p>
-                        <p className="text-xs text-gray-500">{klass.schedule} &middot; {klass.enrolledCount} {t("cards.students").toLowerCase()}</p>
+                        <p className="text-sm font-medium text-ink-main">{klass.name}</p>
+                        <p className="text-xs text-ink-soft">{klass.schedule} &middot; {klass.enrolledCount} {t("cards.students").toLowerCase()}</p>
                       </div>
                     </Link>
                   ))}
                 </div>
               ) : (
-                <div className="rounded-lg bg-gray-50 p-8 text-center">
-                  <p className="text-sm text-gray-500">{t("empty.noTeacherClasses")}</p>
+                <div className="rounded-lg bg-white/5 p-8 text-center">
+                  <p className="text-sm text-ink-soft">{t("empty.noTeacherClasses")}</p>
                 </div>
               )}
             </section>
           ) : (
             /* Admin: Today's Sessions */
-            <section className="rounded-xl border border-gray-100 bg-dark-100 p-6">
-              <h3 className="text-base font-semibold text-gray-900 mb-5">{t("sections.todaySessions")}</h3>
+            <section className="rounded-xl border border-white/5 bg-dark-100 p-6">
+              <h3 className="text-base font-semibold text-ink-main mb-5">{t("sections.todaySessions")}</h3>
               {todaySessions.length > 0 ? (
                 <div className="space-y-2">
                   {todaySessions.map((item) => (
-                    <div className="flex items-center gap-4 rounded-lg p-3 hover:bg-gray-50 transition-colors" key={item.id}>
+                    <div className="flex items-center gap-4 rounded-lg p-3 hover:bg-white/5 transition-colors" key={item.id}>
                       <span className={`flex-shrink-0 w-2.5 h-2.5 rounded-full ${item.meetLinkStatus === "GENERATED" ? "bg-neon-400" : item.meetLinkStatus === "PENDING" ? "bg-amber-400" : "bg-red-400"}`} />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900">{item.className}</p>
-                        <p className="text-xs text-gray-500">{item.teacherName}</p>
+                        <p className="text-sm font-medium text-ink-main">{item.className}</p>
+                        <p className="text-xs text-ink-soft">{item.teacherName}</p>
                       </div>
-                      <p className="text-xs text-gray-400 flex-shrink-0">{formatDateTime(item.startTime, locale)}</p>
+                      <p className="text-xs text-ink-faint flex-shrink-0">{formatDateTime(item.startTime, locale)}</p>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="rounded-lg bg-gray-50 p-8 text-center">
-                  <svg className="mx-auto w-8 h-8 text-gray-300 mb-2" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" /></svg>
-                  <p className="text-sm text-gray-500">{t("empty.noSessionsToday")}</p>
+                <div className="rounded-lg bg-white/5 p-8 text-center">
+                  <svg className="mx-auto w-8 h-8 text-ink-faint mb-2" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" /></svg>
+                  <p className="text-sm text-ink-soft">{t("empty.noSessionsToday")}</p>
                 </div>
               )}
             </section>
@@ -225,8 +225,8 @@ export default async function DashboardPage({ params, searchParams }: DashboardP
         <div className="space-y-6">
           {/* Quick Actions (Admin only) */}
           {user.role === "ADMIN" ? (
-            <section className="rounded-xl border border-gray-100 bg-dark-100 p-5">
-              <h3 className="text-base font-semibold text-gray-900 mb-4">{t("quickActions.heading")}</h3>
+            <section className="rounded-xl border border-white/5 bg-dark-100 p-5">
+              <h3 className="text-base font-semibold text-ink-main mb-4">{t("quickActions.heading")}</h3>
               <div className="space-y-1">
                 {[
                   { href: `/${locale}/admin/classes`, label: t("quickActions.createClass"), icon: "M12 4.5v15m7.5-7.5h-15" },
@@ -234,8 +234,8 @@ export default async function DashboardPage({ params, searchParams }: DashboardP
                   { href: `/${locale}/admin/users`, label: t("quickActions.viewPendingUsers"), icon: "M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128H9m6 0a5.97 5.97 0 00-.786-3.07M9 19.128v-.003c0-1.113.285-2.16.786-3.07M9 19.128H2.25a8.963 8.963 0 01-.727-3.071A3 3 0 014.5 10.365c.266-.068.54-.104.818-.104M9 19.128a5.97 5.97 0 01.786-3.07" },
                   { href: `/${locale}/admin/ai`, label: t("quickActions.aiDashboard"), icon: "M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" },
                 ].map((action) => (
-                  <Link key={action.label} href={action.href} className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-colors">
-                    <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d={action.icon} /></svg>
+                  <Link key={action.label} href={action.href} className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm text-ink-main hover:bg-white/5 transition-colors">
+                    <svg className="w-4 h-4 text-ink-faint flex-shrink-0" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d={action.icon} /></svg>
                     {action.label}
                   </Link>
                 ))}
@@ -245,15 +245,15 @@ export default async function DashboardPage({ params, searchParams }: DashboardP
 
           {/* Notifications */}
           {notifications.length > 0 ? (
-            <section className="rounded-xl border border-gray-100 bg-dark-100 p-5">
-              <h3 className="text-base font-semibold text-gray-900 mb-4">{t("sections.latestNotifications")}</h3>
+            <section className="rounded-xl border border-white/5 bg-dark-100 p-5">
+              <h3 className="text-base font-semibold text-ink-main mb-4">{t("sections.latestNotifications")}</h3>
               <div className="space-y-3">
                 {notifications.map((item) => (
                   <div className="flex gap-3" key={item.id}>
                     <div className="flex-shrink-0 mt-1.5"><div className="w-2 h-2 rounded-full bg-neon-400" /></div>
                     <div className="min-w-0">
-                      <p className="text-sm text-gray-700 leading-relaxed">{item.content}</p>
-                      <p className="text-xs text-gray-400 mt-1">{item.sentAt ? formatDateTime(item.sentAt, locale) : t("labels.pending")}</p>
+                      <p className="text-sm text-ink-main leading-relaxed">{item.content}</p>
+                      <p className="text-xs text-ink-faint mt-1">{item.sentAt ? formatDateTime(item.sentAt, locale) : t("labels.pending")}</p>
                     </div>
                   </div>
                 ))}

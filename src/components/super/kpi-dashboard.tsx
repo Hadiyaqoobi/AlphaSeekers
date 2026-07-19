@@ -36,9 +36,9 @@ function Section({
   return (
     <section className="space-y-4">
       <div>
-        <p className="text-xs font-semibold uppercase tracking-widest text-neon-600">{eyebrow}</p>
-        <h2 className="mt-1 text-xl font-bold tracking-tight text-gray-900">{title}</h2>
-        {description && <p className="mt-1 text-sm text-gray-500">{description}</p>}
+        <p className="text-xs font-semibold uppercase tracking-widest text-neon-400">{eyebrow}</p>
+        <h2 className="mt-1 text-xl font-bold tracking-tight text-ink-main">{title}</h2>
+        {description && <p className="mt-1 text-sm text-ink-soft">{description}</p>}
       </div>
       {children}
     </section>
@@ -57,9 +57,9 @@ function Panel({
   className?: string;
 }) {
   return (
-    <div className={`rounded-xl border border-gray-200 bg-white p-5 shadow-sm ${className}`}>
-      {title && <h3 className="text-sm font-semibold text-gray-900">{title}</h3>}
-      {subtitle && <p className="mt-0.5 text-xs text-gray-500">{subtitle}</p>}
+    <div className={`rounded-xl border border-white/5 bg-dark-100 p-5 ${className}`}>
+      {title && <h3 className="text-sm font-semibold text-ink-main">{title}</h3>}
+      {subtitle && <p className="mt-0.5 text-xs text-ink-soft">{subtitle}</p>}
       {(title || subtitle) && <div className="mt-4" />}
       {children}
     </div>
@@ -124,7 +124,7 @@ export function KpiDashboard({
           subtitle={`${nf(students.signupTrend.reduce((s, d) => s + d.count, 0))} new students in the window`}
         >
           <Sparkline points={students.signupTrend} color={NEON} height={64} label="Student signups per day, last 14 days" />
-          <div className="mt-2 flex justify-between text-[11px] text-gray-400">
+          <div className="mt-2 flex justify-between text-[11px] text-ink-faint">
             <span>{formatDay(students.signupTrend[0]?.day)}</span>
             <span>{formatDay(students.signupTrend[students.signupTrend.length - 1]?.day)}</span>
           </div>
@@ -177,7 +177,7 @@ export function KpiDashboard({
             subtitle={`${nf(ai.trend.reduce((s, d) => s + d.count, 0))} interactions in the window`}
           >
             <Sparkline points={ai.trend} color={CYAN} height={64} label="AI interactions per day, last 14 days" />
-            <div className="mt-2 flex justify-between text-[11px] text-gray-400">
+            <div className="mt-2 flex justify-between text-[11px] text-ink-faint">
               <span>{formatDay(ai.trend[0]?.day)}</span>
               <span>{formatDay(ai.trend[ai.trend.length - 1]?.day)}</span>
             </div>
@@ -186,8 +186,8 @@ export function KpiDashboard({
             <BarChart data={providerData} color={BLUE} emptyLabel="No AI interactions yet" />
           </Panel>
         </div>
-        <p className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-xs text-gray-500">
-          <span className="font-semibold text-gray-700">Note:</span> per-token dollar cost is not shown — it
+        <p className="rounded-lg border border-white/5 bg-white/5 px-4 py-3 text-xs text-ink-soft">
+          <span className="font-semibold text-ink-main">Note:</span> per-token dollar cost is not shown — it
           requires token metering per interaction, which the platform does not track yet. Interaction counts,
           cache-hit rate and provider mix are exact.
         </p>
@@ -214,11 +214,11 @@ export function KpiDashboard({
             <ul className="space-y-2.5">
               {notifRows.map((r) => (
                 <li key={r.key} className="flex items-center justify-between text-sm">
-                  <span className="flex items-center gap-2 text-gray-700">
+                  <span className="flex items-center gap-2 text-ink-main">
                     <span aria-hidden className="h-2.5 w-2.5 rounded-full" style={{ background: r.color }} />
                     {r.label}
                   </span>
-                  <span className="tabular-nums font-semibold text-gray-900">{nf(r.count)}</span>
+                  <span className="tabular-nums font-semibold text-ink-main">{nf(r.count)}</span>
                 </li>
               ))}
             </ul>
@@ -229,13 +229,13 @@ export function KpiDashboard({
           <Panel title="System status">
             <dl className="space-y-3 text-sm">
               <div className="flex items-center justify-between">
-                <dt className="text-gray-500">Database</dt>
+                <dt className="text-ink-soft">Database</dt>
                 <dd>
                   <StatusBadge ok={ops.dbStatus === "ok"} okLabel="Operational" badLabel="Degraded" />
                 </dd>
               </div>
               <div className="flex items-center justify-between">
-                <dt className="text-gray-500">Notification delivery</dt>
+                <dt className="text-ink-soft">Notification delivery</dt>
                 <dd>
                   <StatusBadge
                     ok={ops.deliveryRate >= 0.9 || notifTotal === 0}
@@ -245,7 +245,7 @@ export function KpiDashboard({
                 </dd>
               </div>
               <div className="flex items-center justify-between">
-                <dt className="text-gray-500">Moderation backlog</dt>
+                <dt className="text-ink-soft">Moderation backlog</dt>
                 <dd>
                   <StatusBadge
                     ok={ops.postsPendingReview === 0}
@@ -259,7 +259,7 @@ export function KpiDashboard({
         </div>
       </Section>
 
-      <p className="text-center text-xs text-gray-400">
+      <p className="text-center text-xs text-ink-faint">
         Generated {new Date(kpis.generatedAt).toLocaleString()}
       </p>
     </div>
@@ -269,8 +269,8 @@ export function KpiDashboard({
 function StatusBadge({ ok, okLabel, badLabel }: { ok: boolean; okLabel: string; badLabel: string }) {
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${
-        ok ? "bg-neon-50 text-neon-700" : "bg-red-50 text-red-700"
+      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold ${
+        ok ? "border-neon-500/20 bg-neon-500/10 text-neon-300" : "border-red-500/20 bg-red-500/10 text-red-300"
       }`}
     >
       <span aria-hidden className={`h-1.5 w-1.5 rounded-full ${ok ? "bg-neon-500" : "bg-red-500"}`} />

@@ -81,7 +81,7 @@ export function BarChart({
   emptyLabel?: string;
 }) {
   if (data.length === 0) {
-    return <p className="text-sm text-gray-400">{emptyLabel}</p>;
+    return <p className="text-sm text-ink-faint">{emptyLabel}</p>;
   }
   const max = Math.max(...data.map((d) => d.value), 1);
   return (
@@ -92,11 +92,11 @@ export function BarChart({
         return (
           <li key={d.label}>
             <div className="mb-1 flex items-center justify-between text-xs">
-              <span className="font-medium capitalize text-gray-700">{d.label}</span>
-              <span className="tabular-nums text-gray-500">{shown}</span>
+              <span className="font-medium capitalize text-ink-main">{d.label}</span>
+              <span className="tabular-nums text-ink-soft">{shown}</span>
             </div>
             <div
-              className="h-2 overflow-hidden rounded-full bg-gray-100"
+              className="h-2 overflow-hidden rounded-full bg-white/10"
               role="img"
               aria-label={`${d.label}: ${shown}`}
             >
@@ -131,12 +131,12 @@ export function Meter({
     <div>
       {(label || caption) && (
         <div className="mb-1.5 flex items-center justify-between text-xs">
-          {label ? <span className="font-medium text-gray-700">{label}</span> : <span />}
-          <span className="tabular-nums font-semibold text-gray-900">{caption ?? shownPct}</span>
+          {label ? <span className="font-medium text-ink-main">{label}</span> : <span />}
+          <span className="tabular-nums font-semibold text-ink-main">{caption ?? shownPct}</span>
         </div>
       )}
       <div
-        className="h-2.5 overflow-hidden rounded-full bg-gray-100"
+        className="h-2.5 overflow-hidden rounded-full bg-white/10"
         role="progressbar"
         aria-valuenow={Math.round(pct)}
         aria-valuemin={0}

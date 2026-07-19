@@ -56,7 +56,7 @@ export function Navbar({ locale, signedIn, loginLabel, registerLabel }: NavbarPr
       <header
         className={`landing-nav fixed top-0 left-0 right-0 z-50 h-20 transition-all duration-400 ${
           scrolled
-            ? 'bg-dark-100/90 backdrop-blur-xl shadow-[0_1px_3px_rgba(0,0,0,0.06)] border-b border-black/[0.04]'
+            ? 'bg-dark-100/90 backdrop-blur-xl shadow-[0_1px_3px_rgba(0,0,0,0.4)] border-b border-white/5'
             : 'bg-transparent border-b border-transparent'
         }`}
         style={{ animation: 'fade-in-down 0.6s cubic-bezier(0.16,1,0.3,1) 0.2s both' }}
@@ -73,16 +73,16 @@ export function Navbar({ locale, signedIn, loginLabel, registerLabel }: NavbarPr
           </Link>
           <nav className="hidden lg:flex lg:items-center lg:gap-1">
             {links.map(link => (
-              <Link key={link.href} href={link.href} className={`rounded-lg px-4 py-2.5 text-sm font-medium transition-all duration-200 ${scrolled ? 'text-gray-600 hover:text-gray-900 hover:bg-gray-50' : 'text-white/70 hover:text-white hover:bg-dark-100/10'}`}>{link.label}</Link>
+              <Link key={link.href} href={link.href} className={`rounded-lg px-4 py-2.5 text-sm font-medium transition-all duration-200 ${scrolled ? 'text-ink-soft hover:text-ink-main hover:bg-white/5' : 'text-white/70 hover:text-white hover:bg-dark-100/10'}`}>{link.label}</Link>
             ))}
           </nav>
           <div className="hidden lg:flex lg:items-center lg:gap-3">
             <LocaleSwitcher currentLocale={locale as Locale} />
-            {!signedIn && <Link href={`/${locale}/login`} className={`rounded-lg px-4 py-2.5 text-sm font-medium transition-all duration-200 ${scrolled ? 'text-gray-600 hover:text-gray-900 hover:bg-gray-50' : 'text-white/70 hover:text-white hover:bg-dark-100/10'}`}>{loginLabel}</Link>}
+            {!signedIn && <Link href={`/${locale}/login`} className={`rounded-lg px-4 py-2.5 text-sm font-medium transition-all duration-200 ${scrolled ? 'text-ink-soft hover:text-ink-main hover:bg-white/5' : 'text-white/70 hover:text-white hover:bg-dark-100/10'}`}>{loginLabel}</Link>}
             <Link href={ctaHref} className="inline-flex items-center gap-2 bg-land-green-600 text-white rounded-xl px-6 py-2.5 text-sm font-semibold transition-all duration-200 hover:bg-land-green-500 hover:scale-[1.03] hover:shadow-lg hover:shadow-land-green-600/25 active:scale-[0.98]">{signedIn ? 'Dashboard' : registerLabel}</Link>
           </div>
           <button className="lg:hidden flex h-11 w-11 items-center justify-center rounded-xl transition-colors" onClick={() => setMobileOpen(!mobileOpen)} aria-label={mobileOpen ? 'Close menu' : 'Open menu'} aria-expanded={mobileOpen}>
-            <svg className={`w-5 h-5 transition-colors duration-300 ${scrolled ? 'text-gray-700' : 'text-white'}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <svg className={`w-5 h-5 transition-colors duration-300 ${scrolled ? 'text-ink-main' : 'text-white'}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               {mobileOpen ? <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /> : <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />}
             </svg>
           </button>

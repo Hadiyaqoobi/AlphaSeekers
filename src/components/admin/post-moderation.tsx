@@ -34,9 +34,9 @@ const TYPE_LABELS: Record<string, string> = {
 
 const STATUS_COLORS: Record<string, string> = {
   draft: "bg-dark-100 text-ink-soft",
-  pending_review: "bg-amber-100 text-amber-700",
-  published: "bg-neon-100 text-neon-700",
-  rejected: "bg-red-100 text-red-700",
+  pending_review: "bg-amber-500/10 text-amber-300",
+  published: "bg-neon-500/10 text-neon-300",
+  rejected: "bg-red-500/10 text-red-300",
   archived: "bg-dark-200 text-ink-soft",
 };
 
@@ -149,25 +149,25 @@ export function PostModeration({ locale }: { locale: string }) {
             key={tab.value}
             onClick={() => setFilter(tab.value)}
             className={`px-4 py-3 text-sm font-medium relative ${
-              filter === tab.value ? "text-neon-700" : "text-ink-soft hover:text-ink-main"
+              filter === tab.value ? "text-neon-400" : "text-ink-soft hover:text-ink-main"
             }`}
           >
             {tab.label}
-            {filter === tab.value && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-neon-600" />}
+            {filter === tab.value && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-neon-500" />}
           </button>
         ))}
       </div>
 
       {error && (
-        <div className="mb-4 rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700">{error}</div>
+        <div className="mb-4 rounded-lg bg-red-500/10 border border-red-500/20 p-3 text-sm text-red-300">{error}</div>
       )}
 
       {/* Moderation guidelines */}
-      <details className="mb-6 rounded-xl bg-blue-50 border border-blue-100 p-4">
-        <summary className="cursor-pointer text-sm font-semibold text-blue-900">
+      <details className="mb-6 rounded-xl bg-blue-500/10 border border-blue-500/20 p-4">
+        <summary className="cursor-pointer text-sm font-semibold text-blue-200">
           Moderation guidelines
         </summary>
-        <ul className="mt-3 text-sm text-blue-800 space-y-1 list-disc pl-5">
+        <ul className="mt-3 text-sm text-blue-300 space-y-1 list-disc pl-5">
           <li>Is the content appropriate for all ages?</li>
           <li>Does it contain personal information the student might not want public?</li>
           <li>Is it genuine student content (not copied from the internet)?</li>
@@ -201,7 +201,7 @@ export function PostModeration({ locale }: { locale: string }) {
                       {post.status.replace("_", " ")}
                     </span>
                     {post.featured && (
-                      <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">
+                      <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-300">
                         ⭐ Featured
                       </span>
                     )}
@@ -226,14 +226,14 @@ export function PostModeration({ locale }: { locale: string }) {
                       <button
                         onClick={() => handleApprove(post.id)}
                         disabled={processing === post.id}
-                        className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-neon-600 hover:bg-neon-700 disabled:opacity-50"
+                        className="px-3 py-1.5 rounded-lg text-xs font-semibold text-black bg-neon-600 hover:bg-neon-500 disabled:opacity-50"
                       >
                         {processing === post.id ? "..." : "Approve ✓"}
                       </button>
                       <button
                         onClick={() => setRejecting(post.id)}
                         disabled={processing === post.id}
-                        className="px-3 py-1.5 rounded-lg text-xs font-semibold text-red-700 bg-red-50 hover:bg-red-100 disabled:opacity-50"
+                        className="px-3 py-1.5 rounded-lg text-xs font-semibold text-red-300 bg-red-500/15 hover:bg-red-500/25 disabled:opacity-50"
                       >
                         Reject ✗
                       </button>
@@ -244,7 +244,7 @@ export function PostModeration({ locale }: { locale: string }) {
                       onClick={() => handleToggleFeatured(post)}
                       disabled={processing === post.id}
                       className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${
-                        post.featured ? "bg-amber-100 text-amber-800 hover:bg-amber-200" : "bg-dark-100 text-ink-main hover:bg-dark-200"
+                        post.featured ? "bg-amber-500/15 text-amber-300 hover:bg-amber-500/25" : "bg-dark-100 text-ink-main hover:bg-dark-200"
                       } disabled:opacity-50`}
                     >
                       {post.featured ? "★ Unfeature" : "☆ Feature"}
@@ -271,13 +271,13 @@ export function PostModeration({ locale }: { locale: string }) {
                     onChange={(e) => setRejectNotes(e.target.value)}
                     placeholder="Explain why this post needs changes. Be kind and specific."
                     rows={3}
-                    className="w-full rounded-lg border border-line-DEFAULT px-3 py-2 text-sm"
+                    className="w-full rounded-lg bg-dark-200 border border-white/10 px-3 py-2 text-sm text-ink-main placeholder-ink-faint focus:border-neon-500 focus:outline-none"
                   />
                   <div className="flex items-center gap-2 mt-2">
                     <button
                       onClick={() => handleReject(post.id)}
                       disabled={!rejectNotes.trim() || processing === post.id}
-                      className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-red-600 hover:bg-red-700 disabled:opacity-50"
+                      className="px-4 py-2 rounded-lg text-sm font-semibold text-red-300 bg-red-500/15 hover:bg-red-500/25 disabled:opacity-50"
                     >
                       Send rejection
                     </button>
@@ -326,7 +326,7 @@ export function PostModeration({ locale }: { locale: string }) {
                 </svg>
               </button>
             </div>
-            <span className="text-xs font-semibold text-neon-600">{TYPE_LABELS[selectedPost.type]}</span>
+            <span className="text-xs font-semibold text-neon-400">{TYPE_LABELS[selectedPost.type]}</span>
             <h2 className="text-2xl font-bold text-ink-main mt-2 mb-2">{selectedPost.title}</h2>
             <p className="text-sm text-ink-soft mb-4">
               By {selectedPost.author.name}
@@ -337,7 +337,7 @@ export function PostModeration({ locale }: { locale: string }) {
                 <Image src={selectedPost.coverImageUrl} alt="" fill className="object-cover" sizes="100vw" />
               </div>
             )}
-            <div className="prose prose-sm prose-slate max-w-none whitespace-pre-wrap">
+            <div className="prose prose-sm prose-invert max-w-none whitespace-pre-wrap">
               {selectedPost.content}
             </div>
           </div>

@@ -109,8 +109,8 @@ export function JobOps({ initial }: { initial: JobOpsData; locale: string }) {
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold tracking-tight text-gray-900">Job operations</h2>
-          <p className="mt-0.5 text-sm text-gray-500">
+          <h2 className="text-xl font-bold tracking-tight text-ink-main">Job operations</h2>
+          <p className="mt-0.5 text-sm text-ink-soft">
             Durable queue health and dead-letter recovery. Requeue resets a job to run again now.
           </p>
         </div>
@@ -118,14 +118,14 @@ export function JobOps({ initial }: { initial: JobOpsData; locale: string }) {
           type="button"
           onClick={refresh}
           disabled={loading}
-          className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+          className="rounded-xl border border-white/10 bg-dark-100 px-4 py-2 text-sm font-semibold text-ink-main transition hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {loading ? "Refreshing…" : "Refresh"}
         </button>
       </div>
 
       {error && (
-        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+        <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300" role="alert">
           {error}
         </div>
       )}
@@ -142,17 +142,17 @@ export function JobOps({ initial }: { initial: JobOpsData; locale: string }) {
         />
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-        <div className="border-b border-gray-200 px-5 py-3">
-          <h3 className="text-sm font-semibold text-gray-900">Dead-letter queue</h3>
-          <p className="mt-0.5 text-xs text-gray-500">
+      <div className="overflow-hidden rounded-xl border border-white/5 bg-dark-100">
+        <div className="border-b border-white/10 px-5 py-3">
+          <h3 className="text-sm font-semibold text-ink-main">Dead-letter queue</h3>
+          <p className="mt-0.5 text-xs text-ink-soft">
             Jobs that exhausted their retries. Fix the root cause, then requeue.
           </p>
         </div>
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 text-sm">
-            <thead className="bg-gray-50">
-              <tr className="text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+          <table className="min-w-full divide-y divide-white/5 text-sm">
+            <thead className="bg-white/5">
+              <tr className="text-left text-xs font-semibold uppercase tracking-wider text-ink-soft">
                 <th className="px-4 py-3">Type</th>
                 <th className="px-4 py-3">Attempts</th>
                 <th className="px-4 py-3">Last error</th>
@@ -160,10 +160,10 @@ export function JobOps({ initial }: { initial: JobOpsData; locale: string }) {
                 <th className="px-4 py-3 text-right">Action</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-white/5">
               {data.dead.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-4 py-10 text-center text-sm text-gray-400">
+                  <td colSpan={5} className="px-4 py-10 text-center text-sm text-ink-faint">
                     No dead-lettered jobs. The queue is healthy.
                   </td>
                 </tr>
@@ -171,23 +171,23 @@ export function JobOps({ initial }: { initial: JobOpsData; locale: string }) {
                 data.dead.map((job) => {
                   const busy = requeuing.has(job.id);
                   return (
-                    <tr key={job.id} className="align-top">
+                    <tr key={job.id} className="align-top hover:bg-white/5">
                       <td className="px-4 py-3">
-                        <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 font-mono text-xs font-semibold text-gray-700">
+                        <span className="inline-flex items-center rounded-full bg-white/5 px-2.5 py-1 font-mono text-xs font-semibold text-ink-soft">
                           {job.type}
                         </span>
                       </td>
-                      <td className="whitespace-nowrap px-4 py-3 tabular-nums text-gray-700">{job.attempts}</td>
-                      <td className="max-w-md px-4 py-3 text-xs text-gray-500">
+                      <td className="whitespace-nowrap px-4 py-3 tabular-nums text-ink-main">{job.attempts}</td>
+                      <td className="max-w-md px-4 py-3 text-xs text-ink-soft">
                         {job.lastError ? (
                           <span className="break-words" title={job.lastError}>
                             {truncate(job.lastError)}
                           </span>
                         ) : (
-                          <span className="text-gray-300">—</span>
+                          <span className="text-ink-faint">—</span>
                         )}
                       </td>
-                      <td className="whitespace-nowrap px-4 py-3 text-xs text-gray-500">
+                      <td className="whitespace-nowrap px-4 py-3 text-xs text-ink-soft">
                         {new Date(job.updatedAt).toLocaleString()}
                       </td>
                       <td className="whitespace-nowrap px-4 py-3 text-right">
@@ -195,7 +195,7 @@ export function JobOps({ initial }: { initial: JobOpsData; locale: string }) {
                           type="button"
                           onClick={() => requeue(job.id)}
                           disabled={busy}
-                          className="rounded-lg border border-neon-200 bg-neon-50 px-3 py-1.5 text-xs font-semibold text-neon-700 transition hover:bg-neon-100 disabled:cursor-not-allowed disabled:opacity-50"
+                          className="rounded-lg border border-neon-500/30 bg-neon-500/10 px-3 py-1.5 text-xs font-semibold text-neon-300 transition hover:bg-neon-500/20 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           {busy ? "Requeuing…" : "Requeue"}
                         </button>

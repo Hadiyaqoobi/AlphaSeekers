@@ -22,10 +22,10 @@ export default async function PendingApprovalPage({ params }: PendingApprovalPag
     <section className="mx-auto flex min-h-[60vh] max-w-lg items-center justify-center px-6 py-16 lg:px-8">
       <div className="w-full text-center">
         {/* Animated Checkmark Circle */}
-        <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-neon-50">
-          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-neon-100">
+        <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-neon-500/10">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-neon-500/20">
             <svg
-              className="h-8 w-8 text-neon-600 animate-[pulse_3s_ease-in-out_infinite]"
+              className="h-8 w-8 text-neon-400 animate-[pulse_3s_ease-in-out_infinite]"
               fill="none"
               stroke="currentColor"
               strokeWidth={2}
@@ -41,22 +41,22 @@ export default async function PendingApprovalPage({ params }: PendingApprovalPag
         </div>
 
         {/* Kicker */}
-        <p className="mt-6 text-xs font-semibold uppercase tracking-widest text-neon-600">
+        <p className="mt-6 text-xs font-semibold uppercase tracking-widest text-neon-400">
           {t("eyebrow")}
         </p>
 
         {/* Title */}
-        <h1 className="mt-3 text-3xl font-bold tracking-tight text-gray-900">
+        <h1 className="mt-3 text-3xl font-bold tracking-tight text-ink-main">
           {t("title")}
         </h1>
 
         {/* Body */}
-        <p className="mx-auto mt-4 max-w-sm text-base leading-relaxed text-gray-500">
+        <p className="mx-auto mt-4 max-w-sm text-base leading-relaxed text-ink-soft">
           {t("body")}
         </p>
 
         {/* Note Card */}
-        <div className="mx-auto mt-8 max-w-sm rounded-2xl border border-gray-100 bg-dark-100 p-6 shadow-sm">
+        <div className="mx-auto mt-8 max-w-sm rounded-2xl border border-white/5 bg-dark-100 p-6">
           <div className="flex items-start gap-3">
             <svg
               className="mt-0.5 h-5 w-5 shrink-0 text-neon-500"
@@ -71,7 +71,7 @@ export default async function PendingApprovalPage({ params }: PendingApprovalPag
                 strokeLinejoin="round"
               />
             </svg>
-            <p className="text-left text-sm leading-relaxed text-gray-600">
+            <p className="text-left text-sm leading-relaxed text-ink-soft">
               {t("note")}
             </p>
           </div>
@@ -80,13 +80,13 @@ export default async function PendingApprovalPage({ params }: PendingApprovalPag
         {/* Actions */}
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
           <Link
-            className="inline-flex min-h-12 items-center rounded-xl bg-neon-600 px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-neon-700 focus:outline-none focus:ring-2 focus:ring-neon-500/20"
+            className="inline-flex min-h-12 items-center rounded-xl bg-neon-600 px-6 text-sm font-semibold text-black transition hover:bg-neon-500 focus:outline-none focus:ring-2 focus:ring-neon-500/20"
             href={`/${params.locale}/login`}
           >
             {t("goToLogin")}
           </Link>
           <Link
-            className="inline-flex min-h-12 items-center rounded-xl border border-gray-200 bg-dark-100 px-6 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 hover:shadow-md"
+            className="inline-flex min-h-12 items-center rounded-xl border border-white/10 bg-dark-100 px-6 text-sm font-semibold text-ink-main transition hover:bg-white/5"
             href={`/${params.locale}`}
           >
             {t("home")}

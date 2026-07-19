@@ -33,10 +33,10 @@ export default async function LibraryPage({ params, searchParams }: LibraryPageP
     <section className="mx-auto max-w-6xl px-6 py-10 lg:px-8">
       {/* Page Header */}
       <header className="mb-10">
-        <p className="text-xs font-semibold uppercase tracking-widest text-neon-600">
+        <p className="text-xs font-semibold uppercase tracking-widest text-neon-400">
           {t("title")}
         </p>
-        <h1 className="mt-2 text-4xl font-bold tracking-tight text-gray-900">
+        <h1 className="mt-2 text-4xl font-bold tracking-tight text-ink-main">
           {t("subtitle")}
         </h1>
 
@@ -45,7 +45,7 @@ export default async function LibraryPage({ params, searchParams }: LibraryPageP
           <form className="mt-6 flex gap-3" method="GET">
             <div className="relative flex-1">
               <svg
-                className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-300"
+                className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-ink-faint"
                 fill="none"
                 stroke="currentColor"
                 strokeWidth={2}
@@ -58,14 +58,14 @@ export default async function LibraryPage({ params, searchParams }: LibraryPageP
                 />
               </svg>
               <input
-                className="min-h-12 w-full rounded-xl border border-gray-200 bg-dark-100 py-3 pl-12 pr-4 text-sm text-gray-900 placeholder:text-gray-400 focus:border-neon-500 focus:outline-none focus:ring-2 focus:ring-neon-500/20"
+                className="min-h-12 w-full rounded-xl border border-white/10 bg-dark-200 py-3 pl-12 pr-4 text-sm text-ink-main placeholder:text-ink-faint focus:border-neon-500 focus:outline-none focus:ring-2 focus:ring-neon-500/20"
                 defaultValue={query}
                 name="q"
                 placeholder={t("searchPlaceholder")}
               />
             </div>
             <button
-              className="inline-flex min-h-12 items-center rounded-xl bg-neon-600 px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-neon-700 focus:outline-none focus:ring-2 focus:ring-neon-500/20"
+              className="inline-flex min-h-12 items-center rounded-xl bg-neon-600 px-6 text-sm font-semibold text-black transition hover:bg-neon-500 focus:outline-none focus:ring-2 focus:ring-neon-500/20"
               type="submit"
             >
               {t("searchButton")}
@@ -86,15 +86,15 @@ export default async function LibraryPage({ params, searchParams }: LibraryPageP
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {items.map((item) => (
             <article
-              className="group flex flex-col rounded-2xl border border-gray-100 bg-dark-100 shadow-sm transition-all duration-200 hover:shadow-lg"
+              className="group flex flex-col rounded-2xl border border-white/5 bg-dark-100 transition-all duration-200 hover:shadow-lg"
               key={item.id}
             >
               <div className="flex flex-1 flex-col p-6">
                 {/* File Icon + Category */}
                 <div className="mb-4 flex items-start justify-between">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-neon-50">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-neon-500/10">
                     <svg
-                      className="h-5 w-5 text-neon-600"
+                      className="h-5 w-5 text-neon-400"
                       fill="none"
                       stroke="currentColor"
                       strokeWidth={1.5}
@@ -107,21 +107,21 @@ export default async function LibraryPage({ params, searchParams }: LibraryPageP
                       />
                     </svg>
                   </div>
-                  <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-500">
+                  <span className="rounded-full bg-white/5 px-3 py-1 text-xs font-semibold text-ink-soft">
                     {item.category}
                   </span>
                 </div>
 
                 {/* Title & Author */}
-                <h2 className="text-lg font-bold text-gray-900 group-hover:text-neon-700 transition-colors">
+                <h2 className="text-lg font-bold text-ink-main group-hover:text-neon-300 transition-colors">
                   {item.title}
                 </h2>
-                <p className="mt-1 text-sm text-gray-500">
+                <p className="mt-1 text-sm text-ink-soft">
                   {item.author ?? t("unknownAuthor")}
                 </p>
 
                 {/* File Size */}
-                <div className="mt-3 flex items-center gap-2 text-xs text-gray-400">
+                <div className="mt-3 flex items-center gap-2 text-xs text-ink-faint">
                   <span>
                     {item.fileSize
                       ? `${(item.fileSize / 1024 / 1024).toFixed(2)} MB`
@@ -131,12 +131,12 @@ export default async function LibraryPage({ params, searchParams }: LibraryPageP
                 </div>
 
                 {/* Actions */}
-                <div className="mt-auto pt-5 border-t border-gray-50">
+                <div className="mt-auto pt-5 border-t border-white/5">
                   <div className="flex flex-wrap gap-2">
                     {item.fileUrl ? (
                       <>
                         <a
-                          className="inline-flex items-center gap-1.5 rounded-lg bg-neon-600 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-neon-700"
+                          className="inline-flex items-center gap-1.5 rounded-lg bg-neon-600 px-4 py-2 text-xs font-semibold text-black transition hover:bg-neon-500"
                           href={item.fileUrl}
                           rel="noreferrer"
                           target="_blank"
@@ -149,13 +149,13 @@ export default async function LibraryPage({ params, searchParams }: LibraryPageP
                         <SaveOfflineButton fileUrl={item.fileUrl} title={item.title} />
                       </>
                     ) : (
-                      <span className="inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-4 py-2 text-xs font-semibold text-gray-400">
+                      <span className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold text-ink-faint">
                         {t("fileUnavailable")}
                       </span>
                     )}
                     {item.externalUrl ? (
                       <a
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-dark-100 px-4 py-2 text-xs font-semibold text-gray-600 shadow-sm transition hover:bg-gray-50"
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-dark-100 px-4 py-2 text-xs font-semibold text-ink-soft transition hover:bg-white/5"
                         href={item.externalUrl}
                         rel="noreferrer"
                         target="_blank"

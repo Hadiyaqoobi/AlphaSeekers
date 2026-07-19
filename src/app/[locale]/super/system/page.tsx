@@ -42,8 +42,8 @@ export default async function SuperSystemPage({ params }: Props) {
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="text-xl font-bold tracking-tight text-gray-900">System health</h2>
-        <p className="mt-0.5 text-sm text-gray-500">
+        <h2 className="text-xl font-bold tracking-tight text-ink-main">System health</h2>
+        <p className="mt-0.5 text-sm text-ink-soft">
           Live database status, notification delivery and moderation backlog.
         </p>
       </div>
@@ -71,19 +71,19 @@ export default async function SuperSystemPage({ params }: Props) {
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-          <h3 className="text-sm font-semibold text-gray-900">Notification delivery</h3>
-          <p className="mt-0.5 text-xs text-gray-500">
+        <div className="rounded-xl border border-white/5 bg-dark-100 p-5">
+          <h3 className="text-sm font-semibold text-ink-main">Notification delivery</h3>
+          <p className="mt-0.5 text-xs text-ink-soft">
             {notifTotal.toLocaleString()} notifications attempted, by status.
           </p>
           <ul className="mt-4 space-y-2.5">
             {notifRows.map((r) => (
               <li key={r.key} className="flex items-center justify-between text-sm">
-                <span className="flex items-center gap-2 text-gray-700">
+                <span className="flex items-center gap-2 text-ink-main">
                   <span aria-hidden className="h-2.5 w-2.5 rounded-full" style={{ background: r.color }} />
                   {r.label}
                 </span>
-                <span className="tabular-nums font-semibold text-gray-900">{r.count.toLocaleString()}</span>
+                <span className="tabular-nums font-semibold text-ink-main">{r.count.toLocaleString()}</span>
               </li>
             ))}
           </ul>
@@ -92,45 +92,45 @@ export default async function SuperSystemPage({ params }: Props) {
           </div>
         </div>
 
-        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-          <h3 className="text-sm font-semibold text-gray-900">Related tools</h3>
-          <p className="mt-0.5 text-xs text-gray-500">Deeper diagnostics and platform metrics.</p>
+        <div className="rounded-xl border border-white/5 bg-dark-100 p-5">
+          <h3 className="text-sm font-semibold text-ink-main">Related tools</h3>
+          <p className="mt-0.5 text-xs text-ink-soft">Deeper diagnostics and platform metrics.</p>
           <div className="mt-4 space-y-3">
             <Link
               href={`/${params.locale}/admin/ai`}
-              className="flex items-center justify-between rounded-xl border border-gray-200 px-4 py-3 text-sm font-semibold text-gray-800 transition hover:bg-gray-50"
+              className="flex items-center justify-between rounded-xl border border-white/10 px-4 py-3 text-sm font-semibold text-ink-main transition hover:bg-white/5"
             >
               <span>
                 AI Health
-                <span className="ml-2 font-normal text-gray-400">Provider status &amp; interaction logs</span>
+                <span className="ml-2 font-normal text-ink-faint">Provider status &amp; interaction logs</span>
               </span>
-              <span aria-hidden className="text-gray-400">→</span>
+              <span aria-hidden className="text-ink-faint">→</span>
             </Link>
             <Link
               href={`/${params.locale}/super`}
-              className="flex items-center justify-between rounded-xl border border-gray-200 px-4 py-3 text-sm font-semibold text-gray-800 transition hover:bg-gray-50"
+              className="flex items-center justify-between rounded-xl border border-white/10 px-4 py-3 text-sm font-semibold text-ink-main transition hover:bg-white/5"
             >
               <span>
                 KPI overview
-                <span className="ml-2 font-normal text-gray-400">Students, classes, AI &amp; ops trends</span>
+                <span className="ml-2 font-normal text-ink-faint">Students, classes, AI &amp; ops trends</span>
               </span>
-              <span aria-hidden className="text-gray-400">→</span>
+              <span aria-hidden className="text-ink-faint">→</span>
             </Link>
             <Link
               href={`/${params.locale}/super/audit`}
-              className="flex items-center justify-between rounded-xl border border-gray-200 px-4 py-3 text-sm font-semibold text-gray-800 transition hover:bg-gray-50"
+              className="flex items-center justify-between rounded-xl border border-white/10 px-4 py-3 text-sm font-semibold text-ink-main transition hover:bg-white/5"
             >
               <span>
                 Audit log
-                <span className="ml-2 font-normal text-gray-400">Privileged staff actions</span>
+                <span className="ml-2 font-normal text-ink-faint">Privileged staff actions</span>
               </span>
-              <span aria-hidden className="text-gray-400">→</span>
+              <span aria-hidden className="text-ink-faint">→</span>
             </Link>
           </div>
         </div>
       </div>
 
-      <p className="text-center text-xs text-gray-400">
+      <p className="text-center text-xs text-ink-faint">
         Generated {new Date(kpis.generatedAt).toLocaleString()}
       </p>
     </div>
