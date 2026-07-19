@@ -684,3 +684,40 @@ model SiteSettings {
   data      Json
   updatedAt DateTime @updatedAt
 }
+
+// ─── Background job queue (automation backbone) ──────────────────────────────
+//
+// A durable, Postgres-backed work queue. Workers claim due jobs with
+// FOR UPDATE SKIP LOCKED (see src/lib/jobs/queue.ts), so many workers can drain
+// concurrently without double-processing. Failed jobs retry with exponential
+// backoff and dead-letter (status=DEAD) after maxAttempts. `dedupeKey` gives
+// idempotency (enqueueing the same logical job twice is a no-op).
+
+enum JobStatus {
+  PENDING // waiting to run (runAt in the past = due)
+  ACTIVE // claimed by a worker, in progress
+  COMPLETED
+  FAILED // will retry (attempts < maxAttempts)
+  DEAD // exhausted retries; needs human attention
+}
+
+model Job {
+  id          String    @id @default(cuid())
+  type        String
+  payload     Json      @default("{}")
+  status      JobStatus @default(PENDING)
+  priority    Int       @default(0) // higher runs first among due jobs
+  runAt       DateTime  @default(now()) // earliest time the job may run
+  attempts    Int       @default(0)
+  maxAttempts Int       @default(5)
+  dedupeKey   String?   @unique // idempotency: skip if a live job already has it
+  lockedAt    DateTime?
+  lockedBy    String? // worker id holding the claim
+  lastError   String?   @db.Text
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Claim query orders due work by (priority desc, runAt asc) filtered on status.
+  @@index([status, runAt, priority])
+  @@index([type, status])
+}

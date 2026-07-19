@@ -1,0 +1,177 @@
+/**
+ * Durable, Postgres-backed job queue.
+ *
+ * Design notes (the interesting bits):
+ *  - Claiming uses `SELECT ... FOR UPDATE SKIP LOCKED` so N workers can drain the
+ *    queue concurrently without ever handing the same job to two workers. The row
+ *    lock is held only for the instant it takes to flip status→ACTIVE.
+ *  - Retries use exponential backoff (runAt pushed into the future); after
+ *    `maxAttempts` a job dead-letters (status=DEAD) for human inspection.
+ *  - `dedupeKey` provides idempotency: enqueueing a logical job whose key is
+ *    already live (PENDING/ACTIVE/FAILED) is a no-op. This lets schedulers run
+ *    every minute without creating duplicate work.
+ *
+ * No external broker (Redis/SQS) — the app already depends on Postgres, and a
+ * transactional queue that shares the DB gives exactly-once-ish semantics with
+ * app writes. See docs/adr/0006-postgres-job-queue.md.
+ */
+
+import { Prisma } from "@prisma/client";
+
+import { prisma } from "@/lib/prisma";
+
+export type EnqueueOptions = {
+  /** Delay before the job becomes due. */
+  runAt?: Date;
+  /** Higher runs first among due jobs. */
+  priority?: number;
+  /** Idempotency key: skip if a live job already holds it. */
+  dedupeKey?: string;
+  maxAttempts?: number;
+};
+
+export type ClaimedJob = {
+  id: string;
+  type: string;
+  payload: Prisma.JsonValue;
+  attempts: number;
+  maxAttempts: number;
+};
+
+/** Backoff schedule in seconds, indexed by attempt number (capped). */
+export function backoffSeconds(attempt: number): number {
+  const schedule = [10, 30, 120, 600, 1800, 3600];
+  return schedule[Math.min(attempt, schedule.length - 1)]!;
+}
+
+/**
+ * Enqueue a job. If `dedupeKey` is supplied and a live job (not COMPLETED/DEAD)
+ * already holds it, returns that job's id instead of creating a duplicate.
+ */
+export async function enqueue(
+  type: string,
+  payload: Record<string, unknown> = {},
+  options: EnqueueOptions = {},
+): Promise<{ id: string; deduped: boolean }> {
+  if (options.dedupeKey) {
+    const existing = await prisma.job.findFirst({
+      where: {
+        dedupeKey: options.dedupeKey,
+        status: { in: ["PENDING", "ACTIVE", "FAILED"] },
+      },
+      select: { id: true },
+    });
+    if (existing) return { id: existing.id, deduped: true };
+  }
+
+  try {
+    const job = await prisma.job.create({
+      data: {
+        type,
+        payload: payload as Prisma.InputJsonValue,
+        runAt: options.runAt ?? new Date(),
+        priority: options.priority ?? 0,
+        dedupeKey: options.dedupeKey ?? null,
+        maxAttempts: options.maxAttempts ?? 5,
+      },
+      select: { id: true },
+    });
+    return { id: job.id, deduped: false };
+  } catch (error) {
+    // Unique violation on dedupeKey ⇒ a concurrent enqueue won the race; treat as deduped.
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002" && options.dedupeKey) {
+      const existing = await prisma.job.findFirst({
+        where: { dedupeKey: options.dedupeKey },
+        select: { id: true },
+      });
+      if (existing) return { id: existing.id, deduped: true };
+    }
+    throw error;
+  }
+}
+
+/**
+ * Atomically claim up to `limit` due jobs for `workerId`, flipping them to
+ * ACTIVE. Uses FOR UPDATE SKIP LOCKED so concurrent workers never collide.
+ */
+export async function claim(workerId: string, limit: number): Promise<ClaimedJob[]> {
+  // Prisma stores DateTime as `timestamp without time zone` holding the UTC
+  // wall-clock. Comparing that column to a JS Date param would make Postgres
+  // apply the session timezone and shift "now", so we compute the current time
+  // entirely in SQL as a UTC-naive timestamp (`now() AT TIME ZONE 'UTC'`) to
+  // match the stored representation exactly.
+  const rows = await prisma.$queryRaw<
+    Array<{ id: string; type: string; payload: Prisma.JsonValue; attempts: number; maxAttempts: number }>
+  >`
+    UPDATE "Job" AS j
+    SET "status" = 'ACTIVE',
+        "lockedAt" = (now() AT TIME ZONE 'UTC'),
+        "lockedBy" = ${workerId},
+        "updatedAt" = (now() AT TIME ZONE 'UTC')
+    WHERE j."id" IN (
+      SELECT "id" FROM "Job"
+      WHERE "status" IN ('PENDING', 'FAILED') AND "runAt" <= (now() AT TIME ZONE 'UTC')
+      ORDER BY "priority" DESC, "runAt" ASC
+      FOR UPDATE SKIP LOCKED
+      LIMIT ${limit}
+    )
+    RETURNING j."id", j."type", j."payload", j."attempts", j."maxAttempts";
+  `;
+  return rows.map((r) => ({
+    id: r.id,
+    type: r.type,
+    payload: r.payload,
+    attempts: r.attempts,
+    maxAttempts: r.maxAttempts,
+  }));
+}
+
+export async function markCompleted(jobId: string): Promise<void> {
+  await prisma.job.update({
+    where: { id: jobId },
+    data: { status: "COMPLETED", lockedAt: null, lockedBy: null, lastError: null },
+  });
+}
+
+/**
+ * Record a failed attempt. Increments attempts; retries with backoff while
+ * attempts < maxAttempts, otherwise dead-letters (DEAD).
+ */
+export async function markFailed(job: ClaimedJob, error: unknown): Promise<"retry" | "dead"> {
+  const attempts = job.attempts + 1;
+  const message = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
+  const willRetry = attempts < job.maxAttempts;
+
+  await prisma.job.update({
+    where: { id: job.id },
+    data: {
+      attempts,
+      status: willRetry ? "FAILED" : "DEAD",
+      runAt: willRetry ? new Date(Date.now() + backoffSeconds(attempts) * 1000) : undefined,
+      lockedAt: null,
+      lockedBy: null,
+      lastError: message.slice(0, 2000),
+    },
+  });
+  return willRetry ? "retry" : "dead";
+}
+
+/**
+ * Reclaim jobs stuck in ACTIVE beyond `staleMs` (worker crashed mid-job): flip
+ * them back to FAILED so they get retried. Run periodically.
+ */
+export async function reapStalled(staleMs: number = 5 * 60 * 1000): Promise<number> {
+  const cutoff = new Date(Date.now() - staleMs);
+  const res = await prisma.job.updateMany({
+    where: { status: "ACTIVE", lockedAt: { lt: cutoff } },
+    data: { status: "FAILED", lockedAt: null, lockedBy: null },
+  });
+  return res.count;
+}
+
+export async function queueStats(): Promise<Record<string, number>> {
+  const groups = await prisma.job.groupBy({ by: ["status"], _count: { _all: true } });
+  const out: Record<string, number> = { PENDING: 0, ACTIVE: 0, COMPLETED: 0, FAILED: 0, DEAD: 0 };
+  for (const g of groups) out[g.status] = g._count._all;
+  return out;
+}
