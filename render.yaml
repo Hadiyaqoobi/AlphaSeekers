@@ -1,28 +1,33 @@
 # Render blueprint for AlphaSeekers.
 #
 # SIZING NOTE (from production readiness audit):
-#   The `free` plan CANNOT serve the target scale. Free web services sleep after
-#   ~15 min of inactivity (cold starts of 30s+), cap RAM at 512MB, and have no
-#   horizontal scaling — unacceptable for a live education platform with cron jobs,
-#   AI/RAG workloads, and Neon connections. Minimum recommended floor is ~$70-90/mo:
-#     - Render Standard web service (this file) — sized for steady traffic.
-#     - Neon paid plan WITH the pooler endpoint (-pooler host) for DATABASE_URL.
-#     - A transactional email provider (ESP) for reminders.
-#     - Separate dev/prod databases (do NOT share one Neon DB across environments).
-#   See docs/DEPLOYMENT_RUNBOOK.md for the full breakdown.
+#   For the TARGET scale (50+ courses, 10k students) the recommended floor is a
+#   Render Standard web service + the automation crons below + a Neon paid plan
+#   with the pooler endpoint + a transactional email provider + SEPARATE dev/prod
+#   databases. See docs/DEPLOYMENT_RUNBOOK.md for the full breakdown.
+#
+#   CURRENT ROLLOUT (deliberate): this file is pinned to a COST-NEUTRAL posture —
+#   `starter` web plan and NO cron services — so the initial rollout ships the code
+#   without changing your monthly bill. The automation backbone (job queue, event
+#   bus, handlers) is fully present in the code but DORMANT until the crons at the
+#   bottom of this file are re-enabled. Flip `plan: standard` and uncomment the
+#   cron block when you're ready to turn automation on.
 
 services:
   - type: web
     name: alphaseekers
     runtime: node
     region: oregon
-    # Upgraded from `free` — see SIZING NOTE above. Free tier cannot serve the
-    # target scale (cold starts, 512MB RAM cap, no scaling, sleeps when idle).
-    plan: standard
+    # Cost-neutral for the initial rollout. Upgrade to `standard` for the target
+    # scale (steady traffic, more RAM, no idle sleep) — see SIZING NOTE above.
+    plan: starter
     # Render gates rollouts and restarts unhealthy instances on this endpoint.
+    # /api/health is a cheap `SELECT 1` liveness probe (200 when the DB is reachable).
     healthCheckPath: /api/health
-    # Run DB migrations on every deploy so schema changes ship atomically with code.
-    buildCommand: npm install && npx prisma generate && npx prisma migrate deploy && npm run build
+    # Migrations are applied OUT-OF-BAND against the Neon DIRECT (unpooled) endpoint,
+    # because `prisma migrate deploy` cannot acquire its advisory lock over the pooled
+    # (PgBouncer) DATABASE_URL. See docs/DEPLOYMENT_RUNBOOK.md for the migrate step.
+    buildCommand: npm install && npx prisma generate && npm run build
     startCommand: npm start
     envVars:
       - key: NODE_VERSION
@@ -104,152 +109,71 @@ services:
       - key: GOOGLE_OAUTH_REDIRECT_URI
         sync: false
 
-  # --- Scheduled jobs -------------------------------------------------------
-  # Render cron jobs run a command on a schedule. These curl the app's cron
-  # endpoints with the CRON_SECRET bearer token. Set APP_BASE_URL and CRON_SECRET
-  # on EACH cron service to the same values as the web service (CRON_SECRET must
-  # match). If your Render plan/region does not support the `cron` type in a
-  # blueprint, create these as "Cron Job" services in the dashboard using the
-  # exact schedules/commands below — see docs/DEPLOYMENT_RUNBOOK.md.
-
-  # Job worker drain — the heart of the automation backbone. Every domain event
-  # (enrollment, homework submission, moderation, employee provisioning, session
-  # reminders) enqueues durable Jobs; this cron drains them by POSTing the worker
-  # endpoint once a minute. Each invocation claims a batch (FOR UPDATE SKIP LOCKED)
-  # and runs the registered handlers. See docs/adr/0006-postgres-job-queue.md.
-  # NOTE: this per-minute cron drain is the single-service run mode. At higher
-  # throughput, replace it with the dedicated Background Worker service defined in
-  # the commented block at the bottom of this file (runWorker() polling loop).
-  - type: cron
-    name: alphaseekers-worker
-    runtime: node
-    region: oregon
-    plan: starter
-    schedule: "* * * * *" # every minute — drain due jobs
-    buildCommand: ""
-    startCommand: curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" "$APP_BASE_URL/api/cron/worker"
-    envVars:
-      - key: APP_BASE_URL
-        sync: false
-      - key: CRON_SECRET
-        sync: false
-
-  # Reminders/scheduler now only ENQUEUE jobs (they no longer deliver inline); the
-  # worker cron above performs the actual sends. See ADR-0004 and ADR-0006.
-  - type: cron
-    name: alphaseekers-reminders
-    runtime: node
-    region: oregon
-    plan: starter
-    schedule: "*/10 * * * *" # every 10 minutes
-    buildCommand: ""
-    startCommand: curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" "$APP_BASE_URL/api/cron/reminders"
-    envVars:
-      - key: APP_BASE_URL
-        sync: false
-      - key: CRON_SECRET
-        sync: false
-
-  - type: cron
-    name: alphaseekers-scheduler
-    runtime: node
-    region: oregon
-    plan: starter
-    schedule: "0 * * * *" # hourly
-    buildCommand: ""
-    startCommand: curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" "$APP_BASE_URL/api/cron/scheduler"
-    envVars:
-      - key: APP_BASE_URL
-        sync: false
-      - key: CRON_SECRET
-        sync: false
-
-  - type: cron
-    name: alphaseekers-ai-prep
-    runtime: node
-    region: oregon
-    plan: starter
-    # Every 15 min: the ai-prep handler only prepares sessions starting in the next
-    # 25-45 min window, so it must run frequently to catch each upcoming session
-    # (a once-daily run almost never lands inside that window).
-    schedule: "*/15 * * * *"
-    buildCommand: ""
-    startCommand: curl -fsS -H "Authorization: Bearer $CRON_SECRET" "$APP_BASE_URL/api/cron/ai-prep"
-    envVars:
-      - key: APP_BASE_URL
-        sync: false
-      - key: CRON_SECRET
-        sync: false
-
-  - type: cron
-    name: alphaseekers-data-retention
-    runtime: node
-    region: oregon
-    plan: starter
-    schedule: "30 3 * * *" # nightly at 03:30 UTC
-    buildCommand: ""
-    startCommand: curl -fsS -H "Authorization: Bearer $CRON_SECRET" "$APP_BASE_URL/api/cron/data-retention"
-    envVars:
-      - key: APP_BASE_URL
-        sync: false
-      - key: CRON_SECRET
-        sync: false
-
-  - type: cron
-    name: alphaseekers-neon-warm
-    runtime: node
-    region: oregon
-    plan: starter
-    schedule: "*/5 * * * *" # every 5 minutes — keep Neon compute warm
-    buildCommand: ""
-    startCommand: curl -fsS -H "Authorization: Bearer $CRON_SECRET" "$APP_BASE_URL/api/cron/neon-warm"
-    envVars:
-      - key: APP_BASE_URL
-        sync: false
-      - key: CRON_SECRET
-        sync: false
-
-  # Daily super-admin KPI digest. Computes platform KPIs (getSuperKpis) and
-  # dispatches the digest once a day. Enqueue-only endpoint: the actual delivery
-  # runs on the worker cron above.
-  - type: cron
-    name: alphaseekers-kpi-digest
-    runtime: node
-    region: oregon
-    plan: starter
-    schedule: "0 6 * * *" # daily at 06:00 UTC
-    buildCommand: ""
-    startCommand: curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" "$APP_BASE_URL/api/cron/kpi-digest"
-    envVars:
-      - key: APP_BASE_URL
-        sync: false
-      - key: CRON_SECRET
-        sync: false
-
-  # --- ALTERNATIVE (scale-up): dedicated always-on Background Worker -----------
-  # The per-minute `alphaseekers-worker` cron above drains the queue in batches,
-  # which is simple and cheap but adds up to ~60s of polling latency and caps
-  # throughput at one batch per minute. When job volume outgrows that, REPLACE the
-  # worker cron with a dedicated Render Background Worker running the long-lived
-  # runWorker() loop (src/lib/jobs/worker.ts via scripts/worker.mjs). It polls
-  # continuously, claims jobs the instant they are due (near-zero latency), keeps
-  # draining while work exists, and reaps stalled jobs periodically. Because
-  # claiming uses FOR UPDATE SKIP LOCKED, you can run several replicas safely and
-  # they will never process the same job twice. Uncomment and remove the cron:
-  #
-  # - type: worker
-  #   name: alphaseekers-jobs
-  #   runtime: node
-  #   region: oregon
-  #   plan: starter
-  #   buildCommand: npm install && npx prisma generate && npm run build
-  #   startCommand: node scripts/worker.mjs
-  #   envVars:
-  #     # Shares the SAME env as the web service (DATABASE_URL must be the Neon
-  #     # pooled string; ALPHASEEKERS_MODE=production; provider/notification keys).
-  #     - key: NODE_VERSION
-  #       value: "20.18.1"
-  #     - key: ALPHASEEKERS_MODE
-  #       value: production
-  #     - key: DATABASE_URL
-  #       sync: false
+# --- Scheduled jobs (DEFERRED — automation is dormant until these are enabled) ---
+#
+# The automation backbone (Postgres job queue with FOR UPDATE SKIP LOCKED, retry/
+# backoff/dead-letter/dedupe, event bus, handlers) is fully implemented in the code
+# but nothing DRAINS the queue until a worker runs. To turn automation ON, uncomment
+# the crons below (each curls a /api/cron/* endpoint with the CRON_SECRET bearer) and
+# set APP_BASE_URL + CRON_SECRET on EACH cron service to match the web service. Each
+# cron is a separately-billed Render service, so this is opt-in. See ADR-0004/0006
+# and docs/DEPLOYMENT_RUNBOOK.md.
+#
+#   - type: cron        # job worker drain — the heart of the automation backbone
+#     name: alphaseekers-worker
+#     runtime: node
+#     region: oregon
+#     plan: starter
+#     schedule: "* * * * *"                       # every minute — drain due jobs
+#     buildCommand: ""
+#     startCommand: curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" "$APP_BASE_URL/api/cron/worker"
+#     envVars:
+#       - key: APP_BASE_URL
+#         sync: false
+#       - key: CRON_SECRET
+#         sync: false
+#   - type: cron        # reminders (enqueue-only; worker delivers)
+#     name: alphaseekers-reminders
+#     schedule: "*/10 * * * *"
+#     startCommand: curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" "$APP_BASE_URL/api/cron/reminders"
+#   - type: cron        # instructor-managed session scheduler (hourly)
+#     name: alphaseekers-scheduler
+#     schedule: "0 * * * *"
+#     startCommand: curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" "$APP_BASE_URL/api/cron/scheduler"
+#   - type: cron        # AI session prep (every 15 min; 25-45 min look-ahead window)
+#     name: alphaseekers-ai-prep
+#     schedule: "*/15 * * * *"
+#     startCommand: curl -fsS -H "Authorization: Bearer $CRON_SECRET" "$APP_BASE_URL/api/cron/ai-prep"
+#   - type: cron        # nightly data retention / job prune
+#     name: alphaseekers-data-retention
+#     schedule: "30 3 * * *"
+#     startCommand: curl -fsS -H "Authorization: Bearer $CRON_SECRET" "$APP_BASE_URL/api/cron/data-retention"
+#   - type: cron        # keep Neon compute warm
+#     name: alphaseekers-neon-warm
+#     schedule: "*/5 * * * *"
+#     startCommand: curl -fsS -H "Authorization: Bearer $CRON_SECRET" "$APP_BASE_URL/api/cron/neon-warm"
+#   - type: cron        # daily super-admin KPI digest
+#     name: alphaseekers-kpi-digest
+#     schedule: "0 6 * * *"
+#     startCommand: curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" "$APP_BASE_URL/api/cron/kpi-digest"
+#
+# --- ALTERNATIVE (scale-up): dedicated always-on Background Worker -----------
+# At higher job volume, REPLACE the per-minute worker cron with a dedicated Render
+# Background Worker running the long-lived runWorker() loop (scripts/worker.mjs). It
+# polls continuously, claims jobs the instant they are due (near-zero latency), and
+# because claiming uses FOR UPDATE SKIP LOCKED you can run several replicas safely.
+#
+#   - type: worker
+#     name: alphaseekers-jobs
+#     runtime: node
+#     region: oregon
+#     plan: starter
+#     buildCommand: npm install && npx prisma generate && npm run build
+#     startCommand: node scripts/worker.mjs
+#     envVars:
+#       - key: NODE_VERSION
+#         value: "20.18.1"
+#       - key: ALPHASEEKERS_MODE
+#         value: production
+#       - key: DATABASE_URL
+#         sync: false
