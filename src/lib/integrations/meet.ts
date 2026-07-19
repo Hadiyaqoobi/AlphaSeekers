@@ -73,6 +73,28 @@ function mockMeetLink(note: string): MeetGenerationResult {
  * Google OAuth is unconfigured or the teacher has not connected Calendar, so
  * callers can degrade to a mock/pending link or a best-effort no-op.
  */
+/**
+ * The shared "platform" Google account used to create Meet links when the class's
+ * teacher hasn't connected their own calendar. This is what makes Meet-link creation
+ * fully automatic: connect ONE account once and every class uses it — no per-teacher
+ * step. Prefers the account named by GOOGLE_CALENDAR_OWNER_EMAIL; otherwise falls back
+ * to whichever single account has been connected.
+ */
+async function getPlatformCalendarLink(): Promise<GoogleAccountLink | null> {
+  const email = process.env.GOOGLE_CALENDAR_OWNER_EMAIL?.trim().toLowerCase();
+  if (email) {
+    const owner = await prisma.user.findUnique({ where: { email } });
+    if (owner) {
+      const link = await prisma.googleAccountLink.findUnique({ where: { userId: owner.id } });
+      if (link?.refreshToken) return link;
+    }
+  }
+  return prisma.googleAccountLink.findFirst({
+    where: { NOT: { refreshToken: "" } },
+    orderBy: { createdAt: "desc" },
+  });
+}
+
 async function getCalendarClient(teacherId?: string): Promise<CalendarSetupResult> {
   warnIfInsecureProductionConfig();
 
@@ -81,13 +103,16 @@ async function getCalendarClient(teacherId?: string): Promise<CalendarSetupResul
     return { ok: false, reason: "no-oauth" };
   }
 
-  if (!teacherId) {
-    return { ok: false, reason: "no-teacher" };
-  }
+  // Prefer the teacher's own connected calendar; otherwise fall back to the shared
+  // platform Google account, so a real Meet link is created automatically even when
+  // the teacher has not connected Google.
+  let accountLink = teacherId
+    ? await prisma.googleAccountLink.findUnique({ where: { userId: teacherId } })
+    : null;
 
-  const accountLink = await prisma.googleAccountLink.findUnique({
-    where: { userId: teacherId },
-  });
+  if (!accountLink?.refreshToken) {
+    accountLink = await getPlatformCalendarLink();
+  }
 
   if (!accountLink?.refreshToken) {
     return { ok: false, reason: "not-linked" };
