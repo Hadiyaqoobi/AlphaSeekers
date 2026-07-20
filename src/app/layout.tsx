@@ -9,6 +9,7 @@ import "@fontsource/outfit/800.css";
 import "@fontsource-variable/plus-jakarta-sans";
 
 import "./globals.css";
+import { ChunkErrorGuard } from "@/components/chunk-error-guard";
 
 export const metadata: Metadata = {
   title: "AlphaSeekers",
@@ -30,7 +31,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fa" suppressHydrationWarning>
-      <body>{children}</body>
+      <body>
+        <ChunkErrorGuard />
+        {children}
+      </body>
     </html>
   );
 }

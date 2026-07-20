@@ -14,6 +14,21 @@ export default function LocaleError({
   const t = useTranslations("error");
 
   useEffect(() => {
+    // A stale-chunk / deployment-skew error means our build changed under an
+    // open page. Reload once to pick up the fresh build rather than showing
+    // a dead error panel.
+    const msg = `${error?.name ?? ""} ${error?.message ?? ""}`;
+    if (/ChunkLoadError|Loading chunk|dynamically imported module|Importing a module script failed/i.test(msg)) {
+      try {
+        if (!sessionStorage.getItem("as:chunk-reloaded")) {
+          sessionStorage.setItem("as:chunk-reloaded", "1");
+          window.location.reload();
+          return;
+        }
+      } catch {
+        /* ignore */
+      }
+    }
     void reportError(error, { digest: error.digest, boundary: "locale" });
   }, [error]);
 
