@@ -342,11 +342,26 @@
       "title": "From sign-up to your first live class",
       "subtitle": "No fees. No complicated setup. Join a global classroom in minutes.",
       "steps": [
-        { "title": "Request access", "desc": "Sign up in 30 seconds" },
-        { "title": "Get approved", "desc": "Safe, vetted community" },
-        { "title": "Browse classes", "desc": "Languages, arts, and skills" },
-        { "title": "Enroll", "desc": "One tap to join" },
-        { "title": "Join live class", "desc": "Google Meet, one tap" }
+        {
+          "title": "Request access",
+          "desc": "Sign up in 30 seconds"
+        },
+        {
+          "title": "Get approved",
+          "desc": "Safe, vetted community"
+        },
+        {
+          "title": "Browse classes",
+          "desc": "Languages, arts, and skills"
+        },
+        {
+          "title": "Enroll",
+          "desc": "One tap to join"
+        },
+        {
+          "title": "Join live class",
+          "desc": "Google Meet, one tap"
+        }
       ]
     },
     "features": {
@@ -376,7 +391,12 @@
       "kicker": "Our Mission",
       "title": "Education is a right, not a privilege",
       "body": "When Afghan students lost access to education, we built a classroom that fits in a pocket. Free forever. Open to every student who wants to learn.",
-      "pills": ["100% Free", "Bilingual (Dari + English)", "No cost to students", "AI-powered study assistant"]
+      "pills": [
+        "100% Free",
+        "Bilingual (Dari + English)",
+        "No cost to students",
+        "AI-powered study assistant"
+      ]
     },
     "howItWorks": {
       "kicker": "How It Works",
@@ -400,13 +420,21 @@
         }
       ],
       "mockup": {
-        "welcomeBack": "Welcome back \ud83d\udc4b",
+        "welcomeBack": "Welcome back 👋",
         "myClasses": "My Classes",
         "classes": "Classes",
         "today": "Today",
         "todayValue": "2 sessions",
-        "mockClassNames": ["English A2", "Graphic Design", "Career Skills"],
-        "mockTimes": ["Tue 6:00 PM", "Wed 4:00 PM", "Thu 5:30 PM"]
+        "mockClassNames": [
+          "English A2",
+          "Graphic Design",
+          "Career Skills"
+        ],
+        "mockTimes": [
+          "Tue 6:00 PM",
+          "Wed 4:00 PM",
+          "Thu 5:30 PM"
+        ]
       }
     },
     "aiShowcase": {
@@ -419,10 +447,22 @@
       "chatSource": "Sources",
       "sourceText": "Chapter 3: Plant Biology",
       "features": [
-        { "title": "Bilingual", "desc": "Responds in Dari or English automatically" },
-        { "title": "Grounded", "desc": "Answers only from your course materials" },
-        { "title": "Real-time", "desc": "Streams responses word by word" },
-        { "title": "Private", "desc": "No student data sent to external services" }
+        {
+          "title": "Bilingual",
+          "desc": "Responds in Dari or English automatically"
+        },
+        {
+          "title": "Grounded",
+          "desc": "Answers only from your course materials"
+        },
+        {
+          "title": "Real-time",
+          "desc": "Streams responses word by word"
+        },
+        {
+          "title": "Private",
+          "desc": "No student data sent to external services"
+        }
       ]
     },
     "ctaBanner": {
@@ -1214,5 +1254,29 @@
       "joinedOnly": "Joined only (no code)",
       "absent": "Absent"
     }
+  },
+  "forgotPassword": {
+    "title": "Forgot your password?",
+    "subtitle": "Enter your email and we'll send you a link to reset it.",
+    "submit": "Send reset link",
+    "sending": "Sending…",
+    "backToLogin": "Back to sign in",
+    "sentTitle": "Check your email",
+    "sentBody": "If an account exists for that email, we've sent a link to reset your password. It expires in 1 hour."
+  },
+  "resetPassword": {
+    "title": "Set a new password",
+    "subtitle": "Choose a new password for your account.",
+    "newPassword": "New password",
+    "confirmPassword": "Confirm password",
+    "submit": "Reset password",
+    "resetting": "Resetting…",
+    "successTitle": "Password updated",
+    "successBody": "Your password has been changed. You can now sign in with it.",
+    "goToLogin": "Go to sign in",
+    "invalidToken": "This reset link is invalid or has expired. Please request a new one.",
+    "requestNew": "Request a new link",
+    "mismatch": "Passwords don't match.",
+    "weak": "Password must be at least 8 characters and include a letter and a number."
   }
 }

@@ -166,6 +166,37 @@ async function sendEmail(target: NotificationTarget, content: string) {
   return `Email sent (${info.messageId})`;
 }
 
+/**
+ * Send a one-off password-reset email directly through the SMTP transporter.
+ * A reset link must go to email specifically (not the Telegram/WebPush fallback
+ * chain), so this bypasses deliverWithFallback.
+ */
+export async function sendPasswordResetEmail(email: string, resetUrl: string): Promise<void> {
+  const settings = resolveSmtpSettings();
+  if (!settings) {
+    throw new NonRetryableError("SMTP_USER or SMTP_PASS missing");
+  }
+
+  const transporter = getTransporter(settings);
+  const text =
+    "We received a request to reset your AlphaSeekers password.\n\n" +
+    "Reset it here (this link expires in 1 hour):\n" + resetUrl + "\n\n" +
+    "If you didn't request this, you can safely ignore this email \u2014 your password will not change.";
+  const html =
+    '<div style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;font-size:15px;line-height:1.55;color:#1a1a1a">' +
+    "<p>We received a request to reset your AlphaSeekers password.</p>" +
+    '<p style="margin:18px 0"><a href="' + resetUrl + '" style="display:inline-block;background:#00E676;color:#04140B;font-weight:700;padding:11px 22px;border-radius:8px;text-decoration:none">Reset your password</a></p>' +
+    '<p style="color:#667;font-size:13px">This link expires in 1 hour. If you did not request this, you can safely ignore this email &mdash; your password will not change.</p></div>';
+
+  await transporter.sendMail({
+    from: settings.from,
+    to: email,
+    subject: "Reset your AlphaSeekers password",
+    text,
+    html,
+  });
+}
+
 async function sendPlatform(target: NotificationTarget, content: string) {
   return `In-platform notice for ${target.userId}: ${content.slice(0, 80)}`;
 }

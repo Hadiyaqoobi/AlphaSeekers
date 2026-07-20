@@ -197,7 +197,7 @@ export default function LoginPage() {
                 <label className="block text-[11px] font-bold uppercase tracking-[0.11em]" style={{ color: SOFT }}>
                   {t("password")}
                 </label>
-                <Link href={`/${locale}/register`} className="text-xs" style={{ color: FAINT }}>
+                <Link href={`/${locale}/forgot-password`} className="text-xs" style={{ color: FAINT }}>
                   {t("forgot")}
                 </Link>
               </div>

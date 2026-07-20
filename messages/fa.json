@@ -342,11 +342,26 @@
       "title": "از ثبت نام تا حضور در صنف آنلاین",
       "subtitle": "بدون هیچ گونه هزینه و تنظیمات پیچیده٬ در چند دقیقه به صنف بپیوندید.",
       "steps": [
-        { "title": "درخواست دسترسی", "desc": "در ۳۰ ثانیه ثبت‌نام کنید" },
-        { "title": "تایید شوید", "desc": "جامعه امن و بررسی‌شده" },
-        { "title": "صنف‌ها را ببینید", "desc": "زبان‌ها، هنر و مهارت‌ها" },
-        { "title": "ثبت‌نام کنید", "desc": "با یک کلیک بپیوندید" },
-        { "title": "به صنف زنده وصل شوید", "desc": "Google Meet، یک کلیک" }
+        {
+          "title": "درخواست دسترسی",
+          "desc": "در ۳۰ ثانیه ثبت‌نام کنید"
+        },
+        {
+          "title": "تایید شوید",
+          "desc": "جامعه امن و بررسی‌شده"
+        },
+        {
+          "title": "صنف‌ها را ببینید",
+          "desc": "زبان‌ها، هنر و مهارت‌ها"
+        },
+        {
+          "title": "ثبت‌نام کنید",
+          "desc": "با یک کلیک بپیوندید"
+        },
+        {
+          "title": "به صنف زنده وصل شوید",
+          "desc": "Google Meet، یک کلیک"
+        }
       ]
     },
     "features": {
@@ -376,7 +391,12 @@
       "kicker": "مأموریت ما",
       "title": "آموزش حق است، نه امتیاز",
       "body": "وقتی شاگردان افغان دسترسی به آموزش را از دست دادند، ما صنفی ساختیم که در جیب جا می‌شود. برای همیشه رایگان. برای هر شاگردی که می‌خواهد بیاموزد.",
-      "pills": ["۱۰۰٪ رایگان", "دوزبانه (دری + انگلیسی)", "بدون هزینه برای شاگردان", "دستیار مطالعه هوشمند"]
+      "pills": [
+        "۱۰۰٪ رایگان",
+        "دوزبانه (دری + انگلیسی)",
+        "بدون هزینه برای شاگردان",
+        "دستیار مطالعه هوشمند"
+      ]
     },
     "howItWorks": {
       "kicker": "چگونه کار می‌کند",
@@ -400,13 +420,21 @@
         }
       ],
       "mockup": {
-        "welcomeBack": "خوش آمدید \ud83d\udc4b",
+        "welcomeBack": "خوش آمدید 👋",
         "myClasses": "صنف‌های من",
         "classes": "صنف‌ها",
         "today": "امروز",
         "todayValue": "۲ جلسه",
-        "mockClassNames": ["English A2", "Graphic Design", "Career Skills"],
-        "mockTimes": ["Tue 6:00 PM", "Wed 4:00 PM", "Thu 5:30 PM"]
+        "mockClassNames": [
+          "English A2",
+          "Graphic Design",
+          "Career Skills"
+        ],
+        "mockTimes": [
+          "Tue 6:00 PM",
+          "Wed 4:00 PM",
+          "Thu 5:30 PM"
+        ]
       }
     },
     "aiShowcase": {
@@ -419,10 +447,22 @@
       "chatSource": "منابع",
       "sourceText": "فصل ۳: زیست‌شناسی گیاهی",
       "features": [
-        { "title": "دوزبانه", "desc": "خودکار به دری یا انگلیسی پاسخ می‌دهد" },
-        { "title": "مبتنی بر منابع", "desc": "فقط از مواد درسی شما پاسخ می‌دهد" },
-        { "title": "لحظه‌ای", "desc": "پاسخ‌ها را کلمه به کلمه نمایش می‌دهد" },
-        { "title": "خصوصی", "desc": "هیچ اطلاعات شاگرد به سرویس خارجی ارسال نمی‌شود" }
+        {
+          "title": "دوزبانه",
+          "desc": "خودکار به دری یا انگلیسی پاسخ می‌دهد"
+        },
+        {
+          "title": "مبتنی بر منابع",
+          "desc": "فقط از مواد درسی شما پاسخ می‌دهد"
+        },
+        {
+          "title": "لحظه‌ای",
+          "desc": "پاسخ‌ها را کلمه به کلمه نمایش می‌دهد"
+        },
+        {
+          "title": "خصوصی",
+          "desc": "هیچ اطلاعات شاگرد به سرویس خارجی ارسال نمی‌شود"
+        }
       ]
     },
     "ctaBanner": {
@@ -1214,5 +1254,29 @@
       "joinedOnly": "فقط وصل شده (بدون کد)",
       "absent": "غایب"
     }
+  },
+  "forgotPassword": {
+    "title": "Forgot your password?",
+    "subtitle": "Enter your email and we'll send you a link to reset it.",
+    "submit": "Send reset link",
+    "sending": "Sending…",
+    "backToLogin": "Back to sign in",
+    "sentTitle": "Check your email",
+    "sentBody": "If an account exists for that email, we've sent a link to reset your password. It expires in 1 hour."
+  },
+  "resetPassword": {
+    "title": "Set a new password",
+    "subtitle": "Choose a new password for your account.",
+    "newPassword": "New password",
+    "confirmPassword": "Confirm password",
+    "submit": "Reset password",
+    "resetting": "Resetting…",
+    "successTitle": "Password updated",
+    "successBody": "Your password has been changed. You can now sign in with it.",
+    "goToLogin": "Go to sign in",
+    "invalidToken": "This reset link is invalid or has expired. Please request a new one.",
+    "requestNew": "Request a new link",
+    "mismatch": "Passwords don't match.",
+    "weak": "Password must be at least 8 characters and include a letter and a number."
   }
 }

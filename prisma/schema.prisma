@@ -89,6 +89,7 @@ model User {
   deactivatedAt         DateTime?
   // Force a password reset on next login (temp-password onboarding flow).
   mustChangePassword    Boolean               @default(false)
+  passwordResets        PasswordReset[]
   // Which super-admin created this employee account (audit trail).
   createdById           String?
   timezone              String                @default("Asia/Kabul")
@@ -746,4 +747,20 @@ model Job {
   // Claim query orders due work by (priority desc, runAt asc) filtered on status.
   @@index([status, runAt, priority])
   @@index([type, status])
+}
+
+
+/// Single-use, time-limited password-reset tokens. We store only the SHA-256
+/// hash of the token (never the raw value); the raw token is emailed as a link.
+model PasswordReset {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
 }
