@@ -51,7 +51,7 @@ export function NotificationPrefs() {
         <label className="flex items-center gap-2 text-sm text-ink-main">
           <input
             checked={prefs.telegram}
-            className="h-4 w-4 rounded border-line-DEFAULT text-neon-600 focus:ring-neon-500"
+            className="h-4 w-4 rounded border-line text-neon-600 focus:ring-neon-500"
             disabled={saving}
             onChange={() => toggle("telegram")}
             type="checkbox"
@@ -61,7 +61,7 @@ export function NotificationPrefs() {
         <label className="flex items-center gap-2 text-sm text-ink-main">
           <input
             checked={prefs.webPush}
-            className="h-4 w-4 rounded border-line-DEFAULT text-neon-600 focus:ring-neon-500"
+            className="h-4 w-4 rounded border-line text-neon-600 focus:ring-neon-500"
             disabled={saving}
             onChange={() => toggle("webPush")}
             type="checkbox"
@@ -71,7 +71,7 @@ export function NotificationPrefs() {
         <label className="flex items-center gap-2 text-sm text-ink-main">
           <input
             checked={prefs.email}
-            className="h-4 w-4 rounded border-line-DEFAULT text-neon-600 focus:ring-neon-500"
+            className="h-4 w-4 rounded border-line text-neon-600 focus:ring-neon-500"
             disabled={saving}
             onChange={() => toggle("email")}
             type="checkbox"

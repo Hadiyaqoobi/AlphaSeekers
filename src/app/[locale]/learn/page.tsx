@@ -43,7 +43,7 @@ export default async function LearnHomePage({ params }: PageProps) {
   });
 
   return (
-    <main className="mx-auto max-w-6xl px-6 lg:px-8 py-10" style={{ background: "#080D12" }}>
+    <main className="mx-auto max-w-6xl px-6 lg:px-8 py-10" style={{ background: "#070B0E" }}>
       {/* Hero */}
       <div className="mb-10">
         <div
@@ -72,7 +72,7 @@ export default async function LearnHomePage({ params }: PageProps) {
             {isDari ? "با سرعت خودتان." : "At your own pace."}
           </span>
         </h1>
-        <p className="mt-4 text-base max-w-xl" style={{ color: "#8899A6" }}>
+        <p className="mt-4 text-base max-w-xl" style={{ color: "#8AA4B8" }}>
           {isDari
             ? "موضوعی را انتخاب کنید و هوش مصنوعی یک درس شخصی برای شما خواهد ساخت."
             : "Pick a topic and the AI will create a personalized lesson just for you."}
@@ -87,7 +87,7 @@ export default async function LearnHomePage({ params }: PageProps) {
       {/* Continue where you left off */}
       {inProgress.length > 0 && (
         <section className="mb-12">
-          <h2 className="text-sm font-semibold uppercase tracking-wider mb-4" style={{ color: "#8899A6" }}>
+          <h2 className="text-sm font-semibold uppercase tracking-wider mb-4" style={{ color: "#8AA4B8" }}>
             ── {isDari ? "ادامه از جایی که متوقف شدید" : "Continue where you left off"} ──
           </h2>
           <div className="space-y-3">
@@ -103,7 +103,7 @@ export default async function LearnHomePage({ params }: PageProps) {
                   key={p.id}
                   href={`/${params.locale}/learn/${p.id}`}
                   className="group block rounded-2xl p-5 transition-all duration-300"
-                  style={{ background: "#0E1921", border: "1px solid #1A2D3D" }}
+                  style={{ background: "#0D1419", border: "1px solid #1A2D3D" }}
                 >
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex-1 min-w-0">
@@ -112,11 +112,11 @@ export default async function LearnHomePage({ params }: PageProps) {
                         <span className="text-sm font-semibold truncate" style={{ color: "#E8EEF2" }}>
                           {p.title}
                         </span>
-                        <span className="text-xs" style={{ color: "#556677" }}>
+                        <span className="text-xs" style={{ color: "#5A7A94" }}>
                           · {isDari ? "درس" : "Lesson"} {p.currentLesson} / {totalLessons}
                         </span>
                       </div>
-                      <p className="text-xs mb-3 truncate" style={{ color: "#8899A6" }}>
+                      <p className="text-xs mb-3 truncate" style={{ color: "#8AA4B8" }}>
                         {currentLesson?.title || ""}
                       </p>
                       {/* Progress bar */}
@@ -130,12 +130,12 @@ export default async function LearnHomePage({ params }: PageProps) {
                           }}
                         />
                       </div>
-                      <p className="text-[10px] mt-1.5" style={{ color: "#556677" }}>
+                      <p className="text-[10px] mt-1.5" style={{ color: "#5A7A94" }}>
                         {pct}% {isDari ? "تکمیل" : "complete"}
                       </p>
                     </div>
                     <div
-                      className="px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-1 flex-shrink-0 transition-colors group-hover:bg-[#00E676] group-hover:text-[#080D12]"
+                      className="px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-1 flex-shrink-0 transition-colors group-hover:bg-[#00E676] group-hover:text-[#070B0E]"
                       style={{ color: "#00E676", border: "1px solid rgba(0,230,118,0.3)" }}
                     >
                       {isDari ? "ادامه" : "Continue"} →
@@ -150,7 +150,7 @@ export default async function LearnHomePage({ params }: PageProps) {
 
       {/* Popular topics grid */}
       <section>
-        <h2 className="text-sm font-semibold uppercase tracking-wider mb-4" style={{ color: "#8899A6" }}>
+        <h2 className="text-sm font-semibold uppercase tracking-wider mb-4" style={{ color: "#8AA4B8" }}>
           {isDari ? "موضوعات محبوب" : "Popular topics"}
         </h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">

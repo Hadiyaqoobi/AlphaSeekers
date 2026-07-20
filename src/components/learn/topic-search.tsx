@@ -48,7 +48,7 @@ export function TopicSearch({ isDari }: { isDari: boolean }) {
         }
         className="w-full px-5 py-4 pr-40 rounded-2xl text-sm transition-colors focus:outline-none"
         style={{
-          background: "#0E1921",
+          background: "#0D1419",
           border: "1px solid #1A2D3D",
           color: "#E8EEF2",
         }}
@@ -65,7 +65,7 @@ export function TopicSearch({ isDari }: { isDari: boolean }) {
         type="submit"
         disabled={loading || !topic.trim()}
         className="absolute right-3 top-1/2 -translate-y-1/2 px-4 py-2 rounded-xl text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-        style={{ background: "#00E676", color: "#080D12", boxShadow: "0 0 12px rgba(0,230,118,0.3)" }}
+        style={{ background: "#00E676", color: "#070B0E", boxShadow: "0 0 12px rgba(0,230,118,0.3)" }}
       >
         {loading
           ? (isDari ? "در حال ساخت..." : "Building...")

@@ -103,9 +103,9 @@ export default async function ClassesPage({ params, searchParams }: ClassesPageP
 
       {/* Class Cards */}
       {result.items.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-line-DEFAULT bg-dark-100/60 px-6 py-16 text-center">
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-line bg-dark-100/60 px-6 py-16 text-center">
           {/* Empty-state illustration icon */}
-          <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-slate-100 to-slate-200">
+          <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-dark-200 to-dark-300">
             <svg
               className="h-10 w-10 text-ink-faint"
               fill="none"
@@ -132,7 +132,7 @@ export default async function ClassesPage({ params, searchParams }: ClassesPageP
 
             return (
               <article
-                className={`group relative overflow-hidden rounded-2xl border border-line-DEFAULT border-t-4 ${borderColor} bg-dark-100 shadow-sm transition-all duration-300 hover:shadow-xl hover:-translate-y-1`}
+                className={`group relative overflow-hidden rounded-2xl border border-line border-t-4 ${borderColor} bg-dark-100 shadow-sm transition-all duration-300 hover:shadow-xl hover:-translate-y-1`}
                 key={item.id}
               >
                 <div className="p-5 sm:p-6">
@@ -254,7 +254,7 @@ export default async function ClassesPage({ params, searchParams }: ClassesPageP
         <nav className="flex items-center justify-center gap-3 pt-2">
           <Link
             aria-disabled={result.pagination.page <= 1}
-            className="inline-flex h-10 items-center gap-1.5 rounded-full border border-line-DEFAULT bg-dark-100 px-5 text-sm font-semibold text-ink-main shadow-sm transition-all hover:border-teal-300 hover:bg-teal-50 hover:text-teal-700 aria-disabled:pointer-events-none aria-disabled:opacity-40"
+            className="inline-flex h-10 items-center gap-1.5 rounded-full border border-line bg-dark-100 px-5 text-sm font-semibold text-ink-main shadow-sm transition-all hover:border-teal-300 hover:bg-teal-50 hover:text-teal-700 aria-disabled:pointer-events-none aria-disabled:opacity-40"
             href={`/${locale}/classes?page=${Math.max(1, result.pagination.page - 1)}&search=${encodeURIComponent(search)}`}
           >
             <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
@@ -263,13 +263,13 @@ export default async function ClassesPage({ params, searchParams }: ClassesPageP
             {t("prev")}
           </Link>
 
-          <span className="inline-flex h-10 items-center rounded-full bg-dark-100 px-4 text-sm font-medium text-ink-soft shadow-sm ring-1 ring-line-DEFAULT">
+          <span className="inline-flex h-10 items-center rounded-full bg-dark-100 px-4 text-sm font-medium text-ink-soft shadow-sm ring-1 ring-line">
             {result.pagination.page} / {result.pagination.totalPages}
           </span>
 
           <Link
             aria-disabled={result.pagination.page >= result.pagination.totalPages}
-            className="inline-flex h-10 items-center gap-1.5 rounded-full border border-line-DEFAULT bg-dark-100 px-5 text-sm font-semibold text-ink-main shadow-sm transition-all hover:border-teal-300 hover:bg-teal-50 hover:text-teal-700 aria-disabled:pointer-events-none aria-disabled:opacity-40"
+            className="inline-flex h-10 items-center gap-1.5 rounded-full border border-line bg-dark-100 px-5 text-sm font-semibold text-ink-main shadow-sm transition-all hover:border-teal-300 hover:bg-teal-50 hover:text-teal-700 aria-disabled:pointer-events-none aria-disabled:opacity-40"
             href={`/${locale}/classes?page=${Math.min(result.pagination.totalPages, result.pagination.page + 1)}&search=${encodeURIComponent(search)}`}
           >
             {t("next")}

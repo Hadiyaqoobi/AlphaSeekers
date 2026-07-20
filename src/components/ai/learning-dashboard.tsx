@@ -61,7 +61,7 @@ export function LearningDashboard() {
     return (
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {[1, 2, 3, 4, 5, 6].map((i) => (
-          <div key={i} className="bg-dark-100 rounded-2xl border border-line-DEFAULT p-6 h-40 animate-pulse" />
+          <div key={i} className="bg-dark-100 rounded-2xl border border-line p-6 h-40 animate-pulse" />
         ))}
       </div>
     );
@@ -73,7 +73,7 @@ export function LearningDashboard() {
 
   if (stats.totalQuestions === 0) {
     return (
-      <div className="bg-dark-100 rounded-2xl border border-line-DEFAULT p-12 text-center">
+      <div className="bg-dark-100 rounded-2xl border border-line p-12 text-center">
         <h3 className="text-xl font-bold text-ink-main mb-2">No activity yet</h3>
         <p className="text-ink-soft">Start asking the AI Tutor questions and your stats will appear here.</p>
       </div>
@@ -115,7 +115,7 @@ export function LearningDashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Daily activity chart */}
-        <div className="lg:col-span-2 bg-dark-100 rounded-2xl border border-line-DEFAULT p-6">
+        <div className="lg:col-span-2 bg-dark-100 rounded-2xl border border-line p-6">
           <h3 className="text-base font-bold text-ink-main mb-4">Daily activity (30 days)</h3>
           <div className="flex items-end gap-1 h-40">
             {chartData.map((d, i) => (
@@ -138,7 +138,7 @@ export function LearningDashboard() {
         </div>
 
         {/* Mode distribution */}
-        <div className="bg-dark-100 rounded-2xl border border-line-DEFAULT p-6">
+        <div className="bg-dark-100 rounded-2xl border border-line p-6">
           <h3 className="text-base font-bold text-ink-main mb-4">How you study</h3>
           {stats.modeDistribution.length === 0 ? (
             <p className="text-sm text-ink-faint">No data yet</p>
@@ -171,7 +171,7 @@ export function LearningDashboard() {
       </div>
 
       {/* Top topics */}
-      <div className="bg-dark-100 rounded-2xl border border-line-DEFAULT p-6">
+      <div className="bg-dark-100 rounded-2xl border border-line p-6">
         <h3 className="text-base font-bold text-ink-main mb-4">Topics you&apos;ve studied</h3>
         {stats.topTopics.length === 0 ? (
           <p className="text-sm text-ink-faint">No topics tracked yet</p>
@@ -203,7 +203,7 @@ export function LearningDashboard() {
 
 function StatCard({ label, value, subtitle }: { label: string; value: string; subtitle?: string }) {
   return (
-    <div className="bg-dark-100 rounded-2xl border border-line-DEFAULT p-5">
+    <div className="bg-dark-100 rounded-2xl border border-line p-5">
       <p className="text-xs font-semibold text-ink-faint uppercase tracking-wide">{label}</p>
       <p className="text-2xl font-bold text-ink-main mt-1">{value}</p>
       {subtitle && <p className="text-xs text-ink-soft mt-0.5">{subtitle}</p>}

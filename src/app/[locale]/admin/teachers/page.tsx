@@ -138,7 +138,7 @@ export default async function AdminTeachersPage({ params }: AdminTeachersPagePro
         <div className="mt-3 overflow-x-auto">
           <table className="w-full min-w-[640px] border-collapse text-left text-sm">
             <thead>
-              <tr className="border-b border-line-DEFAULT text-ink-soft">
+              <tr className="border-b border-line text-ink-soft">
                 <th className="py-2 font-semibold" scope="col">{t("name")}</th>
                 <th className="py-2 font-semibold" scope="col">{t("email")}</th>
                 <th className="py-2 font-semibold" scope="col">{t("classes")}</th>

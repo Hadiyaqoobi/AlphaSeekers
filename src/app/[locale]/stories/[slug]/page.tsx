@@ -145,7 +145,7 @@ export default async function PostPage({ params }: PageProps) {
           </h1>
 
           {/* Byline */}
-          <div className="flex items-center gap-4 text-sm text-ink-soft mb-8 pb-8 border-b border-line-DEFAULT">
+          <div className="flex items-center gap-4 text-sm text-ink-soft mb-8 pb-8 border-b border-line">
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-neon-400 to-teal-600 text-white font-bold flex items-center justify-center">
               {authorName.charAt(0).toUpperCase()}
             </div>
@@ -190,14 +190,14 @@ export default async function PostPage({ params }: PageProps) {
             <BilingualToggle enContent={enHtml} daContent={daHtml} locale={params.locale} />
           ) : (
             <div
-              className={`story-content prose prose-slate max-w-none ${post.type === "poetry" ? "text-center italic" : ""}`}
+              className={`story-content prose prose-invert max-w-none ${post.type === "poetry" ? "text-center italic" : ""}`}
               dir={titleDir}
               dangerouslySetInnerHTML={{ __html: isDari && daHtml ? daHtml : enHtml }}
             />
           )}
 
           {/* Actions */}
-          <div className="mt-12 pt-8 border-t border-line-DEFAULT">
+          <div className="mt-12 pt-8 border-t border-line">
             <PostActions
               slug={post.slug}
               initialLikeCount={post.likeCount}
@@ -211,7 +211,7 @@ export default async function PostPage({ params }: PageProps) {
 
       {/* More posts */}
       {shapedMorePosts.length > 0 && (
-        <section className="bg-dark-50 py-16 border-t border-line-DEFAULT">
+        <section className="bg-dark-50 py-16 border-t border-line">
           <div className="mx-auto max-w-6xl px-6 lg:px-8">
             <h2 className="text-xl font-bold text-ink-main mb-6">
               {isDari ? "داستان‌های بیشتر" : "More from Student Voices"} →
@@ -238,11 +238,11 @@ export default async function PostPage({ params }: PageProps) {
         .story-content {
           font-size: 1.0625rem;
           line-height: 1.75;
-          color: #1e293b;
+          color: #E8EEF2;
         }
         .story-content .story-heading {
           font-weight: 700;
-          color: #0f172a;
+          color: #FFFFFF;
           margin-top: 2rem;
           margin-bottom: 0.75rem;
         }
@@ -264,10 +264,10 @@ export default async function PostPage({ params }: PageProps) {
           margin: 0.25rem 0;
         }
         .story-content .story-quote {
-          border-left: 3px solid #10b981;
+          border-left: 3px solid #00E676;
           padding-left: 1rem;
           margin: 1.5rem 0;
-          color: #475569;
+          color: #8AA4B8;
           font-style: italic;
         }
         .story-content .story-code {
@@ -280,14 +280,14 @@ export default async function PostPage({ params }: PageProps) {
           font-size: 0.875rem;
         }
         .story-content .story-inline-code {
-          background: #f1f5f9;
-          color: #0f766e;
+          background: rgba(0, 230, 118, 0.10);
+          color: #00E676;
           padding: 0.125rem 0.375rem;
           border-radius: 0.25rem;
           font-size: 0.9em;
         }
         .story-content .story-link {
-          color: #059669;
+          color: #00E676;
           text-decoration: underline;
         }
         .story-content[dir="rtl"] {

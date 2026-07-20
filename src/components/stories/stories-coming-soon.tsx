@@ -78,7 +78,7 @@ export function StoriesComingSoon({ locale }: StoriesComingSoonProps) {
             ].map((f) => (
               <div
                 key={f.title}
-                className="rounded-2xl bg-dark-100 border border-line-DEFAULT p-6 shadow-sm"
+                className="rounded-2xl bg-dark-100 border border-line p-6 shadow-sm"
               >
                 <div className="text-3xl mb-3">{f.icon}</div>
                 <h3 className="font-bold text-ink-main mb-1">{f.title}</h3>
@@ -105,7 +105,7 @@ export function StoriesComingSoon({ locale }: StoriesComingSoonProps) {
               </Link>
               <Link
                 href={`/${locale}/stories/write`}
-                className="inline-flex items-center px-6 py-3 rounded-xl border border-line-DEFAULT text-ink-main font-semibold hover:bg-dark-50 transition-colors"
+                className="inline-flex items-center px-6 py-3 rounded-xl border border-line text-ink-main font-semibold hover:bg-dark-50 transition-colors"
               >
                 {isDari ? "همین حالا بنویسید" : "Write now"}
               </Link>

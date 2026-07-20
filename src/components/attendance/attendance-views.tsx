@@ -154,7 +154,7 @@ export function AttendanceSheet({
                 <div className="panel panel-strong overflow-x-auto p-4">
                     <table className="w-full min-w-[560px] border-collapse text-left text-sm">
                         <thead>
-                            <tr className="border-b border-line-DEFAULT text-ink-soft">
+                            <tr className="border-b border-line text-ink-soft">
                                 <th className="py-2 font-semibold" scope="col">Student</th>
                                 <th className="py-2 font-semibold" scope="col">Email</th>
                                 <th className="py-2 text-center font-semibold" scope="col">Status</th>
@@ -280,7 +280,7 @@ export function ClassAttendanceSummary({
             <div className="panel panel-strong overflow-x-auto p-4">
                 <table className="w-full min-w-[480px] border-collapse text-left text-sm">
                     <thead>
-                        <tr className="border-b border-line-DEFAULT text-ink-soft">
+                        <tr className="border-b border-line text-ink-soft">
                             <th className="py-2 font-semibold" scope="col">Student</th>
                             <th className="py-2 font-semibold" scope="col">Email</th>
                             <th className="py-2 text-center font-semibold" scope="col">Joined</th>

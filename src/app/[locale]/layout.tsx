@@ -112,7 +112,7 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
                 <div />
                 <div className="flex items-center gap-4">
                   <LocaleSwitcher currentLocale={typedLocale} />
-                  <span className="text-sm hidden sm:inline" style={{ color: '#8899A6' }}>{user.name}</span>
+                  <span className="text-sm hidden sm:inline" style={{ color: '#8AA4B8' }}>{user.name}</span>
                 </div>
               </header>
               {access?.mustChangePassword ? <MustChangePasswordBanner locale={locale} /> : null}

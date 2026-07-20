@@ -396,12 +396,12 @@ export function StudyAssistant() {
   return (
     <div
       className="flex flex-col h-full max-h-[calc(100vh-12rem)] rounded-2xl overflow-hidden"
-      style={{ background: "#0E1921", border: "1px solid #1A2D3D" }}
+      style={{ background: "#0D1419", border: "1px solid #1A2D3D" }}
     >
       {/* Header — flat dark, no gradient */}
       <div
         className="flex items-center justify-between px-5 py-4"
-        style={{ background: "#0E1921", borderBottom: "1px solid #1A2D3D" }}
+        style={{ background: "#0D1419", borderBottom: "1px solid #1A2D3D" }}
       >
         <div className="flex items-center gap-3">
           <div
@@ -424,9 +424,9 @@ export function StudyAssistant() {
           <button
             onClick={handleNewConversation}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors"
-            style={{ color: "#8899A6" }}
+            style={{ color: "#8AA4B8" }}
             onMouseEnter={(e) => { e.currentTarget.style.color = "#E8EEF2"; e.currentTarget.style.background = "#142230"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.color = "#8899A6"; e.currentTarget.style.background = ""; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = "#8AA4B8"; e.currentTarget.style.background = ""; }}
           >
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -437,7 +437,7 @@ export function StudyAssistant() {
       </div>
 
       {/* Messages — page-dark background */}
-      <div className="flex-1 overflow-y-auto px-5 py-6 space-y-6" style={{ background: "#080D12" }}>
+      <div className="flex-1 overflow-y-auto px-5 py-6 space-y-6" style={{ background: "#070B0E" }}>
         {messages.length === 0 ? (
           /* Empty state */
           <div className="flex flex-col items-center justify-center h-full text-center py-12">
@@ -450,7 +450,7 @@ export function StudyAssistant() {
               </svg>
             </div>
             <h3 className="text-lg font-semibold mb-2" style={{ color: "#E8EEF2" }}>{t("emptyTitle")}</h3>
-            <p className="text-sm max-w-sm mb-8" style={{ color: "#8899A6" }}>{t("emptySubtitle")}</p>
+            <p className="text-sm max-w-sm mb-8" style={{ color: "#8AA4B8" }}>{t("emptySubtitle")}</p>
 
             {/* Personalized suggestion chips */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-lg w-full">
@@ -459,9 +459,9 @@ export function StudyAssistant() {
                   key={suggestion}
                   onClick={() => handleSubmit(suggestion)}
                   className="text-left px-4 py-3.5 rounded-xl text-sm transition-colors"
-                  style={{ background: "#0E1921", border: "1px solid #1A2D3D", color: "#8899A6" }}
+                  style={{ background: "#0D1419", border: "1px solid #1A2D3D", color: "#8AA4B8" }}
                   onMouseEnter={(e) => { e.currentTarget.style.borderColor = "rgba(0,230,118,0.30)"; e.currentTarget.style.color = "#E8EEF2"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#1A2D3D"; e.currentTarget.style.color = "#8899A6"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#1A2D3D"; e.currentTarget.style.color = "#8AA4B8"; }}
                 >
                   <span style={{ color: "#00E676" }} className="mr-2">›</span>
                   {suggestion}
@@ -484,8 +484,8 @@ export function StudyAssistant() {
                   }`}
                   style={
                     message.role === "user"
-                      ? { background: "#00E676", color: "#080D12", boxShadow: "0 0 12px rgba(0,230,118,0.20)" }
-                      : { background: "#0E1921", color: "#E8EEF2", border: "1px solid #1A2D3D" }
+                      ? { background: "#00E676", color: "#070B0E", boxShadow: "0 0 12px rgba(0,230,118,0.20)" }
+                      : { background: "#0D1419", color: "#E8EEF2", border: "1px solid #1A2D3D" }
                   }
                 >
                   {message.role === "assistant" && message.content?.startsWith("__ERROR__") ? (
@@ -530,7 +530,7 @@ export function StudyAssistant() {
 
                       {/* Sources */}
                       {message.sources && message.sources.length > 0 && (
-                        <div className="mt-4 pt-3 border-t border-line-DEFAULT/60">
+                        <div className="mt-4 pt-3 border-t border-line/60">
                           <button
                             onClick={() => toggleSources(message.id)}
                             className="flex items-center gap-1.5 text-xs font-semibold text-ink-faint hover:text-neon-600 transition-colors"
@@ -554,7 +554,7 @@ export function StudyAssistant() {
                               {message.sources.map((source, i) => (
                                 <div
                                   key={i}
-                                  className="rounded-lg bg-dark-100 border border-line-DEFAULT p-3 text-xs"
+                                  className="rounded-lg bg-dark-100 border border-line p-3 text-xs"
                                 >
                                   <p className="font-semibold text-ink-main mb-1">{source.title}</p>
                                   <p className="text-ink-soft line-clamp-3">{source.content}</p>
@@ -572,7 +572,7 @@ export function StudyAssistant() {
 
                       {/* Feedback buttons */}
                       {!isStreaming && message.content && (
-                        <div className="mt-3 pt-3 border-t border-line-DEFAULT/60 flex items-center gap-2">
+                        <div className="mt-3 pt-3 border-t border-line/60 flex items-center gap-2">
                           {message.feedback ? (
                             <span className="text-xs text-neon-600 font-medium flex items-center gap-1">
                               <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
@@ -636,7 +636,7 @@ export function StudyAssistant() {
       {/* Input */}
       <div
         className="px-4 py-3"
-        style={{ background: "#0E1921", borderTop: "1px solid #1A2D3D" }}
+        style={{ background: "#0D1419", borderTop: "1px solid #1A2D3D" }}
       >
         <div className="flex items-end gap-2">
           <div className="relative flex-1">
@@ -655,7 +655,7 @@ export function StudyAssistant() {
           </div>
           <button
             className="flex items-center justify-center w-11 h-11 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-95"
-            style={{ background: "#00E676", color: "#080D12", boxShadow: "0 0 12px rgba(0,230,118,0.20)" }}
+            style={{ background: "#00E676", color: "#070B0E", boxShadow: "0 0 12px rgba(0,230,118,0.20)" }}
             disabled={!input.trim() || isStreaming}
             onClick={() => handleSubmit()}
             type="button"
@@ -665,7 +665,7 @@ export function StudyAssistant() {
             </svg>
           </button>
         </div>
-        <p className="mt-2 text-[10px] text-center" style={{ color: "#556677" }}>{t("disclaimer")}</p>
+        <p className="mt-2 text-[10px] text-center" style={{ color: "#5A7A94" }}>{t("disclaimer")}</p>
       </div>
 
       {/* AI Response Styles */}

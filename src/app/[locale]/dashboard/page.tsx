@@ -98,7 +98,7 @@ export default async function DashboardPage({ params, searchParams }: DashboardP
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
           <div>
             <h1 className="text-2xl font-bold" style={{ color: "#E8EEF2" }}>{greeting}, {firstName}</h1>
-            <p className="mt-1 text-sm" style={{ color: "#8899A6" }}>
+            <p className="mt-1 text-sm" style={{ color: "#8AA4B8" }}>
               {stats.sessionsToday > 0
                 ? `${stats.sessionsToday} ${t("cards.today").toLowerCase()} — ${dateStr}`
                 : dateStr}
@@ -113,7 +113,7 @@ export default async function DashboardPage({ params, searchParams }: DashboardP
           <article
             key={card.label}
             className="rounded-2xl p-5"
-            style={{ background: "#0E1921", border: "1px solid #1A2D3D" }}
+            style={{ background: "#0D1419", border: "1px solid #1A2D3D" }}
           >
             <div
               className="inline-flex items-center justify-center w-10 h-10 rounded-xl"
@@ -124,7 +124,7 @@ export default async function DashboardPage({ params, searchParams }: DashboardP
               </svg>
             </div>
             <p className="text-3xl font-bold mt-4" style={{ color: "#E8EEF2" }}>{card.value}</p>
-            <p className="text-sm mt-1" style={{ color: "#8899A6" }}>{card.label}</p>
+            <p className="text-sm mt-1" style={{ color: "#8AA4B8" }}>{card.label}</p>
           </article>
         ))}
       </div>

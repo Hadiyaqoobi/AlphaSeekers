@@ -73,7 +73,7 @@ export function CheckinCodePanel({ classId, sessionId, initial }: CheckinCodePan
 
   if (!code) {
     return (
-      <div className="rounded-2xl border border-line-DEFAULT bg-dark-100 p-6">
+      <div className="rounded-2xl border border-line bg-dark-100 p-6">
         <h3 className="text-sm font-semibold text-ink-main mb-1">{t("title")}</h3>
         <p className="text-xs text-ink-soft mb-4">{t("teacherHint")}</p>
         <button
@@ -104,7 +104,7 @@ export function CheckinCodePanel({ classId, sessionId, initial }: CheckinCodePan
         type="button"
         onClick={generate}
         disabled={loading}
-        className="mt-4 px-3 py-1.5 rounded-lg text-xs text-ink-soft border border-line-DEFAULT hover:text-ink-main disabled:opacity-50"
+        className="mt-4 px-3 py-1.5 rounded-lg text-xs text-ink-soft border border-line hover:text-ink-main disabled:opacity-50"
       >
         {loading ? t("generating") : t("generateNew")}
       </button>

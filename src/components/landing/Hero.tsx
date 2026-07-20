@@ -134,7 +134,7 @@ export function Hero({ locale, signedIn, studentLabel, teacherLabel }: HeroProps
         {/* Top + bottom fade so navbar/CTA areas stay clean */}
         <div className="absolute inset-0 bg-gradient-to-b from-dark-DEFAULT via-transparent to-dark-DEFAULT" />
         {/* Center vignette — focuses the energy in the middle */}
-        <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at 50% 40%, transparent 25%, #070B10 85%)' }} />
+        <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at 50% 40%, transparent 25%, #070B0E 85%)' }} />
       </div>
 
       {/* Subtle drifting glow blobs (electric green + cyan) */}

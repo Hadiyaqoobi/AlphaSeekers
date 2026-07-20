@@ -159,7 +159,7 @@ export function FileUpload({ purpose, classId, onUploadComplete }: FileUploadPro
   return (
     <div className="space-y-2">
       {/* File input */}
-      <label className="block cursor-pointer rounded border border-dashed border-line-DEFAULT p-3 text-center text-sm text-ink-soft hover:border-line-strong">
+      <label className="block cursor-pointer rounded border border-dashed border-line p-3 text-center text-sm text-ink-soft hover:border-line-strong">
         <span className="font-medium text-ink-main">{t("selectFile")}</span>{" "}
         <span className="text-ink-soft">{t("dragDrop")}</span>
         <br />

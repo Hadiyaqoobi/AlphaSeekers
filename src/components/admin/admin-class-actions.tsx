@@ -86,7 +86,7 @@ export function AdminClassActions({ classId }: AdminClassActionsProps) {
       </button>
 
       {editing ? (
-        <form className="mt-2 w-full rounded-lg border border-line-DEFAULT bg-dark-100 p-4 space-y-3" onSubmit={handleEdit}>
+        <form className="mt-2 w-full rounded-lg border border-line bg-dark-100 p-4 space-y-3" onSubmit={handleEdit}>
           <input
             className="field"
             onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}

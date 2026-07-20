@@ -114,7 +114,7 @@ export function HomeworkUpload({ enrolledClasses, onReviewReceived, disabled }: 
 
             {/* Image preview or uploader */}
             {preview ? (
-              <div className="relative mb-4 rounded-xl overflow-hidden border border-line-DEFAULT">
+              <div className="relative mb-4 rounded-xl overflow-hidden border border-line">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={preview} alt="Homework preview" className="w-full max-h-64 object-contain bg-dark-50" />
                 <button
@@ -135,7 +135,7 @@ export function HomeworkUpload({ enrolledClasses, onReviewReceived, disabled }: 
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="w-full mb-4 border-2 border-dashed border-line-DEFAULT rounded-xl p-8 text-center hover:border-neon-400 hover:bg-neon-50/30 transition-colors"
+                className="w-full mb-4 border-2 border-dashed border-line rounded-xl p-8 text-center hover:border-neon-400 hover:bg-neon-50/30 transition-colors"
               >
                 <svg className="w-10 h-10 mx-auto text-ink-faint mb-2" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
@@ -160,7 +160,7 @@ export function HomeworkUpload({ enrolledClasses, onReviewReceived, disabled }: 
                 <select
                   value={classId}
                   onChange={(e) => setClassId(e.target.value)}
-                  className="w-full rounded-lg border border-line-DEFAULT bg-dark-100 px-3 py-2 text-sm"
+                  className="w-full rounded-lg border border-line bg-dark-100 px-3 py-2 text-sm"
                 >
                   {enrolledClasses.map((c) => (
                     <option key={c.id} value={c.id}>
@@ -181,7 +181,7 @@ export function HomeworkUpload({ enrolledClasses, onReviewReceived, disabled }: 
                 value={instructions}
                 onChange={(e) => setInstructions(e.target.value)}
                 placeholder="e.g. Check my grammar, or Is my calculation correct?"
-                className="w-full rounded-lg border border-line-DEFAULT bg-dark-100 px-3 py-2 text-sm placeholder:text-ink-faint"
+                className="w-full rounded-lg border border-line bg-dark-100 px-3 py-2 text-sm placeholder:text-ink-faint"
               />
             </div>
 

@@ -364,7 +364,7 @@ export function PostEditor({ locale, initialPost }: PostEditorProps) {
               className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium transition-all ${
                 type === opt.value
                   ? "bg-neon-600 text-white border-neon-600"
-                  : "bg-dark-100 text-ink-main border-line-DEFAULT hover:border-neon-300"
+                  : "bg-dark-100 text-ink-main border-line hover:border-neon-300"
               }`}
             >
               <span>{opt.icon}</span>
@@ -384,7 +384,7 @@ export function PostEditor({ locale, initialPost }: PostEditorProps) {
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder={isDari ? "عنوان داستان خود را بنویسید..." : "Give your story a title..."}
-          className="w-full text-2xl font-bold border-0 border-b border-line-DEFAULT bg-transparent py-2 focus:outline-none focus:border-neon-500 placeholder:text-ink-faint"
+          className="w-full text-2xl font-bold border-0 border-b border-line bg-transparent py-2 focus:outline-none focus:border-neon-500 placeholder:text-ink-faint"
         />
       </div>
 
@@ -395,7 +395,7 @@ export function PostEditor({ locale, initialPost }: PostEditorProps) {
             {isDari ? "تصویر جلد (اختیاری)" : "Cover image (optional)"}
           </label>
           {coverImageUrl ? (
-            <div className="relative aspect-[16/9] rounded-xl overflow-hidden bg-dark-100 border border-line-DEFAULT">
+            <div className="relative aspect-[16/9] rounded-xl overflow-hidden bg-dark-100 border border-line">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={coverImageUrl} alt="Cover" className="w-full h-full object-cover" />
               <button
@@ -413,7 +413,7 @@ export function PostEditor({ locale, initialPost }: PostEditorProps) {
               type="button"
               onClick={() => coverInputRef.current?.click()}
               disabled={uploadingCover}
-              className="w-full aspect-[16/9] border-2 border-dashed border-line-DEFAULT rounded-xl flex flex-col items-center justify-center hover:border-neon-400 hover:bg-neon-50/30 transition-colors"
+              className="w-full aspect-[16/9] border-2 border-dashed border-line rounded-xl flex flex-col items-center justify-center hover:border-neon-400 hover:bg-neon-50/30 transition-colors"
             >
               <svg className="w-10 h-10 text-ink-faint mb-2" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z" />
@@ -453,7 +453,7 @@ export function PostEditor({ locale, initialPost }: PostEditorProps) {
                 type="button"
                 onClick={() => galleryInputRef.current?.click()}
                 disabled={uploadingCover}
-                className="aspect-square border-2 border-dashed border-line-DEFAULT rounded-xl flex flex-col items-center justify-center hover:border-neon-400 hover:bg-neon-50/30 transition-colors"
+                className="aspect-square border-2 border-dashed border-line rounded-xl flex flex-col items-center justify-center hover:border-neon-400 hover:bg-neon-50/30 transition-colors"
               >
                 <svg className="w-8 h-8 text-ink-faint mb-1" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -483,7 +483,7 @@ export function PostEditor({ locale, initialPost }: PostEditorProps) {
                 : (isDari ? "داستان خود را اینجا بنویسید... (پشتیبانی از markdown: **پررنگ**, *کج*, ## عنوان)" : "Start writing here... Supports markdown: **bold**, *italic*, ## heading, - bullet list")
           }
           rows={18}
-          className={`w-full rounded-xl border border-line-DEFAULT bg-dark-100 px-4 py-3 text-[15px] leading-relaxed font-sans placeholder:text-ink-faint focus:outline-none focus:ring-2 focus:ring-neon-500/30 focus:border-neon-400 ${
+          className={`w-full rounded-xl border border-line bg-dark-100 px-4 py-3 text-[15px] leading-relaxed font-sans placeholder:text-ink-faint focus:outline-none focus:ring-2 focus:ring-neon-500/30 focus:border-neon-400 ${
             type === "poetry" ? "text-center italic" : ""
           }`}
         />
@@ -499,7 +499,7 @@ export function PostEditor({ locale, initialPost }: PostEditorProps) {
             type="checkbox"
             checked={alsoDari}
             onChange={(e) => setAlsoDari(e.target.checked)}
-            className="w-4 h-4 rounded border-line-DEFAULT text-neon-600 focus:ring-neon-500"
+            className="w-4 h-4 rounded border-line text-neon-600 focus:ring-neon-500"
           />
           <span className="text-sm text-ink-main">
             {isDari ? "همچنین به دری بنویسم" : "Also write in Dari"}
@@ -516,7 +516,7 @@ export function PostEditor({ locale, initialPost }: PostEditorProps) {
             onChange={(e) => setTitleDari(e.target.value)}
             placeholder="عنوان شما به دری..."
             dir="rtl"
-            className="w-full text-xl font-bold border-0 border-b border-line-DEFAULT bg-transparent py-2 focus:outline-none focus:border-neon-500 placeholder:text-ink-faint mb-4"
+            className="w-full text-xl font-bold border-0 border-b border-line bg-transparent py-2 focus:outline-none focus:border-neon-500 placeholder:text-ink-faint mb-4"
             style={{ fontFamily: "var(--font-dari, Vazirmatn, serif)" }}
           />
           <label className="block text-sm font-semibold text-ink-main mb-2">داستان به دری</label>
@@ -526,7 +526,7 @@ export function PostEditor({ locale, initialPost }: PostEditorProps) {
             placeholder="داستان خود را به دری بنویسید..."
             dir="rtl"
             rows={14}
-            className="w-full rounded-xl border border-line-DEFAULT bg-dark-100 px-4 py-3 text-[15px] leading-relaxed placeholder:text-ink-faint focus:outline-none focus:ring-2 focus:ring-neon-500/30 focus:border-neon-400"
+            className="w-full rounded-xl border border-line bg-dark-100 px-4 py-3 text-[15px] leading-relaxed placeholder:text-ink-faint focus:outline-none focus:ring-2 focus:ring-neon-500/30 focus:border-neon-400"
             style={{ fontFamily: "var(--font-dari, Vazirmatn, serif)" }}
           />
         </div>
@@ -541,7 +541,7 @@ export function PostEditor({ locale, initialPost }: PostEditorProps) {
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value)}
-            className="w-full rounded-lg border border-line-DEFAULT bg-dark-100 px-3 py-2 text-sm"
+            className="w-full rounded-lg border border-line bg-dark-100 px-3 py-2 text-sm"
           >
             <option value="">{isDari ? "انتخاب..." : "Select..."}</option>
             <option value="education">{isDari ? "آموزش" : "Education"}</option>
@@ -562,7 +562,7 @@ export function PostEditor({ locale, initialPost }: PostEditorProps) {
             value={tags}
             onChange={(e) => setTags(e.target.value)}
             placeholder={isDari ? "آموزش، انگلیسی (با کاما)" : "education, english (comma-separated)"}
-            className="w-full rounded-lg border border-line-DEFAULT bg-dark-100 px-3 py-2 text-sm placeholder:text-ink-faint"
+            className="w-full rounded-lg border border-line bg-dark-100 px-3 py-2 text-sm placeholder:text-ink-faint"
           />
         </div>
       </div>
@@ -573,7 +573,7 @@ export function PostEditor({ locale, initialPost }: PostEditorProps) {
             type="checkbox"
             checked={anonymous}
             onChange={(e) => setAnonymous(e.target.checked)}
-            className="w-4 h-4 rounded border-line-DEFAULT text-neon-600 focus:ring-neon-500"
+            className="w-4 h-4 rounded border-line text-neon-600 focus:ring-neon-500"
           />
           <span className="text-sm text-ink-main">
             {isDari ? "به صورت ناشناس منتشر کنید" : "Post anonymously"}
@@ -591,7 +591,7 @@ export function PostEditor({ locale, initialPost }: PostEditorProps) {
             type="button"
             onClick={() => askAiForHelp("grammar")}
             disabled={aiLoading !== null || !content.trim()}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-dark-100 border border-line-DEFAULT text-sm text-ink-main font-medium hover:bg-neon-50 hover:border-neon-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-dark-100 border border-line text-sm text-ink-main font-medium hover:bg-neon-50 hover:border-neon-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {aiLoading === "grammar" ? "…" : "📝"} {isDari ? "بررسی گرامر" : "Check grammar"}
           </button>
@@ -599,13 +599,13 @@ export function PostEditor({ locale, initialPost }: PostEditorProps) {
             type="button"
             onClick={() => askAiForHelp("improve")}
             disabled={aiLoading !== null || !content.trim()}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-dark-100 border border-line-DEFAULT text-sm text-ink-main font-medium hover:bg-neon-50 hover:border-neon-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-dark-100 border border-line text-sm text-ink-main font-medium hover:bg-neon-50 hover:border-neon-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {aiLoading === "improve" ? "…" : "✨"} {isDari ? "بهبود نوشته" : "Improve my writing"}
           </button>
         </div>
         {aiResult && (
-          <div className="rounded-lg bg-dark-100 border border-line-DEFAULT p-4 text-sm text-ink-main whitespace-pre-wrap">
+          <div className="rounded-lg bg-dark-100 border border-line p-4 text-sm text-ink-main whitespace-pre-wrap">
             {aiResult}
           </div>
         )}
@@ -616,12 +616,12 @@ export function PostEditor({ locale, initialPost }: PostEditorProps) {
       {saveMessage && <p className="text-xs text-ink-faint">{saveMessage}</p>}
 
       {/* Action bar */}
-      <div className="flex items-center justify-between border-t border-line-DEFAULT pt-6">
+      <div className="flex items-center justify-between border-t border-line pt-6">
         <button
           type="button"
           onClick={() => saveDraft(true)}
           disabled={saving || submitting}
-          className="inline-flex items-center px-5 py-2.5 rounded-xl border border-line-DEFAULT text-ink-main font-semibold hover:bg-dark-50 disabled:opacity-50 transition-colors"
+          className="inline-flex items-center px-5 py-2.5 rounded-xl border border-line text-ink-main font-semibold hover:bg-dark-50 disabled:opacity-50 transition-colors"
         >
           {saving ? (isDari ? "در حال ذخیره..." : "Saving...") : isDari ? "ذخیره پیش‌نویس" : "Save draft"}
         </button>

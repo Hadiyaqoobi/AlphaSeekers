@@ -41,7 +41,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     return (
       <section className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-8 space-y-6">
         {/* Profile Header Card */}
-        <div className="overflow-hidden rounded-2xl border border-line-DEFAULT bg-dark-100 shadow-sm">
+        <div className="overflow-hidden rounded-2xl border border-line bg-dark-100 shadow-sm">
           <div className="h-24 bg-gradient-to-r from-teal-600 via-neon-600 to-cyan-600" />
           <div className="relative px-6 pb-6">
             <div className="-mt-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -78,7 +78,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
         </div>
 
         {/* Integrations */}
-        <div className="rounded-2xl border border-line-DEFAULT bg-dark-100 p-5 shadow-sm">
+        <div className="rounded-2xl border border-line bg-dark-100 p-5 shadow-sm">
           <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-ink-faint">Integrations</h2>
           <div className="flex flex-wrap items-center gap-3">
             <TelegramLink />
@@ -87,7 +87,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
         </div>
 
         {/* Notification Preferences */}
-        <div className="rounded-2xl border border-line-DEFAULT bg-dark-100 p-5 shadow-sm">
+        <div className="rounded-2xl border border-line bg-dark-100 p-5 shadow-sm">
           <NotificationPrefs />
         </div>
 
@@ -95,7 +95,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
         <PasswordChangeForm />
 
         {/* Sign Out */}
-        <div className="border-t border-line-DEFAULT pt-5">
+        <div className="border-t border-line pt-5">
           <LogoutButton callbackUrl={`/${locale}/login`} label={t("actions.signOut")} />
         </div>
       </section>
@@ -116,7 +116,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
       {/* ============================================================
           Profile Header Card
           ============================================================ */}
-      <div className="overflow-hidden rounded-2xl border border-line-DEFAULT bg-dark-100 shadow-sm">
+      <div className="overflow-hidden rounded-2xl border border-line bg-dark-100 shadow-sm">
         {/* Gradient banner */}
         <div className="relative h-28 bg-gradient-to-r from-teal-600 via-neon-600 to-cyan-600 sm:h-32">
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.15),transparent_60%)]" />
@@ -177,7 +177,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
       {/* ============================================================
           Notification Preferences
           ============================================================ */}
-      <div className="rounded-2xl border border-line-DEFAULT bg-dark-100 p-5 shadow-sm sm:p-6">
+      <div className="rounded-2xl border border-line bg-dark-100 p-5 shadow-sm sm:p-6">
         <NotificationPrefs />
       </div>
 
@@ -191,7 +191,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
           ============================================================ */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {/* Active Classes */}
-        <div className="relative overflow-hidden rounded-2xl border border-line-DEFAULT bg-dark-100 p-5 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5">
+        <div className="relative overflow-hidden rounded-2xl border border-line bg-dark-100 p-5 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5">
           <div className="absolute -right-3 -top-3 h-16 w-16 rounded-full bg-neon-50" />
           <div className="relative">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-neon-100 text-neon-600">
@@ -205,7 +205,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
         </div>
 
         {/* Upcoming Sessions */}
-        <div className="relative overflow-hidden rounded-2xl border border-line-DEFAULT bg-dark-100 p-5 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5">
+        <div className="relative overflow-hidden rounded-2xl border border-line bg-dark-100 p-5 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5">
           <div className="absolute -right-3 -top-3 h-16 w-16 rounded-full bg-sky-50" />
           <div className="relative">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-100 text-sky-600">
@@ -220,7 +220,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
         </div>
 
         {/* Materials */}
-        <div className="relative overflow-hidden rounded-2xl border border-line-DEFAULT bg-dark-100 p-5 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5">
+        <div className="relative overflow-hidden rounded-2xl border border-line bg-dark-100 p-5 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5">
           <div className="absolute -right-3 -top-3 h-16 w-16 rounded-full bg-violet-50" />
           <div className="relative">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-100 text-violet-600">
@@ -235,7 +235,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
         </div>
 
         {/* Alerts */}
-        <div className="relative overflow-hidden rounded-2xl border border-line-DEFAULT bg-dark-100 p-5 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5">
+        <div className="relative overflow-hidden rounded-2xl border border-line bg-dark-100 p-5 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5">
           <div className="absolute -right-3 -top-3 h-16 w-16 rounded-full bg-amber-50" />
           <div className="relative">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-amber-600">
@@ -252,11 +252,11 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
       {/* ============================================================
           Class Progress
           ============================================================ */}
-      <section className="rounded-2xl border border-line-DEFAULT bg-dark-100 shadow-sm">
+      <section className="rounded-2xl border border-line bg-dark-100 shadow-sm">
         <div className="border-b border-line-soft px-5 py-4 sm:px-6">
           <h2 className="text-lg font-bold text-ink-main">{t("progress.title")}</h2>
         </div>
-        <div className="divide-y divide-slate-100">
+        <div className="divide-y divide-line-soft">
           {profile.classes.length === 0 ? (
             <div className="px-5 py-10 text-center sm:px-6">
               <p className="text-sm text-ink-soft">{t("progress.empty")}</p>
@@ -317,7 +317,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
           ============================================================ */}
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Upcoming Timeline */}
-        <section className="rounded-2xl border border-line-DEFAULT bg-dark-100 shadow-sm">
+        <section className="rounded-2xl border border-line bg-dark-100 shadow-sm">
           <div className="border-b border-line-soft px-5 py-4 sm:px-6">
             <h2 className="text-lg font-bold text-ink-main">{t("timeline.title")}</h2>
           </div>
@@ -359,11 +359,11 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
         </section>
 
         {/* Notifications */}
-        <section className="rounded-2xl border border-line-DEFAULT bg-dark-100 shadow-sm">
+        <section className="rounded-2xl border border-line bg-dark-100 shadow-sm">
           <div className="border-b border-line-soft px-5 py-4 sm:px-6">
             <h2 className="text-lg font-bold text-ink-main">{t("notifications.title")}</h2>
           </div>
-          <div className="divide-y divide-slate-50">
+          <div className="divide-y divide-line-soft">
             {profile.notifications.length === 0 ? (
               <div className="px-5 py-10 text-center sm:px-6">
                 <p className="text-sm text-ink-soft">{t("notifications.empty")}</p>
@@ -391,7 +391,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
       {/* ============================================================
           Opportunities
           ============================================================ */}
-      <section className="rounded-2xl border border-line-DEFAULT bg-dark-100 shadow-sm">
+      <section className="rounded-2xl border border-line bg-dark-100 shadow-sm">
         <div className="border-b border-line-soft px-5 py-4 sm:px-6">
           <h2 className="text-lg font-bold text-ink-main">{t("opportunities.title")}</h2>
         </div>
@@ -402,7 +402,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
             <div className="grid gap-4 sm:grid-cols-2">
               {profile.opportunities.map((item) => (
                 <article
-                  className="group relative overflow-hidden rounded-xl border border-line-DEFAULT bg-dark-100 p-4 transition-all hover:shadow-md hover:-translate-y-0.5"
+                  className="group relative overflow-hidden rounded-xl border border-line bg-dark-100 p-4 transition-all hover:shadow-md hover:-translate-y-0.5"
                   key={item.id}
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2">
@@ -444,7 +444,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
       {/* ============================================================
           Sign Out
           ============================================================ */}
-      <div className="border-t border-line-DEFAULT pt-5">
+      <div className="border-t border-line pt-5">
         <LogoutButton callbackUrl={`/${locale}/login`} label={t("actions.signOut")} />
       </div>
     </section>

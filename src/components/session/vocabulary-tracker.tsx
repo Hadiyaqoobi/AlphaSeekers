@@ -80,7 +80,7 @@ export function VocabularyTracker({ initialWords, locale, classId }: VocabularyT
           {words.map((item, i) => (
             <div
               key={`${item.word}-${i}`}
-              className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg bg-dark-100 border border-line-soft hover:border-line-DEFAULT transition-colors text-sm"
+              className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg bg-dark-100 border border-line-soft hover:border-line transition-colors text-sm"
             >
               <button
                 type="button"
@@ -120,7 +120,7 @@ export function VocabularyTracker({ initialWords, locale, classId }: VocabularyT
           onChange={(e) => setNewWord(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && addWord()}
           placeholder="Add a word..."
-          className="flex-1 rounded-lg border border-line-DEFAULT bg-dark-100 px-2.5 py-1.5 text-xs placeholder:text-ink-faint focus:outline-none focus:ring-1 focus:ring-neon-500/30"
+          className="flex-1 rounded-lg border border-line bg-dark-100 px-2.5 py-1.5 text-xs placeholder:text-ink-faint focus:outline-none focus:ring-1 focus:ring-neon-500/30"
         />
         <button
           type="button"

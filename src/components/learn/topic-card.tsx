@@ -45,7 +45,7 @@ export function TopicCard({ topic, isDari }: TopicCardProps) {
       disabled={loading}
       className="group relative text-left p-5 rounded-2xl transition-all duration-300 disabled:opacity-60 disabled:cursor-wait"
       style={{
-        background: "#0E1921",
+        background: "#0D1419",
         border: "1px solid #1A2D3D",
       }}
       onMouseEnter={(e) => {
@@ -65,7 +65,7 @@ export function TopicCard({ topic, isDari }: TopicCardProps) {
       >
         {isDari ? topic.nameDari : topic.name}
       </h3>
-      <p className="text-xs mt-1" style={{ color: "#556677" }}>
+      <p className="text-xs mt-1" style={{ color: "#5A7A94" }}>
         {loading ? (isDari ? "در حال ساخت مسیر..." : "Building your path...") : `${topic.suggestedLessons} ${isDari ? "درس" : "lessons"}`}
       </p>
       {error && (

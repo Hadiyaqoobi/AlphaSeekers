@@ -37,7 +37,7 @@ export type LessonSection =
 
 function Explanation({ section }: { section: ExplanationSection }) {
   return (
-    <div className="rounded-2xl p-6" style={{ background: "#0E1921", border: "1px solid #1A2D3D" }}>
+    <div className="rounded-2xl p-6" style={{ background: "#0D1419", border: "1px solid #1A2D3D" }}>
       <div className="flex items-center gap-2 mb-4">
         <span className="text-base">📖</span>
         <h3 className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#00E676" }}>
@@ -53,7 +53,7 @@ function Explanation({ section }: { section: ExplanationSection }) {
 
 function Example({ section }: { section: ExampleSection }) {
   return (
-    <div className="rounded-2xl p-6" style={{ background: "#0E1921", border: "1px solid rgba(0,229,255,0.18)" }}>
+    <div className="rounded-2xl p-6" style={{ background: "#0D1419", border: "1px solid rgba(0,229,255,0.18)" }}>
       <div className="flex items-center gap-2 mb-4">
         <span className="text-base">💡</span>
         <h3 className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#00E5FF" }}>
@@ -64,7 +64,7 @@ function Example({ section }: { section: ExampleSection }) {
         <pre
           className="rounded-xl p-4 text-sm font-mono overflow-x-auto mb-3"
           style={{
-            background: "#080D12",
+            background: "#070B0E",
             color: "#B0BEC5",
             border: "1px solid #1A2D3D",
           }}
@@ -81,7 +81,7 @@ function Example({ section }: { section: ExampleSection }) {
 
 function KeyPoint({ section }: { section: KeyPointSection }) {
   return (
-    <div className="rounded-2xl p-6" style={{ background: "#0E1921", border: "1px solid #1A2D3D" }}>
+    <div className="rounded-2xl p-6" style={{ background: "#0D1419", border: "1px solid #1A2D3D" }}>
       <div className="flex items-center gap-2 mb-4">
         <span className="text-base">📌</span>
         <h3 className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#FFB300" }}>
@@ -153,7 +153,7 @@ function TryIt({
         placeholder="Type your answer..."
         rows={3}
         className="w-full px-4 py-3 rounded-xl text-sm resize-none focus:outline-none transition-colors"
-        style={{ background: "#0E1921", border: "1px solid #1E3A4F", color: "#E8EEF2" }}
+        style={{ background: "#0D1419", border: "1px solid #1E3A4F", color: "#E8EEF2" }}
         onFocus={(e) => { e.currentTarget.style.borderColor = "#00E676"; }}
         onBlur={(e) => { e.currentTarget.style.borderColor = "#1E3A4F"; }}
       />
@@ -163,7 +163,7 @@ function TryIt({
           onClick={checkAnswer}
           disabled={!answer.trim() || loading}
           className="px-4 py-2 rounded-xl text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          style={{ background: "#00E676", color: "#080D12" }}
+          style={{ background: "#00E676", color: "#070B0E" }}
         >
           {loading ? "Checking..." : "Check my answer"}
         </button>
@@ -172,9 +172,9 @@ function TryIt({
             type="button"
             onClick={() => setShowHint((s) => !s)}
             className="text-xs transition-colors"
-            style={{ color: "#8899A6" }}
+            style={{ color: "#8AA4B8" }}
             onMouseEnter={(e) => { e.currentTarget.style.color = "#00E676"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.color = "#8899A6"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = "#8AA4B8"; }}
           >
             💡 {showHint ? "Hide hint" : "Need a hint?"}
           </button>
@@ -209,7 +209,7 @@ function TryIt({
 
 function Vocabulary({ section }: { section: VocabSection }) {
   return (
-    <div className="rounded-2xl p-6" style={{ background: "#0E1921", border: "1px solid #1A2D3D" }}>
+    <div className="rounded-2xl p-6" style={{ background: "#0D1419", border: "1px solid #1A2D3D" }}>
       <div className="flex items-center gap-2 mb-4">
         <span className="text-base">📝</span>
         <h3 className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#2979FF" }}>
@@ -235,10 +235,10 @@ function Vocabulary({ section }: { section: VocabSection }) {
                 {w.dari}
               </span>
             )}
-            <span className="text-sm flex-1" style={{ color: "#8899A6" }}>
+            <span className="text-sm flex-1" style={{ color: "#8AA4B8" }}>
               {w.definition}
               {w.example && (
-                <span className="block mt-1 italic text-xs" style={{ color: "#556677" }}>
+                <span className="block mt-1 italic text-xs" style={{ color: "#5A7A94" }}>
                   &ldquo;{w.example}&rdquo;
                 </span>
               )}
@@ -270,13 +270,13 @@ function Quiz({
     const total = section.questions.length;
     const score = correctCount / total;
     return (
-      <div className="rounded-2xl p-6" style={{ background: "#0E1921", border: "1px solid rgba(0,230,118,0.25)" }}>
+      <div className="rounded-2xl p-6" style={{ background: "#0D1419", border: "1px solid rgba(0,230,118,0.25)" }}>
         <div className="text-center">
           <div className="text-3xl mb-2">{score === 1 ? "🎉" : score >= 0.6 ? "👍" : "💪"}</div>
           <p className="text-base font-semibold mb-1" style={{ color: "#E8EEF2" }}>
             {correctCount} / {total} correct
           </p>
-          <p className="text-sm" style={{ color: "#8899A6" }}>
+          <p className="text-sm" style={{ color: "#8AA4B8" }}>
             {score === 1
               ? "Perfect — you really got it!"
               : score >= 0.6
@@ -310,7 +310,7 @@ function Quiz({
   }
 
   return (
-    <div className="rounded-2xl p-6" style={{ background: "#0E1921", border: "1px solid #1A2D3D" }}>
+    <div className="rounded-2xl p-6" style={{ background: "#0D1419", border: "1px solid #1A2D3D" }}>
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <span className="text-base">✅</span>
@@ -318,7 +318,7 @@ function Quiz({
             {section.title || "Quick check"}
           </h3>
         </div>
-        <span className="text-xs" style={{ color: "#556677" }}>
+        <span className="text-xs" style={{ color: "#5A7A94" }}>
           {index + 1} / {section.questions.length}
         </span>
       </div>
@@ -389,8 +389,8 @@ function Quiz({
         disabled={!revealed && selected === null}
         className="w-full py-2.5 rounded-xl text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         style={{
-          background: revealed ? "#080D12" : "#00E676",
-          color: revealed ? "#FFFFFF" : "#080D12",
+          background: revealed ? "#070B0E" : "#00E676",
+          color: revealed ? "#FFFFFF" : "#070B0E",
           border: revealed ? "1px solid #1A2D3D" : "none",
         }}
       >
@@ -448,7 +448,7 @@ function Summary({
         className="inline-block px-6 py-3 rounded-xl font-semibold transition-colors"
         style={{
           background: "#00E676",
-          color: "#080D12",
+          color: "#070B0E",
           boxShadow: "0 0 16px rgba(0,230,118,0.3)",
         }}
       >

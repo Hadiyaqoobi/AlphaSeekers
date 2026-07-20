@@ -61,9 +61,9 @@ export function LessonChat({ pathId, lessonNumber, isDari }: LessonChatProps) {
   return (
     <div
       className="rounded-2xl p-6"
-      style={{ background: "#0E1921", border: "1px solid #1A2D3D" }}
+      style={{ background: "#0D1419", border: "1px solid #1A2D3D" }}
     >
-      <h4 className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: "#8899A6" }}>
+      <h4 className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: "#8AA4B8" }}>
         💬 {isDari ? "سوالی درباره این درس دارید؟" : "Have questions about this lesson?"}
       </h4>
       <div className="flex gap-2">
@@ -84,7 +84,7 @@ export function LessonChat({ pathId, lessonNumber, isDari }: LessonChatProps) {
           onClick={ask}
           disabled={!input.trim() || submitting}
           className="px-3 py-2.5 rounded-xl flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
-          style={{ background: "#00E676", color: "#080D12" }}
+          style={{ background: "#00E676", color: "#070B0E" }}
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5" />
@@ -107,7 +107,7 @@ export function LessonChat({ pathId, lessonNumber, isDari }: LessonChatProps) {
                 style={{ background: "#142230", color: "#C0CCD6", border: "1px solid #1A2D3D" }}
               >
                 {entry.loading ? (
-                  <span style={{ color: "#556677" }} className="italic">Thinking...</span>
+                  <span style={{ color: "#5A7A94" }} className="italic">Thinking...</span>
                 ) : (
                   entry.answer
                 )}

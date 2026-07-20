@@ -47,7 +47,7 @@ export function PostClassQuiz({ questions }: PostClassQuizProps) {
     const pct = Math.round((correctCount / questions.length) * 100);
 
     return (
-      <div className="rounded-2xl bg-dark-100 border border-line-DEFAULT p-6 text-center">
+      <div className="rounded-2xl bg-dark-100 border border-line p-6 text-center">
         <div className="text-5xl mb-2">{pct >= 80 ? "🎉" : pct >= 60 ? "👍" : "💪"}</div>
         <h3 className="text-xl font-bold text-ink-main mb-1">
           {correctCount} / {questions.length} correct
@@ -92,7 +92,7 @@ export function PostClassQuiz({ questions }: PostClassQuizProps) {
   };
 
   return (
-    <div className="rounded-2xl bg-dark-100 border border-line-DEFAULT p-5">
+    <div className="rounded-2xl bg-dark-100 border border-line p-5">
       <div className="flex items-center justify-between mb-4">
         <span className="text-xs font-semibold text-ink-soft uppercase tracking-wide">
           Question {index + 1} of {questions.length}
@@ -131,7 +131,7 @@ export function PostClassQuiz({ questions }: PostClassQuizProps) {
                       ? "border-red-300 bg-red-50 text-red-900"
                       : isSelected
                         ? "border-neon-300 bg-neon-50/50"
-                        : "border-line-DEFAULT hover:border-line-DEFAULT bg-dark-100"
+                        : "border-line hover:border-line bg-dark-100"
                 }`}
               >
                 {opt}
@@ -155,7 +155,7 @@ export function PostClassQuiz({ questions }: PostClassQuizProps) {
               ? isCorrect
                 ? "border-neon-300"
                 : "border-red-300"
-              : "border-line-DEFAULT focus:border-neon-400"
+              : "border-line focus:border-neon-400"
           }`}
         />
       )}

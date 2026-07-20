@@ -121,7 +121,7 @@ export default async function AdminClassDetailPage({ params }: AdminClassDetailP
           <div className="mt-3 overflow-x-auto">
             <table className="w-full min-w-[480px] border-collapse text-left text-sm">
               <thead>
-                <tr className="border-b border-line-DEFAULT text-ink-soft">
+                <tr className="border-b border-line text-ink-soft">
                   <th className="py-2 font-semibold" scope="col">{t("studentName")}</th>
                   <th className="py-2 font-semibold" scope="col">{t("studentEmail")}</th>
                   <th className="py-2 font-semibold" scope="col">{t("enrolledAt")}</th>

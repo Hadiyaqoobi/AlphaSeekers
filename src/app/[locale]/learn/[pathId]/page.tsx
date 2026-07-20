@@ -36,12 +36,12 @@ export default async function LearningPathPage({ params }: PageProps) {
   const pct = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
 
   return (
-    <main className="mx-auto max-w-4xl px-6 lg:px-8 py-10" style={{ background: "#080D12" }}>
+    <main className="mx-auto max-w-4xl px-6 lg:px-8 py-10" style={{ background: "#070B0E" }}>
       {/* Back link */}
       <Link
         href={`/${params.locale}/learn`}
         className="inline-flex items-center gap-1.5 text-sm font-medium mb-6 transition-colors"
-        style={{ color: "#8899A6" }}
+        style={{ color: "#8AA4B8" }}
       >
         ← {isDari ? "همه مسیرها" : "All paths"}
       </Link>
@@ -52,7 +52,7 @@ export default async function LearningPathPage({ params }: PageProps) {
           {path.title}
         </h1>
         {path.description && (
-          <p className="mt-3 text-base" style={{ color: "#8899A6" }}>
+          <p className="mt-3 text-base" style={{ color: "#8AA4B8" }}>
             {path.description}
           </p>
         )}
@@ -60,7 +60,7 @@ export default async function LearningPathPage({ params }: PageProps) {
         {/* Progress bar */}
         <div className="mt-6">
           <div className="flex items-center justify-between mb-2 text-xs">
-            <span style={{ color: "#8899A6" }}>
+            <span style={{ color: "#8AA4B8" }}>
               {completedCount} {isDari ? "از" : "of"} {totalLessons} {isDari ? "درس انجام شده" : "lessons done"}
             </span>
             <span style={{ color: "#00E676", fontWeight: 600 }}>{pct}%</span>
@@ -100,7 +100,7 @@ export default async function LearningPathPage({ params }: PageProps) {
             badgeBg = "rgba(0,229,255,0.10)";
           } else {
             statusBadge = isDari ? "⬚ قفل" : "⬚ Locked";
-            badgeColor = "#556677";
+            badgeColor = "#5A7A94";
             badgeBg = "transparent";
           }
 
@@ -108,7 +108,7 @@ export default async function LearningPathPage({ params }: PageProps) {
             <div
               className={`rounded-2xl p-5 transition-all ${isLocked ? "opacity-60" : ""}`}
               style={{
-                background: isCurrent ? "rgba(0,229,255,0.04)" : "#0E1921",
+                background: isCurrent ? "rgba(0,229,255,0.04)" : "#0D1419",
                 border: `1px solid ${isCurrent ? "rgba(0,229,255,0.30)" : "#1A2D3D"}`,
               }}
             >
@@ -119,22 +119,22 @@ export default async function LearningPathPage({ params }: PageProps) {
                       className="inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold"
                       style={{
                         background: isDone ? "#00E676" : isCurrent ? "rgba(0,229,255,0.15)" : "#142230",
-                        color: isDone ? "#080D12" : isCurrent ? "#00E5FF" : "#556677",
+                        color: isDone ? "#070B0E" : isCurrent ? "#00E5FF" : "#5A7A94",
                         border: isCurrent ? "1px solid rgba(0,229,255,0.4)" : "none",
                       }}
                     >
                       {lessonNum}
                     </span>
-                    <h3 className="text-base font-semibold" style={{ color: isLocked ? "#556677" : "#E8EEF2" }}>
+                    <h3 className="text-base font-semibold" style={{ color: isLocked ? "#5A7A94" : "#E8EEF2" }}>
                       {isDari ? "درس" : "Lesson"} {lessonNum}: {lesson.title}
                     </h3>
                   </div>
                   {lesson.description && (
-                    <p className="text-sm ml-9 mb-2" style={{ color: "#8899A6" }}>
+                    <p className="text-sm ml-9 mb-2" style={{ color: "#8AA4B8" }}>
                       {lesson.description}
                     </p>
                   )}
-                  <div className="flex items-center gap-3 ml-9 text-xs" style={{ color: "#556677" }}>
+                  <div className="flex items-center gap-3 ml-9 text-xs" style={{ color: "#5A7A94" }}>
                     {isDone && progress?.quizScore !== null && progress?.quizScore !== undefined && (
                       <span>
                         {isDari ? "نمره" : "Score"}:{" "}
@@ -205,13 +205,13 @@ export default async function LearningPathPage({ params }: PageProps) {
           <h2 className="text-xl font-bold mb-2" style={{ color: "#FFFFFF" }}>
             {isDari ? "تبریک — مسیر را تکمیل کردید!" : "Congratulations — path complete!"}
           </h2>
-          <p className="text-sm mb-4" style={{ color: "#8899A6" }}>
+          <p className="text-sm mb-4" style={{ color: "#8AA4B8" }}>
             {isDari ? "موضوع جدیدی را یاد بگیرید." : "Ready to learn something else?"}
           </p>
           <Link
             href={`/${params.locale}/learn`}
             className="inline-block px-5 py-2.5 rounded-xl font-semibold"
-            style={{ background: "#00E676", color: "#080D12" }}
+            style={{ background: "#00E676", color: "#070B0E" }}
           >
             {isDari ? "موضوع جدید" : "Pick a new topic"} →
           </Link>

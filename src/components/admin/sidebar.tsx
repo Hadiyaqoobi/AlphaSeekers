@@ -132,7 +132,7 @@ export function Sidebar({
                           color: '#00E676',
                           fontWeight: 500,
                         }
-                      : { color: '#8899A6' }
+                      : { color: '#8AA4B8' }
                   }
                   onMouseEnter={(e) => {
                     if (!active) {
@@ -143,7 +143,7 @@ export function Sidebar({
                   onMouseLeave={(e) => {
                     if (!active) {
                       e.currentTarget.style.background = '';
-                      e.currentTarget.style.color = '#8899A6';
+                      e.currentTarget.style.color = '#8AA4B8';
                     }
                   }}
                 >
@@ -175,7 +175,7 @@ export function Sidebar({
           </span>
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium truncate" style={{ color: '#E8EEF2' }}>{userName}</p>
-            <p className="text-xs" style={{ color: '#556677' }}>{userRole}</p>
+            <p className="text-xs" style={{ color: '#5A7A94' }}>{userRole}</p>
           </div>
         </div>
         <LogoutButton callbackUrl={`/${locale}`} label={t('logout')} variant="nav" />
@@ -188,11 +188,11 @@ export function Sidebar({
       {/* Mobile hamburger */}
       <button
         className="lg:hidden fixed top-4 left-4 z-50 flex h-10 w-10 items-center justify-center rounded-lg"
-        style={{ background: '#0E1921', border: '1px solid #1A2D3D' }}
+        style={{ background: '#0D1419', border: '1px solid #1A2D3D' }}
         onClick={() => setMobileOpen(true)}
         aria-label="Open menu"
       >
-        <svg className="w-5 h-5" style={{ color: '#8899A6' }} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+        <svg className="w-5 h-5" style={{ color: '#8AA4B8' }} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
         </svg>
       </button>
@@ -213,7 +213,7 @@ export function Sidebar({
         {mobileOpen && (
           <button
             className="absolute top-4 right-3 lg:hidden flex h-8 w-8 items-center justify-center rounded-lg transition-colors"
-            style={{ color: '#8899A6' }}
+            style={{ color: '#8AA4B8' }}
             onClick={close}
             aria-label="Close menu"
           >

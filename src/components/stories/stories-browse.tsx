@@ -115,7 +115,7 @@ export function StoriesBrowse({ locale, initialPosts, featuredPosts }: StoriesBr
       <section className="bg-[var(--bg-base)] pb-24">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           {/* Filter tabs */}
-          <div className="flex items-center gap-1 overflow-x-auto mb-8 border-b border-line-DEFAULT">
+          <div className="flex items-center gap-1 overflow-x-auto mb-8 border-b border-line">
             {filterTabs.map((tab) => (
               <button
                 key={tab.value}
@@ -169,7 +169,7 @@ function FeaturedPostHero({ post, locale }: { post: PostCardData; locale: string
   return (
     <Link
       href={`/${locale}/stories/${post.slug}`}
-      className="group block rounded-2xl overflow-hidden border border-line-DEFAULT bg-dark-100 hover:shadow-lg transition-all"
+      className="group block rounded-2xl overflow-hidden border border-line bg-dark-100 hover:shadow-lg transition-all"
     >
       <div className="relative aspect-[21/10] bg-dark-100 overflow-hidden">
         {post.coverImageUrl ? (

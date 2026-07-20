@@ -79,7 +79,7 @@ export function PostCard({ post, locale }: PostCardProps) {
     return (
       <Link
         href={`/${locale}/stories/${post.slug}`}
-        className="group block rounded-2xl overflow-hidden border border-line-DEFAULT bg-dark-100 hover:shadow-md transition-all duration-300 hover:-translate-y-0.5"
+        className="group block rounded-2xl overflow-hidden border border-line bg-dark-100 hover:shadow-md transition-all duration-300 hover:-translate-y-0.5"
       >
         <div className="relative aspect-[4/5] bg-dark-100 overflow-hidden">
           {post.coverImageUrl ? (
@@ -124,7 +124,7 @@ export function PostCard({ post, locale }: PostCardProps) {
     return (
       <Link
         href={`/${locale}/stories/${post.slug}`}
-        className="group block rounded-2xl border border-line-DEFAULT bg-dark-100 p-6 hover:shadow-md transition-all duration-300 hover:-translate-y-0.5"
+        className="group block rounded-2xl border border-line bg-dark-100 p-6 hover:shadow-md transition-all duration-300 hover:-translate-y-0.5"
       >
         <div className="flex items-center gap-3 mb-4">
           <div className="relative w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-neon-400 to-teal-600 flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
@@ -162,7 +162,7 @@ export function PostCard({ post, locale }: PostCardProps) {
   return (
     <Link
       href={`/${locale}/stories/${post.slug}`}
-      className="group block rounded-2xl overflow-hidden border border-line-DEFAULT bg-dark-100 hover:shadow-md transition-all duration-300 hover:-translate-y-0.5"
+      className="group block rounded-2xl overflow-hidden border border-line bg-dark-100 hover:shadow-md transition-all duration-300 hover:-translate-y-0.5"
     >
       <div className="relative aspect-[16/9] bg-dark-100 overflow-hidden">
         {post.coverImageUrl ? (

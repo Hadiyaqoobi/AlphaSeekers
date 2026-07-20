@@ -59,7 +59,7 @@ export function NoteEditor({ classId, sessionId, initialContent, initialUpdatedA
         onChange={(e) => setContent(e.target.value)}
         placeholder="Take notes during class. They auto-save and you can read them later..."
         rows={8}
-        className="w-full rounded-lg border border-line-DEFAULT bg-dark-100 px-3 py-2 text-sm text-ink-main placeholder:text-ink-faint focus:outline-none focus:ring-2 focus:ring-neon-500/30 focus:border-neon-400 resize-none"
+        className="w-full rounded-lg border border-line bg-dark-100 px-3 py-2 text-sm text-ink-main placeholder:text-ink-faint focus:outline-none focus:ring-2 focus:ring-neon-500/30 focus:border-neon-400 resize-none"
       />
       <div className="flex items-center justify-between mt-2 text-xs text-ink-faint">
         <span>

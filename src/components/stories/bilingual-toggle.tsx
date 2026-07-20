@@ -16,7 +16,7 @@ export function BilingualToggle({ enContent, daContent, locale }: BilingualToggl
 
   return (
     <div>
-      <div className="flex items-center gap-2 mb-6 border-b border-line-DEFAULT pb-3">
+      <div className="flex items-center gap-2 mb-6 border-b border-line pb-3">
         <button
           type="button"
           onClick={() => setShowDari(false)}

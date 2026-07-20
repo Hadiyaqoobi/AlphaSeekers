@@ -143,7 +143,7 @@ export function PostModeration({ locale }: { locale: string }) {
 
   return (
     <div>
-      <div className="flex items-center gap-1 mb-6 border-b border-line-DEFAULT">
+      <div className="flex items-center gap-1 mb-6 border-b border-line">
         {tabs.map((tab) => (
           <button
             key={tab.value}
@@ -187,7 +187,7 @@ export function PostModeration({ locale }: { locale: string }) {
       ) : (
         <div className="space-y-3">
           {posts.map((post) => (
-            <div key={post.id} className="rounded-xl bg-dark-100 border border-line-DEFAULT p-4">
+            <div key={post.id} className="rounded-xl bg-dark-100 border border-line p-4">
               <div className="flex items-start gap-4">
                 {post.coverImageUrl && (
                   <div className="relative w-20 h-20 rounded-lg overflow-hidden bg-dark-100 flex-shrink-0">
@@ -262,7 +262,7 @@ export function PostModeration({ locale }: { locale: string }) {
 
               {/* Reject form */}
               {rejecting === post.id && (
-                <div className="mt-4 pt-4 border-t border-line-DEFAULT">
+                <div className="mt-4 pt-4 border-t border-line">
                   <p className="text-xs font-semibold text-ink-main mb-2">
                     Feedback for the student (required)
                   </p>
@@ -295,7 +295,7 @@ export function PostModeration({ locale }: { locale: string }) {
               )}
 
               {post.reviewNotes && post.status === "rejected" && (
-                <div className="mt-3 pt-3 border-t border-line-DEFAULT text-xs text-ink-soft">
+                <div className="mt-3 pt-3 border-t border-line text-xs text-ink-soft">
                   <span className="font-semibold">Previous feedback:</span> {post.reviewNotes}
                 </div>
               )}

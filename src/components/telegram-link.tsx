@@ -63,7 +63,7 @@ export function TelegramLink() {
   }
 
   return (
-    <div className="rounded-lg border border-line-DEFAULT bg-dark-100 p-3">
+    <div className="rounded-lg border border-line bg-dark-100 p-3">
       <p className="text-sm font-semibold text-ink-main">{t("linkTitle")}</p>
       <p className="mt-1 text-xs text-ink-soft">{t("linkDescription")}</p>
       <button

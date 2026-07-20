@@ -63,9 +63,9 @@ export function SiteSettingsForm({ initial }: { initial: SiteSettings }) {
     <form
       onSubmit={submit}
       className="rounded-2xl p-6 space-y-6"
-      style={{ background: "#0E1921", border: "1px solid #1A2D3D" }}
+      style={{ background: "#0D1419", border: "1px solid #1A2D3D" }}
     >
-      <p className="text-sm" style={{ color: "#8899A6" }}>
+      <p className="text-sm" style={{ color: "#8AA4B8" }}>
         {t("helpUrl")}
       </p>
 

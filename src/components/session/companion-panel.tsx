@@ -188,7 +188,7 @@ export function CompanionPanel({ initialData, locale }: CompanionPanelProps) {
         </div>
 
         {/* Join Meet button */}
-        <div className="rounded-2xl bg-dark-100 border border-line-DEFAULT p-8 text-center">
+        <div className="rounded-2xl bg-dark-100 border border-line p-8 text-center">
           {session.meetLink ? (
             <>
               {!joinedMeet ? (
@@ -259,7 +259,7 @@ export function CompanionPanel({ initialData, locale }: CompanionPanelProps) {
 
         {/* Materials */}
         {data.materials.length > 0 && (
-          <div className="rounded-2xl bg-dark-100 border border-line-DEFAULT p-5">
+          <div className="rounded-2xl bg-dark-100 border border-line p-5">
             <h3 className="text-sm font-bold text-ink-main mb-3">📚 Today&apos;s materials</h3>
             <ul className="space-y-2">
               {data.materials.map((m) => (
@@ -283,7 +283,7 @@ export function CompanionPanel({ initialData, locale }: CompanionPanelProps) {
 
         {/* Teacher tools */}
         {(role === "teacher" || role === "admin") && isAfter && (
-          <div className="rounded-2xl bg-dark-100 border border-line-DEFAULT p-5">
+          <div className="rounded-2xl bg-dark-100 border border-line p-5">
             <h3 className="text-sm font-bold text-ink-main mb-3">After class — teacher tools</h3>
             <div className="flex flex-wrap gap-2">
               <button
@@ -306,7 +306,7 @@ export function CompanionPanel({ initialData, locale }: CompanionPanelProps) {
               )}
               <Link
                 href={`/${locale}/classes/${session.classId}`}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-line-DEFAULT text-sm font-medium text-ink-main hover:bg-dark-50"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-line text-sm font-medium text-ink-main hover:bg-dark-50"
               >
                 Recording & homework setup →
               </Link>
@@ -317,7 +317,7 @@ export function CompanionPanel({ initialData, locale }: CompanionPanelProps) {
 
         {/* Teacher attendance roster (3 states: verified / joined-only / absent) */}
         {data.attendanceRoster && (
-          <div className="rounded-2xl bg-dark-100 border border-line-DEFAULT p-5">
+          <div className="rounded-2xl bg-dark-100 border border-line p-5">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-bold text-ink-main">Attendance</h3>
               <span className="text-xs text-ink-soft">
@@ -373,7 +373,7 @@ export function CompanionPanel({ initialData, locale }: CompanionPanelProps) {
 
         {/* AI summary (visible to all after generation) */}
         {data.summary && (
-          <div className="rounded-2xl bg-dark-100 border border-line-DEFAULT p-5">
+          <div className="rounded-2xl bg-dark-100 border border-line p-5">
             <h3 className="text-sm font-bold text-ink-main mb-3">📝 Class summary</h3>
             <div
               className="text-sm text-ink-main whitespace-pre-wrap leading-relaxed"
@@ -406,7 +406,7 @@ export function CompanionPanel({ initialData, locale }: CompanionPanelProps) {
         {role === "student" && (
           <>
             {/* Notes */}
-            <div className="rounded-2xl bg-dark-100 border border-line-DEFAULT p-5">
+            <div className="rounded-2xl bg-dark-100 border border-line p-5">
               <h3 className="text-sm font-bold text-ink-main mb-3">📝 My notes</h3>
               <NoteEditor
                 classId={session.classId}
@@ -426,7 +426,7 @@ export function CompanionPanel({ initialData, locale }: CompanionPanelProps) {
 
             {/* Vocabulary (language classes) */}
             {data.session.isLanguageClass && (
-              <div className="rounded-2xl bg-dark-100 border border-line-DEFAULT p-5">
+              <div className="rounded-2xl bg-dark-100 border border-line p-5">
                 <h3 className="text-sm font-bold text-ink-main mb-3">📖 Key vocabulary</h3>
                 <VocabularyTracker
                   initialWords={extractVocabFromMaterials(data.materials, data.summary?.content)}

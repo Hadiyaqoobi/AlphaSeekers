@@ -159,7 +159,7 @@ export function TeacherAvailabilityForm() {
               <label className="inline-flex items-center gap-2 text-xs text-ink-soft">
                 {t("start")}
                 <input
-                  className="rounded-lg border border-line-DEFAULT bg-dark-100 px-2 py-1"
+                  className="rounded-lg border border-line bg-dark-100 px-2 py-1"
                   disabled={!day.enabled}
                   onChange={(event) =>
                     setDays((current) =>
@@ -174,7 +174,7 @@ export function TeacherAvailabilityForm() {
               <label className="inline-flex items-center gap-2 text-xs text-ink-soft">
                 {t("end")}
                 <input
-                  className="rounded-lg border border-line-DEFAULT bg-dark-100 px-2 py-1"
+                  className="rounded-lg border border-line bg-dark-100 px-2 py-1"
                   disabled={!day.enabled}
                   onChange={(event) =>
                     setDays((current) =>

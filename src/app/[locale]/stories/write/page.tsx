@@ -46,7 +46,7 @@ export default async function WritePage({ params, searchParams }: PageProps) {
           </Link>
         </div>
 
-        <div className="bg-dark-100 rounded-2xl border border-line-DEFAULT shadow-sm p-6 lg:p-10">
+        <div className="bg-dark-100 rounded-2xl border border-line shadow-sm p-6 lg:p-10">
           <h1 className="text-2xl font-bold text-ink-main mb-2">
             {initialPost
               ? (isDari ? "ویرایش پست" : "Edit post")

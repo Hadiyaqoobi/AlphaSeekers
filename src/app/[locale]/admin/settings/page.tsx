@@ -37,7 +37,7 @@ export default async function AdminSettingsPage({ params }: AdminSettingsPagePro
         >
           {t("title")}
         </h1>
-        <p className="mt-2 text-base" style={{ color: "#8899A6" }}>
+        <p className="mt-2 text-base" style={{ color: "#8AA4B8" }}>
           {t("subtitle")}
         </p>
       </header>

@@ -197,7 +197,7 @@ export function StaffClassForm({ teachers }: StaffClassFormProps) {
 
                 <div className="space-y-3">
                     {/* Registration link */}
-                    <div className="rounded-lg border border-line-DEFAULT bg-dark-100 p-3">
+                    <div className="rounded-lg border border-line bg-dark-100 p-3">
                         <label className="text-xs font-semibold uppercase tracking-wide text-ink-soft">
                             {t("registrationLinkLabel")}
                         </label>
@@ -217,7 +217,7 @@ export function StaffClassForm({ teachers }: StaffClassFormProps) {
 
                     {/* Meet link */}
                     {result.sessions[0]?.meetLink ? (
-                        <div className="rounded-lg border border-line-DEFAULT bg-dark-100 p-3">
+                        <div className="rounded-lg border border-line bg-dark-100 p-3">
                             <label className="text-xs font-semibold uppercase tracking-wide text-ink-soft">
                                 {t("meetLinkLabel")}
                             </label>
@@ -241,7 +241,7 @@ export function StaffClassForm({ teachers }: StaffClassFormProps) {
 
                     {/* Session timeline */}
                     {result.sessions.length > 0 ? (
-                        <div className="rounded-lg border border-line-DEFAULT bg-dark-100 p-3">
+                        <div className="rounded-lg border border-line bg-dark-100 p-3">
                             <label className="text-xs font-semibold uppercase tracking-wide text-ink-soft">
                                 {t("timelineLabel")}
                             </label>
@@ -271,7 +271,7 @@ export function StaffClassForm({ teachers }: StaffClassFormProps) {
 
                     {/* Google Form */}
                     {result.registrationFormUrl ? (
-                        <div className="rounded-lg border border-line-DEFAULT bg-dark-100 p-3">
+                        <div className="rounded-lg border border-line bg-dark-100 p-3">
                             <label className="text-xs font-semibold uppercase tracking-wide text-ink-soft">
                                 {t("googleFormLabel")}
                             </label>

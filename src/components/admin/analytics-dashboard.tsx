@@ -124,7 +124,7 @@ export function AnalyticsDashboard() {
           <div
             key={i}
             className="h-32 rounded-2xl animate-pulse"
-            style={{ background: "#0E1921", border: "1px solid #1A2D3D" }}
+            style={{ background: "#0D1419", border: "1px solid #1A2D3D" }}
           />
         ))}
       </div>
@@ -135,7 +135,7 @@ export function AnalyticsDashboard() {
     return (
       <div
         className="p-6 rounded-2xl"
-        style={{ background: "#0E1921", border: "1px solid #1A2D3D", color: "#F87171" }}
+        style={{ background: "#0D1419", border: "1px solid #1A2D3D", color: "#F87171" }}
       >
         Failed to load metrics: {error}
       </div>
@@ -201,29 +201,29 @@ export function AnalyticsDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div
           className="rounded-2xl p-6"
-          style={{ background: "#0E1921", border: "1px solid #1A2D3D" }}
+          style={{ background: "#0D1419", border: "1px solid #1A2D3D" }}
         >
           <h3 className="text-base font-semibold mb-1" style={{ color: "#E8EEF2" }}>
             How students use the AI
           </h3>
-          <p className="text-sm mb-5" style={{ color: "#8899A6" }}>
+          <p className="text-sm mb-5" style={{ color: "#8AA4B8" }}>
             Mode distribution across all interactions
           </p>
           {metrics.ai.modeDistribution.length === 0 ? (
-            <p className="text-sm" style={{ color: "#556677" }}>No AI activity yet</p>
+            <p className="text-sm" style={{ color: "#5A7A94" }}>No AI activity yet</p>
           ) : (
             <div className="space-y-3">
               {metrics.ai.modeDistribution
                 .sort((a, b) => b.percentage - a.percentage)
                 .map((m) => {
-                  const color = MODE_COLORS[m.mode] || "#8899A6";
+                  const color = MODE_COLORS[m.mode] || "#8AA4B8";
                   return (
                     <div key={m.mode}>
                       <div className="flex items-center justify-between text-xs mb-1.5">
                         <span className="font-medium" style={{ color: "#E8EEF2" }}>
                           {MODE_LABELS[m.mode] || m.mode}
                         </span>
-                        <span style={{ color: "#8899A6" }}>
+                        <span style={{ color: "#8AA4B8" }}>
                           {m.count.toLocaleString()} · {m.percentage}%
                         </span>
                       </div>
@@ -246,16 +246,16 @@ export function AnalyticsDashboard() {
 
         <div
           className="rounded-2xl p-6"
-          style={{ background: "#0E1921", border: "1px solid #1A2D3D" }}
+          style={{ background: "#0D1419", border: "1px solid #1A2D3D" }}
         >
           <h3 className="text-base font-semibold mb-1" style={{ color: "#E8EEF2" }}>
             Top topics
           </h3>
-          <p className="text-sm mb-5" style={{ color: "#8899A6" }}>
+          <p className="text-sm mb-5" style={{ color: "#8AA4B8" }}>
             What students asked about most (last 30 days)
           </p>
           {metrics.ai.topTopics.length === 0 ? (
-            <p className="text-sm" style={{ color: "#556677" }}>No topic data yet</p>
+            <p className="text-sm" style={{ color: "#5A7A94" }}>No topic data yet</p>
           ) : (
             <div className="flex flex-wrap gap-2">
               {metrics.ai.topTopics.map((t, i) => {
@@ -313,13 +313,13 @@ export function AnalyticsDashboard() {
       {/* ════════ Section 6: Copy metrics for interview ════════ */}
       <div
         className="rounded-2xl p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
-        style={{ background: "#0E1921", border: "1px solid #1A2D3D" }}
+        style={{ background: "#0D1419", border: "1px solid #1A2D3D" }}
       >
         <div>
           <p className="text-sm font-semibold" style={{ color: "#E8EEF2" }}>
             Interview-ready summary
           </p>
-          <p className="text-xs mt-1" style={{ color: "#8899A6" }}>
+          <p className="text-xs mt-1" style={{ color: "#8AA4B8" }}>
             Generated from real platform data — paste into prep notes or talking points.
           </p>
         </div>
@@ -330,7 +330,7 @@ export function AnalyticsDashboard() {
           style={{
             background: copied ? "rgba(0, 230, 118, 0.10)" : "#142230",
             border: `1px solid ${copied ? "#00E676" : "#1E3A4F"}`,
-            color: copied ? "#00E676" : "#8899A6",
+            color: copied ? "#00E676" : "#8AA4B8",
           }}
         >
           {copied ? (
@@ -352,7 +352,7 @@ export function AnalyticsDashboard() {
       </div>
 
       {/* Generated timestamp */}
-      <p className="text-xs text-center" style={{ color: "#556677" }}>
+      <p className="text-xs text-center" style={{ color: "#5A7A94" }}>
         Generated {new Date(metrics.generatedAt).toLocaleString()}
       </p>
     </div>
@@ -378,7 +378,7 @@ function StatCard({
   return (
     <div
       className="rounded-2xl p-5 relative overflow-hidden"
-      style={{ background: "#0E1921", border: "1px solid #1A2D3D" }}
+      style={{ background: "#0D1419", border: "1px solid #1A2D3D" }}
     >
       <div
         className="absolute top-0 left-0 right-0 h-px"
@@ -387,7 +387,7 @@ function StatCard({
           opacity: 0.6,
         }}
       />
-      <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#8899A6" }}>
+      <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#8AA4B8" }}>
         {label}
       </p>
       <p className="text-3xl font-bold mt-1" style={{ color: "#E8EEF2" }}>
@@ -396,7 +396,7 @@ function StatCard({
       {trend && (
         <p
           className="text-xs mt-1.5"
-          style={{ color: trendPositive ? accentColor : "#556677" }}
+          style={{ color: trendPositive ? accentColor : "#5A7A94" }}
         >
           {trend}
         </p>
@@ -443,20 +443,20 @@ function ChartCard({
   return (
     <div
       className="rounded-2xl p-6"
-      style={{ background: "#0E1921", border: "1px solid #1A2D3D" }}
+      style={{ background: "#0D1419", border: "1px solid #1A2D3D" }}
     >
       <div className="flex items-start justify-between mb-1">
         <h3 className="text-base font-semibold" style={{ color: "#E8EEF2" }}>
           {title}
         </h3>
         <div className="text-right">
-          <p className="text-xs" style={{ color: "#556677" }}>Total / Peak</p>
+          <p className="text-xs" style={{ color: "#5A7A94" }}>Total / Peak</p>
           <p className="text-sm font-bold" style={{ color }}>
             {total} / {peak?.count ?? 0}
           </p>
         </div>
       </div>
-      <p className="text-sm mb-4" style={{ color: "#8899A6" }}>{subtitle}</p>
+      <p className="text-sm mb-4" style={{ color: "#8AA4B8" }}>{subtitle}</p>
 
       <div className="relative">
         <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto">
@@ -487,7 +487,7 @@ function ChartCard({
               y={padding.top + chartH * p + 4}
               textAnchor="end"
               fontSize="10"
-              fill="#556677"
+              fill="#5A7A94"
             >
               {Math.round(max * (1 - p))}
             </text>
@@ -509,7 +509,7 @@ function ChartCard({
         </svg>
 
         {/* X-axis date labels (first/middle/last) */}
-        <div className="flex justify-between mt-2 px-7 text-[10px]" style={{ color: "#556677" }}>
+        <div className="flex justify-between mt-2 px-7 text-[10px]" style={{ color: "#5A7A94" }}>
           <span>{shortDate(data[0]?.date)}</span>
           <span>{shortDate(data[Math.floor(data.length / 2)]?.date)}</span>
           <span>{shortDate(data[data.length - 1]?.date)}</span>
@@ -532,7 +532,7 @@ function HealthPanel({
   return (
     <div
       className="rounded-2xl p-6"
-      style={{ background: "#0E1921", border: "1px solid #1A2D3D" }}
+      style={{ background: "#0D1419", border: "1px solid #1A2D3D" }}
     >
       <h3 className="text-base font-semibold mb-5" style={{ color: "#E8EEF2" }}>
         {title}
@@ -544,7 +544,7 @@ function HealthPanel({
             className="flex items-center justify-between py-2"
             style={{ borderBottom: "1px solid #142230" }}
           >
-            <span className="text-sm" style={{ color: "#8899A6" }}>{r.label}</span>
+            <span className="text-sm" style={{ color: "#8AA4B8" }}>{r.label}</span>
             <span className="text-sm font-bold" style={{ color: r.color || "#E8EEF2" }}>
               {r.value}
             </span>

@@ -116,7 +116,7 @@ export function HomeworkSubmit({ classId, sessionId, assignment, onSubmitted }: 
   // Already submitted view
   if (existing && existing.aiReview) {
     return (
-      <div className="rounded-2xl bg-dark-100 border border-line-DEFAULT p-5">
+      <div className="rounded-2xl bg-dark-100 border border-line p-5">
         <div className="flex items-center justify-between mb-3">
           <h3 className="font-semibold text-ink-main">{assignment.title}</h3>
           <span className="text-xs px-2 py-0.5 rounded-full bg-neon-100 text-neon-700 font-semibold">
@@ -151,7 +151,7 @@ export function HomeworkSubmit({ classId, sessionId, assignment, onSubmitted }: 
   }
 
   return (
-    <div className="rounded-2xl bg-dark-100 border border-line-DEFAULT p-5">
+    <div className="rounded-2xl bg-dark-100 border border-line p-5">
       <h3 className="font-semibold text-ink-main mb-1">{assignment.title}</h3>
       <p className="text-sm text-ink-soft mb-4 whitespace-pre-wrap">{assignment.description}</p>
       {assignment.dueDate && (
@@ -165,11 +165,11 @@ export function HomeworkSubmit({ classId, sessionId, assignment, onSubmitted }: 
         onChange={(e) => setContent(e.target.value)}
         placeholder="Type your answers here..."
         rows={5}
-        className="w-full rounded-lg border border-line-DEFAULT bg-dark-100 px-3 py-2 text-sm placeholder:text-ink-faint focus:outline-none focus:ring-2 focus:ring-neon-500/30 focus:border-neon-400 mb-3"
+        className="w-full rounded-lg border border-line bg-dark-100 px-3 py-2 text-sm placeholder:text-ink-faint focus:outline-none focus:ring-2 focus:ring-neon-500/30 focus:border-neon-400 mb-3"
       />
 
       {imageUrl ? (
-        <div className="relative mb-3 rounded-lg overflow-hidden border border-line-DEFAULT">
+        <div className="relative mb-3 rounded-lg overflow-hidden border border-line">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={imageUrl} alt="Homework" className="w-full max-h-48 object-contain bg-dark-50" />
           <button
@@ -187,7 +187,7 @@ export function HomeworkSubmit({ classId, sessionId, assignment, onSubmitted }: 
           type="button"
           onClick={() => fileInputRef.current?.click()}
           disabled={uploading}
-          className="w-full mb-3 px-4 py-3 rounded-lg border-2 border-dashed border-line-DEFAULT text-sm text-ink-soft hover:border-neon-300 hover:text-neon-700 hover:bg-neon-50/30 transition-colors"
+          className="w-full mb-3 px-4 py-3 rounded-lg border-2 border-dashed border-line text-sm text-ink-soft hover:border-neon-300 hover:text-neon-700 hover:bg-neon-50/30 transition-colors"
         >
           {uploading ? "Uploading..." : "📷 Upload photo of your work"}
         </button>

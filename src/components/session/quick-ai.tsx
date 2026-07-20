@@ -72,7 +72,7 @@ export function QuickAi({ classId, locale }: QuickAiProps) {
           onKeyDown={handleKey}
           placeholder="Ask quietly..."
           disabled={submitting}
-          className="w-full rounded-lg border border-line-DEFAULT bg-dark-100 px-3 py-2 pr-10 text-sm placeholder:text-ink-faint focus:outline-none focus:ring-2 focus:ring-neon-500/30 focus:border-neon-400"
+          className="w-full rounded-lg border border-line bg-dark-100 px-3 py-2 pr-10 text-sm placeholder:text-ink-faint focus:outline-none focus:ring-2 focus:ring-neon-500/30 focus:border-neon-400"
         />
         <button
           type="button"

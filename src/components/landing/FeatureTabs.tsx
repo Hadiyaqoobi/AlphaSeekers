@@ -40,11 +40,11 @@ function ClassesMockup() {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm font-semibold" style={{ color: '#E8EEF2' }}>This week</p>
-            <p className="text-[11px] mt-0.5" style={{ color: '#8899A6' }}>3 upcoming sessions</p>
+            <p className="text-[11px] mt-0.5" style={{ color: '#8AA4B8' }}>3 upcoming sessions</p>
           </div>
           <div
             className="px-3 py-1.5 text-[10px] font-bold rounded-lg"
-            style={{ background: '#00E676', color: '#080D12', boxShadow: '0 0 12px rgba(0,230,118,0.3)' }}
+            style={{ background: '#00E676', color: '#070B0E', boxShadow: '0 0 12px rgba(0,230,118,0.3)' }}
           >
             + New class
           </div>
@@ -64,12 +64,12 @@ function ClassesMockup() {
                 </div>
                 <div>
                   <p className="text-xs font-medium" style={{ color: '#E8EEF2' }}>{s.name}</p>
-                  <p className="text-[10px] mt-0.5" style={{ color: '#556677' }}>{s.time}</p>
+                  <p className="text-[10px] mt-0.5" style={{ color: '#5A7A94' }}>{s.time}</p>
                 </div>
               </div>
               <div
                 className="px-2 py-0.5 rounded text-[9px] font-bold"
-                style={{ background: '#00E676', color: '#080D12' }}
+                style={{ background: '#00E676', color: '#070B0E' }}
               >
                 Join
               </div>
@@ -89,7 +89,7 @@ function AiChatMockup() {
         <div className="flex justify-end">
           <div
             className="rounded-2xl rounded-tr-sm px-3 py-2 max-w-[75%] text-[10px] font-medium"
-            style={{ background: '#00E676', color: '#080D12', boxShadow: '0 0 16px rgba(0,230,118,0.2)' }}
+            style={{ background: '#00E676', color: '#070B0E', boxShadow: '0 0 16px rgba(0,230,118,0.2)' }}
           >
             What is photosynthesis?
           </div>
@@ -137,7 +137,7 @@ function AiChatMockup() {
         <div className="flex justify-end">
           <div
             className="rounded-2xl rounded-tr-sm px-3 py-2 max-w-[60%] text-[10px] font-medium"
-            style={{ background: '#00E676', color: '#080D12' }}
+            style={{ background: '#00E676', color: '#070B0E' }}
           >
             Quiz me on this
           </div>
@@ -149,13 +149,13 @@ function AiChatMockup() {
             className="flex-1 h-9 rounded-lg px-3 flex items-center"
             style={{ background: '#1A2D3D' }}
           >
-            <span className="text-[9px]" style={{ color: '#556677' }}>Ask the AI tutor...</span>
+            <span className="text-[9px]" style={{ color: '#5A7A94' }}>Ask the AI tutor...</span>
           </div>
           <div
             className="w-9 h-9 rounded-lg flex items-center justify-center"
             style={{ background: '#00E676', boxShadow: '0 0 12px rgba(0,230,118,0.3)' }}
           >
-            <svg className="w-4 h-4" style={{ color: '#080D12' }} fill="currentColor" viewBox="0 0 20 20">
+            <svg className="w-4 h-4" style={{ color: '#070B0E' }} fill="currentColor" viewBox="0 0 20 20">
               <path d="M3.105 2.289a.75.75 0 0 0-.826.95l1.414 4.925A1.5 1.5 0 0 0 5.135 9.25h6.115a.75.75 0 0 1 0 1.5H5.135a1.5 1.5 0 0 0-1.442 1.086l-1.414 4.926a.75.75 0 0 0 .826.95 28.897 28.897 0 0 0 15.293-7.155.75.75 0 0 0 0-1.114A28.897 28.897 0 0 0 3.105 2.289z" />
             </svg>
           </div>
@@ -205,7 +205,7 @@ function OpportunitiesMockup() {
       <div className="p-6 space-y-3">
         <div>
           <p className="text-sm font-semibold" style={{ color: '#E8EEF2' }}>Open opportunities</p>
-          <p className="text-[11px] mt-0.5" style={{ color: '#8899A6' }}>Curated for Afghan students worldwide</p>
+          <p className="text-[11px] mt-0.5" style={{ color: '#8AA4B8' }}>Curated for Afghan students worldwide</p>
         </div>
         <div className="grid grid-cols-2 gap-3">
           {opps.map((o, i) => (
@@ -223,11 +223,11 @@ function OpportunitiesMockup() {
               <p className="text-[10px] font-medium leading-tight" style={{ color: '#E8EEF2' }}>
                 {o.title}
               </p>
-              <p className="text-[9px] mt-1 leading-relaxed" style={{ color: '#556677' }}>
+              <p className="text-[9px] mt-1 leading-relaxed" style={{ color: '#5A7A94' }}>
                 {o.desc}
               </p>
               <div className="flex items-center justify-between mt-2.5">
-                <span className="text-[9px]" style={{ color: '#8899A6' }}>
+                <span className="text-[9px]" style={{ color: '#8AA4B8' }}>
                   Due: {o.deadline}
                 </span>
                 <span className="text-[9px] font-semibold" style={{ color: '#00E676' }}>
@@ -289,7 +289,7 @@ function OfflineMockup() {
                   <p className="text-[9px] font-medium" style={{ color: '#E8EEF2' }}>
                     {c.name}
                   </p>
-                  <p className="text-[8px] mt-0.5" style={{ color: '#8899A6' }}>
+                  <p className="text-[8px] mt-0.5" style={{ color: '#8AA4B8' }}>
                     {c.time}
                   </p>
                 </div>
@@ -299,10 +299,10 @@ function OfflineMockup() {
             {/* Footer */}
             <div className="mt-3 pt-2.5" style={{ borderTop: '1px solid #1A2D3D' }}>
               <div className="flex items-center justify-center gap-1">
-                <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20" style={{ color: '#556677' }}>
+                <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20" style={{ color: '#5A7A94' }}>
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-13a.75.75 0 00-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 000-1.5h-3.25V5z" clipRule="evenodd" />
                 </svg>
-                <span className="text-[8px]" style={{ color: '#556677' }}>
+                <span className="text-[8px]" style={{ color: '#5A7A94' }}>
                   Last synced: 2h ago
                 </span>
               </div>

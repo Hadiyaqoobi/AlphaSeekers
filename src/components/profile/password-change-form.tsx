@@ -57,7 +57,7 @@ export function PasswordChangeForm() {
   }
 
   return (
-    <div className="rounded-2xl border border-line-DEFAULT bg-dark-100 p-5 shadow-sm sm:p-6">
+    <div className="rounded-2xl border border-line bg-dark-100 p-5 shadow-sm sm:p-6">
       <div className="mb-4 flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
           <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
@@ -82,7 +82,7 @@ export function PasswordChangeForm() {
             value={currentPassword}
             onChange={(e) => setCurrentPassword(e.target.value)}
             required
-            className="w-full rounded-lg border border-line-DEFAULT bg-dark-50 px-3 py-2.5 text-sm text-ink-main outline-none transition focus:border-neon-500 focus:ring-2 focus:ring-neon-500/20"
+            className="w-full rounded-lg border border-line bg-dark-50 px-3 py-2.5 text-sm text-ink-main outline-none transition focus:border-neon-500 focus:ring-2 focus:ring-neon-500/20"
           />
         </div>
 
@@ -100,7 +100,7 @@ export function PasswordChangeForm() {
               required
               minLength={6}
               maxLength={72}
-              className="w-full rounded-lg border border-line-DEFAULT bg-dark-50 px-3 py-2.5 text-sm text-ink-main outline-none transition focus:border-neon-500 focus:ring-2 focus:ring-neon-500/20"
+              className="w-full rounded-lg border border-line bg-dark-50 px-3 py-2.5 text-sm text-ink-main outline-none transition focus:border-neon-500 focus:ring-2 focus:ring-neon-500/20"
             />
             <p className="mt-1 text-[11px] text-ink-faint">{t("hint")}</p>
           </div>
@@ -116,7 +116,7 @@ export function PasswordChangeForm() {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
-              className="w-full rounded-lg border border-line-DEFAULT bg-dark-50 px-3 py-2.5 text-sm text-ink-main outline-none transition focus:border-neon-500 focus:ring-2 focus:ring-neon-500/20"
+              className="w-full rounded-lg border border-line bg-dark-50 px-3 py-2.5 text-sm text-ink-main outline-none transition focus:border-neon-500 focus:ring-2 focus:ring-neon-500/20"
             />
           </div>
         </div>

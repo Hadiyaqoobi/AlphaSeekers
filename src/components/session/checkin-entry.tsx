@@ -82,7 +82,7 @@ export function CheckinEntry({
   }
 
   return (
-    <div className="rounded-2xl border border-line-DEFAULT bg-dark-100 p-5">
+    <div className="rounded-2xl border border-line bg-dark-100 p-5">
       <h4 className="text-sm font-semibold text-ink-main mb-1">{t("title")}</h4>
       <p className="text-xs text-ink-soft mb-4">{t("enterCode")}</p>
 
@@ -105,7 +105,7 @@ export function CheckinEntry({
           }}
           placeholder="_ _ _ _"
           aria-label={t("title")}
-          className="flex-1 text-center text-2xl font-mono tracking-[0.5em] px-4 py-3 bg-dark-50 border border-line-DEFAULT rounded-xl text-ink-main placeholder:text-ink-faint placeholder:tracking-[0.3em] focus:border-neon-500 focus:outline-none focus:ring-2 focus:ring-neon-500/20"
+          className="flex-1 text-center text-2xl font-mono tracking-[0.5em] px-4 py-3 bg-dark-50 border border-line rounded-xl text-ink-main placeholder:text-ink-faint placeholder:tracking-[0.3em] focus:border-neon-500 focus:outline-none focus:ring-2 focus:ring-neon-500/20"
         />
         <button
           type="button"

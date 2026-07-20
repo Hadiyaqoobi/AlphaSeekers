@@ -187,7 +187,7 @@ export function UserApprovals() {
         <div className="overflow-x-auto">
           <table className="w-full min-w-[720px] border-collapse text-left text-sm">
             <thead>
-              <tr className="border-b border-line-DEFAULT text-ink-soft">
+              <tr className="border-b border-line text-ink-soft">
                 <th className="py-2 w-8" scope="col">
                   <input
                     checked={items.length > 0 && selected.size === items.length}
