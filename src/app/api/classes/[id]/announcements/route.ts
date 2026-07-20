@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { createClassAnnouncement, getClassById, listClassAnnouncements, listClassEnrollments } from "@/lib/platform/store";
+import { createClassAnnouncement, getClassById, isStudentEnrolledInClass, listClassAnnouncements, listClassEnrollments } from "@/lib/platform/store";
 import { deliverWithFallback } from "@/lib/integrations/notifications";
 import { getSessionUser } from "@/lib/security/session";
 import { getAccessControl, can } from "@/lib/security/permissions";
@@ -11,6 +11,20 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
   const user = await getSessionUser();
   if (!user || !user.approved) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // IDOR guard: only admin, the owning teacher, or an enrolled student may
+  // read a class's announcements (matches the materials route).
+  const klass = await getClassById(params.id);
+  if (!klass) {
+    return NextResponse.json({ error: "Class not found" }, { status: 404 });
+  }
+  const canRead =
+    user.role === "ADMIN" ||
+    (user.role === "TEACHER" && user.id === klass.teacherId) ||
+    (user.role === "STUDENT" && (await isStudentEnrolledInClass(user.id, params.id)));
+  if (!canRead) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const announcements = await listClassAnnouncements(params.id);

@@ -7,6 +7,7 @@ import {
   type SiteSettings,
 } from "@/lib/platform/site-settings";
 import { forbidden, getSessionUser, unauthorized } from "@/lib/security/session";
+import { AccessError, requirePermission } from "@/lib/security/permissions";
 
 // Either an empty string ("clear this field") or a valid http(s) URL.
 const urlOrEmpty = z
@@ -39,6 +40,12 @@ export async function GET() {
   const user = await getSessionUser();
   if (!user) return unauthorized();
   if (user.role !== "ADMIN") return forbidden("Admin only");
+  try {
+    await requirePermission("system.settings");
+  } catch (e) {
+    if (e instanceof AccessError) return NextResponse.json({ message: e.message }, { status: e.status });
+    throw e;
+  }
 
   return NextResponse.json(await getSiteSettings());
 }
@@ -47,6 +54,12 @@ export async function PATCH(request: NextRequest) {
   const user = await getSessionUser();
   if (!user) return unauthorized();
   if (user.role !== "ADMIN") return forbidden("Admin only");
+  try {
+    await requirePermission("system.settings");
+  } catch (e) {
+    if (e instanceof AccessError) return NextResponse.json({ message: e.message }, { status: e.status });
+    throw e;
+  }
 
   const body = await request.json().catch(() => ({}));
   const parsed = updateSchema.safeParse(body);

@@ -23,6 +23,6 @@ export async function POST(request: Request) {
     return badRequest("Required: itemId (string), quality (0-5)");
   }
 
-  const result = await recordReview(body.itemId, body.quality);
+  const result = await recordReview(body.itemId, body.quality, user.id);
   return Response.json(result);
 }

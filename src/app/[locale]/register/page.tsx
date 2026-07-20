@@ -134,7 +134,7 @@ export default function RegisterPage() {
   ];
 
   return (
-    <div className="min-h-screen lg:grid lg:grid-cols-2" style={{ background: "#070B0E" }}>
+    <div className="auth-page min-h-screen lg:grid lg:grid-cols-2" style={{ background: "#070B0E" }}>
       {/* ── Left brand panel (desktop) ── */}
       <aside className="auth-brand relative hidden overflow-hidden p-14 text-white lg:flex lg:flex-col lg:justify-between">
         <div className="auth-grid" />

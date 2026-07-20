@@ -1473,7 +1473,8 @@ input[type="radio"] {
    navbar/accent-line and make the background transparent.
    ============================================================ */
 
-:has(.landing-page) #layout-chrome {
+:has(.landing-page) #layout-chrome,
+:has(.auth-page) #layout-chrome {
   display: none !important;
 }
 

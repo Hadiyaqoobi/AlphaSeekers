@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { getClassAttendanceSummary } from "@/lib/platform/store";
 import { getSessionUser } from "@/lib/security/session";
+import { prisma } from "@/lib/prisma";
 
 type RouteContext = { params: { id: string } };
 
@@ -14,6 +15,13 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
     const user = await getSessionUser();
     if (!user || (user.role !== "TEACHER" && user.role !== "ADMIN")) {
         return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
+
+    // IDOR guard: a teacher may only read attendance for a class they teach.
+    if (user.role !== "ADMIN") {
+        const klass = await prisma.class.findUnique({ where: { id: params.id }, select: { teacherId: true } });
+        if (!klass) return NextResponse.json({ message: "Class not found" }, { status: 404 });
+        if (klass.teacherId !== user.id) return NextResponse.json({ message: "Forbidden" }, { status: 403 });
     }
 
     const data = await getClassAttendanceSummary(params.id);

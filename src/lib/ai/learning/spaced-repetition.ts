@@ -48,9 +48,9 @@ export async function getDueItems(userId: string, limit = 5) {
 /**
  * Record a review result and update the schedule.
  */
-export async function recordReview(itemId: string, quality: number) {
+export async function recordReview(itemId: string, quality: number, userId: string) {
   const item = await prisma.spacedRepetitionItem.findUnique({ where: { id: itemId } });
-  if (!item) throw new Error("Item not found");
+  if (!item || item.userId !== userId) throw new Error("Item not found");
 
   const clamped = Math.max(0, Math.min(5, quality));
   const updated = sm2(
