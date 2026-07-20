@@ -32,7 +32,7 @@ export default async function AdminUsersPage({ params }: AdminUsersPageProps) {
         <p className="text-xs font-semibold uppercase tracking-widest text-neon-400">
           {t("title")}
         </p>
-        <h1 className="mt-2 text-4xl font-bold tracking-tight text-ink-main">
+        <h1 className="mt-2 text-3xl sm:text-4xl font-bold tracking-tight text-ink-main">
           {t("userApprovalsTitle")}
         </h1>
         <p className="mt-2 text-base text-ink-soft">

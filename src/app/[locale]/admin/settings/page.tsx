@@ -32,7 +32,7 @@ export default async function AdminSettingsPage({ params }: AdminSettingsPagePro
           {t("title")}
         </p>
         <h1
-          className="mt-2 text-3xl font-bold tracking-tight"
+          className="mt-2 text-2xl sm:text-3xl font-bold tracking-tight"
           style={{ color: "#E8EEF2" }}
         >
           {t("title")}

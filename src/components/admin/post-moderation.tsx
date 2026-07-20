@@ -143,12 +143,12 @@ export function PostModeration({ locale }: { locale: string }) {
 
   return (
     <div>
-      <div className="flex items-center gap-1 mb-6 border-b border-line">
+      <div className="flex items-center gap-1 mb-6 border-b border-line overflow-x-auto">
         {tabs.map((tab) => (
           <button
             key={tab.value}
             onClick={() => setFilter(tab.value)}
-            className={`px-4 py-3 text-sm font-medium relative ${
+            className={`px-4 py-3 text-sm font-medium relative whitespace-nowrap shrink-0 ${
               filter === tab.value ? "text-neon-400" : "text-ink-soft hover:text-ink-main"
             }`}
           >

@@ -36,7 +36,7 @@ export default async function LibraryPage({ params, searchParams }: LibraryPageP
         <p className="text-xs font-semibold uppercase tracking-widest text-neon-400">
           {t("title")}
         </p>
-        <h1 className="mt-2 text-4xl font-bold tracking-tight text-ink-main">
+        <h1 className="mt-2 text-3xl sm:text-4xl font-bold tracking-tight text-ink-main">
           {t("subtitle")}
         </h1>
 

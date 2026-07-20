@@ -48,7 +48,7 @@ export default async function OpportunitiesPage({ params, searchParams }: Opport
             <p className="text-xs font-semibold uppercase tracking-widest text-amber-400">
               {t("title")}
             </p>
-            <h1 className="mt-1 text-4xl font-bold tracking-tight text-ink-main">
+            <h1 className="mt-1 text-3xl sm:text-4xl font-bold tracking-tight text-ink-main">
               {t("subtitle")}
             </h1>
           </div>

@@ -154,7 +154,7 @@ export function Hero({ locale, signedIn, studentLabel, teacherLabel }: HeroProps
           {/* Headline */}
           <h1
             style={{ opacity: loaded ? 1 : 0, transform: loaded ? 'none' : 'translateY(20px)', transition: 'all 0.7s cubic-bezier(0.16,1,0.3,1) 0.35s', fontFamily: 'var(--font-landing), var(--font-display-latin), sans-serif' }}
-            className="mt-8 text-5xl sm:text-6xl lg:text-7xl font-extrabold text-white tracking-tight leading-[1.05]"
+            className="mt-8 text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-white tracking-tight leading-[1.05]"
           >
             {ht('hero.headline1')}{' '}<br className="hidden sm:block" />
             {ht('hero.headline2')}{' '}
@@ -204,7 +204,7 @@ export function Hero({ locale, signedIn, studentLabel, teacherLabel }: HeroProps
         </div>
 
         {/* Right column — Animated Platform Mockup */}
-        <div className="relative mt-16 lg:mt-0" style={{ opacity: loaded ? 1 : 0, transform: loaded ? 'scale(1)' : 'scale(0.92)', transition: 'all 0.8s cubic-bezier(0.34,1.56,0.64,1) 0.6s' }}>
+        <div className="relative mt-16 lg:mt-0 hidden lg:block" style={{ opacity: loaded ? 1 : 0, transform: loaded ? 'scale(1)' : 'scale(0.92)', transition: 'all 0.8s cubic-bezier(0.34,1.56,0.64,1) 0.6s' }}>
           <PlatformMockup />
           <div className="absolute -top-4 -right-4 lg:-right-8 bg-dark-100/[0.07] backdrop-blur-xl border border-white/[0.12] rounded-2xl px-5 py-3.5 z-10" style={{ animation: 'float-gentle 4s ease-in-out infinite' }}>
             <p className="text-sm font-semibold text-white">{t('hero.floatBadge1Title')}</p>

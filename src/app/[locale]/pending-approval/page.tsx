@@ -46,7 +46,7 @@ export default async function PendingApprovalPage({ params }: PendingApprovalPag
         </p>
 
         {/* Title */}
-        <h1 className="mt-3 text-3xl font-bold tracking-tight text-ink-main">
+        <h1 className="mt-3 text-2xl sm:text-3xl font-bold tracking-tight text-ink-main">
           {t("title")}
         </h1>
 

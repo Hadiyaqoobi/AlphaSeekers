@@ -58,7 +58,7 @@ export default async function LearnHomePage({ params }: PageProps) {
             ✦ {isDari ? "خودآموز" : "Self Learning"}
           </span>
         </div>
-        <h1 className="text-3xl sm:text-4xl font-bold tracking-tight" style={{ color: "#FFFFFF" }}>
+        <h1 className="text-3xl sm:text-3xl sm:text-4xl font-bold tracking-tight" style={{ color: "#FFFFFF" }}>
           {isDari ? "هر چیزی را بیاموزید." : "Learn anything."}
           <br />
           <span

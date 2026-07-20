@@ -48,7 +48,7 @@ export default async function LearningPathPage({ params }: PageProps) {
 
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl sm:text-4xl font-bold tracking-tight" style={{ color: "#FFFFFF" }}>
+        <h1 className="text-3xl sm:text-3xl sm:text-4xl font-bold tracking-tight" style={{ color: "#FFFFFF" }}>
           {path.title}
         </h1>
         {path.description && (

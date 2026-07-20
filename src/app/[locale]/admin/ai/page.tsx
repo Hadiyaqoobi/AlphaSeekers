@@ -35,7 +35,7 @@ export default async function AdminAIPage({ params }: Props) {
     <section className="mx-auto max-w-6xl px-6 py-10 lg:px-8">
       <header className="mb-10">
         <p className="text-xs font-semibold uppercase tracking-widest text-neon-400">Admin</p>
-        <h1 className="mt-2 text-4xl font-bold tracking-tight text-ink-main">AI System Health</h1>
+        <h1 className="mt-2 text-3xl sm:text-4xl font-bold tracking-tight text-ink-main">AI System Health</h1>
       </header>
 
       {/* Provider Cards */}

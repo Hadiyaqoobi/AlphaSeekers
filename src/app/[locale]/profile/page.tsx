@@ -129,11 +129,11 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
               <div className="flex h-24 w-24 items-center justify-center rounded-2xl border-4 border-white bg-gradient-to-br from-teal-500 to-neon-600 text-3xl font-bold text-white shadow-xl">
                 {profile.student.name?.charAt(0)?.toUpperCase() ?? "S"}
               </div>
-              <div className="pb-1">
+              <div className="min-w-0 pb-1">
                 <h1 className="text-2xl font-extrabold tracking-tight text-ink-main sm:text-3xl">
                   {profile.student.name}
                 </h1>
-                <p className="mt-0.5 text-sm text-ink-soft">
+                <p className="mt-0.5 break-words text-sm text-ink-soft">
                   {profile.student.email}{" "}
                   {profile.student.phone
                     ? `\u00B7 ${"*".repeat(Math.max(0, profile.student.phone.length - 4))}${profile.student.phone.slice(-4)}`

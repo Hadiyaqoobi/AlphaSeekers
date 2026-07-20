@@ -26,7 +26,7 @@ export default async function SuperLayout({ children, params }: SuperLayoutProps
     <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
       <header className="mb-6">
         <p className="text-xs font-semibold uppercase tracking-widest text-neon-400">Internal</p>
-        <h1 className="mt-1 text-3xl font-bold tracking-tight text-ink-main">Super Admin</h1>
+        <h1 className="mt-1 text-2xl sm:text-3xl font-bold tracking-tight text-ink-main">Super Admin</h1>
         <p className="mt-2 text-sm text-ink-soft">
           Platform-wide oversight — staff access, audit trail, KPIs and system health.
         </p>
