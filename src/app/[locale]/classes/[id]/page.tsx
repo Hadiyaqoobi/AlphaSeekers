@@ -4,12 +4,14 @@ import { getTranslations } from "next-intl/server";
 
 import { AnnouncementForm } from "@/components/classes/announcement-form";
 import { CancelSessionButton } from "@/components/classes/cancel-session-button";
+import { ClassDangerZone } from "@/components/admin/class-danger-zone";
 import { EnrollButton } from "@/components/classes/enroll-button";
 import { formatDateTime } from "@/lib/format-date";
 import { MaterialUploadForm } from "@/components/classes/material-upload-form";
 import { DataCostBadge } from "@/components/data-cost-badge";
 import { SaveOfflineButton } from "@/components/save-offline-button";
 import { getClassById, isStudentEnrolledInClass, listClassAnnouncements, listClassEnrollments } from "@/lib/platform/store";
+import { getAccessControl, can, isSuper } from "@/lib/security/permissions";
 import { getSessionUser } from "@/lib/security/session";
 
 type ClassDetailPageProps = {
@@ -33,6 +35,11 @@ export default async function ClassDetailPage({ params }: ClassDetailPageProps) 
   if (!record) {
     notFound();
   }
+
+  // Admin-only: resolves the live permission row so we can offer archive/delete
+  // right here (this is the class page the dashboard links to). Students and
+  // teachers never hold classes.delete, so the danger zone stays hidden for them.
+  const access = await getAccessControl();
 
   const studentEnrolled =
     user?.role === "STUDENT" ? await isStudentEnrolledInClass(user.id, record.id) : false;
@@ -235,6 +242,16 @@ export default async function ClassDetailPage({ params }: ClassDetailPageProps) 
             ))}
           </div>
         </section>
+      ) : null}
+
+      {can(access, "classes.delete") ? (
+        <ClassDangerZone
+          canHardDelete={isSuper(access)}
+          classId={record.id}
+          className={record.name}
+          locale={locale}
+          returnTo={`/${locale}/classes`}
+        />
       ) : null}
     </section>
   );

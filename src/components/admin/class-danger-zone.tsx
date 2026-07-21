@@ -11,6 +11,8 @@ type ClassDangerZoneProps = {
   locale: string;
   /** Super admins only — hard delete is irreversible. */
   canHardDelete: boolean;
+  /** Where to send the user after archive/delete. Defaults to the admin list. */
+  returnTo?: string;
 };
 
 const DANGER_BTN =
@@ -23,7 +25,7 @@ const WARN_BTN =
  * students) and — for super admins only — permanent delete behind a
  * type-the-name confirmation so it can't be triggered by a stray click.
  */
-export function ClassDangerZone({ classId, className, locale, canHardDelete }: ClassDangerZoneProps) {
+export function ClassDangerZone({ classId, className, locale, canHardDelete, returnTo }: ClassDangerZoneProps) {
   const t = useTranslations("adminClassDetail");
   const router = useRouter();
   const [busy, setBusy] = useState<null | "archive" | "delete">(null);
@@ -49,7 +51,7 @@ export function ClassDangerZone({ classId, className, locale, canHardDelete }: C
     }
 
     // The class is now gone (or hidden) — leave the detail page for the list.
-    router.push(`/${locale}/admin/classes`);
+    router.push(returnTo ?? `/${locale}/admin/classes`);
     router.refresh();
   }
 
