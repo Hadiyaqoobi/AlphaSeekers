@@ -121,6 +121,10 @@ export async function archiveClass(classId: string) {
   return viaDatabase(() => dbStore.archiveClass(classId));
 }
 
+export async function deleteClassPermanently(classId: string) {
+  return viaDatabase(() => dbStore.deleteClassPermanently(classId));
+}
+
 export async function enrollStudentInClass(studentId: string, classId: string) {
   return viaDatabase(() => dbStore.enrollStudentInClass(studentId, classId));
 }

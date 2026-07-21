@@ -1404,6 +1404,30 @@ export async function archiveClass(classId: string) {
   });
 }
 
+/**
+ * PERMANENTLY delete a class and everything under it. Irreversible.
+ *
+ * Sessions, enrollments, materials and announcements are removed by the
+ * `onDelete: Cascade` FKs on the schema; DocumentChunk's class link is nullable
+ * (SetNull) so we clear those RAG rows explicitly to avoid orphaned vectors.
+ * Wrapped in a transaction so a partial failure leaves nothing half-deleted.
+ */
+export async function deleteClassPermanently(classId: string) {
+  await ensureSeededData();
+
+  const existing = await prisma.class.findUnique({ where: { id: classId }, select: { id: true } });
+  if (!existing) {
+    return null;
+  }
+
+  await prisma.$transaction([
+    prisma.documentChunk.deleteMany({ where: { classId } }),
+    prisma.class.delete({ where: { id: classId } }),
+  ]);
+
+  return { id: classId };
+}
+
 export async function enrollStudentInClass(studentId: string, classId: string) {
   await ensureSeededData();
 

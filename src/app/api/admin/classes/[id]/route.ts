@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
-import { archiveClass, updateClass } from "@/lib/platform/store";
-import { AccessError, requirePermission } from "@/lib/security/permissions";
+import { archiveClass, deleteClassPermanently, updateClass } from "@/lib/platform/store";
+import { AccessError, requirePermission, requireSuperAdmin } from "@/lib/security/permissions";
 import { getSessionUser, unauthorized } from "@/lib/security/session";
 
 type Params = {
@@ -61,9 +61,18 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   return NextResponse.json(updated);
 }
 
-export async function DELETE(_: NextRequest, { params }: Params) {
+export async function DELETE(request: NextRequest, { params }: Params) {
+  // Two modes on one verb:
+  //   ?mode=permanent → HARD delete (irreversible) — SUPER ADMIN ONLY.
+  //   (default)       → archive (soft, recoverable) — any classes.delete holder.
+  const permanent = request.nextUrl.searchParams.get("mode") === "permanent";
+
   try {
-    await requirePermission("classes.delete");
+    if (permanent) {
+      await requireSuperAdmin();
+    } else {
+      await requirePermission("classes.delete");
+    }
   } catch (e) {
     if (e instanceof AccessError) return NextResponse.json({ message: e.message }, { status: e.status });
     throw e;
@@ -77,6 +86,14 @@ export async function DELETE(_: NextRequest, { params }: Params) {
 
   if (user.role !== "ADMIN") {
     return NextResponse.json({ message: "Admin access only" }, { status: 403 });
+  }
+
+  if (permanent) {
+    const deleted = await deleteClassPermanently(params.id);
+    if (!deleted) {
+      return NextResponse.json({ message: "Class not found" }, { status: 404 });
+    }
+    return NextResponse.json({ message: "Class permanently deleted", id: deleted.id });
   }
 
   const archived = await archiveClass(params.id);

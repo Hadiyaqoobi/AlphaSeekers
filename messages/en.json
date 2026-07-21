@@ -1137,7 +1137,22 @@
     "saveChanges": "Save changes",
     "saved": "Changes saved",
     "saveFailed": "Save failed",
-    "exportCSV": "Export CSV"
+    "exportCSV": "Export CSV",
+    "dangerZone": "Danger zone",
+    "dangerZoneDesc": "Remove this class from the platform. Archiving is reversible; permanent deletion is not.",
+    "archiveTitle": "Archive class",
+    "archiveDesc": "Hides the class from students. You keep all its records and can restore it later.",
+    "archiveButton": "Archive",
+    "archiveConfirm": "Yes, archive",
+    "archiving": "Archiving…",
+    "cancel": "Cancel",
+    "deleteTitle": "Delete permanently",
+    "deleteDesc": "Erases this class and all its sessions, enrollments, attendance and materials. This cannot be undone.",
+    "deleteButton": "Delete permanently",
+    "deleteTypePrompt": "Type the class name ({name}) to confirm.",
+    "deleteConfirmButton": "Delete forever",
+    "deleting": "Deleting…",
+    "actionFailed": "Something went wrong. Please try again."
   },
   "staff": {
     "title": "Staff",

@@ -4,10 +4,11 @@ import { notFound, redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
 import { AdminClassActions } from "@/components/admin/admin-class-actions";
+import { ClassDangerZone } from "@/components/admin/class-danger-zone";
 import { ClassWhatsAppEditor } from "@/components/admin/class-whatsapp-editor";
 import { formatDateTime } from "@/lib/format-date";
 import { getClassById, listClassEnrollments, getClassAttendanceSummary } from "@/lib/platform/store";
-import { getAccessControl, can } from "@/lib/security/permissions";
+import { getAccessControl, can, isSuper } from "@/lib/security/permissions";
 
 type AdminClassDetailPageProps = {
   params: { locale: string; id: string };
@@ -205,6 +206,15 @@ export default async function AdminClassDetailPage({ params }: AdminClassDetailP
             ))}
           </div>
         </section>
+      ) : null}
+
+      {can(access, "classes.delete") ? (
+        <ClassDangerZone
+          canHardDelete={isSuper(access)}
+          classId={record.id}
+          className={record.name}
+          locale={locale}
+        />
       ) : null}
     </section>
   );
