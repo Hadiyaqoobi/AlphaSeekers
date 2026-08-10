@@ -101,6 +101,20 @@ export default function RegisterPage() {
     }
 
     setSubmitting(false);
+
+    // Drop the saved draft. It holds name/email/phone and nothing else cleared
+    // it: the autosave survives navigation, and the only other cleanup runs on
+    // LOGOUT — which an applicant awaiting approval never reaches. On a shared
+    // computer (community centre, family device) the next person opening this
+    // page was being shown the previous applicant's details, pre-filled. Reset
+    // state first so the autosave effect cannot immediately re-persist them.
+    setForm(DEFAULT_FORM);
+    try {
+      localStorage.removeItem("register-draft");
+    } catch {
+      // localStorage may be unavailable (private mode, restricted device)
+    }
+
     router.push(`/${locale}/pending-approval`);
     router.refresh();
   }

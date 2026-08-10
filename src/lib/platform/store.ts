@@ -69,8 +69,12 @@ export async function setUserApproval(userId: string, approved: boolean) {
   return viaDatabase(() => dbStore.setUserApproval(userId, approved));
 }
 
-export async function setUserRole(userId: string, role: "STUDENT" | "TEACHER" | "ADMIN") {
-  return viaDatabase(() => dbStore.setUserRole(userId, role));
+export async function setUserRole(
+  userId: string,
+  role: "STUDENT" | "TEACHER" | "ADMIN",
+  options: { allowChangingAdmin?: boolean } = {},
+) {
+  return viaDatabase(() => dbStore.setUserRole(userId, role, options));
 }
 
 export async function getUserDeletionBlockers(userId: string) {

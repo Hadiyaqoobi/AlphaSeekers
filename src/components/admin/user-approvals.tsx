@@ -342,14 +342,18 @@ export function UserApprovals() {
                   <td className="py-2 font-semibold text-ink-main">
                     {item.name}
                     {/* Registration always creates a STUDENT, so an applicant who
-                        chose Teacher looks identical to a learner without this. */}
-                    {item.requestedRole && item.requestedRole !== item.role ? (
+                        chose Teacher looks identical to a learner without this.
+                        Deliberately narrow: an "any mismatch" test would put a
+                        Grant button on every student later promoted to teacher —
+                        their signup choice stays STUDENT forever — and clicking it
+                        would silently DEMOTE them. Only an ungranted upgrade counts. */}
+                    {item.requestedRole === "TEACHER" && item.role === "STUDENT" ? (
                       <span className="ml-2 inline-flex items-center gap-1 rounded-full border border-amber-400/40 bg-amber-400/10 px-2 py-0.5 text-[11px] font-semibold text-amber-300">
                         {t("requestedRole", { role: t(`role${item.requestedRole}`) })}
                         <button
                           className="underline decoration-dotted underline-offset-2 hover:text-amber-200 disabled:opacity-50"
                           disabled={busyId === item.id}
-                          onClick={() => changeRole(item.id, item.requestedRole as UserRole)}
+                          onClick={() => changeRole(item.id, "TEACHER")}
                           type="button"
                         >
                           {t("grantRequested")}

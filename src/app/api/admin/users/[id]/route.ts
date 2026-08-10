@@ -85,11 +85,26 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       );
     }
 
-    const updated = await setUserRole(params.id, body.role);
+    // Changing an ADMIN's role is a super-admin action, mirroring DELETE below.
+    // Passed IN so the check happens before the write: demoting a SUPER_ADMIN
+    // would strip super powers (isSuper requires role=ADMIN) and bypass
+    // super-store's "cannot demote the last super admin" guard entirely.
+    const result = await setUserRole(params.id, body.role, {
+      allowChangingAdmin: isSuper(access),
+    });
 
-    if (!updated) {
+    if (result.status === "NOT_FOUND") {
       return NextResponse.json({ message: "User not found" }, { status: 404 });
     }
+
+    if (result.status === "FORBIDDEN_ADMIN") {
+      return NextResponse.json(
+        { message: "Only a super admin can change an admin's role." },
+        { status: 403 },
+      );
+    }
+
+    const updated = result.user;
 
     await recordAudit({
       actorId: access.userId,

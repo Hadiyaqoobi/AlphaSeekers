@@ -10,6 +10,8 @@ import { useAutosaveForm } from "@/components/forms/use-autosave-form";
 type Teacher = {
   id: string;
   name: string;
+  /** Shown alongside the name to tell same-named teachers apart. */
+  email: string;
 };
 
 type AdminClassFormProps = {
@@ -168,9 +170,13 @@ export function AdminClassForm({ teachers }: AdminClassFormProps) {
             onChange={(event) => setForm((current) => ({ ...current, teacherId: event.target.value }))}
             value={form.teacherId}
           >
+            {/* Name AND email, matching staff-class-form. Names are not unique in
+                this roster (two "Ajmal", several sharing a first name), so a
+                name-only label makes the real teachers indistinguishable and the
+                wrong one gets assigned to a class. */}
             {teachers.map((teacher) => (
               <option key={teacher.id} value={teacher.id}>
-                {teacher.name}
+                {teacher.name} — {teacher.email}
               </option>
             ))}
           </select>

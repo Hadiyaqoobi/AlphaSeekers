@@ -1086,9 +1086,32 @@ export async function setUserApproval(userId: string, approved: boolean) {
  * Deliberately does NOT touch accessLevel/permissions — promoting someone to
  * ADMIN here yields a legacy unrestricted admin only if the super console has
  * not scoped them. Staff scoping stays the super console's job (ADR-0002).
+ *
+ * `allowChangingAdmin` is an argument for the same reason it is on
+ * deleteUserAccount: the target's role is only known after reading the row.
+ * Without it any holder of users.edit could set a SUPER_ADMIN's role to STUDENT
+ * — which strips super powers (isSuper requires role=ADMIN) and walks straight
+ * around super-store's "cannot demote the last super admin" guard.
  */
-export async function setUserRole(userId: string, role: Role) {
+export async function setUserRole(
+  userId: string,
+  role: Role,
+  options: { allowChangingAdmin?: boolean } = {},
+) {
   await ensureSeededData();
+
+  const existing = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, role: true },
+  });
+
+  if (!existing) {
+    return { status: "NOT_FOUND" as const };
+  }
+
+  if (existing.role === "ADMIN" && !options.allowChangingAdmin) {
+    return { status: "FORBIDDEN_ADMIN" as const };
+  }
 
   try {
     const user = await prisma.user.update({
@@ -1100,18 +1123,22 @@ export async function setUserRole(userId: string, role: Role) {
         email: true,
         phone: true,
         role: true,
+        requestedRole: true,
         approvedAt: true,
         createdAt: true,
       },
     });
 
     return {
-      ...user,
-      createdAt: user.createdAt.toISOString(),
-      approvedAt: user.approvedAt ? user.approvedAt.toISOString() : null,
+      status: "OK" as const,
+      user: {
+        ...user,
+        createdAt: user.createdAt.toISOString(),
+        approvedAt: user.approvedAt ? user.approvedAt.toISOString() : null,
+      },
     };
   } catch {
-    return null;
+    return { status: "NOT_FOUND" as const };
   }
 }
 

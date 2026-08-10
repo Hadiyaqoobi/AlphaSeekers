@@ -79,14 +79,30 @@ d("admin user management", () => {
     expect(before.some((t) => t.id === user.id)).toBe(false);
 
     const updated = await setUserRole(user.id, "TEACHER");
-    expect(updated?.role).toBe("TEACHER");
+    expect(updated.status).toBe("OK");
+    if (updated.status === "OK") expect(updated.user.role).toBe("TEACHER");
 
     const after = await listUsersByRole("TEACHER");
     expect(after.some((t) => t.id === user.id)).toBe(true);
   });
 
-  it("returns null when promoting a user that does not exist", async () => {
-    expect(await setUserRole("does-not-exist", "TEACHER")).toBeNull();
+  it("reports NOT_FOUND when promoting a user that does not exist", async () => {
+    expect((await setUserRole("does-not-exist", "TEACHER")).status).toBe("NOT_FOUND");
+  });
+
+  it("will not change an ADMIN's role unless the caller is allowed to", async () => {
+    const admin = await makeUser("role-guard-admin", "ADMIN");
+
+    // Regression guard: without this, any holder of users.edit could demote a
+    // SUPER_ADMIN to STUDENT — stripping super powers (isSuper requires
+    // role=ADMIN) and bypassing super-store's last-super-admin protection.
+    const refused = await setUserRole(admin.id, "STUDENT");
+    expect(refused.status).toBe("FORBIDDEN_ADMIN");
+    expect((await prisma.user.findUnique({ where: { id: admin.id } }))?.role).toBe("ADMIN");
+
+    const allowed = await setUserRole(admin.id, "STUDENT", { allowChangingAdmin: true });
+    expect(allowed.status).toBe("OK");
+    expect((await prisma.user.findUnique({ where: { id: admin.id } }))?.role).toBe("STUDENT");
   });
 
   it("carries a teacher applicant's requested role through to the approvals list", async () => {
