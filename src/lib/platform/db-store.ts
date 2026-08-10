@@ -1071,6 +1071,115 @@ export async function setUserApproval(userId: string, approved: boolean) {
 }
 
 /**
+ * Change a user's coarse auth role (STUDENT/TEACHER/ADMIN).
+ *
+ * This exists because signup writes whatever role the applicant picked, and the
+ * register form defaults to STUDENT — so anyone who submits without switching
+ * the toggle lands as a STUDENT and is then invisible to `listUsersByRole
+ * ("TEACHER")`, i.e. missing from the Create Class lecturer dropdown. Before
+ * this, an admin had no way to correct that: the only user mutation was
+ * approve/unapprove.
+ *
+ * Deliberately does NOT touch accessLevel/permissions — promoting someone to
+ * ADMIN here yields a legacy unrestricted admin only if the super console has
+ * not scoped them. Staff scoping stays the super console's job (ADR-0002).
+ */
+export async function setUserRole(userId: string, role: Role) {
+  await ensureSeededData();
+
+  try {
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: { role },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        role: true,
+        approvedAt: true,
+        createdAt: true,
+      },
+    });
+
+    return {
+      ...user,
+      createdAt: user.createdAt.toISOString(),
+      approvedAt: user.approvedAt ? user.approvedAt.toISOString() : null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Why a user cannot be hard-deleted yet, if anything.
+ *
+ * Most User relations cascade (enrollments, attendance, availability, posts,
+ * notifications, AI interactions, learning paths, Google/telegram links). TWO
+ * do not, because they carry content other people depend on:
+ *   - Class.teacher     (schema.prisma:143) — no onDelete ⇒ restrict
+ *   - Material.uploader (schema.prisma:248) — no onDelete ⇒ restrict
+ * Both FK columns are NOT NULL, so there is nothing to null out. Rather than
+ * let Postgres raise an opaque FK violation (or silently destroy a class and
+ * its students' history), we surface the blockers and let the admin decide.
+ */
+export async function getUserDeletionBlockers(userId: string) {
+  const [teachingClasses, uploadedMaterials] = await Promise.all([
+    prisma.class.findMany({
+      where: { teacherId: userId },
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
+      take: 20,
+    }),
+    prisma.material.count({ where: { uploadedBy: userId } }),
+  ]);
+
+  return { teachingClasses, uploadedMaterials };
+}
+
+/**
+ * Permanently delete a user. Irreversible.
+ *
+ * Refuses (returns a `blocked` result) when the account still owns classes or
+ * uploaded materials — see getUserDeletionBlockers. Callers must treat
+ * `blocked` as a 409, not a failure to retry.
+ *
+ * `allowDeletingAdmin` is taken as an argument rather than checked by the
+ * caller afterwards: the target's role is only known once we have read the row,
+ * and deciding after the delete would be too late to stop it.
+ */
+export async function deleteUserAccount(
+  userId: string,
+  options: { allowDeletingAdmin?: boolean } = {},
+) {
+  await ensureSeededData();
+
+  const existing = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, name: true, email: true, role: true },
+  });
+
+  if (!existing) {
+    return { status: "NOT_FOUND" as const };
+  }
+
+  if (existing.role === "ADMIN" && !options.allowDeletingAdmin) {
+    return { status: "FORBIDDEN_ADMIN" as const, user: existing };
+  }
+
+  const blockers = await getUserDeletionBlockers(userId);
+
+  if (blockers.teachingClasses.length > 0 || blockers.uploadedMaterials > 0) {
+    return { status: "BLOCKED" as const, user: existing, blockers };
+  }
+
+  await prisma.user.delete({ where: { id: userId } });
+
+  return { status: "DELETED" as const, user: existing };
+}
+
+/**
  * Aggregate class counts for the admin control panel stat cards.
  *
  * These MUST be real table-wide counts, not derived from a paginated page of
