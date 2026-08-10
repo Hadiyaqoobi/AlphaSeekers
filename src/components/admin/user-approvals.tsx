@@ -12,6 +12,8 @@ type AdminUserItem = {
   email: string;
   phone: string | null;
   role: UserRole;
+  /** What they picked at signup. Null on accounts predating the field. */
+  requestedRole: UserRole | null;
   approvedAt: string | null;
   createdAt: string;
 };
@@ -337,7 +339,24 @@ export function UserApprovals() {
                       type="checkbox"
                     />
                   </td>
-                  <td className="py-2 font-semibold text-ink-main">{item.name}</td>
+                  <td className="py-2 font-semibold text-ink-main">
+                    {item.name}
+                    {/* Registration always creates a STUDENT, so an applicant who
+                        chose Teacher looks identical to a learner without this. */}
+                    {item.requestedRole && item.requestedRole !== item.role ? (
+                      <span className="ml-2 inline-flex items-center gap-1 rounded-full border border-amber-400/40 bg-amber-400/10 px-2 py-0.5 text-[11px] font-semibold text-amber-300">
+                        {t("requestedRole", { role: t(`role${item.requestedRole}`) })}
+                        <button
+                          className="underline decoration-dotted underline-offset-2 hover:text-amber-200 disabled:opacity-50"
+                          disabled={busyId === item.id}
+                          onClick={() => changeRole(item.id, item.requestedRole as UserRole)}
+                          type="button"
+                        >
+                          {t("grantRequested")}
+                        </button>
+                      </span>
+                    ) : null}
+                  </td>
                   <td className="py-2">
                     <select
                       aria-label={`${t("role")} — ${item.name}`}

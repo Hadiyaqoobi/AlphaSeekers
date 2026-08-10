@@ -95,6 +95,12 @@ model User {
   timezone              String                @default("Asia/Kabul")
   language              UserLanguage          @default(FA)
   approvedAt            DateTime?
+  // What the applicant asked to be at signup. Registration ALWAYS creates a
+  // STUDENT (privilege-escalation prevention, api/auth/register), so this is the
+  // only record of intent — the approvals screen shows it so an admin can grant
+  // the teacher role deliberately instead of guessing. Null = pre-dates this
+  // field, or no preference expressed.
+  requestedRole         UserRole?
   createdAt             DateTime              @default(now())
   updatedAt             DateTime              @updatedAt
 

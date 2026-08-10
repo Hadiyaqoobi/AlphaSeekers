@@ -90,6 +90,12 @@ export async function POST(request: NextRequest) {
         phone: parsed.data.phone ? encryptPhone(parsed.data.phone) : null,
         // Force STUDENT regardless of client input — no self-service teacher/admin.
         role: "STUDENT",
+        // ...but keep what they ASKED to be. Without this the register form's
+        // Student/Teacher toggle was purely decorative: applicants chose Teacher,
+        // silently became students, and vanished from the Create Class lecturer
+        // list with no trace of the intent. An admin grants the role deliberately
+        // from the approvals screen, so the privilege-escalation guard above holds.
+        requestedRole: parsed.data.role ?? "STUDENT",
         passwordHash,
         approvedAt: null,
         language: parsed.data.language ?? "FA",

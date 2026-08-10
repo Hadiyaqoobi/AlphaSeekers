@@ -18,6 +18,7 @@ import { prisma } from "@/lib/prisma";
 import {
   deleteUserAccount,
   getUserDeletionBlockers,
+  listAdminUsers,
   listUsersByRole,
   setUserRole,
 } from "@/lib/platform/db-store";
@@ -86,6 +87,28 @@ d("admin user management", () => {
 
   it("returns null when promoting a user that does not exist", async () => {
     expect(await setUserRole("does-not-exist", "TEACHER")).toBeNull();
+  });
+
+  it("carries a teacher applicant's requested role through to the approvals list", async () => {
+    // Mirrors what api/auth/register writes: role is forced to STUDENT, but the
+    // choice is preserved so the approvals screen can show "Applied as Teacher".
+    // Without this the toggle on the register form leaves no trace at all.
+    const applicant = await prisma.user.create({
+      data: {
+        name: `${TAG} applicant`,
+        email: email("applicant"),
+        role: "STUDENT",
+        requestedRole: "TEACHER",
+      },
+      select: { id: true },
+    });
+
+    const page = await listAdminUsers({ status: "ALL", search: `${TAG} applicant`, limit: 10 });
+    const row = page.items.find((i) => i.id === applicant.id);
+
+    expect(row).toBeDefined();
+    expect(row?.role).toBe("STUDENT");
+    expect(row?.requestedRole).toBe("TEACHER");
   });
 
   it("deletes a plain student and cascades their enrollments", async () => {

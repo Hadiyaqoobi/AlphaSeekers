@@ -545,7 +545,8 @@
     "panelQuote": "\"One child, one teacher, one book, one pen can change the world.\"",
     "mobileTrust1": "Safe",
     "mobileTrust2": "100% Free",
-    "mobileTrust3": "12+ countries"
+    "mobileTrust3": "12+ countries",
+    "teacherRequestNote": "Teacher accounts are activated by an admin. Your account is created as a student and upgraded once the team reviews your request."
   },
   "pending": {
     "eyebrow": "Access",
@@ -966,7 +967,9 @@
     "roleChangeFailed": "Could not change this user's role.",
     "roleChanged": "Role changed to {role}.",
     "blockerClasses": "Still teaching",
-    "blockerMaterials": "Uploaded materials"
+    "blockerMaterials": "Uploaded materials",
+    "requestedRole": "Applied as {role}",
+    "grantRequested": "Grant"
   },
   "contentForms": {
     "createWebinar": "Create Webinar",

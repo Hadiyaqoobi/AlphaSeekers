@@ -1017,6 +1017,9 @@ export async function listAdminUsers(params: AdminUserListParams = {}) {
       email: true,
       phone: true,
       role: true,
+      // What they asked to be at signup. Registration always creates a STUDENT,
+      // so this is what tells an admin "this person applied as a teacher".
+      requestedRole: true,
       approvedAt: true,
       createdAt: true,
     },

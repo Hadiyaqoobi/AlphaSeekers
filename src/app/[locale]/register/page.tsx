@@ -320,6 +320,16 @@ export default function RegisterPage() {
                   {t("teacher")}
                 </button>
               </div>
+              {/* Say what this control actually does. Registration always creates a
+                  STUDENT (privilege-escalation prevention in api/auth/register); the
+                  choice is recorded as a REQUEST an admin grants after review. Before
+                  this note the toggle read as if it granted the role outright, and
+                  applicants who picked Teacher silently became students. */}
+              {form.role === "TEACHER" ? (
+                <p className="mt-2 text-[12px] leading-relaxed" style={{ color: FAINT }}>
+                  {t("teacherRequestNote")}
+                </p>
+              ) : null}
             </div>
 
             {message ? (
