@@ -33,10 +33,10 @@ export default async function AdminUsersPage({ params }: AdminUsersPageProps) {
           {t("title")}
         </p>
         <h1 className="mt-2 text-3xl sm:text-4xl font-bold tracking-tight text-ink-main">
-          {t("userApprovalsTitle")}
+          {t("manageUsersTitle")}
         </h1>
         <p className="mt-2 text-base text-ink-soft">
-          {t("userApprovalsSubtitle")}
+          {t("manageUsersSubtitle")}
         </p>
         <div className="mt-6 flex flex-wrap gap-3">
           <Link

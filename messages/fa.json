@@ -925,13 +925,10 @@
     "classCreated": "صنف ایجاد شد",
     "archive": "بایگانی",
     "archiving": "در حال بایگانی...",
-    "pendingApprovals": "تاییدیه‌های در انتظار",
-    "approvalSubtitle": "دانش‌آموزان و استادان را قبل از ورود تایید کنید.",
     "refresh": "بارگذاری مجدد",
     "searchPlaceholder": "جستجو نام، ایمیل، شماره",
     "search": "جستجو",
     "loading": "بارگذاری...",
-    "noPending": "کاربر در انتظار نیست.",
     "name": "نام",
     "role": "نقش",
     "email": "ایمیل",
@@ -1097,7 +1094,9 @@
     "teachers": "استادان",
     "content": "محتوا",
     "delete": "حذف",
-    "deleteConfirm": "تایید حذف؟"
+    "deleteConfirm": "تایید حذف؟",
+    "manageUsersTitle": "Manage users",
+    "manageUsersSubtitle": "Approve new sign-ups, change someone's role, or remove an account."
   },
   "adminContent": {
     "kicker": "محتوا",

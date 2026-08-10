@@ -41,9 +41,9 @@ type Mode = { kind: "create" } | { kind: "edit"; employee: EmployeeRow };
 
 export function EmployeeManager({
   initialEmployees,
-  locale: _locale,
 }: {
   initialEmployees: EmployeeRow[];
+  /** Accepted for call-site symmetry with the other super console panels; unused here. */
   locale: string;
 }) {
   const [employees, setEmployees] = useState<EmployeeRow[]>(initialEmployees);

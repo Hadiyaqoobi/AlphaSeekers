@@ -925,13 +925,10 @@
     "classCreated": "Class created",
     "archive": "Archive",
     "archiving": "Archiving...",
-    "pendingApprovals": "Pending Approvals",
-    "approvalSubtitle": "Approve students and teachers before they can sign in.",
     "refresh": "Refresh",
     "searchPlaceholder": "Search name, email, phone",
     "search": "Search",
     "loading": "Loading...",
-    "noPending": "No pending users.",
     "name": "Name",
     "role": "Role",
     "email": "Email",
@@ -1097,7 +1094,9 @@
     "teachers": "Teachers",
     "content": "Content",
     "delete": "Delete",
-    "deleteConfirm": "Confirm delete?"
+    "deleteConfirm": "Confirm delete?",
+    "manageUsersTitle": "Manage users",
+    "manageUsersSubtitle": "Approve new sign-ups, change someone's role, or remove an account."
   },
   "adminContent": {
     "kicker": "Content",

@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 
 const SOFT = "#93A9BC";
 const GREEN = "#00E676";
@@ -13,7 +13,6 @@ export default function ResetPasswordPage() {
   const t = useTranslations("resetPassword");
   const params = useParams<{ locale: string }>();
   const searchParams = useSearchParams();
-  const router = useRouter();
   const locale = params.locale || "fa";
   const token = searchParams.get("token") ?? "";
 
