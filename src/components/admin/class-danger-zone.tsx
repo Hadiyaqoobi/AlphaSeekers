@@ -152,7 +152,15 @@ export function ClassDangerZone({ classId, className, locale, canHardDelete, ret
             </div>
           ) : null}
         </div>
-      ) : null}
+      ) : (
+        // Say why the control is absent instead of rendering nothing. Hiding it
+        // is what made permanent deletion look broken: admins without super
+        // access archived their test classes, the rows stayed in the admin list,
+        // and it read as "delete does not work".
+        <p className="rounded-lg border border-white/10 bg-dark-100 p-3 text-xs text-ink-soft">
+          {t("deleteSuperOnly")}
+        </p>
+      )}
 
       {error ? <p className="text-sm text-red-300">{error}</p> : null}
     </section>

@@ -1177,7 +1177,8 @@
     "deleteTypePrompt": "Type the class name ({name}) to confirm.",
     "deleteConfirmButton": "Delete forever",
     "deleting": "Deleting…",
-    "actionFailed": "Something went wrong. Please try again."
+    "actionFailed": "Something went wrong. Please try again.",
+    "deleteSuperOnly": "Permanently deleting a class is limited to super admins. Archiving is available to you above — ask Hadi, Sahar or Shahla if a class needs to be removed for good."
   },
   "staff": {
     "title": "Staff",

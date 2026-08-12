@@ -3,7 +3,7 @@ import { z } from "zod";
 
 import { archiveClass, deleteClassPermanently, updateClass } from "@/lib/platform/store";
 import { recordAudit } from "@/lib/security/audit";
-import { AccessError, requirePermission } from "@/lib/security/permissions";
+import { AccessError, requirePermission, requireSuperAdmin } from "@/lib/security/permissions";
 import { getClientIp } from "@/lib/security/rate-limit";
 import { getSessionUser, unauthorized } from "@/lib/security/session";
 
@@ -64,22 +64,20 @@ export async function PATCH(request: NextRequest, { params }: Params) {
 }
 
 export async function DELETE(request: NextRequest, { params }: Params) {
-  // Two modes on one verb, both behind classes.delete:
-  //   ?mode=permanent → HARD delete (irreversible), type-the-class-name confirm.
-  //   (default)       → archive (soft, recoverable).
+  // Two modes on one verb:
+  //   ?mode=permanent → HARD delete (irreversible) — SUPER ADMIN ONLY, by
+  //                     explicit decision: destroying a class and every
+  //                     enrolment, session and attendance record with it stays
+  //                     with the three account owners.
+  //   (default)       → archive (soft, recoverable) — any classes.delete holder.
   //
-  // Permanent delete used to require SUPER ADMIN. That left four of the seven
-  // admins seeing archive only — the danger zone hides the delete block
-  // entirely — so they archived their test classes, the rows stayed, and the
-  // team reported deletion as broken. classes.delete is already the permission
-  // that means "may destroy a class"; gating the irreversible half on a
-  // different axis just made the capability unreachable for the people asked to
-  // use it. The type-the-name confirmation remains the guard against accidents.
+  // Non-super admins are told this in the danger zone rather than having the
+  // control hidden, which is what made deletion look broken to the team.
   const permanent = request.nextUrl.searchParams.get("mode") === "permanent";
 
   let access;
   try {
-    access = await requirePermission("classes.delete");
+    access = permanent ? await requireSuperAdmin() : await requirePermission("classes.delete");
   } catch (e) {
     if (e instanceof AccessError) return NextResponse.json({ message: e.message }, { status: e.status });
     throw e;
