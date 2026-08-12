@@ -11,7 +11,7 @@ import { MaterialUploadForm } from "@/components/classes/material-upload-form";
 import { DataCostBadge } from "@/components/data-cost-badge";
 import { SaveOfflineButton } from "@/components/save-offline-button";
 import { getClassById, isStudentEnrolledInClass, listClassAnnouncements, listClassEnrollments } from "@/lib/platform/store";
-import { getAccessControl, can, isSuper } from "@/lib/security/permissions";
+import { getAccessControl, can } from "@/lib/security/permissions";
 import { getSessionUser } from "@/lib/security/session";
 
 type ClassDetailPageProps = {
@@ -246,7 +246,7 @@ export default async function ClassDetailPage({ params }: ClassDetailPageProps) 
 
       {can(access, "classes.delete") ? (
         <ClassDangerZone
-          canHardDelete={isSuper(access)}
+          canHardDelete={can(access, "classes.delete")}
           classId={record.id}
           className={record.name}
           locale={locale}

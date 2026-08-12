@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
 import { archiveClass, deleteClassPermanently, updateClass } from "@/lib/platform/store";
-import { AccessError, requirePermission, requireSuperAdmin } from "@/lib/security/permissions";
+import { recordAudit } from "@/lib/security/audit";
+import { AccessError, requirePermission } from "@/lib/security/permissions";
+import { getClientIp } from "@/lib/security/rate-limit";
 import { getSessionUser, unauthorized } from "@/lib/security/session";
 
 type Params = {
@@ -62,17 +64,22 @@ export async function PATCH(request: NextRequest, { params }: Params) {
 }
 
 export async function DELETE(request: NextRequest, { params }: Params) {
-  // Two modes on one verb:
-  //   ?mode=permanent → HARD delete (irreversible) — SUPER ADMIN ONLY.
-  //   (default)       → archive (soft, recoverable) — any classes.delete holder.
+  // Two modes on one verb, both behind classes.delete:
+  //   ?mode=permanent → HARD delete (irreversible), type-the-class-name confirm.
+  //   (default)       → archive (soft, recoverable).
+  //
+  // Permanent delete used to require SUPER ADMIN. That left four of the seven
+  // admins seeing archive only — the danger zone hides the delete block
+  // entirely — so they archived their test classes, the rows stayed, and the
+  // team reported deletion as broken. classes.delete is already the permission
+  // that means "may destroy a class"; gating the irreversible half on a
+  // different axis just made the capability unreachable for the people asked to
+  // use it. The type-the-name confirmation remains the guard against accidents.
   const permanent = request.nextUrl.searchParams.get("mode") === "permanent";
 
+  let access;
   try {
-    if (permanent) {
-      await requireSuperAdmin();
-    } else {
-      await requirePermission("classes.delete");
-    }
+    access = await requirePermission("classes.delete");
   } catch (e) {
     if (e instanceof AccessError) return NextResponse.json({ message: e.message }, { status: e.status });
     throw e;
@@ -93,6 +100,19 @@ export async function DELETE(request: NextRequest, { params }: Params) {
     if (!deleted) {
       return NextResponse.json({ message: "Class not found" }, { status: 404 });
     }
+
+    // Irreversible and now available to every admin, so leave a trace of who
+    // did it. Previously nothing recorded class deletions at all.
+    await recordAudit({
+      actorId: access.userId,
+      actorEmail: access.email,
+      action: "class.delete",
+      targetType: "Class",
+      targetId: params.id,
+      details: "permanent delete",
+      ipAddress: getClientIp(request),
+    });
+
     return NextResponse.json({ message: "Class permanently deleted", id: deleted.id });
   }
 
