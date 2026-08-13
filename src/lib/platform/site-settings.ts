@@ -12,6 +12,7 @@ export type SiteSettings = {
   linkedinUrl: string | null;
   youtubeUrl: string | null;
   telegramUrl: string | null;
+  whatsappUrl: string | null;
   contactEmail: string | null;
 };
 
@@ -22,6 +23,7 @@ export const EMPTY_SITE_SETTINGS: SiteSettings = {
   linkedinUrl: null,
   youtubeUrl: null,
   telegramUrl: null,
+  whatsappUrl: null,
   contactEmail: null,
 };
 
@@ -34,6 +36,7 @@ function shape(row: {
   linkedinUrl: string | null;
   youtubeUrl: string | null;
   telegramUrl: string | null;
+  whatsappUrl: string | null;
   contactEmail: string | null;
 }): SiteSettings {
   return {
@@ -43,6 +46,7 @@ function shape(row: {
     linkedinUrl: row.linkedinUrl,
     youtubeUrl: row.youtubeUrl,
     telegramUrl: row.telegramUrl,
+    whatsappUrl: row.whatsappUrl,
     contactEmail: row.contactEmail,
   };
 }

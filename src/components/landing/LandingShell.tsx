@@ -9,7 +9,7 @@ import { MissionSection } from '@/components/landing/MissionSection';
 import { HowItWorks } from '@/components/landing/HowItWorks';
 import { AIShowcase } from '@/components/landing/AIShowcase';
 import { CTABanner } from '@/components/landing/CTABanner';
-import { Footer } from '@/components/landing/Footer';
+import { Footer, type SocialLinks } from '@/components/landing/Footer';
 
 type Props = {
   locale: string;
@@ -18,6 +18,8 @@ type Props = {
   registerLabel: string;
   studentLabel: string;
   teacherLabel: string;
+  socialLinks?: SocialLinks;
+  contactEmail?: string | null;
 };
 
 /**
@@ -38,7 +40,12 @@ export function LandingShell(props: Props) {
       <HowItWorks />
       <AIShowcase />
       <CTABanner locale={props.locale} signedIn={props.signedIn} registerLabel={props.registerLabel} loginLabel={props.loginLabel} />
-      <Footer locale={props.locale} signedIn={props.signedIn} />
+      <Footer
+        locale={props.locale}
+        signedIn={props.signedIn}
+        socialLinks={props.socialLinks}
+        contactEmail={props.contactEmail}
+      />
     </div>
   );
 }

@@ -33,6 +33,7 @@ const updateSchema = z.object({
   linkedinUrl: urlOrEmpty.optional(),
   youtubeUrl: urlOrEmpty.optional(),
   telegramUrl: urlOrEmpty.optional(),
+  whatsappUrl: urlOrEmpty.optional(),
   contactEmail: emailOrEmpty.optional(),
 });
 

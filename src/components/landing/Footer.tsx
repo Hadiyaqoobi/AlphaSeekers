@@ -10,15 +10,17 @@ export type SocialLinks = {
   linkedin?: string | null;
   youtube?: string | null;
   telegram?: string | null;
+  whatsapp?: string | null;
 };
 
 type FooterProps = {
   locale: string;
   signedIn: boolean;
   socialLinks?: SocialLinks;
+  contactEmail?: string | null;
 };
 
-export function Footer({ locale, signedIn, socialLinks }: FooterProps) {
+export function Footer({ locale, signedIn, socialLinks, contactEmail }: FooterProps) {
   const t = useTranslations('landing');
 
   function gatedHref(target: string) {
@@ -32,7 +34,8 @@ export function Footer({ locale, signedIn, socialLinks }: FooterProps) {
       socialLinks.twitter ||
       socialLinks.linkedin ||
       socialLinks.youtube ||
-      socialLinks.telegram);
+      socialLinks.telegram ||
+      socialLinks.whatsapp);
 
   return (
     <footer className="w-full bg-land-dark pt-16 pb-8">
@@ -63,7 +66,17 @@ export function Footer({ locale, signedIn, socialLinks }: FooterProps) {
                 {socialLinks?.linkedin  ? <SocialIconLink href={socialLinks.linkedin}  label="LinkedIn"><LinkedInIcon /></SocialIconLink>   : null}
                 {socialLinks?.youtube   ? <SocialIconLink href={socialLinks.youtube}   label="YouTube"><YouTubeIcon /></SocialIconLink>     : null}
                 {socialLinks?.telegram  ? <SocialIconLink href={socialLinks.telegram}  label="Telegram"><TelegramIcon /></SocialIconLink>   : null}
+                {socialLinks?.whatsapp  ? <SocialIconLink href={socialLinks.whatsapp}  label="WhatsApp"><WhatsAppIcon /></SocialIconLink>   : null}
               </div>
+            ) : null}
+
+            {contactEmail ? (
+              <a
+                className="mt-4 inline-block text-sm text-white/50 transition-colors hover:text-white/80"
+                href={`mailto:${contactEmail}`}
+              >
+                {contactEmail}
+              </a>
             ) : null}
           </div>
 
@@ -182,6 +195,13 @@ function YouTubeIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
       <path d="M23.5 6.2a3 3 0 00-2.1-2.1C19.5 3.6 12 3.6 12 3.6s-7.5 0-9.4.5A3 3 0 00.5 6.2C0 8.1 0 12 0 12s0 3.9.5 5.8a3 3 0 002.1 2.1c1.9.5 9.4.5 9.4.5s7.5 0 9.4-.5a3 3 0 002.1-2.1c.5-1.9.5-5.8.5-5.8s0-3.9-.5-5.8zM9.6 15.6V8.4l6.2 3.6-6.2 3.6z" />
+    </svg>
+  );
+}
+function WhatsAppIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38a9.87 9.87 0 004.74 1.21h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0012.04 2zm0 1.67c2.2 0 4.27.86 5.83 2.42a8.19 8.19 0 012.41 5.83c0 4.54-3.7 8.24-8.25 8.24a8.2 8.2 0 01-4.19-1.15l-.3-.18-3.11.82.83-3.04-.2-.31a8.19 8.19 0 01-1.26-4.38c0-4.54 3.7-8.25 8.24-8.25zm-2.6 4.4c-.15 0-.4.06-.6.28-.21.22-.8.78-.8 1.9s.82 2.2.93 2.36c.12.15 1.6 2.44 3.87 3.42.54.23.96.37 1.29.48.54.17 1.04.15 1.43.09.43-.06 1.34-.55 1.53-1.08.19-.53.19-.98.13-1.08-.06-.09-.21-.15-.43-.27-.22-.11-1.34-.66-1.55-.73-.2-.08-.36-.11-.5.11-.15.22-.58.73-.71.88-.13.15-.26.17-.48.06-.22-.11-.94-.35-1.79-1.11-.66-.59-1.11-1.32-1.24-1.54-.13-.22-.01-.34.1-.45.1-.1.22-.26.33-.39.11-.13.15-.22.22-.37.08-.15.04-.28-.02-.39-.06-.11-.5-1.2-.68-1.65-.18-.43-.36-.37-.5-.38h-.43z" />
     </svg>
   );
 }

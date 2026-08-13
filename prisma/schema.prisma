@@ -713,6 +713,7 @@ model SiteSettings {
   linkedinUrl  String?
   youtubeUrl   String?
   telegramUrl  String?
+  whatsappUrl  String?
   contactEmail String?
   updatedAt    DateTime @updatedAt
   updatedBy    String?

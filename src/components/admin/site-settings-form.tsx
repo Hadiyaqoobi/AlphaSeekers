@@ -20,6 +20,7 @@ const FIELDS: Array<{
   { key: "linkedinUrl",  labelKey: "linkedin",    placeholder: "https://www.linkedin.com/company/...",    type: "url" },
   { key: "youtubeUrl",   labelKey: "youtube",     placeholder: "https://www.youtube.com/@your-channel",   type: "url" },
   { key: "telegramUrl",  labelKey: "telegram",    placeholder: "https://t.me/your-channel",               type: "url" },
+  { key: "whatsappUrl",  labelKey: "whatsapp",    placeholder: "https://whatsapp.com/channel/...",        type: "url" },
   { key: "contactEmail", labelKey: "contactEmail", placeholder: "team@alphaseekers.org",                  type: "email" },
 ];
 
