@@ -59,6 +59,7 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
         { href: `/${locale}/staff/dashboard`, label: t("staff") },
         { href: `/${locale}/admin/classes`, label: t("admin") },
         { href: `/${locale}/admin/users`, label: t("users") },
+        { href: `/${locale}/admin/support`, label: t("support") },
       ]
       : []),
     { href: `/${locale}/team`, label: t("team") },

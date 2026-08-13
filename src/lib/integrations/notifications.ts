@@ -197,6 +197,65 @@ export async function sendPasswordResetEmail(email: string, resetUrl: string): P
   });
 }
 
+/**
+ * Alert the maintainers that an URGENT support ticket was filed. Deliberately
+ * direct SMTP rather than deliverWithFallback: this must land in an inbox, not
+ * a Telegram chat nobody watches. Normal-priority tickets send nothing at all
+ * -- they are picked up in the twice-daily review, which is the point.
+ */
+export async function sendUrgentTicketEmail(
+  to: string[],
+  ticket: {
+    id: string;
+    title: string;
+    description: string;
+    type: string;
+    area?: string | null;
+    reporterName: string | null;
+    reporterEmail: string | null;
+    url: string;
+  },
+): Promise<void> {
+  if (to.length === 0) return;
+
+  const settings = resolveSmtpSettings();
+  if (!settings) {
+    throw new NonRetryableError("SMTP_USER or SMTP_PASS missing");
+  }
+
+  const reporter = ticket.reporterName ?? ticket.reporterEmail ?? "Unknown";
+  const where = ticket.area ? `\nArea: ${ticket.area}` : "";
+  const text =
+    `URGENT ${ticket.type} reported by ${reporter}\n\n` +
+    `${ticket.title}\n${where}\n\n` +
+    `${ticket.description}\n\n` +
+    `Open the ticket: ${ticket.url}\n`;
+  const html =
+    '<div style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;font-size:15px;line-height:1.55;color:#1a1a1a">' +
+    `<p style="margin:0 0 6px"><strong style="color:#b00020">URGENT ${escapeHtml(ticket.type)}</strong> reported by ${escapeHtml(reporter)}</p>` +
+    `<h2 style="margin:14px 0 4px;font-size:18px">${escapeHtml(ticket.title)}</h2>` +
+    (ticket.area ? `<p style="margin:0 0 10px;color:#667;font-size:13px">Area: ${escapeHtml(ticket.area)}</p>` : "") +
+    `<p style="white-space:pre-wrap">${escapeHtml(ticket.description)}</p>` +
+    `<p style="margin:18px 0"><a href="${ticket.url}" style="display:inline-block;background:#00E676;color:#04140B;font-weight:700;padding:11px 22px;border-radius:8px;text-decoration:none">Open the ticket</a></p></div>`;
+
+  const transporter = getTransporter(settings);
+  await transporter.sendMail({
+    from: settings.from,
+    to: to.join(", "),
+    subject: `[URGENT] ${ticket.title}`,
+    text,
+    html,
+  });
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
 async function sendPlatform(target: NotificationTarget, content: string) {
   return `In-platform notice for ${target.userId}: ${content.slice(0, 80)}`;
 }

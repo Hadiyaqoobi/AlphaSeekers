@@ -38,6 +38,11 @@ export const PERMISSION_MODULES = {
     label: "AI Tools",
     actions: ["use", "manage"],
   },
+  support: {
+    label: "Support Tickets",
+    // create = file a ticket; view = see the queue; manage = change status.
+    actions: ["view", "create", "manage"],
+  },
   system: {
     label: "System",
     actions: ["audit", "settings", "employees"],
@@ -86,6 +91,10 @@ export const ACCESS_LEVEL_DESCRIPTIONS: Record<AccessLevel, string> = {
   SUPPORT: "Read-only access to users, classes and analytics to assist learners.",
 };
 
+// Anyone with admin access must be able to report a problem, whatever else
+// their level restricts. Only full admins get to change a ticket's status.
+const SUPPORT_REPORTER = ["support.view", "support.create"];
+
 /** Default permission set seeded when a level is chosen. Refine per-employee. */
 export function permissionsForLevel(level: AccessLevel): string[] {
   switch (level) {
@@ -105,13 +114,14 @@ export function permissionsForLevel(level: AccessLevel): string[] {
         "library.edit",
         "classes.view",
         "analytics.view",
+        ...SUPPORT_REPORTER,
       ];
     case "FINANCE":
-      return ["analytics.view", "users.view"];
+      return ["analytics.view", "users.view", ...SUPPORT_REPORTER];
     case "MODERATOR":
-      return ["content.view", "content.moderate", "content.delete", "users.view"];
+      return ["content.view", "content.moderate", "content.delete", "users.view", ...SUPPORT_REPORTER];
     case "SUPPORT":
-      return ["users.view", "classes.view", "analytics.view"];
+      return ["users.view", "classes.view", "analytics.view", ...SUPPORT_REPORTER];
     default:
       return [];
   }

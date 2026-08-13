@@ -114,6 +114,8 @@ model User {
   aiInteractions        AIInteraction[]
   posts                 StudentPost[]
   learningPaths         LearningPath[]
+  reportedTickets       Ticket[]              @relation("TicketReporter")
+  ticketComments        TicketComment[]
   googleAccountLink     GoogleAccountLink?
   telegramChatId        String?
   pushSubscription      String?
@@ -472,6 +474,74 @@ model AuditLog {
   @@index([action, createdAt])
   @@index([targetType, targetId])
   @@index([createdAt])
+}
+
+// ─── Support tickets (internal change/issue requests) ────────────────────────
+//
+// Replaces the email loop: an admin reports a bug, requests a feature or asks a
+// question here, and the thread stays attached to the record instead of
+// scattering across inboxes. Only the platform admins file tickets today, so
+// there is deliberately no assignment, SLA or category machinery -- add those
+// only if the team actually asks.
+
+enum TicketType {
+  BUG
+  FEATURE
+  QUESTION
+}
+
+enum TicketPriority {
+  NORMAL
+  URGENT
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  DONE
+  WONT_DO
+}
+
+model Ticket {
+  id          String         @id @default(cuid())
+  title       String
+  description String         @db.Text
+  type        TicketType     @default(BUG)
+  priority    TicketPriority @default(NORMAL)
+  status      TicketStatus   @default(OPEN)
+
+  // Where in the platform the problem is, free text ("Create Class page").
+  area        String?
+  // Screenshot/attachment URL from the R2 presign flow. Null until R2 is
+  // configured, which it is not yet -- the form degrades to text-only.
+  attachmentUrl String?
+
+  reporterId  String
+  reporter    User           @relation("TicketReporter", fields: [reporterId], references: [id], onDelete: Cascade)
+
+  comments    TicketComment[]
+
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  resolvedAt  DateTime?
+
+  // The list view filters on status/type and always sorts newest-first.
+  @@index([status, createdAt])
+  @@index([type, createdAt])
+  @@index([reporterId, createdAt])
+  @@index([createdAt])
+}
+
+model TicketComment {
+  id        String   @id @default(cuid())
+  ticketId  String
+  ticket    Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  body      String   @db.Text
+  createdAt DateTime @default(now())
+
+  @@index([ticketId, createdAt])
 }
 
 // ─── Self Learning (open-topic AI-generated lessons) ───
