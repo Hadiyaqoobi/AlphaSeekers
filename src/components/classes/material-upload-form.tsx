@@ -83,6 +83,26 @@ export function MaterialUploadForm({ classId }: MaterialUploadFormProps) {
         }
         purpose="material"
       />
+
+      {/* Uploading needs object storage, which is not configured on this server.
+          A pasted link (Drive, OneDrive, a public PDF) works either way, so the
+          teacher is never blocked waiting on infrastructure. */}
+      <div className="space-y-1 border-t border-white/10 pt-2">
+        <label className="text-xs font-semibold uppercase tracking-wider text-ink-faint" htmlFor="material-link">
+          {t("orPasteLink")}
+        </label>
+        <input
+          className="field"
+          id="material-link"
+          onChange={(event) =>
+            setForm((current) => ({ ...current, fileUrl: event.target.value, fileSize: "0" }))
+          }
+          placeholder="https://drive.google.com/..."
+          type="url"
+          value={form.fileUrl.startsWith("http") ? form.fileUrl : ""}
+        />
+        <p className="text-xs text-ink-faint">{t("linkHint")}</p>
+      </div>
       {form.fileUrl ? (
         <div className="flex items-center gap-2 text-sm text-neon-700">
           <svg

@@ -668,7 +668,9 @@
     },
     "save": "Save material",
     "uploaded": "Material uploaded",
-    "uploadFailed": "Upload failed"
+    "uploadFailed": "Upload failed",
+    "orPasteLink": "Or paste a link",
+    "linkHint": "Share a Google Drive, OneDrive or public PDF link. Make sure it is set so students can open it."
   },
   "upload": {
     "selectFile": "Select file",

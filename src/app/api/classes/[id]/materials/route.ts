@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { normaliseHttpUrl } from "@/lib/security/safe-url";
+
 import { createClassMaterial, getClassById, isStudentEnrolledInClass, listClassMaterials } from "@/lib/platform/store";
 import { getSessionUser, isApproved, pendingApproval, roleAllowed, unauthorized } from "@/lib/security/session";
 import { getAccessControl, can } from "@/lib/security/permissions";
@@ -75,19 +77,33 @@ export async function POST(request: NextRequest, { params }: Params) {
     fileSize?: number;
   };
 
-  if (!body.title || !body.fileUrl || !body.fileSize) {
+  if (!body.title) {
     return NextResponse.json({ message: "Missing required fields" }, { status: 400 });
   }
 
-  if (body.fileSize > 5 * 1024 * 1024) {
+  // Accepts either an uploaded file URL or a link the teacher pasted (Drive,
+  // OneDrive, a public PDF). Either way it ends up in an href, so it must be
+  // http(s) -- see isSafeHttpUrl.
+  const fileUrl = normaliseHttpUrl(body.fileUrl);
+  if (!fileUrl) {
+    return NextResponse.json(
+      { message: "A valid http(s) link or uploaded file is required" },
+      { status: 400 },
+    );
+  }
+
+  // Size is unknown for a pasted link; 0 means "not measured", and the cap only
+  // applies to files we actually received.
+  const fileSize = typeof body.fileSize === "number" && body.fileSize > 0 ? body.fileSize : 0;
+  if (fileSize > 5 * 1024 * 1024) {
     return NextResponse.json({ message: "File too large (max 5MB)" }, { status: 400 });
   }
 
   const material = await createClassMaterial({
     classId: params.id,
     title: body.title,
-    fileUrl: body.fileUrl,
-    fileSize: body.fileSize,
+    fileUrl,
+    fileSize,
     uploadedBy: user.id,
   });
 

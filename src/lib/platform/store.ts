@@ -242,7 +242,8 @@ export async function createLibraryResource(input: {
   title: string;
   author: string;
   category: string;
-  fileUrl: string;
+  // Optional: a resource may be an uploaded file, an external link, or both.
+  fileUrl?: string;
   fileSize: number;
   externalUrl?: string;
 }) {

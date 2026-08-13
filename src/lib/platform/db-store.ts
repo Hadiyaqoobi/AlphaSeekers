@@ -55,7 +55,9 @@ type CreateLibraryInput = {
   title: string;
   author: string;
   category: string;
-  fileUrl: string;
+  // Both are optional and the schema allows null: a resource is reachable by an
+  // uploaded file, an external link, or both. The API rejects having neither.
+  fileUrl?: string;
   fileSize: number;
   externalUrl?: string;
 };

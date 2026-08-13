@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { normaliseHttpUrl } from "@/lib/security/safe-url";
+
 import { createLibraryResource, listLibraryResources } from "@/lib/platform/store";
 import { guardPermission } from "@/lib/security/api-guard";
 import { withCors, corsPreflight } from "@/lib/security/cors";
@@ -37,11 +39,24 @@ export async function POST(request: NextRequest) {
     externalUrl?: string;
   };
 
-  if (!body.title || !body.author || !body.category || !body.fileUrl || !body.fileSize) {
+  if (!body.title || !body.author || !body.category) {
     return NextResponse.json({ message: "Missing required fields" }, { status: 400 });
   }
 
-  if (body.fileSize > 5 * 1024 * 1024) {
+  // A resource is reachable either by uploaded file or by external link, and
+  // both are rendered as hrefs -- so both must be http(s), and at least one
+  // must be present or the entry points nowhere.
+  const fileUrl = normaliseHttpUrl(body.fileUrl);
+  const externalUrl = normaliseHttpUrl(body.externalUrl);
+  if (!fileUrl && !externalUrl) {
+    return NextResponse.json(
+      { message: "A valid http(s) file link or external link is required" },
+      { status: 400 },
+    );
+  }
+
+  const fileSize = typeof body.fileSize === "number" && body.fileSize > 0 ? body.fileSize : 0;
+  if (fileSize > 5 * 1024 * 1024) {
     return NextResponse.json({ message: "File too large (max 5MB)" }, { status: 400 });
   }
 
@@ -49,9 +64,9 @@ export async function POST(request: NextRequest) {
     title: body.title,
     author: body.author,
     category: body.category,
-    fileUrl: body.fileUrl,
-    fileSize: body.fileSize,
-    externalUrl: body.externalUrl,
+    fileUrl: fileUrl ?? undefined,
+    fileSize,
+    externalUrl: externalUrl ?? undefined,
   });
 
   return NextResponse.json(resource, { status: 201 });
