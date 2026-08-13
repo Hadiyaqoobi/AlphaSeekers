@@ -30,7 +30,8 @@
     "aiHealth": "سلامت هوش مصنوعی",
     "siteSettings": "Site Settings",
     "contact": "Contact us",
-    "support": "Support"
+    "support": "Support",
+    "setup": "Class setup"
   },
   "siteSettings": {
     "title": "Site Settings",
@@ -1405,5 +1406,33 @@
     "setStatus": "Set status",
     "viewAttachment": "View attachment",
     "manageHint": "You can file and reply to tickets. Changing a ticket's status is limited to full admins."
+  },
+  "teacherSetup": {
+    "kicker": "Getting started",
+    "title": "Set up your class",
+    "subtitle": "Two steps before your class can run. Until both are done it has no session times and students cannot join.",
+    "subtitleDone": "You are all set. Your sessions are created automatically from the hours you set.",
+    "step1Title": "Set the hours you can teach",
+    "step1Body": "Tick each day you teach, enter a start and end time, and save. Sessions are only ever created inside these hours — the platform never guesses a time for you.",
+    "step1Done": "Saved for {days} day(s) a week. Change it any time.",
+    "step1Cta": "Set my hours",
+    "step1Change": "Change my hours",
+    "step2Title": "Connect your Google account",
+    "step2Body": "This creates the Google Meet link for each session. Without it your sessions have no meeting link and students have nowhere to join.",
+    "step2Done": "Connected as {account}.",
+    "step2Cta": "Connect Google",
+    "step2Change": "Reconnect Google",
+    "yourClasses": "Your classes",
+    "sessionsScheduled": "{count} session(s) scheduled",
+    "noSessionsYet": "No sessions yet — finish the steps above",
+    "sessionsComing": "Sessions will be created within the hour",
+    "enrolled": "{count} enrolled",
+    "nextTitle": "What happens next",
+    "next1": "Your sessions appear automatically within the hour.",
+    "next2": "Each one gets a Google Meet link.",
+    "next3": "Enrolled students are notified, and reminded before every class.",
+    "helpPrefix": "Nothing appearing after an hour? Report it in",
+    "helpLink": "Support",
+    "helpSuffix": " and we will look into it."
   }
 }

@@ -69,9 +69,11 @@ d("new class notifies its teacher", () => {
     const body = notes[0].content;
     expect(body).toContain(klass.name);
     // Both steps must be named, or the teacher does half the setup and the class
-    // still cannot run.
-    expect(body).toContain("/en/teacher/availability");
-    expect(body).toContain("/en/dashboard");
+    // still cannot run. They are reached through the setup checklist, which
+    // shows live status rather than repeating instructions.
+    expect(body).toMatch(/hours you can teach/i);
+    expect(body).toMatch(/Google/);
+    expect(body).toContain("/en/teacher/setup");
     expect(body).toContain("7:00 AM to 8:00 AM, Saturdays to Thursdays");
   });
 

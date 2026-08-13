@@ -39,19 +39,21 @@ export async function notifyTeacherOfNewClass(input: {
   if (!teacher) return;
 
   const base = (process.env.APP_BASE_URL ?? "https://alphaseekers.org").replace(/\/$/, "");
-  const guide = process.env.INSTRUCTOR_GUIDE_URL?.trim();
 
+  // One link, to a page that shows the teacher their own live status rather than
+  // generic instructions — it ticks each step off as they complete it.
   const content = [
     `You have been assigned a new class: "${input.className}".`,
     input.schedulePreference ? `Planned schedule: ${input.schedulePreference}` : null,
     "",
     "Two steps before it can run:",
-    `1. Set the hours you can teach: ${base}/en/teacher/availability`,
-    `2. Connect your Google account: ${base}/en/dashboard`,
+    "1. Set the hours you can teach.",
+    "2. Connect your Google account, so each session gets a Meet link.",
     "",
-    "Your sessions and Meet links are created automatically once both are done.",
+    `Both are here: ${base}/en/teacher/setup`,
+    "",
+    "Your sessions are created automatically once both are done.",
     "Until then the class has no session times and students cannot join.",
-    guide ? `\nStep-by-step guide with screenshots: ${guide}` : null,
   ]
     .filter((line) => line !== null)
     .join("\n");
