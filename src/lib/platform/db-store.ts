@@ -5,6 +5,7 @@ import { DEMO_USERS } from "@/lib/constants";
 import { generateMeetLink } from "@/lib/integrations/meet";
 import { deliverWithFallback, type NotificationDelivery, type NotificationTarget } from "@/lib/integrations/notifications";
 import { classCatalog } from "@/lib/mock-data";
+import { notifyTeacherOfNewClass } from "@/lib/platform/class-notify";
 import { prisma } from "@/lib/prisma";
 import { runtime, warnIfInsecureProductionConfig } from "@/lib/runtime";
 
@@ -1303,7 +1304,7 @@ export async function listAdminClasses(params: ClassListParams = {}) {
 export async function createClass(input: CreateClassInput) {
   await ensureSeededData();
 
-  return prisma.class.create({
+  const klass = await prisma.class.create({
     data: {
       name: input.name,
       subjectCategory: input.subjectCategory,
@@ -1321,6 +1322,25 @@ export async function createClass(input: CreateClassInput) {
       ...(({ published: true }) as Record<string, unknown>),
     } as Parameters<typeof prisma.class.create>[0]["data"],
   });
+
+  // Tell the teacher what they have to do, or the class silently never runs: the
+  // scheduler skips any class whose teacher has not set availability, so without
+  // this message nobody knows the class is waiting on them.
+  //
+  // A failed notification must never fail class creation -- the class row is the
+  // thing that matters, and the message can be resent.
+  try {
+    await notifyTeacherOfNewClass({
+      classId: klass.id,
+      className: klass.name,
+      teacherId: klass.teacherId,
+      schedulePreference: input.schedulePreference ?? null,
+    });
+  } catch (error) {
+    console.error("[classes] failed to notify teacher of new class", klass.id, error);
+  }
+
+  return klass;
 }
 
 export async function createClassWithSession(input: CreateClassInput) {
