@@ -612,7 +612,13 @@
       "createClass": "+ Create class",
       "addOpportunity": "+ Add opportunity",
       "viewPendingUsers": "View pending users",
-      "aiDashboard": "AI dashboard"
+      "aiDashboard": "AI dashboard",
+      "support": "Support requests"
+    },
+    "support": {
+      "waiting": "{count} support request(s) waiting",
+      "urgent": "{count} urgent",
+      "review": "Review"
     }
   },
   "classes": {

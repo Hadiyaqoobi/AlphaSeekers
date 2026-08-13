@@ -612,7 +612,13 @@
       "createClass": "+ ایجاد صنف",
       "addOpportunity": "+ افزودن فرصت",
       "viewPendingUsers": "مشاهده کاربران در انتظار",
-      "aiDashboard": "داشبورد هوش مصنوعی"
+      "aiDashboard": "داشبورد هوش مصنوعی",
+      "support": "Support requests"
+    },
+    "support": {
+      "waiting": "{count} support request(s) waiting",
+      "urgent": "{count} urgent",
+      "review": "Review"
     }
   },
   "classes": {

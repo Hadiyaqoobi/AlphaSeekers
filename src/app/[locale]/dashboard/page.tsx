@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 
 import { formatDateTime } from "@/lib/format-date";
 import { GoogleConnectCard } from "@/components/dashboard/google-connect-card";
+import { getTicketCounts } from "@/lib/platform/tickets";
 import { JoinNowCard } from "@/components/dashboard/join-now-card";
 import { OfflineSchedule } from "@/components/dashboard/offline-schedule";
 import {
@@ -59,7 +60,7 @@ export default async function DashboardPage({ params, searchParams }: DashboardP
   // current role never renders them — in particular today's sessions are only
   // fetched for admins, which is also the sole consumer of the list, so we no
   // longer redundantly query today's sessions for students/teachers.
-  const [stats, notificationsRaw, joinNow, myClassesRaw, teacherClasses, todaySessionsRaw] =
+  const [stats, notificationsRaw, joinNow, myClassesRaw, teacherClasses, todaySessionsRaw, ticketCounts] =
     await Promise.all([
       getDashboardStats(),
       listUserNotifications(user.id),
@@ -67,6 +68,9 @@ export default async function DashboardPage({ params, searchParams }: DashboardP
       isStudent ? listStudentClasses(user.id) : Promise.resolve([]),
       isTeacher ? listTeacherClasses(user.id) : Promise.resolve([]),
       isAdmin ? listTodaySessions() : Promise.resolve([]),
+      // The team files bugs and change requests here instead of emailing, so the
+      // count belongs where an admin actually looks each day.
+      isAdmin ? getTicketCounts() : Promise.resolve({ open: 0, inProgress: 0, urgentOpen: 0 }),
     ]);
 
   const notifications = notificationsRaw.slice(0, 6);
@@ -128,6 +132,32 @@ export default async function DashboardPage({ params, searchParams }: DashboardP
           </article>
         ))}
       </div>
+
+      {/* Open support requests — the team reports issues in the platform now, so
+          surface anything waiting rather than relying on someone opening the
+          Support page unprompted. Hidden entirely when the queue is empty. */}
+      {isAdmin && ticketCounts.open + ticketCounts.inProgress > 0 ? (
+        <Link
+          className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-2xl border border-white/10 bg-dark-100 px-5 py-4 transition-colors hover:border-neon-400/40"
+          href={`/${locale}/admin/support`}
+        >
+          <span
+            aria-hidden="true"
+            className={`inline-block h-2.5 w-2.5 rounded-full ${
+              ticketCounts.urgentOpen > 0 ? "bg-red-400" : "bg-amber-400"
+            }`}
+          />
+          <span className="font-semibold text-ink-main">
+            {t("support.waiting", { count: ticketCounts.open + ticketCounts.inProgress })}
+          </span>
+          {ticketCounts.urgentOpen > 0 ? (
+            <span className="rounded-full bg-red-500/15 px-2.5 py-0.5 text-xs font-bold uppercase tracking-wide text-red-300">
+              {t("support.urgent", { count: ticketCounts.urgentOpen })}
+            </span>
+          ) : null}
+          <span className="ml-auto text-sm font-semibold text-neon-400">{t("support.review")} →</span>
+        </Link>
+      ) : null}
 
       {/* Main Content Grid */}
       <div className="grid gap-6 lg:grid-cols-3">
@@ -233,6 +263,7 @@ export default async function DashboardPage({ params, searchParams }: DashboardP
                   { href: `/${locale}/admin/content`, label: t("quickActions.addOpportunity"), icon: "M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" },
                   { href: `/${locale}/admin/users`, label: t("quickActions.viewPendingUsers"), icon: "M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128H9m6 0a5.97 5.97 0 00-.786-3.07M9 19.128v-.003c0-1.113.285-2.16.786-3.07M9 19.128H2.25a8.963 8.963 0 01-.727-3.071A3 3 0 014.5 10.365c.266-.068.54-.104.818-.104M9 19.128a5.97 5.97 0 01.786-3.07" },
                   { href: `/${locale}/admin/ai`, label: t("quickActions.aiDashboard"), icon: "M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" },
+                  { href: `/${locale}/admin/support`, label: t("quickActions.support"), icon: "M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" },
                 ].map((action) => (
                   <Link key={action.label} href={action.href} className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm text-ink-main hover:bg-white/5 transition-colors">
                     <svg className="w-4 h-4 text-ink-faint flex-shrink-0" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d={action.icon} /></svg>
