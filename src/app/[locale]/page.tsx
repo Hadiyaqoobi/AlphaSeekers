@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { getSessionUser } from "@/lib/security/session";
 import { getSiteSettings } from "@/lib/platform/site-settings";
+import { getLandingHighlights } from "@/lib/platform/landing-highlights";
 import { LandingShell } from "@/components/landing/LandingShell";
 
 type HomePageProps = { params: { locale: string } };
@@ -21,9 +22,10 @@ export default async function HomePage({ params }: HomePageProps) {
   const t = await getTranslations({ locale, namespace: "home" });
   const navT = await getTranslations({ locale, namespace: "nav" });
 
-  // Contact details live in admin Site Settings. Without this the footer
-  // renders no social icons and no email, however carefully they are filled in.
-  const settings = await getSiteSettings();
+  // settings: contact details for the footer, from admin Site Settings.
+  // highlights: what is open right now, so a visitor arriving from a poster can
+  // see the advertised class exists without having to sign up first.
+  const [settings, highlights] = await Promise.all([getSiteSettings(), getLandingHighlights()]);
 
   return (
     <LandingShell
@@ -43,6 +45,7 @@ export default async function HomePage({ params }: HomePageProps) {
         whatsapp: settings.whatsappUrl,
       }}
       contactEmail={settings.contactEmail}
+      highlights={highlights}
     />
   );
 }

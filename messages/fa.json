@@ -323,6 +323,22 @@
     }
   },
   "landing": {
+    "nowOpen": {
+      "kicker": "Open now",
+      "title": "Start learning this month",
+      "subtitle": "Free classes and sessions currently open to everyone. New ones appear here as soon as they are announced.",
+      "cta": "Register free",
+      "free": "Free",
+      "instructor": "Instructor",
+      "when": "When",
+      "seats": "Seats left",
+      "enrol": "Join this class",
+      "webinar": "Webinar",
+      "reserve": "Reserve a place",
+      "opportunity": "Opportunity",
+      "closes": "Closes",
+      "readMore": "Read more"
+    },
     "nav": {
       "home": "خانه",
       "programs": "برنامه‌ها",

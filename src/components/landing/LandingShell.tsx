@@ -10,6 +10,8 @@ import { HowItWorks } from '@/components/landing/HowItWorks';
 import { AIShowcase } from '@/components/landing/AIShowcase';
 import { CTABanner } from '@/components/landing/CTABanner';
 import { Footer, type SocialLinks } from '@/components/landing/Footer';
+import { NowOpen } from '@/components/landing/NowOpen';
+import type { LandingHighlights } from '@/lib/platform/landing-highlights';
 
 type Props = {
   locale: string;
@@ -20,6 +22,7 @@ type Props = {
   teacherLabel: string;
   socialLinks?: SocialLinks;
   contactEmail?: string | null;
+  highlights: LandingHighlights;
 };
 
 /**
@@ -33,6 +36,7 @@ export function LandingShell(props: Props) {
     <div className="landing-page">
       <Navbar locale={props.locale} signedIn={props.signedIn} loginLabel={props.loginLabel} registerLabel={props.registerLabel} />
       <Hero locale={props.locale} signedIn={props.signedIn} studentLabel={props.studentLabel} teacherLabel={props.teacherLabel} />
+      <NowOpen locale={props.locale} signedIn={props.signedIn} highlights={props.highlights} />
       <LogoTicker />
       <WorkflowPipeline />
       <FeatureTabs />
