@@ -14,7 +14,7 @@
 
 import { Prisma } from "@prisma/client";
 
-import { deliverWithFallback, type NotificationTarget } from "@/lib/integrations/notifications";
+import { deliverWithFallback, type NotificationTarget, type DeliveryOptions } from "@/lib/integrations/notifications";
 import { prisma } from "@/lib/prisma";
 
 // ─── Shared helpers ─────────────────────────────────────────────────────────
@@ -58,8 +58,12 @@ export function toTarget(row: NotifiableRow): NotificationTarget {
  * SENT), so in practice this only throws if that last resort itself failed —
  * exactly the state where a retry is warranted.
  */
-export async function deliverOrThrow(target: NotificationTarget, content: string): Promise<void> {
-  const deliveries = await deliverWithFallback(target, content);
+export async function deliverOrThrow(
+  target: NotificationTarget,
+  content: string,
+  options: DeliveryOptions = {},
+): Promise<void> {
+  const deliveries = await deliverWithFallback(target, content, options);
   const landed = deliveries.some((d) => d.status === "SENT");
   if (!landed) {
     throw new Error(`Notification delivery fully failed for user ${target.userId}`);
@@ -121,7 +125,9 @@ export async function sendNotification(payload: Record<string, unknown>): Promis
     pushSubscription: strOrNull(payload.pushSubscription),
   };
 
-  await deliverOrThrow(target, content);
+  // An announcement to the team reads as noise if it lands titled "AlphaSeekers
+  // notification", so a queued job may carry its own subject.
+  await deliverOrThrow(target, content, { subject: strOrNull(payload.subject) ?? undefined });
 }
 
 /**

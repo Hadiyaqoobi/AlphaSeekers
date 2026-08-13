@@ -143,7 +143,14 @@ function getTransporter(settings: SmtpSettings): nodemailer.Transporter {
   return cachedTransporter;
 }
 
-async function sendEmail(target: NotificationTarget, content: string) {
+/**
+ * `subject` is optional because most notifications are short operational
+ * messages where a generic subject is fine. Anything the team will read as a
+ * message from the organisation -- an announcement, an onboarding note --
+ * should pass its own, or it lands in their inbox titled "AlphaSeekers
+ * notification" and looks like noise.
+ */
+async function sendEmail(target: NotificationTarget, content: string, subject?: string) {
   if (!target.email) {
     throw new NonRetryableError("Missing email address");
   }
@@ -159,7 +166,7 @@ async function sendEmail(target: NotificationTarget, content: string) {
   const info = await transporter.sendMail({
     from: settings.from,
     to: target.email,
-    subject: "AlphaSeekers notification",
+    subject: subject?.trim() || "AlphaSeekers notification",
     text: content,
   });
 
@@ -275,7 +282,16 @@ function parsePrefs(raw?: string | null): NotificationPrefs {
   }
 }
 
-export async function deliverWithFallback(target: NotificationTarget, content: string): Promise<NotificationDelivery[]> {
+export type DeliveryOptions = {
+  /** Email subject line. Ignored by Telegram/push, which have no subject. */
+  subject?: string;
+};
+
+export async function deliverWithFallback(
+  target: NotificationTarget,
+  content: string,
+  options: DeliveryOptions = {},
+): Promise<NotificationDelivery[]> {
   const deliveries: NotificationDelivery[] = [];
   const prefs = parsePrefs(target.notificationPrefs);
 
@@ -312,7 +328,7 @@ export async function deliverWithFallback(target: NotificationTarget, content: s
   // 3. Try Email (if user hasn't disabled it)
   if (prefs.email !== false) {
     try {
-      const detail = await withCircuitBreaker("email", () => retryWithBackoff(() => sendEmail(target, content)));
+      const detail = await withCircuitBreaker("email", () => retryWithBackoff(() => sendEmail(target, content, options.subject)));
       deliveries.push({ channel: "EMAIL", status: "SENT", detail });
       return deliveries;
     } catch (error) {
