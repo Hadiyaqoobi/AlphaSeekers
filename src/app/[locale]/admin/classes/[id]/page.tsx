@@ -25,7 +25,8 @@ export default async function AdminClassDetailPage({ params }: AdminClassDetailP
     redirect(`/${params.locale}/dashboard`);
   }
 
-  const record = await getClassById(params.id);
+  // Admins manage archived classes too -- that is where permanent deletion happens.
+  const record = await getClassById(params.id, { includeArchived: true });
   if (!record) {
     notFound();
   }

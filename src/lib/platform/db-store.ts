@@ -817,7 +817,13 @@ export async function listClasses(params: ClassListParams = {}) {
   };
 }
 
-export async function getClassById(classId: string) {
+// Archived classes are hidden from students and from every public surface, but the
+// admin detail page still needs to reach them -- otherwise archiving a class makes
+// its Danger Zone (and with it permanent deletion) unreachable forever.
+export async function getClassById(
+  classId: string,
+  options: { includeArchived?: boolean } = {},
+) {
   await ensureSeededData();
 
   const klass = await prisma.class.findUnique({
@@ -831,7 +837,7 @@ export async function getClassById(classId: string) {
     },
   });
 
-  if (!klass || klass.status === ClassStatus.ARCHIVED) {
+  if (!klass || (klass.status === ClassStatus.ARCHIVED && !options.includeArchived)) {
     return null;
   }
 

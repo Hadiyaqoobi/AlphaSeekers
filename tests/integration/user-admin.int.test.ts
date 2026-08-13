@@ -16,7 +16,9 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { prisma } from "@/lib/prisma";
 import {
+  archiveClass,
   deleteUserAccount,
+  getClassById,
   getUserDeletionBlockers,
   listAdminUsers,
   listUsersByRole,
@@ -191,5 +193,18 @@ d("admin user management", () => {
     const allowed = await deleteUserAccount(admin.id, { allowDeletingAdmin: true });
     expect(allowed.status).toBe("DELETED");
     expect(await prisma.user.findUnique({ where: { id: admin.id } })).toBeNull();
+  });
+
+  it("keeps an archived class reachable for admins but hidden everywhere else", async () => {
+    const teacher = await makeUser("archive-teacher", "TEACHER");
+    const klass = await makeClass(teacher.id, "archive-me");
+
+    await archiveClass(klass.id);
+
+    // The reported bug: archiving a test class made its admin page 404, so the
+    // Danger Zone — and with it "Delete permanently" — became unreachable for
+    // everyone, including super admins. Archived classes stayed forever.
+    expect(await getClassById(klass.id)).toBeNull();
+    expect(await getClassById(klass.id, { includeArchived: true })).not.toBeNull();
   });
 });

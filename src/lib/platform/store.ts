@@ -27,8 +27,11 @@ export async function listClasses(params: { page?: number; limit?: number; searc
   return viaDatabase(() => dbStore.listClasses(params));
 }
 
-export async function getClassById(classId: string) {
-  return viaDatabase(() => dbStore.getClassById(classId));
+export async function getClassById(
+  classId: string,
+  options: { includeArchived?: boolean } = {},
+) {
+  return viaDatabase(() => dbStore.getClassById(classId, options));
 }
 
 export async function listClassEnrollments(classId: string) {
