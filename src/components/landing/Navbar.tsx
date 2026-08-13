@@ -47,6 +47,7 @@ export function Navbar({ locale, signedIn, loginLabel, registerLabel }: NavbarPr
     { href: `/${locale}/library`, label: nt('library') },
     { href: `/${locale}/stories`, label: nt('stories') },
     { href: `/${locale}/team`, label: nt('team') },
+    { href: `/${locale}/contact`, label: nt('contact') },
   ];
 
   const ctaHref = signedIn ? `/${locale}/dashboard` : `/${locale}/register`;

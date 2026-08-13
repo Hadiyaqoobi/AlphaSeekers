@@ -99,6 +99,7 @@ export function Footer({ locale, signedIn, socialLinks, contactEmail }: FooterPr
               <li><FooterLink href={`/${locale}#how-it-works`}>{t('footer.howItWorks')}</FooterLink></li>
               <li><FooterLink href={`/${locale}/team`}>{t('footer.team')}</FooterLink></li>
               <li><FooterLink href={`/${locale}/register`}>{t('footer.volunteer')}</FooterLink></li>
+              <li><FooterLink href={`/${locale}/contact`}>{t('footer.contact')}</FooterLink></li>
             </ul>
           </div>
 

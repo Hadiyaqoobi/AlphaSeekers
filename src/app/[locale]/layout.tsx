@@ -50,6 +50,7 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
     { href: `/${locale}/webinars`, label: t("webinars") },
     { href: `/${locale}/library`, label: t("library") },
     { href: `/${locale}/opportunities`, label: t("opportunities") },
+    { href: `/${locale}/contact`, label: t("contact") },
     ...(user && (user.role === "TEACHER" || user.role === "ADMIN")
       ? [{ href: `/${locale}/teacher/availability`, label: t("teacher") }]
       : []),

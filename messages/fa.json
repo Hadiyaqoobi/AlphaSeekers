@@ -28,7 +28,8 @@
     "selfLearning": "یادگیری شخصی",
     "analytics": "تحلیل‌ها",
     "aiHealth": "سلامت هوش مصنوعی",
-    "siteSettings": "Site Settings"
+    "siteSettings": "Site Settings",
+    "contact": "Contact us"
   },
   "siteSettings": {
     "title": "Site Settings",
@@ -486,6 +487,7 @@
       "howItWorks": "چگونه کار می‌کند",
       "team": "تیم ما",
       "volunteer": "داوطلب شوید",
+      "contact": "Contact us",
       "aiAssistant": "دستیار مطالعه هوشمند",
       "faq": "سوالات متداول",
       "copyright": "AlphaSeekers",
@@ -1320,5 +1322,20 @@
     "requestNew": "Request a new link",
     "mismatch": "Passwords don't match.",
     "weak": "Password must be at least 8 characters and include a letter and a number."
+  },
+  "contact": {
+    "kicker": "Get in touch",
+    "title": "Contact AlphaSeekers",
+    "subtitle": "Questions about our classes, volunteering, or partnering with us? Reach us on any of these channels.",
+    "email": "Email",
+    "whatsappValue": "Join our WhatsApp channel",
+    "facebookValue": "Follow us on Facebook",
+    "instagramValue": "Follow us on Instagram",
+    "youtubeValue": "Watch on YouTube",
+    "linkedinValue": "Connect on LinkedIn",
+    "telegramValue": "Join us on Telegram",
+    "twitterValue": "Follow us on X",
+    "responseNote": "We read every message and usually reply within a few days.",
+    "empty": "Contact details have not been published yet. Please check back soon."
   }
 }
