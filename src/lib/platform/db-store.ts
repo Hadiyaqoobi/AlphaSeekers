@@ -2366,14 +2366,29 @@ export async function runSchedulerBatch() {
       });
     }
 
-    const start = current.processedCount;
-    const end = Math.min(start + 10, activeClasses.length);
-    const complete = end >= current.totalCount;
+    // Progress is measured against the LIVE class count, never the totalCount
+    // stored when the job was created. Comparing against the stored value
+    // deadlocked production for 3.5 months: a job written on 2026-04-27 held
+    // totalCount=12 while the class list had since shrunk to 2, so every run
+    // computed slice(2, min(12, 2)) = slice(2, 2) — an empty batch — and
+    // `2 >= 12` was never true, so the row never closed and no replacement job
+    // was ever created. Sessions stopped being generated entirely.
+    //
+    // Clamping start to the live total means a shrunken list completes the job
+    // instead of stranding the cursor past the end, so a stalled row heals
+    // itself on the next tick rather than needing manual surgery.
+    const total = activeClasses.length;
+    const start = Math.min(current.processedCount, total);
+    const end = Math.min(start + 10, total);
+    const complete = end >= total;
 
     const updated = await tx.schedulerJob.update({
       where: { id: current.id },
       data: {
         processedCount: end,
+        // Re-sync the stored total so diagnostics reflect reality rather than a
+        // snapshot from whenever this row happened to be created.
+        totalCount: total,
         status: complete ? SchedulerJobStatus.COMPLETED : SchedulerJobStatus.RUNNING,
         lastRunAt: new Date(),
       },
