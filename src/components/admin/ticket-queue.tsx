@@ -160,6 +160,7 @@ function NewTicketForm({ onCreated, onCancel }: { onCreated: () => void; onCance
   const [type, setType] = useState<string>("BUG");
   const [priority, setPriority] = useState<string>("NORMAL");
   const [area, setArea] = useState("");
+  const [file, setFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -183,6 +184,24 @@ function NewTicketForm({ onCreated, onCancel }: { onCreated: () => void; onCance
         const data = await res.json().catch(() => ({}));
         throw new Error(data.message ?? String(res.status));
       }
+
+      // The ticket is the thing that must survive. If the screenshot upload
+      // fails, keep the report and tell them the image did not attach rather
+      // than losing everything they typed.
+      if (file) {
+        const { ticket } = await res.json();
+        const body = new FormData();
+        body.append("file", file);
+        const up = await fetch(`/api/support/tickets/${ticket.id}/attachment`, { method: "POST", body });
+        if (!up.ok) {
+          const data = await up.json().catch(() => ({}));
+          setError(t("attachmentFailed", { reason: data.message ?? String(up.status) }));
+          setSaving(false);
+          onCreated();
+          return;
+        }
+      }
+
       onCreated();
     } catch (err) {
       setError(err instanceof Error ? err.message : t("saveFailed"));
@@ -273,11 +292,19 @@ function NewTicketForm({ onCreated, onCancel }: { onCreated: () => void; onCance
         />
       </div>
 
-      {/* Attachments need Cloudflare R2, which is not configured on the server
-          yet. Say so plainly rather than showing a control that fails. */}
-      <p className="rounded-lg border border-white/10 bg-dark-50 p-3 text-xs leading-6 text-ink-soft">
-        {t("attachmentsUnavailable")}
-      </p>
+      <div>
+        <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-ink-faint" htmlFor="t-file">
+          {t("fieldScreenshot")}
+        </label>
+        <input
+          accept="image/png,image/jpeg,image/webp"
+          className="block w-full text-sm text-ink-soft file:mr-3 file:rounded-lg file:border-0 file:bg-white/10 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-ink-main"
+          id="t-file"
+          onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+          type="file"
+        />
+        <p className="mt-1.5 text-xs text-ink-faint">{t("screenshotHint")}</p>
+      </div>
 
       {error ? <p className="text-sm text-red-300">{error}</p> : null}
 

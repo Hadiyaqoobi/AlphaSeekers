@@ -49,6 +49,9 @@ export async function getTicketById(ticketId: string) {
     where: { id: ticketId },
     include: {
       reporter: { select: { id: true, name: true, email: true } },
+      // Metadata only. The image bytes are served by their own route so a page
+      // render never drags megabytes through the server component.
+      attachment: { select: { filename: true, contentType: true, size: true } },
       comments: {
         orderBy: { createdAt: "asc" },
         include: { author: { select: { id: true, name: true, email: true } } },

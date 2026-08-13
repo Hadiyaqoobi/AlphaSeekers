@@ -20,6 +20,15 @@ import {
   listTickets,
   setTicketStatus,
 } from "@/lib/platform/tickets";
+import {
+  MAX_ATTACHMENT_BYTES,
+  getAttachment,
+  saveAttachment,
+  validateAttachment,
+} from "@/lib/platform/ticket-attachments";
+
+const PNG_HEADER = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+const pngBytes = (payload = "screenshot") => Buffer.concat([PNG_HEADER, Buffer.from(payload)]);
 
 const shouldRun = process.env.RUN_DB_TESTS === "1";
 const TAG = "tickettest";
@@ -35,6 +44,7 @@ async function cleanup() {
   const ids = users.map((u) => u.id);
   if (ids.length) {
     await prisma.ticketComment.deleteMany({ where: { authorId: { in: ids } } });
+    await prisma.ticketAttachment.deleteMany({ where: { ticket: { reporterId: { in: ids } } } });
     await prisma.ticket.deleteMany({ where: { reporterId: { in: ids } } });
     await prisma.user.deleteMany({ where: { id: { in: ids } } });
   }
@@ -126,6 +136,56 @@ d("support tickets", () => {
     expect(await getTicketById("does-not-exist")).toBeNull();
     expect(await setTicketStatus("does-not-exist", "DONE")).toBeNull();
     expect(await addTicketComment("does-not-exist", "nobody", "hi")).toBeNull();
+  });
+
+  it("rejects anything that is not really an image, whatever the browser claims", async () => {
+    // A renamed script that declares image/png must not get through: these bytes
+    // are served back to admins from our own origin.
+    expect(validateAttachment(Buffer.from("<script>alert(1)</script>"), "image/png")).toEqual({
+      ok: false,
+      reason: "NOT_AN_IMAGE",
+    });
+    // SVG is excluded on purpose -- it is XML that can carry script.
+    expect(validateAttachment(Buffer.from("<svg xmlns='http://www.w3.org/2000/svg'/>"), "image/svg+xml")).toEqual({
+      ok: false,
+      reason: "UNSUPPORTED_TYPE",
+    });
+    expect(validateAttachment(Buffer.alloc(MAX_ATTACHMENT_BYTES + 1), "image/png")).toEqual({
+      ok: false,
+      reason: "TOO_LARGE",
+    });
+    expect(validateAttachment(Buffer.alloc(0), "image/png")).toEqual({ ok: false, reason: "TOO_LARGE" });
+    expect(validateAttachment(pngBytes(), "image/png")).toEqual({ ok: true, contentType: "image/png" });
+  });
+
+  it("stores one screenshot per ticket and replaces it on re-upload", async () => {
+    const user = await makeUser("attach");
+    const ticket = await makeTicket(user.id);
+
+    await saveAttachment({ ticketId: ticket.id, filename: "first.png", contentType: "image/png", bytes: pngBytes("one") });
+    const second = pngBytes("two-is-longer");
+    await saveAttachment({ ticketId: ticket.id, filename: "second.png", contentType: "image/png", bytes: second });
+
+    const stored = await getAttachment(ticket.id);
+    expect(stored?.filename).toBe("second.png");
+    expect(stored?.size).toBe(second.length);
+    expect(await prisma.ticketAttachment.count({ where: { ticketId: ticket.id } })).toBe(1);
+
+    // Deleting the ticket must not orphan megabytes of image data.
+    await prisma.ticket.delete({ where: { id: ticket.id } });
+    expect(await prisma.ticketAttachment.count({ where: { ticketId: ticket.id } })).toBe(0);
+  });
+
+  it("never pulls image bytes into the ticket detail payload", async () => {
+    const user = await makeUser("attach-meta");
+    const ticket = await makeTicket(user.id);
+    await saveAttachment({ ticketId: ticket.id, filename: "s.png", contentType: "image/png", bytes: pngBytes() });
+
+    const full = await getTicketById(ticket.id);
+    expect(full?.attachment?.filename).toBe("s.png");
+    // Regression guard: including `data` here would ship the whole image
+    // through the server component on every page render.
+    expect((full?.attachment as Record<string, unknown> | null | undefined)?.data).toBeUndefined();
   });
 
   it("counts urgent work that is still open", async () => {

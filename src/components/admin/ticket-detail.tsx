@@ -20,6 +20,7 @@ type Ticket = {
   status: "OPEN" | "IN_PROGRESS" | "DONE" | "WONT_DO";
   area: string | null;
   attachmentUrl: string | null;
+  attachment: { filename: string; contentType: string; size: number } | null;
   createdAt: string;
   resolvedAt: string | null;
   reporter: { id: string; name: string | null; email: string | null };
@@ -115,7 +116,27 @@ export function TicketDetail({
 
         <p className="mt-5 whitespace-pre-wrap text-sm leading-7 text-ink-main">{ticket.description}</p>
 
-        {ticket.attachmentUrl ? (
+        {ticket.attachment ? (
+          <figure className="mt-5">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              alt={ticket.attachment.filename}
+              className="max-h-[28rem] w-auto max-w-full rounded-xl border border-white/10"
+              src={`/api/support/tickets/${ticket.id}/attachment`}
+            />
+            <figcaption className="mt-2 text-xs text-ink-faint">
+              <a
+                className="text-neon-400 underline"
+                href={`/api/support/tickets/${ticket.id}/attachment`}
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                {t("viewAttachment")}
+              </a>{" "}
+              · {ticket.attachment.filename} ({Math.round(ticket.attachment.size / 1024)} KB)
+            </figcaption>
+          </figure>
+        ) : ticket.attachmentUrl ? (
           <a
             className="mt-4 inline-block text-sm text-neon-400 underline"
             href={ticket.attachmentUrl}

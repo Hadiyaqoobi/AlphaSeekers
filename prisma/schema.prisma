@@ -512,14 +512,15 @@ model Ticket {
 
   // Where in the platform the problem is, free text ("Create Class page").
   area        String?
-  // Screenshot/attachment URL from the R2 presign flow. Null until R2 is
-  // configured, which it is not yet -- the form degrades to text-only.
+  // Reserved for the R2 presign flow if object storage is ever configured.
+  // Screenshots today go to TicketAttachment instead; see the note there.
   attachmentUrl String?
 
   reporterId  String
   reporter    User           @relation("TicketReporter", fields: [reporterId], references: [id], onDelete: Cascade)
 
   comments    TicketComment[]
+  attachment  TicketAttachment?
 
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
@@ -530,6 +531,23 @@ model Ticket {
   @@index([type, createdAt])
   @@index([reporterId, createdAt])
   @@index([createdAt])
+}
+
+// Screenshots live in Postgres rather than object storage. That is the wrong
+// default at scale, but right here: seven admins filing occasional reports means
+// a few megabytes a year, and it removes a hard dependency on R2 -- which is not
+// configured, and which needs a Cloudflare account nobody has set up. Bounded by
+// a 2 MB cap and one attachment per ticket. Class materials and library files
+// still need real object storage; this is deliberately not that.
+model TicketAttachment {
+  id          String   @id @default(cuid())
+  ticketId    String   @unique
+  ticket      Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  filename    String
+  contentType String
+  size        Int
+  data        Bytes
+  createdAt   DateTime @default(now())
 }
 
 model TicketComment {
