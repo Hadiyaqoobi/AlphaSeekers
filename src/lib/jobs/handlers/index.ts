@@ -10,7 +10,7 @@
 import { registerHandler } from "@/lib/jobs/worker";
 
 import { runReminders, runScheduler } from "./batches";
-import { kpiDigest } from "./digest";
+import { kpiDigest, pendingApprovalsDigest } from "./digest";
 import {
   notifyHomeworkSubmitted,
   notifyModerationQueued,
@@ -34,6 +34,7 @@ export const REGISTERED_JOB_TYPES: string[] = [
   "run_reminders",
   "run_scheduler",
   "kpi_digest",
+  "pending_approvals_digest",
   "notify_session_scheduled",
 ];
 
@@ -54,6 +55,7 @@ export function registerAllHandlers(): void {
   registerHandler("run_reminders", runReminders);
   registerHandler("run_scheduler", runScheduler);
   registerHandler("kpi_digest", kpiDigest);
+  registerHandler("pending_approvals_digest", pendingApprovalsDigest);
   registerHandler("notify_session_scheduled", notifySessionScheduled);
 
   registered = true;

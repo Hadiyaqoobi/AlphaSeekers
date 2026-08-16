@@ -79,11 +79,12 @@ export async function deliverToMany(
   rows: NotifiableRow[],
   content: string,
   concurrency = 8,
+  options: DeliveryOptions = {},
 ): Promise<number> {
   let failures = 0;
   for (let i = 0; i < rows.length; i += concurrency) {
     const batch = rows.slice(i, i + concurrency);
-    const settled = await Promise.allSettled(batch.map((row) => deliverOrThrow(toTarget(row), content)));
+    const settled = await Promise.allSettled(batch.map((row) => deliverOrThrow(toTarget(row), content, options)));
     for (const outcome of settled) {
       if (outcome.status === "rejected") failures += 1;
     }
