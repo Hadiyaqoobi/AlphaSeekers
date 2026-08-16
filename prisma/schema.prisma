@@ -24,8 +24,15 @@ enum ClassStatus {
 }
 
 enum EnrollmentStatus {
+  // A student has asked to join and is waiting on an admin. Platform access and
+  // course access are deliberately separate: being approved to use AlphaSeekers
+  // does not put you in every class.
+  PENDING
   ACTIVE
   DROPPED
+  // Turned down for this course. Kept rather than deleted so the same person
+  // cannot silently re-request in a loop, and so the decision is auditable.
+  REJECTED
 }
 
 // How a class's sessions get their date/time.

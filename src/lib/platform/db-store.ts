@@ -1627,6 +1627,18 @@ export async function enrollStudentInClass(studentId: string, classId: string) {
       return { enrollment: current, state: "ALREADY_ENROLLED" as const, activeCount: 0 };
     }
 
+    // Already asked and waiting — say so rather than silently resetting the
+    // request and pushing them to the back of the queue.
+    if (current?.status === EnrollmentStatus.PENDING) {
+      return { enrollment: current, state: "ALREADY_REQUESTED" as const, activeCount: 0 };
+    }
+
+    // A previous rejection is not something a student can undo by clicking
+    // again; an admin has to change it.
+    if (current?.status === EnrollmentStatus.REJECTED) {
+      throw new Error("Enrollment rejected");
+    }
+
     // Re-read capacity inside the transaction so a concurrent maxStudents change
     // (or archival) is honored.
     const klassInTx = await tx.class.findUnique({
@@ -1646,25 +1658,27 @@ export async function enrollStudentInClass(studentId: string, classId: string) {
       throw new Error("Class is full");
     }
 
+    // Joining a class is a REQUEST, not an instant enrolment: platform access and
+    // course access are separate. An admin moves this to ACTIVE.
     const enrollment = current
       ? await tx.enrollment.update({
         where: { studentId_classId: { studentId, classId } },
-        data: { status: EnrollmentStatus.ACTIVE, enrolledAt: new Date() },
+        data: { status: EnrollmentStatus.PENDING, enrolledAt: new Date() },
       })
       : await tx.enrollment.create({
-        data: { studentId, classId, status: EnrollmentStatus.ACTIVE },
+        data: { studentId, classId, status: EnrollmentStatus.PENDING },
       });
 
-    return { enrollment, state: "ENROLLED" as const, activeCount: activeCount + 1 };
+    return { enrollment, state: "REQUESTED" as const, activeCount };
   });
 
-  if (result.state === "ALREADY_ENROLLED") {
+  if (result.state === "ALREADY_ENROLLED" || result.state === "ALREADY_REQUESTED") {
     return {
       enrollment: {
         ...result.enrollment,
         enrolledAt: result.enrollment.enrolledAt.toISOString(),
       },
-      state: "ALREADY_ENROLLED" as const,
+      state: result.state,
     };
   }
 
@@ -1681,7 +1695,7 @@ export async function enrollStudentInClass(studentId: string, classId: string) {
       ...enrollment,
       enrolledAt: enrollment.enrolledAt.toISOString(),
     },
-    state: "ENROLLED" as const,
+    state: "REQUESTED" as const,
     // Deliveries are dispatched asynchronously after commit, so there are no
     // synchronously-known results; the key is retained for response-shape stability.
     deliveries: [] as NotificationDelivery[],
@@ -3520,4 +3534,81 @@ export function parseInteger(input: string | null, fallback: number) {
   }
 
   return Math.floor(parsed);
+}
+
+/** Students waiting on an admin decision for a class. */
+export async function listPendingEnrollments(classId: string) {
+  const rows = await prisma.enrollment.findMany({
+    where: { classId, status: EnrollmentStatus.PENDING },
+    include: { student: { select: { id: true, name: true, email: true } } },
+    orderBy: { enrolledAt: "asc" },
+  });
+  return rows.map((e) => ({
+    enrollmentId: e.id,
+    studentId: e.student.id,
+    name: e.student.name,
+    email: e.student.email,
+    requestedAt: e.enrolledAt.toISOString(),
+  }));
+}
+
+/** Every pending course request across the platform, for the daily digest. */
+export async function countPendingEnrollments() {
+  return prisma.enrollment.count({ where: { status: EnrollmentStatus.PENDING } });
+}
+
+/**
+ * Admit or turn down a course request.
+ *
+ * Capacity is re-checked at approval time, not just at request time: a class can
+ * fill up while requests sit in the queue, and silently oversubscribing it would
+ * put more students in the room than the teacher agreed to.
+ */
+export async function decideEnrollment(
+  enrollmentId: string,
+  decision: "APPROVE" | "REJECT",
+) {
+  const existing = await prisma.enrollment.findUnique({
+    where: { id: enrollmentId },
+    select: { id: true, classId: true, studentId: true, status: true },
+  });
+  if (!existing) return { status: "NOT_FOUND" as const };
+  if (existing.status !== EnrollmentStatus.PENDING) {
+    return { status: "NOT_PENDING" as const, current: existing.status };
+  }
+
+  if (decision === "REJECT") {
+    const updated = await prisma.enrollment.update({
+      where: { id: enrollmentId },
+      data: { status: EnrollmentStatus.REJECTED },
+      select: { id: true, status: true, studentId: true, classId: true },
+    });
+    return { status: "REJECTED" as const, enrollment: updated };
+  }
+
+  return prisma.$transaction(async (tx) => {
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`enroll:${existing.classId}`}))`;
+
+    const klass = await tx.class.findUnique({
+      where: { id: existing.classId },
+      select: { maxStudents: true, status: true },
+    });
+    if (!klass || klass.status !== ClassStatus.ACTIVE) {
+      return { status: "CLASS_UNAVAILABLE" as const };
+    }
+
+    const activeCount = await tx.enrollment.count({
+      where: { classId: existing.classId, status: EnrollmentStatus.ACTIVE },
+    });
+    if (activeCount >= klass.maxStudents) {
+      return { status: "CLASS_FULL" as const };
+    }
+
+    const updated = await tx.enrollment.update({
+      where: { id: enrollmentId },
+      data: { status: EnrollmentStatus.ACTIVE, enrolledAt: new Date() },
+      select: { id: true, status: true, studentId: true, classId: true },
+    });
+    return { status: "APPROVED" as const, enrollment: updated };
+  });
 }
