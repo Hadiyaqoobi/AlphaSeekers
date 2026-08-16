@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { createClassWithSession } from "@/lib/platform/store";
+import { normaliseHttpUrl } from "@/lib/security/safe-url";
 import { resolveTeacherId } from "@/lib/platform/teacher-invite";
 import { guardPermission } from "@/lib/security/api-guard";
 import { getSessionUser } from "@/lib/security/session";
@@ -64,8 +65,10 @@ export async function POST(request: NextRequest) {
         durationMinutes: Math.max(30, Number(body.durationMinutes) || 60),
         schedulePreference: String(body.schedulePreference).trim(),
         language: String(body.language || "Dari").trim(),
-        registrationFormUrl: body.registrationFormUrl ? String(body.registrationFormUrl).trim() : undefined,
-        whatsappGroupUrl: body.whatsappGroupUrl ? String(body.whatsappGroupUrl).trim() : undefined,
+        // Both end up in an href (the public class card, the student welcome),
+        // so anything that is not http(s) is dropped rather than stored.
+        registrationFormUrl: normaliseHttpUrl(body.registrationFormUrl) ?? undefined,
+        whatsappGroupUrl: normaliseHttpUrl(body.whatsappGroupUrl) ?? undefined,
         schedulingMode,
     });
 

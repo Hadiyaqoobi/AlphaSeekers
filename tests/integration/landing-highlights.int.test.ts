@@ -109,6 +109,29 @@ d("landing highlights", () => {
     expect(classes.find((c) => c.id === klass.id)?.seatsLeft).toBe(2);
   });
 
+  it("links to a course's own registration form, and refuses an unsafe one", async () => {
+    const teacher = await makeTeacher("forms");
+    const withForm = await makeClass(teacher.id, "With form");
+    await prisma.class.update({
+      where: { id: withForm.id },
+      data: { registrationFormUrl: "https://forms.gle/abc123" },
+    });
+    // Rows predate the write-side guard, and this value is rendered as an href
+    // on a public page — a javascript: URL there is stored XSS against visitors.
+    const unsafe = await makeClass(teacher.id, "Unsafe form");
+    await prisma.$executeRawUnsafe(
+      `UPDATE "Class" SET "registrationFormUrl" = $1 WHERE id = $2`,
+      "javascript:alert(document.cookie)",
+      unsafe.id,
+    );
+
+    const { classes } = await getLandingHighlights();
+    expect(classes.find((c) => c.id === withForm.id)?.registrationFormUrl).toBe(
+      "https://forms.gle/abc123",
+    );
+    expect(classes.find((c) => c.id === unsafe.id)?.registrationFormUrl).toBeNull();
+  });
+
   it("shows only webinars and opportunities that have not passed", async () => {
     const upcoming = await prisma.webinar.create({
       data: { title: `${TAG} Upcoming`, description: "d", startsAt: inDays(5), meetLink: "https://meet.example/x" },

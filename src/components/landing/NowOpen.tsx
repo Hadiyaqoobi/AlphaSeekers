@@ -33,6 +33,13 @@ export function NowOpen({ locale, signedIn, highlights }: NowOpenProps) {
   // point them at registration rather than a redirect they will bounce off.
   const joinHref = signedIn ? `/${locale}/classes` : `/${locale}/register`;
 
+  // A course with its own registration form takes priority: signing up for
+  // AlphaSeekers is not the same as signing up for that course, which is the
+  // whole point of the field.
+  const courseHref = (c: { registrationFormUrl: string | null }) =>
+    c.registrationFormUrl ?? joinHref;
+  const isExternal = (c: { registrationFormUrl: string | null }) => Boolean(c.registrationFormUrl);
+
   const dateFmt = new Intl.DateTimeFormat(locale === 'fa' ? 'fa-AF' : 'en-GB', {
     day: 'numeric',
     month: 'short',
@@ -109,13 +116,25 @@ export function NowOpen({ locale, signedIn, highlights }: NowOpenProps) {
                 ) : null}
               </dl>
 
-              <Link
-                className="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-land-green-400 transition-colors hover:text-land-green-300"
-                href={joinHref}
-              >
-                {t('nowOpen.enrol')}
-                <span aria-hidden="true">→</span>
-              </Link>
+              {isExternal(c) ? (
+                <a
+                  className="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-land-green-400 transition-colors hover:text-land-green-300"
+                  href={courseHref(c)}
+                  rel="noopener noreferrer"
+                  target="_blank"
+                >
+                  {t('nowOpen.register')}
+                  <span aria-hidden="true">→</span>
+                </a>
+              ) : (
+                <Link
+                  className="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-land-green-400 transition-colors hover:text-land-green-300"
+                  href={joinHref}
+                >
+                  {t('nowOpen.enrol')}
+                  <span aria-hidden="true">→</span>
+                </Link>
+              )}
             </article>
           ))}
 
