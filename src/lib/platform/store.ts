@@ -317,15 +317,3 @@ export async function databaseEnabled() {
   }
   return dbStore.isDatabaseAvailable();
 }
-
-export async function listPendingEnrollments(classId: string) {
-  return viaDatabase(() => dbStore.listPendingEnrollments(classId));
-}
-
-export async function countPendingEnrollments() {
-  return viaDatabase(() => dbStore.countPendingEnrollments());
-}
-
-export async function decideEnrollment(enrollmentId: string, decision: "APPROVE" | "REJECT") {
-  return viaDatabase(() => dbStore.decideEnrollment(enrollmentId, decision));
-}

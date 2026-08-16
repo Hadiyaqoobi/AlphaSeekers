@@ -680,9 +680,7 @@
     "enrolledTapToUnenroll": "Enrolled (tap to unenroll)",
     "enrollFailed": "Enrollment failed",
     "unenrollFailed": "Unable to drop class",
-    "limitReached": "You can join up to {limit} classes at a time. Drop one to add another.",
-    "requestToJoin": "Request to join",
-    "requestSent": "Request sent — an admin will review it."
+    "limitReached": "You can join up to {limit} classes at a time. Drop one to add another."
   },
   "materials": {
     "title": "Upload material",
@@ -1209,14 +1207,7 @@
     "deleteConfirmButton": "Delete forever",
     "deleting": "Deleting…",
     "actionFailed": "Something went wrong. Please try again.",
-    "deleteSuperOnly": "Permanently deleting a class is limited to super admins. Archiving is available to you above — ask Hadi, Sahar or Shahla if a class needs to be removed for good.",
-    "requests": "Requests to join",
-    "waiting": "waiting",
-    "noRequests": "No one is waiting to join this class.",
-    "approveRequest": "Approve",
-    "rejectRequest": "Decline",
-    "requestApproved": "Approved",
-    "requestRejected": "Declined"
+    "deleteSuperOnly": "Permanently deleting a class is limited to super admins. Archiving is available to you above — ask Hadi, Sahar or Shahla if a class needs to be removed for good."
   },
   "staff": {
     "title": "Staff",

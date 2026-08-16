@@ -7,8 +7,7 @@ import { AdminClassActions } from "@/components/admin/admin-class-actions";
 import { ClassDangerZone } from "@/components/admin/class-danger-zone";
 import { ClassWhatsAppEditor } from "@/components/admin/class-whatsapp-editor";
 import { formatDateTime } from "@/lib/format-date";
-import { getClassById, listClassEnrollments, listPendingEnrollments, getClassAttendanceSummary } from "@/lib/platform/store";
-import { EnrollmentRequests } from "@/components/admin/enrollment-requests";
+import { getClassById, listClassEnrollments, getClassAttendanceSummary } from "@/lib/platform/store";
 import { getAccessControl, can, isSuper } from "@/lib/security/permissions";
 
 type AdminClassDetailPageProps = {
@@ -35,9 +34,6 @@ export default async function AdminClassDetailPage({ params }: AdminClassDetailP
   const { locale } = params;
   const t = await getTranslations({ locale, namespace: "adminClassDetail" });
   const enrolledStudents = await listClassEnrollments(record.id);
-  // Course access is decided per class, so requests wait here rather than
-  // granting themselves the moment a student clicks Join.
-  const enrollmentRequests = await listPendingEnrollments(record.id);
   const attendanceSummary = (await getClassAttendanceSummary(record.id)) as {
     totalSessions: number;
     totalStudents: number;
@@ -115,14 +111,6 @@ export default async function AdminClassDetailPage({ params }: AdminClassDetailP
           </p>
         </article>
       </div>
-
-      <section className="rounded-2xl border border-white/5 bg-dark-100 p-5">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-black text-ink-main">{t("requests")}</h2>
-          <span className="text-sm text-ink-soft">{enrollmentRequests.length} {t("waiting")}</span>
-        </div>
-        <EnrollmentRequests requests={enrollmentRequests} />
-      </section>
 
       <section className="panel panel-strong p-4 sm:p-5">
         <div className="flex items-center justify-between">
