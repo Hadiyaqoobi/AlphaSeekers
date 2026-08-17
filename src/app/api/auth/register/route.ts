@@ -48,15 +48,36 @@ const registerSchema = z.object({
   timezone: z.string().trim().min(1).max(64).optional(),
 });
 
-export async function POST(request: NextRequest) {
-  const ip = getClientIp(request);
-  const rl = await checkRateLimitDistributed(`register:${ip}`);
+/**
+ * Registration rate limits.
+ *
+ * The old limit was the shared auth default: 5 attempts per 15 minutes keyed on
+ * IP alone. Afghan mobile carriers put many subscribers behind one public
+ * address (carrier-grade NAT), and a classroom or household shares one too — so
+ * in practice it was five attempts per NETWORK, and the sixth student to sign up
+ * was refused on their first ever try. A mistyped email or a double-tapped
+ * Submit burned the budget for everyone else on that carrier.
+ *
+ * Keyed per email instead, which identifies a person rather than a network, with
+ * a much looser per-IP ceiling kept behind it so a genuine flood is still
+ * stopped.
+ */
+const REGISTER_PER_EMAIL = { limit: 3, windowMs: 15 * 60 * 1000 };
+const REGISTER_PER_IP = { limit: 30, windowMs: 15 * 60 * 1000 };
 
-  if (!rl.allowed) {
-    return NextResponse.json(
-      { message: "Too many registration attempts. Please try again later." },
-      { status: 429, headers: { "Retry-After": String(Math.ceil(rl.retryAfterMs / 1000)) } },
-    );
+function tooManyAttempts(retryAfterMs: number) {
+  return NextResponse.json(
+    { message: "Too many registration attempts. Please try again later." },
+    { status: 429, headers: { "Retry-After": String(Math.ceil(retryAfterMs / 1000)) } },
+  );
+}
+
+export async function POST(request: NextRequest) {
+  // Flood guard first: cheap, and it runs before we parse anything.
+  const ip = getClientIp(request);
+  const byIp = await checkRateLimitDistributed(`register:ip:${ip}`, REGISTER_PER_IP);
+  if (!byIp.allowed) {
+    return tooManyAttempts(byIp.retryAfterMs);
   }
 
   const body = await request.json().catch(() => null);
@@ -77,6 +98,15 @@ export async function POST(request: NextRequest) {
       },
       { status: 400 },
     );
+  }
+
+  // Now that we know who is signing up, limit the person rather than the
+  // network. Someone hammering one address is stopped; the next student on the
+  // same carrier is not.
+  const emailKey = parsed.data.email.trim().toLowerCase();
+  const byEmail = await checkRateLimitDistributed(`register:email:${emailKey}`, REGISTER_PER_EMAIL);
+  if (!byEmail.allowed) {
+    return tooManyAttempts(byEmail.retryAfterMs);
   }
 
   const email = parsed.data.email.toLowerCase();
