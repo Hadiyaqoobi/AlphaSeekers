@@ -74,10 +74,13 @@ d("teacher setup checklist", () => {
 
     expect(status.availabilitySet).toBe(true);
     expect(status.availabilityDays).toBe(2);
-    expect(status.complete).toBe(false); // Google still outstanding
+    // Google is NOT required: getCalendarClient falls back to the shared
+    // platform account, so a teacher who declines to link theirs is not blocked.
+    expect(status.googleConnected).toBe(false);
+    expect(status.complete).toBe(true);
   });
 
-  it("is only complete when Google is connected too", async () => {
+  it("is complete on availability alone — Google is optional", async () => {
     const teacher = await makeTeacher("both");
     await prisma.teacherAvailability.create({
       data: {

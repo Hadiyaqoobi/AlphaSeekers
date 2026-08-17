@@ -73,6 +73,7 @@ export default async function TeacherSetupPage({ params }: SetupPageProps) {
           }
           done={status.googleConnected}
           number={2}
+          optionalLabel={t("optional")}
           title={t("step2Title")}
         />
       </ol>
@@ -133,17 +134,24 @@ function StepCard({
   body,
   done,
   action,
+  optionalLabel,
 }: {
   number: number;
   title: string;
   body: string;
   done: boolean;
   action: React.ReactNode;
+  /** Present on a step that is genuinely optional, so it does not read as a blocker. */
+  optionalLabel?: string;
 }) {
   return (
     <li
       className={`rounded-2xl border p-6 ${
-        done ? "border-neon-400/30 bg-neon-400/5" : "border-white/10 bg-dark-100"
+        done
+          ? "border-neon-400/30 bg-neon-400/5"
+          : optionalLabel
+            ? "border-white/5 bg-dark-100/60"
+            : "border-white/10 bg-dark-100"
       }`}
     >
       <div className="flex items-start gap-4">
@@ -153,7 +161,7 @@ function StepCard({
             done ? "bg-neon-400 text-black" : "border-2 border-white/20 text-ink-soft"
           }`}
         >
-          {done ? "✓" : number}
+          {done ? "✓" : optionalLabel ? "·" : number}
         </span>
         <div className="min-w-0 flex-1">
           <h2 className="text-lg font-semibold text-ink-main">{title}</h2>

@@ -46,14 +46,16 @@ export async function notifyTeacherOfNewClass(input: {
     `You have been assigned a new class: "${input.className}".`,
     input.schedulePreference ? `Planned schedule: ${input.schedulePreference}` : null,
     "",
-    "Two steps before it can run:",
-    "1. Set the hours you can teach.",
-    "2. Connect your Google account, so each session gets a Meet link.",
+    "One step before it can run: set the hours you can teach.",
     "",
-    `Both are here: ${base}/en/teacher/setup`,
+    `Set them here: ${base}/en/teacher/setup`,
     "",
-    "Your sessions are created automatically once both are done.",
+    "Your sessions are created automatically once that is saved.",
     "Until then the class has no session times and students cannot join.",
+    "",
+    "You can also connect your Google account on that page if you want the Meet",
+    "invitation in your own calendar. That part is optional — sessions get a Meet",
+    "link either way.",
   ]
     .filter((line) => line !== null)
     .join("\n");

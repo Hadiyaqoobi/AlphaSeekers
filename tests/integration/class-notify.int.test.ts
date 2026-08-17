@@ -72,8 +72,10 @@ d("new class notifies its teacher", () => {
     // still cannot run. They are reached through the setup checklist, which
     // shows live status rather than repeating instructions.
     expect(body).toMatch(/hours you can teach/i);
-    expect(body).toMatch(/Google/);
     expect(body).toContain("/en/teacher/setup");
+    // Google must be described as optional: the Meet integration falls back to
+    // the shared platform account, so a teacher who declines is not blocked.
+    expect(body).toMatch(/optional/i);
     expect(body).toContain("7:00 AM to 8:00 AM, Saturdays to Thursdays");
   });
 

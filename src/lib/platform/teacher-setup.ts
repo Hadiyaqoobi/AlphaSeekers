@@ -23,7 +23,12 @@ export type TeacherSetupStatus = {
     upcomingSessions: number;
     enrolledCount: number;
   }>;
-  /** True when both steps are done — the page congratulates rather than instructs. */
+  /**
+   * True once the class can actually run. That means availability ONLY:
+   * connecting Google is optional, because getCalendarClient falls back to the
+   * shared platform account when a teacher has not linked their own. Treating
+   * Google as required told teachers their class was blocked when it was not.
+   */
   complete: boolean;
 };
 
@@ -69,6 +74,6 @@ export async function getTeacherSetupStatus(teacherId: string): Promise<TeacherS
       upcomingSessions: c.sessions.length,
       enrolledCount: c._count.enrollments,
     })),
-    complete: availability.length > 0 && Boolean(googleLink),
+    complete: availability.length > 0,
   };
 }
