@@ -1,6 +1,7 @@
 import { ClassStatus } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
+import { normaliseHttpUrl } from "@/lib/security/safe-url";
 
 /**
  * What the public landing page advertises: classes open for enrolment, webinars
@@ -18,6 +19,8 @@ export type LandingClass = {
   language: string | null;
   teacherName: string | null;
   seatsLeft: number | null;
+  /** A course's own registration form, when it has one. */
+  registrationFormUrl: string | null;
 };
 
 export type LandingWebinar = {
@@ -71,6 +74,7 @@ export async function getLandingHighlights(): Promise<LandingHighlights> {
           schedulePreference: true,
           language: true,
           maxStudents: true,
+          registrationFormUrl: true,
           teacher: { select: { name: true } },
           _count: { select: { enrollments: true } },
         },
@@ -97,6 +101,9 @@ export async function getLandingHighlights(): Promise<LandingHighlights> {
         schedulePreference: c.schedulePreference,
         language: c.language,
         teacherName: c.teacher?.name ?? null,
+        // Defence in depth: rows predate the write-side guard, and this value
+        // is rendered as an href on a public page.
+        registrationFormUrl: normaliseHttpUrl(c.registrationFormUrl),
         seatsLeft:
           typeof c.maxStudents === "number"
             ? Math.max(0, c.maxStudents - c._count.enrollments)
