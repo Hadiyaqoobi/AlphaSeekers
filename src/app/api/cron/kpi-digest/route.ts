@@ -28,8 +28,18 @@ export async function POST(request: NextRequest) {
     { dedupeKey: `pending_approvals_digest:${day}` },
   );
 
+  // Class health rides the same daily tick rather than taking its own Render
+  // cron service, which would be separately billed and would keep the database
+  // awake on another schedule.
+  const health = await enqueue(
+    "class_health_digest",
+    {},
+    { dedupeKey: `class_health_digest:${day}` },
+  );
+
   return NextResponse.json({
     kpiDigest: { enqueued: kpi.id, deduped: kpi.deduped },
     pendingApprovals: { enqueued: approvals.id, deduped: approvals.deduped },
+    classHealth: { enqueued: health.id, deduped: health.deduped },
   });
 }

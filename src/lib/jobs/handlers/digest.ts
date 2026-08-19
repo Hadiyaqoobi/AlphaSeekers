@@ -7,6 +7,7 @@
  */
 
 import { queueHealth } from "@/lib/jobs/queue";
+import { collectClassIssues } from "@/lib/platform/class-health";
 import { prisma } from "@/lib/prisma";
 import { getSuperKpis, type SuperKpis } from "@/lib/platform/super-store";
 
@@ -71,6 +72,61 @@ function formatWaiting(since: Date): string {
   if (hours < 1) return "under an hour";
   if (hours < 48) return `${hours} hours`;
   return `${Math.round(hours / 24)} days`;
+}
+
+/**
+ * "class_health_digest" — the things quietly wrong with a running class.
+ *
+ * Separate from the approvals digest on purpose. That one answers "is there a
+ * queue?"; this one answers "is anything broken?" — a class with no teacher, a
+ * session hours away with no joining link, a scheduler that has stopped
+ * producing. Each of those degrades a class without raising anything, and the
+ * first person to notice is otherwise a student turning up to nothing.
+ *
+ * Sends NOTHING when every class is healthy. A daily all-clear is exactly the
+ * mail people learn to filter, and it would take the real one with it.
+ */
+export async function classHealthDigest(): Promise<void> {
+  const issues = await collectClassIssues();
+  if (issues.length === 0) return;
+
+  const base = (process.env.APP_BASE_URL ?? "https://alphaseekers.org").replace(/\/$/, "");
+  const urgent = issues.filter((i) => i.severity === "urgent");
+
+  const lines: string[] = [];
+  lines.push(
+    `${issues.length} ${issues.length === 1 ? "issue needs" : "issues need"} attention across your classes.`,
+    ``,
+  );
+
+  let lastClass: string | null = null;
+  for (const issue of issues) {
+    if (issue.className !== lastClass) {
+      if (lastClass !== null) lines.push(``);
+      lines.push(issue.className);
+      lastClass = issue.className;
+    }
+    lines.push(`  ${issue.severity === "urgent" ? "[urgent]" : "[warning]"} ${issue.detail}`);
+    if (issue.classId) {
+      lines.push(`  ${base}/en/admin/classes/${issue.classId}`);
+    }
+  }
+
+  const admins = await prisma.user.findMany({
+    where: { role: "ADMIN", deactivatedAt: null },
+    select: notifiableSelect,
+  });
+  if (admins.length === 0) return;
+
+  const subject =
+    urgent.length > 0
+      ? `${urgent.length} urgent class ${urgent.length === 1 ? "issue" : "issues"} on AlphaSeekers`
+      : `${issues.length} class ${issues.length === 1 ? "issue" : "issues"} to review on AlphaSeekers`;
+
+  const failures = await deliverToMany(admins, lines.join("\n"), 8, { subject });
+  if (failures > 0) {
+    throw new Error(`class_health_digest: ${failures}/${admins.length} deliveries failed`);
+  }
 }
 
 /**
