@@ -14,15 +14,13 @@ export function EnrollButton({ classId, initiallyEnrolled = false }: EnrollButto
   const router = useRouter();
   const t = useTranslations("enroll");
   const [enrolled, setEnrolled] = useState(initiallyEnrolled);
+  const [requested, setRequested] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function enroll() {
     setLoading(true);
     setError(null);
-
-    const optimisticState = true;
-    setEnrolled(optimisticState);
 
     const response = await fetch(`/api/classes/${classId}/enroll`, {
       method: "POST",
@@ -32,7 +30,6 @@ export function EnrollButton({ classId, initiallyEnrolled = false }: EnrollButto
     });
 
     if (!response.ok) {
-      setEnrolled(false);
       const body = (await response.json().catch(() => ({ message: t("enrollFailed") }))) as {
         message?: string;
         code?: string;
@@ -50,6 +47,8 @@ export function EnrollButton({ classId, initiallyEnrolled = false }: EnrollButto
       return;
     }
 
+    // Joining is a request now, not an instant enrolment: an admin decides.
+    setRequested(true);
     setLoading(false);
     router.refresh();
   }
@@ -87,6 +86,10 @@ export function EnrollButton({ classId, initiallyEnrolled = false }: EnrollButto
         >
           {loading ? "..." : t("enrolledTapToUnenroll")}
         </button>
+      ) : requested ? (
+        <p className="rounded-lg border border-white/10 bg-dark-100 px-4 py-2.5 text-sm text-ink-soft">
+          {t("requestSent")}
+        </p>
       ) : (
         <button
           className="btn-primary"
@@ -94,7 +97,7 @@ export function EnrollButton({ classId, initiallyEnrolled = false }: EnrollButto
           onClick={enroll}
           type="button"
         >
-          {loading ? "..." : t("enroll")}
+          {loading ? "..." : t("requestToJoin")}
         </button>
       )}
 
