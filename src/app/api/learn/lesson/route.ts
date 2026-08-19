@@ -13,6 +13,7 @@ import { prisma } from "@/lib/prisma";
 import { aiConfig } from "@/lib/ai/config";
 import { generateCompletion } from "@/lib/ai/llm";
 import { getSessionUser, unauthorized, forbidden, badRequest } from "@/lib/security/session";
+import { checkRateLimitDistributed } from "@/lib/security/rate-limit";
 
 const schema = z.object({
   pathId: z.string().min(1),
@@ -31,6 +32,21 @@ export async function POST(request: Request) {
   const user = await getSessionUser();
   if (!user) return unauthorized();
   if (!user.approved) return forbidden("Account pending approval");
+
+  // The only AI route that had no limit, and the most expensive per call.
+  // Groq's free tier caps tokens per DAY across the whole key, so one heavy
+  // user can starve every student — the same shape of failure as the database
+  // quota outage, just with a different quota.
+  const rl = await checkRateLimitDistributed(`learn-lesson:${user.id}`, {
+    limit: 30,
+    windowMs: 60 * 60 * 1000,
+  });
+  if (!rl.allowed) {
+    return Response.json(
+      { message: "Too many lessons generated. Please wait a few minutes." },
+      { status: 429, headers: { "Retry-After": String(Math.ceil(rl.retryAfterMs / 1000)) } },
+    );
+  }
 
   if (!aiConfig.enabled) {
     return Response.json({ message: "AI not configured" }, { status: 503 });

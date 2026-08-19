@@ -127,7 +127,12 @@ export async function POST(request: NextRequest) {
         // from the approvals screen, so the privilege-escalation guard above holds.
         requestedRole: parsed.data.role ?? "STUDENT",
         passwordHash,
-        approvedAt: null,
+        // Signing up no longer waits on an admin. Course access is what is
+        // actually gated now — joining a class is a request an admin approves —
+        // so a second gate in front of the account only kept people out of a
+        // platform they could not use anyway. The approval field stays so an
+        // admin can still revoke a specific account.
+        approvedAt: new Date(),
         language: parsed.data.language ?? "FA",
         timezone: parsed.data.timezone ?? "Asia/Kabul",
       },

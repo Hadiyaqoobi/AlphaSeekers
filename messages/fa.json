@@ -539,9 +539,9 @@
     "requestAccessArrow": "درخواست دسترسی ←"
   },
   "register": {
-    "eyebrow": "درخواست دسترسی",
-    "title": "درخواست دسترسی",
-    "subtitle": "حساب بسازید. دسترسی قبل از ورود بررسی می‌شود.",
+    "eyebrow": "Create account",
+    "title": "Create your account",
+    "subtitle": "Sign up and start straight away. Joining a class is approved separately by the team.",
     "name": "نام و تخلص",
     "email": "ایمیل",
     "password": "رمز عبور",
@@ -549,7 +549,7 @@
     "role": "نقش",
     "student": "دانش‌آموز",
     "teacher": "استاد",
-    "submit": "ارسال درخواست",
+    "submit": "Create account",
     "error": "ثبت‌نام ناموفق بود",
     "emailInvalid": "لطفاً یک آدرس ایمیل معتبر وارد کنید.",
     "emailTldMissing": "ایمیل پسوند دامنه ندارد (مانند .com).",
@@ -568,7 +568,7 @@
     "mobileTrust1": "امن",
     "mobileTrust2": "۱۰۰٪ رایگان",
     "mobileTrust3": "+۱۲ کشور",
-    "teacherRequestNote": "Teacher accounts are activated by an admin. Your account is created as a student and upgraded once the team reviews your request."
+    "teacherRequestNote": "Your account is created as a student. Tell the team you want to teach and an admin can upgrade it."
   },
   "pending": {
     "eyebrow": "دسترسی",

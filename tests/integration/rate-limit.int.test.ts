@@ -69,3 +69,32 @@ d("distributed rate limiter", () => {
     }
   });
 });
+
+d("registration is open, course access is not", () => {
+  beforeEach(cleanup);
+
+  it("creates a usable account immediately", async () => {
+    // Removing the platform gate was the point: a student can sign in at once.
+    // What they still cannot do is put themselves in a class — that is a
+    // request an admin approves (see course-access.int.test.ts).
+    const src = await import("node:fs").then((fs) =>
+      fs.readFileSync("src/app/api/auth/register/route.ts", "utf8"),
+    );
+    expect(src).toMatch(/approvedAt:\s*new Date\(\)/);
+    expect(src).not.toMatch(/approvedAt:\s*null/);
+  });
+
+  it("leaves every AI route rate limited", async () => {
+    // Groq's free tier caps tokens per day across the whole key, so an
+    // unlimited route lets one user starve every student.
+    const fs = await import("node:fs");
+    for (const route of [
+      "src/app/api/ai/ask/route.ts",
+      "src/app/api/ai/quick/route.ts",
+      "src/app/api/learn/lesson/route.ts",
+      "src/app/api/learn/generate-path/route.ts",
+    ]) {
+      expect(fs.readFileSync(route, "utf8"), route).toMatch(/checkRateLimit/);
+    }
+  });
+});

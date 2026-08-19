@@ -539,9 +539,9 @@
     "requestAccessArrow": "Request access →"
   },
   "register": {
-    "eyebrow": "Access request",
-    "title": "Request access",
-    "subtitle": "Create an account. Access is reviewed before you can sign in.",
+    "eyebrow": "Create account",
+    "title": "Create your account",
+    "subtitle": "Sign up and start straight away. Joining a class is approved separately by the team.",
     "name": "Full name",
     "email": "Email",
     "password": "Password",
@@ -549,7 +549,7 @@
     "role": "Role",
     "student": "Student",
     "teacher": "Teacher",
-    "submit": "Submit request",
+    "submit": "Create account",
     "error": "Registration failed",
     "emailInvalid": "Please enter a valid email address.",
     "emailTldMissing": "Email is missing a domain extension (for example .com).",
@@ -568,7 +568,7 @@
     "mobileTrust1": "Safe",
     "mobileTrust2": "100% Free",
     "mobileTrust3": "12+ countries",
-    "teacherRequestNote": "Teacher accounts are activated by an admin. Your account is created as a student and upgraded once the team reviews your request."
+    "teacherRequestNote": "Your account is created as a student. Tell the team you want to teach and an admin can upgrade it."
   },
   "pending": {
     "eyebrow": "Access",
