@@ -326,6 +326,10 @@ export async function countPendingEnrollments() {
   return viaDatabase(() => dbStore.countPendingEnrollments());
 }
 
+export async function groupPendingEnrollmentsByClass() {
+  return viaDatabase(() => dbStore.groupPendingEnrollmentsByClass());
+}
+
 export async function decideEnrollment(enrollmentId: string, decision: "APPROVE" | "REJECT") {
   return viaDatabase(() => dbStore.decideEnrollment(enrollmentId, decision));
 }

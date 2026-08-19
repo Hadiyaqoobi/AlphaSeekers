@@ -11,6 +11,7 @@ import { OfflineSchedule } from "@/components/dashboard/offline-schedule";
 import {
   getDashboardStats,
   getJoinNowSession,
+  groupPendingEnrollmentsByClass,
   listStudentClasses,
   listTeacherClasses,
   listTodaySessions,
@@ -60,7 +61,16 @@ export default async function DashboardPage({ params, searchParams }: DashboardP
   // current role never renders them — in particular today's sessions are only
   // fetched for admins, which is also the sole consumer of the list, so we no
   // longer redundantly query today's sessions for students/teachers.
-  const [stats, notificationsRaw, joinNow, myClassesRaw, teacherClasses, todaySessionsRaw, ticketCounts] =
+  const [
+    stats,
+    notificationsRaw,
+    joinNow,
+    myClassesRaw,
+    teacherClasses,
+    todaySessionsRaw,
+    ticketCounts,
+    pendingByClass,
+  ] =
     await Promise.all([
       getDashboardStats(),
       listUserNotifications(user.id),
@@ -71,7 +81,14 @@ export default async function DashboardPage({ params, searchParams }: DashboardP
       // The team files bugs and change requests here instead of emailing, so the
       // count belongs where an admin actually looks each day.
       isAdmin ? getTicketCounts() : Promise.resolve({ open: 0, inProgress: 0, urgentOpen: 0 }),
+      // Course access is a request an admin grants, but the approve/reject
+      // controls live on each class's own page. Without this the only way to
+      // discover someone is waiting is to open every class in turn, which is
+      // how five requests sat unseen on the day they arrived.
+      isAdmin ? groupPendingEnrollmentsByClass() : Promise.resolve([]),
     ]);
+
+  const pendingTotal = pendingByClass.reduce((sum, row) => sum + row.count, 0);
 
   const notifications = notificationsRaw.slice(0, 6);
   const myClasses = myClassesRaw.slice(0, 4);
@@ -132,6 +149,47 @@ export default async function DashboardPage({ params, searchParams }: DashboardP
           </article>
         ))}
       </div>
+
+      {/* Students waiting on a course decision.
+          Deliberately rendered above the support queue: a person waiting to be
+          let into a class is more perishable than a bug report. Hidden entirely
+          when nothing is pending, so an empty state never trains anyone to
+          scroll past this block. */}
+      {isAdmin && pendingTotal > 0 ? (
+        <section className="rounded-2xl border border-white/10 bg-dark-100 px-5 py-4">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <span aria-hidden="true" className="inline-block h-2.5 w-2.5 rounded-full bg-amber-400" />
+            <h2 className="font-semibold text-ink-main">
+              {t("pendingEnrollments.waiting", { count: pendingTotal })}
+            </h2>
+          </div>
+          <ul className="mt-3 space-y-1.5">
+            {pendingByClass.map((row) => (
+              <li key={row.classId}>
+                <Link
+                  className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl px-3 py-2 transition-colors hover:bg-white/5"
+                  href={`/${locale}/admin/classes/${row.classId}`}
+                >
+                  <span className="text-sm text-ink-main">{row.className}</span>
+                  <span className="rounded-full bg-amber-500/15 px-2.5 py-0.5 text-xs font-bold text-amber-300">
+                    {t("pendingEnrollments.count", { count: row.count })}
+                  </span>
+                  {row.oldestRequestedAt ? (
+                    <span className="text-xs text-ink-soft">
+                      {t("pendingEnrollments.since", {
+                        date: formatDateTime(row.oldestRequestedAt, locale),
+                      })}
+                    </span>
+                  ) : null}
+                  <span className="ml-auto text-sm font-semibold text-neon-400">
+                    {t("pendingEnrollments.review")} &rarr;
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       {/* Open support requests — the team reports issues in the platform now, so
           surface anything waiting rather than relying on someone opening the

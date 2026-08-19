@@ -3564,6 +3564,47 @@ export async function countPendingEnrollments() {
 }
 
 /**
+ * Pending course requests grouped by the class they are waiting on.
+ *
+ * A single platform-wide total is not actionable: the approve/reject controls
+ * live on each class's own page, so an admin who only knows "5 waiting" still
+ * has to open classes one by one to find them. The per-class split turns the
+ * dashboard into a work list you can click straight through.
+ *
+ * Sorted longest-waiting first — the queue nobody has touched is the one most
+ * likely to have already lost the student.
+ */
+export async function groupPendingEnrollmentsByClass() {
+  const grouped = await prisma.enrollment.groupBy({
+    by: ["classId"],
+    where: { status: EnrollmentStatus.PENDING },
+    _count: { _all: true },
+    _min: { enrolledAt: true },
+  });
+
+  if (grouped.length === 0) {
+    return [];
+  }
+
+  const classes = await prisma.class.findMany({
+    where: { id: { in: grouped.map((g) => g.classId) } },
+    select: { id: true, name: true },
+  });
+  const nameById = new Map(classes.map((c) => [c.id, c.name]));
+
+  return grouped
+    .map((g) => ({
+      classId: g.classId,
+      // A request can outlive its class only if the class row was removed, which
+      // cascades — but fall back rather than render "undefined" if it ever does.
+      className: nameById.get(g.classId) ?? "Unknown class",
+      count: g._count._all,
+      oldestRequestedAt: g._min.enrolledAt ? g._min.enrolledAt.toISOString() : null,
+    }))
+    .sort((a, b) => (a.oldestRequestedAt ?? "").localeCompare(b.oldestRequestedAt ?? ""));
+}
+
+/**
  * Admit or turn down a course request.
  *
  * Capacity is re-checked at approval time, not just at request time: a class can

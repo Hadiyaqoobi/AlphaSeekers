@@ -620,6 +620,12 @@
       "waiting": "{count} support request(s) waiting",
       "urgent": "{count} urgent",
       "review": "Review"
+    },
+    "pendingEnrollments": {
+      "waiting": "{count} student(s) waiting to join a class",
+      "count": "{count} waiting",
+      "since": "oldest since {date}",
+      "review": "Review"
     }
   },
   "classes": {
