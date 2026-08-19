@@ -91,7 +91,13 @@ const FREE_MEET_SEGMENT_MINUTES = 60;
 const SEGMENT_BREAK_MINUTES = 10;
 const SEGMENT_TRANSITION_WINDOW_MINUTES = 15;
 const REMINDER_LEAD_MINUTES = 60;
-const REMINDER_WINDOW_MINUTES = 10;
+// Must be WIDER than the cron pulse interval, or sessions fall between runs and
+// their reminder is silently never sent. The pulse is HOURLY (see render.yaml —
+// the database scales to zero between pulses to keep the Neon bill near $2/mo),
+// so this is 70 to leave margin. With a 60-minute lead that means a reminder
+// lands 25-95 minutes before class. Sending is deduped per session+recipient,
+// so a session caught by two consecutive pulses is only notified once.
+const REMINDER_WINDOW_MINUTES = 70;
 const SEED_SENTINEL_EMAIL = DEMO_USERS[0].email;
 const PLACEHOLDER_DATABASE_URL = "postgresql://user:password@localhost:5432/alphaseekers";
 

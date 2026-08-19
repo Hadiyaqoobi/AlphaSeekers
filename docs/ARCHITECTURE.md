@@ -99,7 +99,7 @@ flowchart TB
 
     subgraph render["Render — Node runtime"]
         web["Next.js Web Service<br/>App Router: pages + /api handlers"]
-        cron["Render Cron Services<br/>reminders · scheduler · ai-prep<br/>data-retention · neon-warm"]
+        cron["Render Cron Services<br/>pulse (30 min: reminders · scheduler<br/>ai-prep · worker)<br/>data-retention · kpi-digest"]
     end
 
     pg[("Neon Postgres<br/>-pooler endpoint<br/>pgvector HNSW index")]
@@ -594,7 +594,7 @@ flowchart TB
         web1["Web Standard instance 1"]
         web2["Web Standard instance 2 — Target"]
         worker["Background Worker<br/>notification fan-out — Target"]
-        crons["Cron services<br/>reminders / scheduler / ai-prep<br/>data-retention / neon-warm"]
+        crons["Cron services<br/>pulse (30 min)<br/>data-retention / kpi-digest"]
     end
 
     subgraph neon["Neon — paid"]

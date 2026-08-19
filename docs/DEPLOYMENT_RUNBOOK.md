@@ -68,11 +68,8 @@ on each cron service (CRON_SECRET must match the web service).
 
 | Job | Schedule | Endpoint | Method |
 | --- | --- | --- | --- |
-| reminders | `*/10 * * * *` (every 10 min) | `/api/cron/reminders` | POST |
-| scheduler | `0 * * * *` (hourly) | `/api/cron/scheduler` | POST |
-| ai-prep | `0 3 * * *` (nightly) | `/api/cron/ai-prep` | GET |
+| pulse | `*/30 * * * *` (every 30 min) | `/api/cron/reminders` → `scheduler` → `ai-prep` → `worker` | POST/GET |
 | data-retention | `30 3 * * *` (nightly) | `/api/cron/data-retention` | GET |
-| neon-warm | `*/5 * * * *` (every 5 min) | `/api/cron/neon-warm` | GET |
 
 If your Render plan/region does not honor blueprint `cron` services, create them
 manually in the dashboard as **Cron Job** services using the schedules/commands above.
@@ -364,8 +361,9 @@ A concise, ordered gate. Do not launch with any box unchecked.
 - [ ] **Migrations applied** cleanly on deploy (`prisma migrate deploy` green in build
       logs); `DocumentChunk` HNSW index present (§8.3).
 - [ ] **All cron services provisioned** with matching `CRON_SECRET` + `APP_BASE_URL`:
-      worker (every minute), reminders, scheduler, ai-prep, data-retention, kpi-digest,
-      neon-warm.
+      pulse (every 30 min), data-retention, kpi-digest. Do NOT reinstate a
+      warm-the-database cron: it defeats Neon's auto-suspend and exhausts the
+      compute allowance.
 - [ ] **Transactional ESP** configured (Resend/Postmark/SES) — not Gmail SMTP.
 - [ ] **Demo credentials rotated / removed** and seeded demo accounts purged.
 - [ ] **Restore rehearsed** (§7.3) — real RTO measured, encrypted columns proven to

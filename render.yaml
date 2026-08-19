@@ -109,71 +109,45 @@ services:
       - key: GOOGLE_OAUTH_REDIRECT_URI
         sync: false
 
-# --- Scheduled jobs (ENABLED) --------------------------------------------------
-# Each cron curls a /api/cron/* endpoint with the CRON_SECRET bearer token. The
-# secret is copied from the web service via `fromService` and APP_BASE_URL points
-# at the stable Render URL, so every cron is self-configuring on deploy. Each cron
-# is a separately-billed Render service. See ADR-0004/0006 + docs/DEPLOYMENT_RUNBOOK.md.
+# --- Scheduled jobs -----------------------------------------------------------
+# CONSOLIDATED 2026-08-19 after the Neon free tier ran out of compute mid-month.
+#
+# The old layout ran six separate crons, one of them (`neon-warm`) every 5
+# minutes for the sole purpose of stopping the database going to sleep — and the
+# worker every single minute. Between them the database never auto-suspended, so
+# it burned ~730 compute-hours a month against a ~190-hour allowance and the
+# whole site went down with 502s.
+#
+# Everything that needs to run regularly is now ONE cron on an HOURLY pulse:
+# enqueue reminders, run the scheduler, prep AI sessions, then drain the queue,
+# in that order, because each step feeds the next. The database wakes twice an
+# hour instead of continuously. Hourly costs roughly $2/month on Neon Launch at
+# 0.25 CU; every 30 minutes was about $4.
+#
+# Trade-offs, accepted deliberately:
+#   - the first visitor after an idle spell waits 1-3s while Neon wakes;
+#   - session reminders land 25-95 min before class rather than exactly 60;
+#   - queued email (welcomes, announcements) can take up to an hour to send.
+# Password resets and urgent-ticket alerts are UNAFFECTED — both send directly
+# over SMTP rather than through the queue.
+#
+# Each cron is a separately-billed Render service, so collapsing six into three
+# also cuts that cost.
 
   - type: cron
-    name: alphaseekers-worker
+    name: alphaseekers-pulse
     runtime: node
     region: oregon
     plan: starter
-    schedule: "* * * * *" # every minute — drain the durable job queue
+    schedule: "0 * * * *" # hourly — the only regular database wake
     buildCommand: ""
-    startCommand: 'curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" "$APP_BASE_URL/api/cron/worker"'
-    envVars:
-      - key: APP_BASE_URL
-        value: https://alphaseekers.onrender.com
-      - key: CRON_SECRET
-        fromService:
-          type: web
-          name: alphaseekers
-          envVarKey: CRON_SECRET
-
-  - type: cron
-    name: alphaseekers-reminders
-    runtime: node
-    region: oregon
-    plan: starter
-    schedule: "*/10 * * * *" # every 10 minutes — enqueue session reminders
-    buildCommand: ""
-    startCommand: 'curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" "$APP_BASE_URL/api/cron/reminders"'
-    envVars:
-      - key: APP_BASE_URL
-        value: https://alphaseekers.onrender.com
-      - key: CRON_SECRET
-        fromService:
-          type: web
-          name: alphaseekers
-          envVarKey: CRON_SECRET
-
-  - type: cron
-    name: alphaseekers-scheduler
-    runtime: node
-    region: oregon
-    plan: starter
-    schedule: "0 * * * *" # hourly — auto-schedule sessions from teacher availability
-    buildCommand: ""
-    startCommand: 'curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" "$APP_BASE_URL/api/cron/scheduler"'
-    envVars:
-      - key: APP_BASE_URL
-        value: https://alphaseekers.onrender.com
-      - key: CRON_SECRET
-        fromService:
-          type: web
-          name: alphaseekers
-          envVarKey: CRON_SECRET
-
-  - type: cron
-    name: alphaseekers-ai-prep
-    runtime: node
-    region: oregon
-    plan: starter
-    schedule: "*/15 * * * *" # every 15 min — prep sessions starting in the next 25-45 min
-    buildCommand: ""
-    startCommand: 'curl -fsS -H "Authorization: Bearer $CRON_SECRET" "$APP_BASE_URL/api/cron/ai-prep"'
+    # Sequential and fail-soft: one step erroring must not stop the queue from
+    # draining, so each call is allowed to fail without aborting the rest.
+    startCommand: >-
+      curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" "$APP_BASE_URL/api/cron/reminders" || true;
+      curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" "$APP_BASE_URL/api/cron/scheduler" || true;
+      curl -fsS -H "Authorization: Bearer $CRON_SECRET" "$APP_BASE_URL/api/cron/ai-prep" || true;
+      curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" "$APP_BASE_URL/api/cron/worker"
     envVars:
       - key: APP_BASE_URL
         value: https://alphaseekers.onrender.com
@@ -201,28 +175,11 @@ services:
           envVarKey: CRON_SECRET
 
   - type: cron
-    name: alphaseekers-neon-warm
-    runtime: node
-    region: oregon
-    plan: starter
-    schedule: "*/5 * * * *" # every 5 min — keep Neon compute warm
-    buildCommand: ""
-    startCommand: 'curl -fsS -H "Authorization: Bearer $CRON_SECRET" "$APP_BASE_URL/api/cron/neon-warm"'
-    envVars:
-      - key: APP_BASE_URL
-        value: https://alphaseekers.onrender.com
-      - key: CRON_SECRET
-        fromService:
-          type: web
-          name: alphaseekers
-          envVarKey: CRON_SECRET
-
-  - type: cron
     name: alphaseekers-kpi-digest
     runtime: node
     region: oregon
     plan: starter
-    schedule: "0 6 * * *" # daily 06:00 UTC — super-admin KPI digest
+    schedule: "0 6 * * *" # daily 06:00 UTC — KPI digest + pending-approval nudge
     buildCommand: ""
     startCommand: 'curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" "$APP_BASE_URL/api/cron/kpi-digest"'
     envVars:

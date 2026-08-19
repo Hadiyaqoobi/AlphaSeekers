@@ -18,8 +18,10 @@ import { prisma } from "@/lib/prisma";
 import { sendTelegram } from "@/lib/integrations/telegram";
 import { assertCronAuthorized } from "@/lib/security/cron-auth";
 
-const PREP_WINDOW_MIN = 25; // minutes
-const PREP_WINDOW_MAX = 45;
+// The window must exceed the hourly cron pulse or sessions slip between runs.
+// Originally 25-45, which a pulse longer than 20 minutes jumped straight over.
+const PREP_WINDOW_MIN = 5; // minutes
+const PREP_WINDOW_MAX = 75;
 
 export async function GET(request: Request) {
   const denied = await assertCronAuthorized(request);

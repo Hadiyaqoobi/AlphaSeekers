@@ -130,3 +130,29 @@ d("instructor scheduling (real Postgres)", () => {
     expect(res.ok).toBe(false);
   });
 });
+
+/**
+ * Guard the relationship between the cron pulse and the reminder window.
+ *
+ * The database scales to zero between pulses to stay inside the compute budget,
+ * so the pulse is hourly (render.yaml). If the reminder window is ever
+ * made narrower than that interval, sessions fall between runs and their
+ * reminder is silently never sent — no error, just a class nobody was told about.
+ */
+describe("reminder window vs cron pulse", () => {
+  it("keeps the reminder window wider than the hourly pulse", async () => {
+    const fs = await import("node:fs");
+    const src = fs.readFileSync("src/lib/platform/db-store.ts", "utf8");
+    const match = src.match(/const REMINDER_WINDOW_MINUTES = (\d+);/);
+    expect(match).not.toBeNull();
+    expect(Number(match![1])).toBeGreaterThan(60);
+  });
+
+  it("keeps the AI prep window wider than the pulse too", async () => {
+    const fs = await import("node:fs");
+    const src = fs.readFileSync("src/app/api/cron/ai-prep/route.ts", "utf8");
+    const min = Number(src.match(/const PREP_WINDOW_MIN = (\d+)/)![1]);
+    const max = Number(src.match(/const PREP_WINDOW_MAX = (\d+)/)![1]);
+    expect(max - min).toBeGreaterThan(60);
+  });
+});
