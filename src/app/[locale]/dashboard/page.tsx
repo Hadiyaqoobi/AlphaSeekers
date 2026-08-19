@@ -159,7 +159,7 @@ export default async function DashboardPage({ params, searchParams }: DashboardP
         <section className="rounded-2xl border border-white/10 bg-dark-100 px-5 py-4">
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
             <span aria-hidden="true" className="inline-block h-2.5 w-2.5 rounded-full bg-amber-400" />
-            <h2 className="font-semibold text-ink-main">
+            <h2 className="text-base font-semibold text-ink-main" dir="auto">
               {t("pendingEnrollments.waiting", { count: pendingTotal })}
             </h2>
           </div>
@@ -170,12 +170,15 @@ export default async function DashboardPage({ params, searchParams }: DashboardP
                   className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl px-3 py-2 transition-colors hover:bg-white/5"
                   href={`/${locale}/admin/classes/${row.classId}`}
                 >
-                  <span className="text-sm text-ink-main">{row.className}</span>
-                  <span className="rounded-full bg-amber-500/15 px-2.5 py-0.5 text-xs font-bold text-amber-300">
+                  <span className="text-sm text-ink-main" dir="auto">{row.className}</span>
+                  <span
+                    className="rounded-full bg-amber-500/15 px-2.5 py-0.5 text-xs font-bold text-amber-300"
+                    dir="auto"
+                  >
                     {t("pendingEnrollments.count", { count: row.count })}
                   </span>
                   {row.oldestRequestedAt ? (
-                    <span className="text-xs text-ink-soft">
+                    <span className="text-xs text-ink-soft" dir="auto">
                       {t("pendingEnrollments.since", {
                         date: formatDateTime(row.oldestRequestedAt, locale),
                       })}
