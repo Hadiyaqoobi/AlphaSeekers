@@ -16,6 +16,7 @@ import { enqueue } from "@/lib/jobs/queue";
 
 export type DomainEvent =
   | "student.enrolled"
+  | "enrollment.requested"
   | "student.dropped"
   | "session.starting_soon"
   | "session.scheduled"
@@ -27,6 +28,7 @@ export type DomainEvent =
 /** Maps an event to the handler job types that should run when it fires. */
 const SUBSCRIPTIONS: Record<DomainEvent, string[]> = {
   "student.enrolled": ["welcome_student", "welcome_teacher"],
+  "enrollment.requested": ["notify_enrollment_requested"],
   "student.dropped": [],
   "session.starting_soon": ["session_reminder"],
   "session.scheduled": ["notify_session_scheduled"],

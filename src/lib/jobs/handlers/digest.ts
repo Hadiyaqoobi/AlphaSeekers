@@ -77,10 +77,17 @@ function formatWaiting(since: Date): string {
  * "pending_approvals_digest" — tell EVERY admin how many people are waiting to
  * be approved.
  *
- * A new signup lands with approvedAt=null and cannot enrol in anything until an
- * admin approves them, and nothing used to say so: the queue was only visible to
- * whoever happened to open the Users page. During an enrolment campaign that is
- * a student sitting locked out for days.
+ * Covers BOTH gates, because the platform has two and they moved apart:
+ *
+ *   - platform approval (approvedAt=null) — now granted automatically at
+ *     registration, so this count is normally zero and the digest must not
+ *     treat zero as "nothing to report";
+ *   - course approval (Enrollment.PENDING) — the gate that actually holds
+ *     students back today, decided per class.
+ *
+ * Reporting only the first is how this digest went silent: registration was
+ * opened, the platform queue emptied permanently, and the mail stopped going out
+ * while students queued up somewhere it never looked.
  *
  * Goes to all admins, not just super admins like the KPI digest — approving is
  * something any of the seven can do, and spreading it means it does not wait on
@@ -96,25 +103,53 @@ export async function pendingApprovalsDigest(): Promise<void> {
     orderBy: { createdAt: "asc" },
   });
 
-  if (pending.length === 0) return;
+  const courseRequests = await prisma.enrollment.findMany({
+    where: { status: "PENDING" },
+    select: { enrolledAt: true, class: { select: { id: true, name: true } } },
+    orderBy: { enrolledAt: "asc" },
+  });
+
+  if (pending.length === 0 && courseRequests.length === 0) return;
 
   const teachers = pending.filter((p) => p.requestedRole === "TEACHER").length;
   const students = pending.length - teachers;
   const base = (process.env.APP_BASE_URL ?? "https://alphaseekers.org").replace(/\/$/, "");
 
-  const content = [
-    `${pending.length} ${pending.length === 1 ? "person is" : "people are"} waiting for approval on AlphaSeekers.`,
-    ``,
-    `Students: ${students}`,
-    teachers > 0 ? `Applied as teacher: ${teachers}` : null,
-    `Longest wait: ${formatWaiting(pending[0].createdAt)}`,
-    ``,
-    `Until someone approves them they cannot join a class.`,
-    ``,
-    `Approve here: ${base}/en/admin/users`,
-  ]
-    .filter((line) => line !== null)
-    .join("\n");
+  const byClass = new Map<string, { name: string; count: number }>();
+  for (const r of courseRequests) {
+    const entry = byClass.get(r.class.id) ?? { name: r.class.name.trim(), count: 0 };
+    entry.count += 1;
+    byClass.set(r.class.id, entry);
+  }
+
+  const lines: (string | null)[] = [];
+
+  if (courseRequests.length > 0) {
+    lines.push(
+      `${courseRequests.length} ${courseRequests.length === 1 ? "student is" : "students are"} waiting to join a class.`,
+      ``,
+    );
+    for (const [classId, { name, count }] of byClass) {
+      lines.push(`  ${name} — ${count} waiting`);
+      lines.push(`  ${base}/en/admin/classes/${classId}`);
+      lines.push(``);
+    }
+    lines.push(`Longest wait: ${formatWaiting(courseRequests[0].enrolledAt)}`, ``);
+  }
+
+  if (pending.length > 0) {
+    lines.push(
+      `${pending.length} ${pending.length === 1 ? "person is" : "people are"} waiting for platform approval.`,
+      ``,
+      `Students: ${students}`,
+      teachers > 0 ? `Applied as teacher: ${teachers}` : null,
+      `Longest wait: ${formatWaiting(pending[0].createdAt)}`,
+      ``,
+      `Approve here: ${base}/en/admin/users`,
+    );
+  }
+
+  const content = lines.filter((line) => line !== null).join("\n");
 
   const admins = await prisma.user.findMany({
     where: { role: "ADMIN", deactivatedAt: null },
@@ -122,7 +157,8 @@ export async function pendingApprovalsDigest(): Promise<void> {
   });
   if (admins.length === 0) return;
 
-  const subject = `${pending.length} waiting for approval on AlphaSeekers`;
+  const total = pending.length + courseRequests.length;
+  const subject = `${total} waiting for approval on AlphaSeekers`;
   const failures = await deliverToMany(admins, content, 8, { subject });
   if (failures > 0) {
     throw new Error(

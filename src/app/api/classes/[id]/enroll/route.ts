@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { emit } from "@/lib/events/bus";
 import { prisma } from "@/lib/prisma";
 import { dropStudentFromClass, enrollStudentInClass } from "@/lib/platform/store";
 import { getSessionUser, isApproved, pendingApproval, roleAllowed, unauthorized } from "@/lib/security/session";
@@ -58,6 +59,22 @@ export async function POST(_: Request, { params }: Params) {
     // No student.enrolled event here any more: joining is now a REQUEST, and the
     // welcome only makes sense once an admin approves it. The approval route
     // emits it instead.
+    //
+    // The request itself still has to reach a human, though — without this the
+    // only way to learn someone is waiting is to open the class and look.
+    // Failing to notify must not fail the request: the student has successfully
+    // asked, and telling her otherwise would make her ask again.
+    if (result.state === "REQUESTED") {
+      try {
+        await emit(
+          "enrollment.requested",
+          { classId: params.id, studentId: user.id },
+          { dedupeKey: `enrollment.requested:${result.enrollment.id}` },
+        );
+      } catch (error) {
+        console.error("[classes/enroll] failed to emit enrollment.requested", params.id, error);
+      }
+    }
 
     return NextResponse.json(result);
   } catch (error) {

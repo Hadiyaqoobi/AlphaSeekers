@@ -341,6 +341,54 @@ export async function notifyHomeworkSubmitted(payload: Record<string, unknown>):
 }
 
 /**
+ * "notify_enrollment_requested" — tell admins someone is waiting on a course.
+ * payload: { classId, studentId }
+ *
+ * Requesting a place emits nothing else: the welcome only fires once an admin
+ * approves, which is correct, but it left the request itself completely silent.
+ * Five students once asked to join and nobody was told on the day it happened.
+ *
+ * Names the class and the running total for it, because the decision is made on
+ * that class's own page and a bare "someone applied" still leaves an admin
+ * hunting for which one.
+ */
+export async function notifyEnrollmentRequested(payload: Record<string, unknown>): Promise<void> {
+  const classId = str(payload.classId);
+  const studentId = str(payload.studentId);
+  if (!classId || !studentId) return;
+
+  const [klass, student] = await Promise.all([
+    prisma.class.findUnique({ where: { id: classId }, select: { name: true } }),
+    prisma.user.findUnique({ where: { id: studentId }, select: { name: true } }),
+  ]);
+  if (!klass || !student) return;
+
+  const waiting = await prisma.enrollment.count({
+    where: { classId, status: "PENDING" },
+  });
+
+  const admins = await prisma.user.findMany({
+    where: { role: "ADMIN", deactivatedAt: null },
+    select: notifiableSelect,
+  });
+  if (admins.length === 0) return;
+
+  const base = (process.env.APP_BASE_URL ?? "https://alphaseekers.org").replace(/\/$/, "");
+  const content =
+    `${student.name} has asked to join ${klass.name.trim()}.\n\n` +
+    `${waiting} ${waiting === 1 ? "request is" : "requests are"} waiting on this class.\n\n` +
+    `Approve or decline: ${base}/en/admin/classes/${classId}`;
+
+  const subject = `New course request: ${klass.name.trim()}`;
+  const failures = await deliverToMany(admins, content, 8, { subject });
+  if (failures > 0) {
+    throw new Error(
+      `notify_enrollment_requested: ${failures}/${admins.length} deliveries failed for class ${classId}`,
+    );
+  }
+}
+
+/**
  * "notify_moderation_queued" — alert admins that a post awaits review.
  * payload: { postId }
  *
