@@ -14,7 +14,7 @@ npx prisma migrate deploy    # apply schema
 npm run dev                  # http://localhost:3005
 ```
 
-After every Prisma migration that touches the `MaterialChunk` table, restore
+After every Prisma migration that touches the `DocumentChunk` table, restore
 the pgvector column manually:
 
 ```bash
@@ -23,6 +23,50 @@ psql "$DATABASE_URL" -f prisma/migrations/20260413000000_add_rag_vector_store/mi
 
 Prisma drops unknown column types on regen — pgvector lives outside its model
 mapping, so it has to be re-added by raw SQL after each migration.
+
+---
+
+## Do not keep your working copy in iCloud Drive
+
+Check where you cloned this repo. If the path is under `~/Documents` or
+`~/Desktop` and you have macOS "Desktop & Documents Folders" syncing turned on,
+every file read goes through the sync daemon and the toolchain effectively
+stops working. Measured on this repo, 2026-09-14:
+
+| | reading all of `src/` | `tsc --noEmit` |
+|---|---|---|
+| `~/Documents/alphaseeker` | **29.1 s** | did not finish in 25 min |
+| `/tmp` (not synced) | **0.03 s** | **6.3 s** |
+
+That is roughly a 900× difference on file reads. The failure is silent and very
+easy to misread: `npm run typecheck` looks like it has hung or like the machine
+is broken, when the process is simply blocked on I/O the whole time.
+
+Clone somewhere unsynced instead — `~/dev/alphaseeker`, `~/src/alphaseeker`,
+anything outside the synced folders. To check quickly:
+
+```bash
+time (find src -name '*.ts*' | xargs cat > /dev/null)   # want well under 1s
+```
+
+---
+
+## `npm install` alone does not regenerate the Prisma client
+
+npm 11 gates dependency lifecycle scripts behind `allowScripts`, so
+`@prisma/client`'s own postinstall is skipped with only a warning. If the schema
+changed since your last install, you are left with a **stale generated client**,
+and the symptom is a flood of type errors that look like real bugs:
+
+```
+Property 'passwordReset' does not exist on type 'PrismaClient'
+'schedulingMode' does not exist in type 'ClassSelect'
+```
+
+There is nothing wrong with the source — the client just predates the schema.
+This repo now runs `prisma generate` from its **own** `postinstall` script,
+which is not gated, so a plain `npm install` is enough. If you ever see errors
+like the above, run `npx prisma generate` first before investigating anything.
 
 ---
 

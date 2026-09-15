@@ -7,7 +7,8 @@
 #   databases. See docs/DEPLOYMENT_RUNBOOK.md for the full breakdown.
 #
 #   CURRENT ROLLOUT: web service on the `starter` plan with the full AUTOMATION
-#   suite ENABLED (the 7 crons at the bottom). Each cron is a separately-billed
+#   suite ENABLED (the 3 crons at the bottom — consolidated from 7 on 2026-08-19;
+#   see the note above the cron block). Each cron is a separately-billed
 #   Render service. The crons are self-configuring — CRON_SECRET is copied from the
 #   web service via `fromService` and APP_BASE_URL points at the stable Render URL —
 #   so they work on deploy with no manual env setup. Upgrade the web service to
@@ -112,7 +113,7 @@ services:
 # --- Scheduled jobs -----------------------------------------------------------
 # CONSOLIDATED 2026-08-19 after the Neon free tier ran out of compute mid-month.
 #
-# The old layout ran six separate crons, one of them (`neon-warm`) every 5
+# The old layout ran seven separate crons, one of them (`neon-warm`) every 5
 # minutes for the sole purpose of stopping the database going to sleep — and the
 # worker every single minute. Between them the database never auto-suspended, so
 # it burned ~730 compute-hours a month against a ~190-hour allowance and the
@@ -131,7 +132,7 @@ services:
 # Password resets and urgent-ticket alerts are UNAFFECTED — both send directly
 # over SMTP rather than through the queue.
 #
-# Each cron is a separately-billed Render service, so collapsing six into three
+# Each cron is a separately-billed Render service, so collapsing seven into three
 # also cuts that cost.
 
   - type: cron

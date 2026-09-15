@@ -1,6 +1,29 @@
 # AlphaSeekers Status Report
 Generated: 2026-04-15
 
+> **⚠️ HISTORICAL SNAPSHOT — DO NOT READ AS CURRENT STATUS.**
+>
+> This is a point-in-time report from 2026-04-15 and has not been regenerated since.
+> Several months of work landed after it, so its "Biggest Blockers" section in
+> particular is misleading: it reads as though the AI Study Assistant is dead,
+> when the migrations that unblock it were already in the repo when this was
+> written, or landed the next day.
+>
+> Corrections verified against the repository on 2026-09-14:
+>
+> | This report says | Actual |
+> |---|---|
+> | "pgvector — Not installed / extension needs CREATE EXTENSION vector" | `prisma/migrations/20260413000000_add_rag_vector_store/migration.sql` opens with `CREATE EXTENSION IF NOT EXISTS vector` (committed 2026-04-13) |
+> | "DocumentChunk — Table not created, migration not applied" | Same migration creates `DocumentChunk` with a `vector(384)` column and an HNSW index |
+> | "CachedResponse table needs migration" | Created by `20260416023428_add_intelligent_tutor` (committed 2026-04-16) |
+> | "13 models / 7 migrations" (see README) | 38 models across 21 migrations |
+>
+> What is **not** re-verified here: whether those migrations have actually been
+> applied to the production Neon database, and whether the Gemma fallback key is
+> still returning 403. Both require a live database/provider check — run
+> `npm run prisma:migrate:deploy` and the `/api/admin/ai-health` page to confirm.
+> The row counts in the table below are from 2026-04-15 and are certainly stale.
+
 ## Build Status
 - `npm run build`: PASSES (with --no-lint)
 - Warnings: next-intl webpack cache parsing warning (cosmetic, not breaking)

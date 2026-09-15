@@ -33,7 +33,7 @@
 │         │                │                      │                │
 │  ┌──────▼────────────────▼──────────────────────▼──────────────┐ │
 │  │                    Prisma ORM                                │ │
-│  │  13 models │ 7 migrations │ Type-safe queries               │ │
+│  │  38 models │ 21 migrations │ Type-safe queries              │ │
 │  └──────────────────────┬───────────────────────────────────────┘ │
 └─────────────────────────┼────────────────────────────────────────┘
                           │
@@ -191,7 +191,7 @@ npm run smoke
 
 ## Database Schema
 
-13 Prisma models across 7 migrations:
+38 Prisma models across 21 migrations (`prisma/schema.prisma`). The core relationships:
 
 ```
 User ─── Enrollment ─── Class ─── Session
