@@ -88,6 +88,12 @@ export async function POST(_: Request, { params }: Params) {
         { status: 409 },
       );
     }
+    if (reason === "Registration closed") {
+      return NextResponse.json(
+        { message: "Registration for this class has closed.", code: "REGISTRATION_CLOSED" },
+        { status: 409 },
+      );
+    }
     if (reason === "Enrollment rejected") {
       return NextResponse.json(
         { message: "Your request for this class was not approved.", code: "ENROLLMENT_REJECTED" },

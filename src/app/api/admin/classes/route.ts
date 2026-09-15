@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
 import { createClass, listAdminClasses, parseInteger } from "@/lib/platform/store";
+import { parseRegistrationDeadline } from "@/lib/platform/registration-deadline";
 import { resolveTeacherId } from "@/lib/platform/teacher-invite";
 import { AccessError, requirePermission } from "@/lib/security/permissions";
 import { getSessionUser, unauthorized } from "@/lib/security/session";
@@ -23,6 +24,23 @@ const createClassSchema = z
     language: z.string().trim().min(1).max(50).optional(),
     whatsappGroupUrl: z.string().trim().url().max(300).optional(),
     schedulingMode: z.enum(["AUTO", "MANUAL"]).optional(),
+    /**
+     * Registration cutoff. A date-only "YYYY-MM-DD" keeps the whole named day
+     * open (see parseRegistrationDeadline). Omitted = leave unchanged; null or
+     * "" = clear it and reopen registration.
+     */
+    registrationDeadline: z
+      .union([z.string().trim().max(40), z.null()])
+      .optional()
+      .transform((value, ctx) => {
+        if (value === undefined) return undefined;
+        const result = parseRegistrationDeadline(value);
+        if (!result.ok) {
+          ctx.addIssue({ code: z.ZodIssueCode.custom, message: result.message });
+          return z.NEVER;
+        }
+        return result.value;
+      }),
   })
   .refine((d) => Boolean(d.teacherId) || Boolean(d.newTeacherName && d.newTeacherEmail), {
     message: "Provide an existing teacher or a new teacher's name and email.",
@@ -114,6 +132,7 @@ export async function POST(request: NextRequest) {
       schedulePreference: input.schedulePreference,
       language: input.language ?? "Dari",
       whatsappGroupUrl: input.whatsappGroupUrl,
+      registrationDeadline: input.registrationDeadline ?? null,
       schedulingMode: input.schedulingMode ?? "AUTO",
     });
 

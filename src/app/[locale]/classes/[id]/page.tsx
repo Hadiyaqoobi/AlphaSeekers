@@ -99,7 +99,11 @@ export default async function ClassDetailPage({ params }: ClassDetailPageProps) 
 
         {user?.role === "STUDENT" ? (
           <div className="mt-4">
-            <EnrollButton classId={record.id} initiallyEnrolled={studentEnrolled} />
+            <EnrollButton
+              classId={record.id}
+              initiallyEnrolled={studentEnrolled}
+              registrationDeadline={record.registrationDeadline}
+            />
           </div>
         ) : null}
 
