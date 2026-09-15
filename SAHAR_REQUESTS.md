@@ -1,8 +1,14 @@
 # Sahar's Change Requests — Tracking
 
 Stakeholder: **Sahar Nikzad** — Co-Founder & Communication Manager.
-Last updated: **2026-05-23** — Sahar delivered final logo + final certificate
-designs, both shipped into the codebase.
+Last updated: **2026-09-14** — repo audit closed item #3 (Farkhunda's title).
+Items #1, #6, #7 are still open and have been open since early May; #8 and #10
+are still blocked on a decision, not on engineering.
+
+Also opened by that audit: **220 UI strings still show English to Dari readers**
+(password reset, contact page, support queue, teacher setup, admin screens).
+The list to fill in is `messages/TRANSLATION_NEEDED.md` — this needs Sahar or
+Shahla, since Dari on this platform is never machine-translated.
 
 This is the running list of every change request Sahar has sent so we
 don't lose any of them. Update the status column as items move.
@@ -15,7 +21,7 @@ don't lose any of them. Update the status column as items move.
 |---|------|--------|--------|-------|
 | 1 | **Visibility audit** — "Join Google Meet" button is white/invisible; white text across the site is hard to read. Audit every button, label, status text in EN + FA, on light + dark surfaces. | 2026-05-01 email | TODO | Waiting on Sahar's screenshot of worst offenders to start. Promised before Mike leaves Nexus next Friday. |
 | 2 | **Contact page + footer social cluster + Site Settings admin panel** — public Contact page in nav, social-link icons in footer on every page, admin form where team types in URLs (Instagram first, others later). New Prisma `SiteSettings` model + admin CRUD. Once shipped, team self-serves social URLs without code changes. | 2026-05-01 email + 2026-05-02 reply | PARTIAL — site-settings panel + footer icons SHIPPED 2026-05-05 (admin URL: `/admin/settings`). Migration file written at `prisma/migrations/20260505000000_add_site_settings/`; user runs `npm run prisma:migrate:deploy` to apply. Still TODO: standalone `/contact` public page (this turn shipped only the dashboard panel + footer icons). | Sahar can paste Instagram URL into the admin panel after the migration is applied; the icon appears on the public site automatically. |
-| 3 | **Team page title update** — Farkhunda Latif: "Team Member" → "Technical Manager". Naweed Dawlat: keep as "Human Resources Manager" (do not touch). | 2026-05-02 email | TODO | One-line edit in `src/lib/team-data.ts` (or wherever team data lives). |
+| 3 | **Team page title update** — Farkhunda Latif: "Team Member" → "Technical Manager". Naweed Dawlat: keep as "Human Resources Manager" (do not touch). | 2026-05-02 email | DONE 2026-09-14 | `src/lib/team-data.ts` — English `role` now "Technical Manager"; Naweed untouched. **Dari `roleDari` still reads "Technical Manager" in English** — waiting on the team for the Dari, same as her name and bio (no invented Dari). |
 | 4 | **Certificate redesign** — Path B confirmed by Sahar 2026-05-05: Alizada layout, AlphaSeekers brand gradient (replacing her navy/light-blue), white background, shorter body copy. v2 SVGs + preview built at `design-drafts/certificates-v2/` and sent to Sahar 2026-05-05 for final confirmation. Reference PDFs at `~/Downloads/Boniadi Certificate (1).pdf` and `~/Downloads/Muzamel Esaqzai (1) (1).pdf`. | 2026-05-02 email + reference PDFs | RESOLVED 2026-05-23 | Sahar delivered final PNGs (Green and Gold geometric, both founder signatures). Saved as `design-drafts/certificates-v3-final/{student-completion,teacher-recognition}-certificate.png`. v2 SVGs superseded. **Not yet wired into runtime cert issuance — see README in v3-final folder.** |
 | 5 | **Logo refinement** — APPROACH PIVOTED 2026-05-05: Sahar drives the design herself in Canva using the prompt + creative brief Mike sent. Brain-only (no globe), no tagline, "Alpha Seekers Organization" wordmark, brand-aligned colour palette. Mike integrates her output into the cert template + website header. Earlier brain+globe v2 (sent 2026-05-05 morning) is abandoned; brain-only v3 designed locally but never sent. Local drafts in `design-drafts/logo-v2/` and `logo-v3/` for reference only. | 2026-05-02 email + 2026-05-05 pivots | RESOLVED 2026-05-23 | Sahar delivered final wordmark logo (book/monitor + green-blue swoosh + "AlphaSeekers" text). Swapped into all 9 in-app spots (navbar, footer, login, register, admin sidebar, mobile-nav, layout). Adjacent `<span>AlphaSeekers</span>` removed since wordmark embeds the text. Icon-only variant used in tiny 28×28 mockup illustrations (Hero, HowItWorks). PWA icons + favicon regenerated. Old SVG drafts deleted. See `public/logo/LOGO.md`. |
 | 6 | **CSV download per class** — admin button on the class page that exports enrolment + completion data as CSV (for cohort tracking, certificate batches, donor reports). Promised standalone walkthrough email with screenshots once button exists. | 2026-05-02 email | TODO | Sahar said "if it's simple, I can ask Hadi to handle it" — Hadi can take this if Mike is out. |

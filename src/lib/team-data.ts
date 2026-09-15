@@ -68,8 +68,9 @@ export const teamMembers: TeamMember[] = [
     id: "farkhunda",
     name: "Farkhunda Latif",
     nameDari: "Farkhunda Latif", // TODO: NEEDS DARI TRANSLATION FROM TEAM
-    role: "Team Member",
-    roleDari: "Team Member", // TODO: NEEDS DARI TRANSLATION FROM TEAM
+    // Title corrected per Sahar's 2026-05-02 request (SAHAR_REQUESTS.md #3).
+    role: "Technical Manager",
+    roleDari: "Technical Manager", // TODO: NEEDS DARI TRANSLATION FROM TEAM
     photo: null,
     bio: "Part of the AlphaSeekers team, supporting the mission to expand access to free education for Afghan students.",
     bioDari:
