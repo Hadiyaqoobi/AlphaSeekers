@@ -26,7 +26,12 @@ yarn-debug.log*
 yarn-error.log*
 
 # local env files
-.env*.local
+# `.env*.local` alone does NOT cover a plain `.env` — and `.env` is the file the
+# Prisma CLI reads by default, so it is the one most likely to hold the real Neon
+# connection string. Ignore every .env variant and re-allow the committed example.
+.env
+.env.*
+!.env.example
 
 # vercel
 .vercel
