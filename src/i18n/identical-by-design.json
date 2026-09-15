@@ -1,0 +1,17 @@
+{
+  "_comment": "Keys whose Dari value is INTENTIONALLY the same as English: brand names, product names, and strings that are pure interpolation or punctuation. tests/i18n-parity.test.ts ignores these. Everything else that is identical counts as untranslated.",
+  "keys": [
+    "home.title",
+    "landing.footer.copyright",
+    "home.pillars.bilingual",
+    "login.emailPlaceholder",
+    "dataCost.estimate",
+    "dataCost.costRange",
+    "staffForms.stem",
+    "dashboard.labels.meet",
+    "profile.timeline.meet",
+    "staffForms.meetReady",
+    "teacherSetup.helpLink",
+    "support.kicker"
+  ]
+}
