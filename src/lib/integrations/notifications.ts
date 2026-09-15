@@ -3,6 +3,14 @@ import { sendTelegram } from "./telegram";
 import { sendWebPush } from "./web-push";
 import nodemailer from "nodemailer";
 
+/**
+ * nodemailer 10 bundles its own types and no longer exposes a `nodemailer.Transporter`
+ * namespace type (the transport class moved to an internal module path). Deriving the
+ * type from createTransport keeps this correct without importing a deep internal path
+ * that a future release is free to move again.
+ */
+type MailTransporter = ReturnType<typeof nodemailer.createTransport>;
+
 export type NotificationPrefs = {
   telegram?: boolean;
   webPush?: boolean;
@@ -84,7 +92,7 @@ async function withCircuitBreaker<T>(service: string, operation: () => Promise<T
  * MUST point SMTP_HOST/PORT/USER/PASS at a transactional ESP — do not rely on
  * Gmail for production reminder blasts.
  */
-let cachedTransporter: nodemailer.Transporter | null = null;
+let cachedTransporter: MailTransporter | null = null;
 let cachedTransporterKey = "";
 
 type SmtpSettings = {
@@ -116,7 +124,7 @@ function resolveSmtpSettings(): SmtpSettings | null {
   return { host, port, secure, user, pass, from };
 }
 
-function getTransporter(settings: SmtpSettings): nodemailer.Transporter {
+function getTransporter(settings: SmtpSettings): MailTransporter {
   // Key on the connection identity so a config change rebuilds the pool.
   const key = `${settings.host}:${settings.port}:${settings.secure}:${settings.user}`;
   if (cachedTransporter && cachedTransporterKey === key) {
@@ -138,7 +146,7 @@ function getTransporter(settings: SmtpSettings): nodemailer.Transporter {
     maxMessages: Number(process.env.SMTP_MAX_MESSAGES || 100),
     // Cap messages per second so we stay under ESP throttles.
     rateLimit: Number(process.env.SMTP_RATE_LIMIT || 10),
-  }) as nodemailer.Transporter;
+  });
   cachedTransporterKey = key;
   return cachedTransporter;
 }
