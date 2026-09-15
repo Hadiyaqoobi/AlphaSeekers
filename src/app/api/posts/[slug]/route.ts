@@ -12,7 +12,8 @@ export async function OPTIONS(request: Request) {
   return corsPreflight(request);
 }
 
-export async function GET(request: Request, { params }: { params: { slug: string } }) {
+export async function GET(request: Request, props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params;
   // Explicit select (NEVER spread the raw record): authorId / reviewedBy / reviewedAt
   // / reviewNotes must never reach this PUBLIC endpoint — leaking authorId lets anyone
   // build an id→name map from non-anonymous posts and de-anonymize a student who

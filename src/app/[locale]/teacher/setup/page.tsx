@@ -6,16 +6,18 @@ import { getTranslations } from "next-intl/server";
 import { getTeacherSetupStatus } from "@/lib/platform/teacher-setup";
 import { getSessionUser } from "@/lib/security/session";
 
-type SetupPageProps = { params: { locale: string } };
+type SetupPageProps = { params: Promise<{ locale: string }> };
 
 export const dynamic = "force-dynamic";
 
-export async function generateMetadata({ params }: SetupPageProps) {
+export async function generateMetadata(props: SetupPageProps) {
+  const params = await props.params;
   const t = await getTranslations({ locale: params.locale, namespace: "teacherSetup" });
   return { title: `${t("title")} — AlphaSeekers` };
 }
 
-export default async function TeacherSetupPage({ params }: SetupPageProps) {
+export default async function TeacherSetupPage(props: SetupPageProps) {
+  const params = await props.params;
   const user = await getSessionUser();
 
   if (!user) {

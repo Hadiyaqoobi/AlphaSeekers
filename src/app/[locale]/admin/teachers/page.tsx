@@ -10,10 +10,11 @@ import { prisma } from "@/lib/prisma";
 import { getAccessControl, can } from "@/lib/security/permissions";
 
 type AdminTeachersPageProps = {
-  params: { locale: string };
+  params: Promise<{ locale: string }>;
 };
 
-export default async function AdminTeachersPage({ params }: AdminTeachersPageProps) {
+export default async function AdminTeachersPage(props: AdminTeachersPageProps) {
+  const params = await props.params;
   const access = await getAccessControl();
 
   if (!access) {

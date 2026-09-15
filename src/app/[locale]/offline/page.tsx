@@ -1,6 +1,7 @@
 import { getTranslations } from "next-intl/server";
 
-export default async function OfflinePage({ params }: { params: { locale: string } }) {
+export default async function OfflinePage(props: { params: Promise<{ locale: string }> }) {
+  const params = await props.params;
   let t: (key: string) => string;
   try {
     t = await getTranslations({ locale: params.locale, namespace: "offline" });

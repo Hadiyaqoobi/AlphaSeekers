@@ -14,9 +14,10 @@ import { guardSessionManagement } from "@/lib/security/api-guard";
 
 export const dynamic = "force-dynamic";
 
-type RouteContext = { params: { sessionId: string } };
+type RouteContext = { params: Promise<{ sessionId: string }> };
 
-export async function POST(_request: NextRequest, { params }: RouteContext) {
+export async function POST(_request: NextRequest, props: RouteContext) {
+  const params = await props.params;
   try {
     const guard = await guardSessionManagement(params.sessionId);
     if (!guard.ok) return guard.response;

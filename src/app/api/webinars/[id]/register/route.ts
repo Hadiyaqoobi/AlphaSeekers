@@ -4,10 +4,11 @@ import { registerForWebinar } from "@/lib/platform/store";
 import { getSessionUser, isApproved, pendingApproval, unauthorized } from "@/lib/security/session";
 
 type Params = {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 };
 
-export async function POST(_: Request, { params }: Params) {
+export async function POST(_: Request, props: Params) {
+  const params = await props.params;
   const user = await getSessionUser();
 
   if (!user) {

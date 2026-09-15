@@ -9,10 +9,16 @@ export const dynamic = "force-dynamic";
 
 type SuperLayoutProps = {
   children: ReactNode;
-  params: { locale: string };
+  params: Promise<{ locale: string }>;
 };
 
-export default async function SuperLayout({ children, params }: SuperLayoutProps) {
+export default async function SuperLayout(props: SuperLayoutProps) {
+  const params = await props.params;
+
+  const {
+    children
+  } = props;
+
   const access = await getAccessControl();
 
   if (!access) {

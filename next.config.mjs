@@ -87,24 +87,11 @@ const nextConfig = {
         source: "/:path*",
         headers: securityHeaders,
       },
-      {
-        source: "/_next/static/css/:path*",
-        headers: [
-          {
-            key: "Cache-Control",
-            value: "public, max-age=31536000, immutable",
-          },
-        ],
-      },
-      {
-        source: "/_next/static/media/:path*",
-        headers: [
-          {
-            key: "Cache-Control",
-            value: "public, max-age=31536000, immutable",
-          },
-        ],
-      },
+      // NOTE: /_next/static/* deliberately has NO custom Cache-Control here.
+      // Next already serves those immutable (they are content-hashed), and as of
+      // Next 16 overriding them raises a build warning because a custom value can
+      // break dev-server behaviour. The entries below are for OUR OWN static
+      // assets, which Next does not fingerprint, so they still need explicit TTLs.
       {
         source: "/icon-:size.png",
         headers: [

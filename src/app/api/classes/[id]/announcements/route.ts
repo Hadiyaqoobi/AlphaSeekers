@@ -5,9 +5,10 @@ import { deliverWithFallback } from "@/lib/integrations/notifications";
 import { getSessionUser } from "@/lib/security/session";
 import { getAccessControl, can } from "@/lib/security/permissions";
 
-type RouteContext = { params: { id: string } };
+type RouteContext = { params: Promise<{ id: string }> };
 
-export async function GET(_request: NextRequest, { params }: RouteContext) {
+export async function GET(_request: NextRequest, props: RouteContext) {
+  const params = await props.params;
   const user = await getSessionUser();
   if (!user || !user.approved) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -31,7 +32,8 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
   return NextResponse.json({ items: announcements });
 }
 
-export async function POST(request: NextRequest, { params }: RouteContext) {
+export async function POST(request: NextRequest, props: RouteContext) {
+  const params = await props.params;
   const user = await getSessionUser();
   if (!user || (user.role !== "TEACHER" && user.role !== "ADMIN")) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

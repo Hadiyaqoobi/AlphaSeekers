@@ -3,9 +3,10 @@ import { listEmployees } from "@/lib/platform/super-store";
 
 export const dynamic = "force-dynamic";
 
-type Props = { params: { locale: string } };
+type Props = { params: Promise<{ locale: string }> };
 
-export default async function SuperEmployeesPage({ params }: Props) {
+export default async function SuperEmployeesPage(props: Props) {
+  const params = await props.params;
   const employees = await listEmployees();
 
   // Normalize Date -> ISO string so the client prop matches the JSON that the

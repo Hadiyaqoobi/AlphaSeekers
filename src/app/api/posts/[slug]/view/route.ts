@@ -18,7 +18,8 @@ const SLUG_PATTERN = /^[a-zA-Z0-9_-]{1,250}$/;
 // genuine re-reads, not enough to meaningfully inflate a count.
 const VIEW_RATE_LIMIT = { limit: 5, windowMs: 10 * 60 * 1000 };
 
-export async function POST(request: Request, { params }: { params: { slug: string } }) {
+export async function POST(request: Request, props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params;
   const slug = params.slug;
 
   if (!SLUG_PATTERN.test(slug)) {

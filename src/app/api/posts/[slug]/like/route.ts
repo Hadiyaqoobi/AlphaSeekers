@@ -7,7 +7,8 @@
 import { prisma } from "@/lib/prisma";
 import { getSessionUser, unauthorized } from "@/lib/security/session";
 
-export async function POST(_request: Request, { params }: { params: { slug: string } }) {
+export async function POST(_request: Request, props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params;
   const user = await getSessionUser();
   if (!user) return unauthorized();
 

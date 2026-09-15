@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getSessionAttendance, markAttendance } from "@/lib/platform/store";
 import { forbidden, getSessionUser, unauthorized, type SessionUser } from "@/lib/security/session";
 
-type RouteContext = { params: { sessionId: string } };
+type RouteContext = { params: Promise<{ sessionId: string }> };
 
 /**
  * Ensure the requesting teacher owns the class this session belongs to (or is
@@ -39,7 +39,8 @@ async function assertOwnsSession(
  * Returns the attendance sheet for a session (all enrolled students + status).
  * Teachers who own the class and admins only.
  */
-export async function GET(_request: NextRequest, { params }: RouteContext) {
+export async function GET(_request: NextRequest, props: RouteContext) {
+    const params = await props.params;
     const user = await getSessionUser();
     if (!user) {
         return unauthorized();
@@ -64,7 +65,8 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
  * Mark attendance for a student. Body: { studentId, attended }
  * Teachers who own the class and admins only.
  */
-export async function POST(request: NextRequest, { params }: RouteContext) {
+export async function POST(request: NextRequest, props: RouteContext) {
+    const params = await props.params;
     const user = await getSessionUser();
     if (!user) {
         return unauthorized();

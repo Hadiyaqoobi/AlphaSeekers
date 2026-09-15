@@ -6,7 +6,7 @@ import { dropStudentFromClass, enrollStudentInClass } from "@/lib/platform/store
 import { getSessionUser, isApproved, pendingApproval, roleAllowed, unauthorized } from "@/lib/security/session";
 
 type Params = {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 };
 
 // Cap simultaneous enrollments per student. Admins are exempt so they can
@@ -17,7 +17,8 @@ const MAX_ACTIVE_ENROLLMENTS = (() => {
   return Number.isFinite(raw) && raw > 0 ? raw : 3;
 })();
 
-export async function POST(_: Request, { params }: Params) {
+export async function POST(_: Request, props: Params) {
+  const params = await props.params;
   const user = await getSessionUser();
 
   if (!user) {
@@ -113,7 +114,8 @@ export async function POST(_: Request, { params }: Params) {
   }
 }
 
-export async function DELETE(_: Request, { params }: Params) {
+export async function DELETE(_: Request, props: Params) {
+  const params = await props.params;
   const user = await getSessionUser();
 
   if (!user) {

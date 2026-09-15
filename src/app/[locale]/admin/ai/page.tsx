@@ -4,9 +4,10 @@ import { aiConfig } from "@/lib/ai/config";
 import { prisma } from "@/lib/prisma";
 import { getAccessControl, isSuper } from "@/lib/security/permissions";
 
-type Props = { params: { locale: string } };
+type Props = { params: Promise<{ locale: string }> };
 
-export default async function AdminAIPage({ params }: Props) {
+export default async function AdminAIPage(props: Props) {
+  const params = await props.params;
   const locale = params.locale;
   const access = await getAccessControl();
   if (!access) redirect(`/${locale}/login`);

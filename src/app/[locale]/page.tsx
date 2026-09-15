@@ -6,9 +6,10 @@ import { getSiteSettings } from "@/lib/platform/site-settings";
 import { getLandingHighlights } from "@/lib/platform/landing-highlights";
 import { LandingShell } from "@/components/landing/LandingShell";
 
-type HomePageProps = { params: { locale: string } };
+type HomePageProps = { params: Promise<{ locale: string }> };
 
-export default async function HomePage({ params }: HomePageProps) {
+export default async function HomePage(props: HomePageProps) {
+  const params = await props.params;
   const { locale } = params;
 
   // Logged-in users belong in the app, not on the public marketing page —

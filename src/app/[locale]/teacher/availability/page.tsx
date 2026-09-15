@@ -7,12 +7,13 @@ import { TeacherAvailabilityForm } from "@/components/forms/teacher-availability
 import { getSessionUser } from "@/lib/security/session";
 
 type TeacherAvailabilityPageProps = {
-  params: { locale: string };
+  params: Promise<{ locale: string }>;
 };
 
 export const dynamic = "force-dynamic";
 
-export default async function TeacherAvailabilityPage({ params }: TeacherAvailabilityPageProps) {
+export default async function TeacherAvailabilityPage(props: TeacherAvailabilityPageProps) {
+  const params = await props.params;
   const user = await getSessionUser();
 
   if (!user) {

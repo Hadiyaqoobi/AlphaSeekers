@@ -4,12 +4,13 @@ import { getClassById, isStudentEnrolledInClass } from "@/lib/platform/store";
 import { getSessionUser, isApproved, pendingApproval, unauthorized } from "@/lib/security/session";
 
 type Params = {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 };
 
-export async function GET(_: Request, { params }: Params) {
+export async function GET(_: Request, props: Params) {
+  const params = await props.params;
   const user = await getSessionUser();
 
   if (!user) {

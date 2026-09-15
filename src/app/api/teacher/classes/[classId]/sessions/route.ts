@@ -15,14 +15,15 @@ import { guardClassManagement } from "@/lib/security/api-guard";
 
 export const dynamic = "force-dynamic";
 
-type RouteContext = { params: { classId: string } };
+type RouteContext = { params: Promise<{ classId: string }> };
 
 const bodySchema = z.object({
   startTime: z.string(),
   durationMinutes: z.number().int().min(15).max(480).optional(),
 });
 
-export async function POST(request: NextRequest, { params }: RouteContext) {
+export async function POST(request: NextRequest, props: RouteContext) {
+  const params = await props.params;
   try {
     const guard = await guardClassManagement(params.classId);
     if (!guard.ok) return guard.response;

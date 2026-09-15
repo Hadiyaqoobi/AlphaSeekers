@@ -6,12 +6,13 @@ import { prisma } from "@/lib/prisma";
 import { can, getAccessControl } from "@/lib/security/permissions";
 
 type SchedulePageProps = {
-  params: { locale: string; classId: string };
+  params: Promise<{ locale: string; classId: string }>;
 };
 
 export const dynamic = "force-dynamic";
 
-export default async function TeacherClassSchedulePage({ params }: SchedulePageProps) {
+export default async function TeacherClassSchedulePage(props: SchedulePageProps) {
+  const params = await props.params;
   const { locale, classId } = params;
 
   const access = await getAccessControl();

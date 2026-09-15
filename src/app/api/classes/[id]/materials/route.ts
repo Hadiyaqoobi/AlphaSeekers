@@ -7,10 +7,11 @@ import { getSessionUser, isApproved, pendingApproval, roleAllowed, unauthorized 
 import { getAccessControl, can } from "@/lib/security/permissions";
 
 type Params = {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 };
 
-export async function GET(_: NextRequest, { params }: Params) {
+export async function GET(_: NextRequest, props: Params) {
+  const params = await props.params;
   const user = await getSessionUser();
 
   if (!user) {
@@ -39,7 +40,8 @@ export async function GET(_: NextRequest, { params }: Params) {
   return NextResponse.json({ items: await listClassMaterials(params.id) });
 }
 
-export async function POST(request: NextRequest, { params }: Params) {
+export async function POST(request: NextRequest, props: Params) {
+  const params = await props.params;
   const user = await getSessionUser();
 
   if (!user) {

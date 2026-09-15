@@ -8,11 +8,13 @@ import { getSessionUser } from "@/lib/security/session";
 export const dynamic = "force-dynamic";
 
 interface PageProps {
-  params: { locale: string };
-  searchParams: { edit?: string };
+  params: Promise<{ locale: string }>;
+  searchParams: Promise<{ edit?: string }>;
 }
 
-export default async function WritePage({ params, searchParams }: PageProps) {
+export default async function WritePage(props: PageProps) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const user = await getSessionUser();
   if (!user) {
     redirect(`/${params.locale}/login?callbackUrl=/${params.locale}/stories/write`);

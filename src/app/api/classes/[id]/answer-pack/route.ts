@@ -10,7 +10,8 @@ import { generateAnswerPack } from "@/lib/ai/offline/pack-generator";
 import { getSessionUser, unauthorized, forbidden } from "@/lib/security/session";
 import { getAccessControl, can } from "@/lib/security/permissions";
 
-export async function GET(_request: Request, { params }: { params: { id: string } }) {
+export async function GET(_request: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const user = await getSessionUser();
   if (!user) return unauthorized();
 

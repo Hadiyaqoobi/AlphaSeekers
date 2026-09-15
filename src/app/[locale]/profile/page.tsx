@@ -13,7 +13,7 @@ import { getStudentProfileSummary, getUser } from "@/lib/platform/store";
 import { getSessionUser } from "@/lib/security/session";
 
 type ProfilePageProps = {
-  params: { locale: string };
+  params: Promise<{ locale: string }>;
 };
 
 const PROGRESS_COLORS = [
@@ -23,7 +23,8 @@ const PROGRESS_COLORS = [
   { bar: "from-amber-400 to-orange-500", badge: "bg-amber-50 text-amber-700" },
 ] as const;
 
-export default async function ProfilePage({ params }: ProfilePageProps) {
+export default async function ProfilePage(props: ProfilePageProps) {
+  const params = await props.params;
   const { locale } = params;
   const user = await getSessionUser();
   const t = await getTranslations({ locale, namespace: "profile" });

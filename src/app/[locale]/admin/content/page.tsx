@@ -9,10 +9,11 @@ import { WebinarForm } from "@/components/forms/webinar-form";
 import { getAccessControl, can } from "@/lib/security/permissions";
 
 type AdminContentPageProps = {
-  params: { locale: string };
+  params: Promise<{ locale: string }>;
 };
 
-export default async function AdminContentPage({ params }: AdminContentPageProps) {
+export default async function AdminContentPage(props: AdminContentPageProps) {
+  const params = await props.params;
   const access = await getAccessControl();
 
   if (!access) {

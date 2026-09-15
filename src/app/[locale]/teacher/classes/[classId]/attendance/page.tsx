@@ -4,12 +4,13 @@ import { ClassAttendanceSummary } from "@/components/attendance/attendance-views
 import { getSessionUser } from "@/lib/security/session";
 
 type ClassAttendanceSummaryPageProps = {
-  params: { locale: string; classId: string };
+  params: Promise<{ locale: string; classId: string }>;
 };
 
 export const dynamic = "force-dynamic";
 
-export default async function ClassAttendanceSummaryPage({ params }: ClassAttendanceSummaryPageProps) {
+export default async function ClassAttendanceSummaryPage(props: ClassAttendanceSummaryPageProps) {
+  const params = await props.params;
   const { locale, classId } = params;
   const user = await getSessionUser();
 

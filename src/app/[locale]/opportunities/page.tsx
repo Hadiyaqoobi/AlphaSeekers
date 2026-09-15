@@ -8,8 +8,8 @@ import { listOpportunities } from "@/lib/platform/store";
 import { getSessionUser } from "@/lib/security/session";
 
 type OpportunitiesPageProps = {
-  params: { locale: string };
-  searchParams: { type?: string };
+  params: Promise<{ locale: string }>;
+  searchParams: Promise<{ type?: string }>;
 };
 
 const FILTERS = ["ALL", "SCHOLARSHIP", "JOB", "INTERNSHIP", "GRANT"] as const;
@@ -21,7 +21,9 @@ const TYPE_COLORS: Record<string, string> = {
   GRANT: "bg-teal-500/10 text-teal-300",
 };
 
-export default async function OpportunitiesPage({ params, searchParams }: OpportunitiesPageProps) {
+export default async function OpportunitiesPage(props: OpportunitiesPageProps) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const locale = params.locale;
   const t = await getTranslations({ locale, namespace: "opportunities" });
   const user = await getSessionUser();

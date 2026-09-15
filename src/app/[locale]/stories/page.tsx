@@ -5,10 +5,11 @@ import { StoriesComingSoon } from "@/components/stories/stories-coming-soon";
 export const dynamic = "force-dynamic";
 
 interface PageProps {
-  params: { locale: string };
+  params: Promise<{ locale: string }>;
 }
 
-export async function generateMetadata({ params }: PageProps) {
+export async function generateMetadata(props: PageProps) {
+  const params = await props.params;
   const isDari = params.locale === "fa";
   return {
     title: isDari ? "صداهای شاگردان — آلفاسیکرز" : "Student Voices — AlphaSeekers",
@@ -18,7 +19,8 @@ export async function generateMetadata({ params }: PageProps) {
   };
 }
 
-export default async function StoriesPage({ params }: PageProps) {
+export default async function StoriesPage(props: PageProps) {
+  const params = await props.params;
   const publishedCount = await prisma.studentPost.count({
     where: { status: "published" },
   });

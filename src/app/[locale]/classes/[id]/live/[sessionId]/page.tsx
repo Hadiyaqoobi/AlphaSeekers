@@ -9,10 +9,11 @@ import { checkSessionAccess } from "@/lib/session-access";
 export const dynamic = "force-dynamic";
 
 interface PageProps {
-  params: { locale: string; id: string; sessionId: string };
+  params: Promise<{ locale: string; id: string; sessionId: string }>;
 }
 
-export async function generateMetadata({ params }: PageProps) {
+export async function generateMetadata(props: PageProps) {
+  const params = await props.params;
   const session = await prisma.session.findUnique({
     where: { id: params.sessionId },
     include: { class: { select: { name: true } } },
@@ -23,7 +24,8 @@ export async function generateMetadata({ params }: PageProps) {
   };
 }
 
-export default async function LiveSessionPage({ params }: PageProps) {
+export default async function LiveSessionPage(props: PageProps) {
+  const params = await props.params;
   const user = await getSessionUser();
   if (!user) {
     redirect(

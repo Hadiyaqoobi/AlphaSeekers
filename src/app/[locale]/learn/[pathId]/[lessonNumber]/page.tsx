@@ -7,10 +7,11 @@ import { getSessionUser } from "@/lib/security/session";
 export const dynamic = "force-dynamic";
 
 interface PageProps {
-  params: { locale: string; pathId: string; lessonNumber: string };
+  params: Promise<{ locale: string; pathId: string; lessonNumber: string }>;
 }
 
-export default async function LessonPage({ params }: PageProps) {
+export default async function LessonPage(props: PageProps) {
+  const params = await props.params;
   const user = await getSessionUser();
   if (!user) {
     redirect(`/${params.locale}/login?next=/${params.locale}/learn/${params.pathId}/${params.lessonNumber}`);

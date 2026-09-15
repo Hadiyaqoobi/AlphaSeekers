@@ -38,10 +38,8 @@ const patchSchema = z
     { message: "No changes supplied" },
   );
 
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: { id: string } },
-) {
+export async function PATCH(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const access = await requireSuperAdmin();
     const { id } = params;

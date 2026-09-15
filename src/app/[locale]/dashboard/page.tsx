@@ -20,8 +20,8 @@ import {
 import { getSessionUser } from "@/lib/security/session";
 
 type DashboardPageProps = {
-  params: { locale: string };
-  searchParams: { google?: "connected" | "failed" };
+  params: Promise<{ locale: string }>;
+  searchParams: Promise<{ google?: "connected" | "failed" }>;
 };
 
 export const dynamic = "force-dynamic";
@@ -40,8 +40,10 @@ function getGreetingDari(): string {
   return "شب بخیر";
 }
 
-export default async function DashboardPage({ params, searchParams }: DashboardPageProps) {
-  void cookies();
+export default async function DashboardPage(props: DashboardPageProps) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
+  void (await cookies());
 
   const { locale } = params;
   const user = await getSessionUser();

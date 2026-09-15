@@ -8,11 +8,13 @@ import { listLibraryResources } from "@/lib/platform/store";
 import { getSessionUser } from "@/lib/security/session";
 
 type LibraryPageProps = {
-  params: { locale: string };
-  searchParams: { q?: string };
+  params: Promise<{ locale: string }>;
+  searchParams: Promise<{ q?: string }>;
 };
 
-export default async function LibraryPage({ params, searchParams }: LibraryPageProps) {
+export default async function LibraryPage(props: LibraryPageProps) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const locale = params.locale;
   const t = await getTranslations({ locale, namespace: "library" });
   const user = await getSessionUser();

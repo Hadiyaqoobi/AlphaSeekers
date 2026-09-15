@@ -19,9 +19,10 @@ const NOTIF_META: { key: string; label: string; color: string }[] = [
   { key: "PENDING", label: "Pending", color: AMBER },
 ];
 
-type Props = { params: { locale: string } };
+type Props = { params: Promise<{ locale: string }> };
 
-export default async function SuperSystemPage({ params }: Props) {
+export default async function SuperSystemPage(props: Props) {
+  const params = await props.params;
   const [kpis, auditEvents24h] = await Promise.all([
     getSuperKpis(),
     countRecentAudit(ONE_DAY_MS),

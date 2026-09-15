@@ -8,7 +8,7 @@ import { getClientIp } from "@/lib/security/rate-limit";
 import { getSessionUser, unauthorized } from "@/lib/security/session";
 
 type Params = {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 };
 
 // Strict allowlist — only editable scalar fields. Prevents mass-assignment: a
@@ -29,7 +29,8 @@ const updateClassSchema = z
   })
   .strict();
 
-export async function PATCH(request: NextRequest, { params }: Params) {
+export async function PATCH(request: NextRequest, props: Params) {
+  const params = await props.params;
   try {
     await requirePermission("classes.edit");
   } catch (e) {
@@ -63,7 +64,8 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   return NextResponse.json(updated);
 }
 
-export async function DELETE(request: NextRequest, { params }: Params) {
+export async function DELETE(request: NextRequest, props: Params) {
+  const params = await props.params;
   // Two modes on one verb:
   //   ?mode=permanent → HARD delete (irreversible) — SUPER ADMIN ONLY, by
   //                     explicit decision: destroying a class and every

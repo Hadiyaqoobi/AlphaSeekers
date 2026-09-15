@@ -5,12 +5,13 @@ import { getTranslations } from "next-intl/server";
 import { getSessionUser } from "@/lib/security/session";
 
 type PendingApprovalPageProps = {
-  params: { locale: string };
+  params: Promise<{ locale: string }>;
 };
 
 export const dynamic = "force-dynamic";
 
-export default async function PendingApprovalPage({ params }: PendingApprovalPageProps) {
+export default async function PendingApprovalPage(props: PendingApprovalPageProps) {
+  const params = await props.params;
   const user = await getSessionUser();
   const t = await getTranslations({ locale: params.locale, namespace: "pending" });
 

@@ -6,9 +6,10 @@ import { getTranslations } from "next-intl/server";
 
 import { teamMembers } from "@/lib/team-data";
 
-type TeamPageProps = { params: { locale: string } };
+type TeamPageProps = { params: Promise<{ locale: string }> };
 
-export async function generateMetadata({ params }: TeamPageProps) {
+export async function generateMetadata(props: TeamPageProps) {
+  const params = await props.params;
   const t = await getTranslations({ locale: params.locale, namespace: "team" });
   return {
     title: `${t("kicker")} — AlphaSeekers`,
@@ -16,7 +17,8 @@ export async function generateMetadata({ params }: TeamPageProps) {
   };
 }
 
-export default async function TeamPage({ params }: TeamPageProps) {
+export default async function TeamPage(props: TeamPageProps) {
+  const params = await props.params;
   const locale = params.locale;
   const t = await getTranslations({ locale, namespace: "team" });
   const isDari = locale === "fa";

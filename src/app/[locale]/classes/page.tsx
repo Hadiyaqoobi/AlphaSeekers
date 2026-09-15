@@ -8,8 +8,8 @@ import { listClasses, listStudentClasses } from "@/lib/platform/store";
 import { getSessionUser } from "@/lib/security/session";
 
 type ClassesPageProps = {
-  params: { locale: string };
-  searchParams: { page?: string; search?: string };
+  params: Promise<{ locale: string }>;
+  searchParams: Promise<{ page?: string; search?: string }>;
 };
 
 const PAGE_SIZE = 10;
@@ -28,7 +28,9 @@ const AVATAR_GRADIENTS = [
   "from-amber-500 to-orange-600",
 ] as const;
 
-export default async function ClassesPage({ params, searchParams }: ClassesPageProps) {
+export default async function ClassesPage(props: ClassesPageProps) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const { locale } = params;
   const user = await getSessionUser();
 

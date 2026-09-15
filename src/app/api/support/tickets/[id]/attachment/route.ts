@@ -22,7 +22,8 @@ function accessErrorResponse(e: unknown) {
   return null;
 }
 
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     await requirePermission("support.create");
   } catch (e) {
@@ -64,7 +65,8 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
   return NextResponse.json({ attachment: saved }, { status: 201 });
 }
 
-export async function GET(_request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     await requirePermission("support.view");
   } catch (e) {

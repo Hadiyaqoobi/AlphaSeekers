@@ -6,9 +6,10 @@ import { deliverWithFallback } from "@/lib/integrations/notifications";
 import { getClassById, listClassEnrollments } from "@/lib/platform/store";
 import { guardClassManagement } from "@/lib/security/api-guard";
 
-type RouteContext = { params: { id: string; sessionId: string } };
+type RouteContext = { params: Promise<{ id: string; sessionId: string }> };
 
-export async function POST(_request: NextRequest, { params }: RouteContext) {
+export async function POST(_request: NextRequest, props: RouteContext) {
+  const params = await props.params;
   // Owning teacher keeps access; a non-owner (including a scoped employee with
   // role=ADMIN) must hold classes.edit to cancel a session. The shared guard
   // also enforces authentication, deactivation, and password-reset gating and

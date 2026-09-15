@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { forbidden, getSessionUser, unauthorized, type SessionUser } from "@/lib/security/session";
 
-type RouteContext = { params: { id: string; sessionId: string } };
+type RouteContext = { params: Promise<{ id: string; sessionId: string }> };
 
 const CODE_TTL_MS = 30 * 60 * 1000;
 
@@ -39,7 +39,8 @@ async function assertTeacherOnThisClass(
  * Students enter this code to verify their attendance. Code expires 30 min
  * after generation. Re-posting returns a new code (previous code is replaced).
  */
-export async function POST(_request: NextRequest, { params }: RouteContext) {
+export async function POST(_request: NextRequest, props: RouteContext) {
+  const params = await props.params;
   const user = await getSessionUser();
   if (!user) return unauthorized();
   if (user.role !== "TEACHER" && user.role !== "ADMIN") {
@@ -70,7 +71,8 @@ export async function POST(_request: NextRequest, { params }: RouteContext) {
  * Teacher re-fetches the current code + expiry (e.g. after a page reload).
  * Students must not call this endpoint — it is role-gated.
  */
-export async function GET(_request: NextRequest, { params }: RouteContext) {
+export async function GET(_request: NextRequest, props: RouteContext) {
+  const params = await props.params;
   const user = await getSessionUser();
   if (!user) return unauthorized();
   if (user.role !== "TEACHER" && user.role !== "ADMIN") {

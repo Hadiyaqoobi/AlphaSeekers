@@ -10,10 +10,11 @@ import { getSessionUser } from "@/lib/security/session";
 export const dynamic = "force-dynamic";
 
 interface PageProps {
-  params: { locale: string };
+  params: Promise<{ locale: string }>;
 }
 
-export async function generateMetadata({ params }: PageProps) {
+export async function generateMetadata(props: PageProps) {
+  const params = await props.params;
   const isDari = params.locale === "fa";
   return {
     title: isDari ? "خودآموز — آلفاسیکرز" : "Self Learning — AlphaSeekers",
@@ -23,7 +24,8 @@ export async function generateMetadata({ params }: PageProps) {
   };
 }
 
-export default async function LearnHomePage({ params }: PageProps) {
+export default async function LearnHomePage(props: PageProps) {
+  const params = await props.params;
   const user = await getSessionUser();
   if (!user) redirect(`/${params.locale}/login?next=/${params.locale}/learn`);
 

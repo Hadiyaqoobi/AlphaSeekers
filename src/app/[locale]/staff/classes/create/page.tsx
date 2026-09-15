@@ -8,10 +8,11 @@ import { listUsersByRole } from "@/lib/platform/store";
 import { getSessionUser } from "@/lib/security/session";
 
 type CreateClassPageProps = {
-    params: { locale: string };
+    params: Promise<{ locale: string }>;
 };
 
-export default async function StaffCreateClassPage({ params }: CreateClassPageProps) {
+export default async function StaffCreateClassPage(props: CreateClassPageProps) {
+    const params = await props.params;
     const user = await getSessionUser();
 
     if (!user) {

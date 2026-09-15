@@ -4,9 +4,10 @@ import { prisma } from "@/lib/prisma";
 import { AccessError, requirePermission } from "@/lib/security/permissions";
 import { forbidden, getSessionUser, unauthorized } from "@/lib/security/session";
 
-type Params = { params: { id: string } };
+type Params = { params: Promise<{ id: string }> };
 
-export async function DELETE(_: Request, { params }: Params) {
+export async function DELETE(_: Request, props: Params) {
+  const params = await props.params;
   try {
     await requirePermission("opportunities.edit");
   } catch (e) {

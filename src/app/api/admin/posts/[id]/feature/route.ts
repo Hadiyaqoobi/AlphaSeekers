@@ -9,7 +9,8 @@ import { prisma } from "@/lib/prisma";
 import { AccessError, requirePermission } from "@/lib/security/permissions";
 import { getSessionUser, unauthorized, forbidden, badRequest } from "@/lib/security/session";
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PUT(request: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     await requirePermission("content.moderate");
   } catch (e) {

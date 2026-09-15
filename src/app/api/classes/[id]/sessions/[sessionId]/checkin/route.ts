@@ -5,7 +5,7 @@ import { isStudentEnrolledInClass } from "@/lib/platform/store";
 import { checkRateLimit } from "@/lib/security/rate-limit";
 import { getSessionUser, unauthorized } from "@/lib/security/session";
 
-type RouteContext = { params: { id: string; sessionId: string } };
+type RouteContext = { params: Promise<{ id: string; sessionId: string }> };
 
 /**
  * POST /api/classes/[id]/sessions/[sessionId]/checkin
@@ -19,7 +19,8 @@ type RouteContext = { params: { id: string; sessionId: string } };
  * The client maps `code` to a localized error (no_code_yet, expired, wrong,
  * invalid_format).
  */
-export async function POST(request: NextRequest, { params }: RouteContext) {
+export async function POST(request: NextRequest, props: RouteContext) {
+  const params = await props.params;
   const user = await getSessionUser();
   if (!user) return unauthorized();
 

@@ -6,10 +6,11 @@ import { getAccessControl, can } from "@/lib/security/permissions";
 export const dynamic = "force-dynamic";
 
 interface PageProps {
-  params: { locale: string };
+  params: Promise<{ locale: string }>;
 }
 
-export default async function AdminPostsPage({ params }: PageProps) {
+export default async function AdminPostsPage(props: PageProps) {
+  const params = await props.params;
   const access = await getAccessControl();
   if (!access) redirect(`/${params.locale}/login`);
   if (!can(access, "content.view")) redirect(`/${params.locale}/dashboard`);

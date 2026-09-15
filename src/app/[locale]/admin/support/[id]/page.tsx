@@ -8,12 +8,13 @@ import { getTicketById } from "@/lib/platform/tickets";
 import { getAccessControl, can } from "@/lib/security/permissions";
 
 type TicketPageProps = {
-  params: { locale: string; id: string };
+  params: Promise<{ locale: string; id: string }>;
 };
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminTicketPage({ params }: TicketPageProps) {
+export default async function AdminTicketPage(props: TicketPageProps) {
+  const params = await props.params;
   const access = await getAccessControl();
 
   if (!access) {

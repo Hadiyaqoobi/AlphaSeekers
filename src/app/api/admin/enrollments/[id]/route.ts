@@ -16,7 +16,8 @@ import { AccessError, requirePermission } from "@/lib/security/permissions";
  */
 const schema = z.object({ decision: z.enum(["APPROVE", "REJECT"]) });
 
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   let access;
   try {
     access = await requirePermission("classes.edit");

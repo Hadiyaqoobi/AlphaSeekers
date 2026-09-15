@@ -7,7 +7,7 @@ import { getSessionUser } from "@/lib/security/session";
 export const dynamic = "force-dynamic";
 
 type PageProps = {
-  params: { locale: string };
+  params: Promise<{ locale: string }>;
 };
 
 /**
@@ -16,7 +16,8 @@ type PageProps = {
  * Reuses the shared PasswordChangeForm (which posts to /api/me/password and,
  * on success, clears the mustChangePassword flag server-side).
  */
-export default async function ChangePasswordPage({ params }: PageProps) {
+export default async function ChangePasswordPage(props: PageProps) {
+  const params = await props.params;
   const { locale } = params;
   const user = await getSessionUser();
   if (!user) {

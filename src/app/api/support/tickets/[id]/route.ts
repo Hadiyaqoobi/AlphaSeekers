@@ -15,7 +15,8 @@ function accessErrorResponse(e: unknown) {
   return null;
 }
 
-export async function GET(_request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     await requirePermission("support.view");
   } catch (e) {
@@ -29,7 +30,8 @@ export async function GET(_request: NextRequest, { params }: { params: { id: str
   return NextResponse.json({ ticket });
 }
 
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   let access;
   try {
     // Filing a ticket is open to every admin; deciding it is done is not.

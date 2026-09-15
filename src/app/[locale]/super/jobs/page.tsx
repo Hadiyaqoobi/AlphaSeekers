@@ -6,9 +6,10 @@ import { getAccessControl, isSuper } from "@/lib/security/permissions";
 
 export const dynamic = "force-dynamic";
 
-type Props = { params: { locale: string } };
+type Props = { params: Promise<{ locale: string }> };
 
-export default async function SuperJobsPage({ params }: Props) {
+export default async function SuperJobsPage(props: Props) {
+  const params = await props.params;
   const access = await getAccessControl();
   if (!access) {
     redirect(`/${params.locale}/login`);

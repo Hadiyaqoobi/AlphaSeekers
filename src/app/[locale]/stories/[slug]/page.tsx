@@ -12,7 +12,7 @@ import { renderMarkdown } from "@/lib/stories/markdown";
 export const dynamic = "force-dynamic";
 
 interface PageProps {
-  params: { locale: string; slug: string };
+  params: Promise<{ locale: string; slug: string }>;
 }
 
 const TYPE_LABELS: Record<string, { en: string; fa: string; icon: string }> = {
@@ -23,7 +23,8 @@ const TYPE_LABELS: Record<string, { en: string; fa: string; icon: string }> = {
   spotlight: { en: "Student Spotlight", fa: "معرفی شاگرد", icon: "✨" },
 };
 
-export async function generateMetadata({ params }: PageProps) {
+export async function generateMetadata(props: PageProps) {
+  const params = await props.params;
   const post = await prisma.studentPost.findUnique({
     where: { slug: params.slug },
     include: { author: { select: { name: true } } },
@@ -49,7 +50,8 @@ export async function generateMetadata({ params }: PageProps) {
   };
 }
 
-export default async function PostPage({ params }: PageProps) {
+export default async function PostPage(props: PageProps) {
+  const params = await props.params;
   const post = await prisma.studentPost.findUnique({
     where: { slug: params.slug },
     include: { author: { select: { name: true } } },

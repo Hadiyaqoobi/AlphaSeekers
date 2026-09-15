@@ -9,10 +9,11 @@ import { listRegisteredWebinarIds, listWebinars } from "@/lib/platform/store";
 import { getSessionUser } from "@/lib/security/session";
 
 type WebinarsPageProps = {
-  params: { locale: string };
+  params: Promise<{ locale: string }>;
 };
 
-export default async function WebinarsPage({ params }: WebinarsPageProps) {
+export default async function WebinarsPage(props: WebinarsPageProps) {
+  const params = await props.params;
   const locale = params.locale;
   const t = await getTranslations({ locale, namespace: "webinars" });
   const user = await getSessionUser();

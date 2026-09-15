@@ -12,10 +12,11 @@ import { EnrollmentRequests } from "@/components/admin/enrollment-requests";
 import { getAccessControl, can, isSuper } from "@/lib/security/permissions";
 
 type AdminClassDetailPageProps = {
-  params: { locale: string; id: string };
+  params: Promise<{ locale: string; id: string }>;
 };
 
-export default async function AdminClassDetailPage({ params }: AdminClassDetailPageProps) {
+export default async function AdminClassDetailPage(props: AdminClassDetailPageProps) {
+  const params = await props.params;
   const access = await getAccessControl();
 
   if (!access) {

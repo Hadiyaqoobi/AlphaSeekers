@@ -15,10 +15,11 @@ import { getAccessControl, can, isSuper } from "@/lib/security/permissions";
 import { getSessionUser } from "@/lib/security/session";
 
 type ClassDetailPageProps = {
-  params: { locale: string; id: string };
+  params: Promise<{ locale: string; id: string }>;
 };
 
-export default async function ClassDetailPage({ params }: ClassDetailPageProps) {
+export default async function ClassDetailPage(props: ClassDetailPageProps) {
+  const params = await props.params;
   const record = await getClassById(params.id);
   const user = await getSessionUser();
   const locale = params.locale;

@@ -11,10 +11,11 @@ import { getAdminClassStats, listAdminClasses, listUsersByRole } from "@/lib/pla
 import { getAccessControl, can } from "@/lib/security/permissions";
 
 type AdminClassesPageProps = {
-  params: { locale: string };
+  params: Promise<{ locale: string }>;
 };
 
-export default async function AdminClassesPage({ params }: AdminClassesPageProps) {
+export default async function AdminClassesPage(props: AdminClassesPageProps) {
+  const params = await props.params;
   const access = await getAccessControl();
 
   if (!access) {

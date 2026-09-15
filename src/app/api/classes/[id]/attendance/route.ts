@@ -4,14 +4,15 @@ import { getClassAttendanceSummary } from "@/lib/platform/store";
 import { getSessionUser } from "@/lib/security/session";
 import { prisma } from "@/lib/prisma";
 
-type RouteContext = { params: { id: string } };
+type RouteContext = { params: Promise<{ id: string }> };
 
 /**
  * GET /api/classes/[id]/attendance
  * Returns attendance summary for all sessions in a class.
  * Teachers and admins only.
  */
-export async function GET(_request: NextRequest, { params }: RouteContext) {
+export async function GET(_request: NextRequest, props: RouteContext) {
+    const params = await props.params;
     const user = await getSessionUser();
     if (!user || (user.role !== "TEACHER" && user.role !== "ADMIN")) {
         return NextResponse.json({ message: "Unauthorized" }, { status: 401 });

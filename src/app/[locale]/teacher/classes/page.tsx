@@ -7,12 +7,13 @@ import { listTeacherClasses } from "@/lib/platform/store";
 import { getSessionUser } from "@/lib/security/session";
 
 type TeacherClassesPageProps = {
-  params: { locale: string };
+  params: Promise<{ locale: string }>;
 };
 
 export const dynamic = "force-dynamic";
 
-export default async function TeacherClassesPage({ params }: TeacherClassesPageProps) {
+export default async function TeacherClassesPage(props: TeacherClassesPageProps) {
+  const params = await props.params;
   const { locale } = params;
   const user = await getSessionUser();
 

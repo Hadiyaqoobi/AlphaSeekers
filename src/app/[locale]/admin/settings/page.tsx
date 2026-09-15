@@ -8,10 +8,11 @@ import { getSessionUser } from "@/lib/security/session";
 export const dynamic = "force-dynamic";
 
 type AdminSettingsPageProps = {
-  params: { locale: string };
+  params: Promise<{ locale: string }>;
 };
 
-export default async function AdminSettingsPage({ params }: AdminSettingsPageProps) {
+export default async function AdminSettingsPage(props: AdminSettingsPageProps) {
+  const params = await props.params;
   const user = await getSessionUser();
   if (!user) redirect(`/${params.locale}/login`);
   if (user.role !== "ADMIN") redirect(`/${params.locale}/dashboard`);

@@ -8,10 +8,11 @@ import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/security/session";
 
 type StaffDashboardProps = {
-    params: { locale: string };
+    params: Promise<{ locale: string }>;
 };
 
-export default async function StaffDashboardPage({ params }: StaffDashboardProps) {
+export default async function StaffDashboardPage(props: StaffDashboardProps) {
+    const params = await props.params;
     const user = await getSessionUser();
 
     if (!user) {

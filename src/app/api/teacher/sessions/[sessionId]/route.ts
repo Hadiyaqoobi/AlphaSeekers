@@ -16,14 +16,15 @@ import { guardSessionManagement } from "@/lib/security/api-guard";
 
 export const dynamic = "force-dynamic";
 
-type RouteContext = { params: { sessionId: string } };
+type RouteContext = { params: Promise<{ sessionId: string }> };
 
 const bodySchema = z.object({
   startTime: z.string(),
   durationMinutes: z.number().int().min(15).max(480).optional(),
 });
 
-export async function PATCH(request: NextRequest, { params }: RouteContext) {
+export async function PATCH(request: NextRequest, props: RouteContext) {
+  const params = await props.params;
   try {
     const guard = await guardSessionManagement(params.sessionId);
     if (!guard.ok) return guard.response;

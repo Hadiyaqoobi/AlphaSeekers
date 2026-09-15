@@ -5,9 +5,10 @@ import { getAccessControl, can } from "@/lib/security/permissions";
 
 export const dynamic = "force-dynamic";
 
-type Props = { params: { locale: string } };
+type Props = { params: Promise<{ locale: string }> };
 
-export default async function AdminAnalyticsPage({ params }: Props) {
+export default async function AdminAnalyticsPage(props: Props) {
+  const params = await props.params;
   const access = await getAccessControl();
   if (!access) redirect(`/${params.locale}/login`);
   if (!can(access, "analytics.view")) redirect(`/${params.locale}/dashboard`);

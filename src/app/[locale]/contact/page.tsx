@@ -2,9 +2,10 @@ import { getTranslations } from "next-intl/server";
 
 import { getSiteSettings } from "@/lib/platform/site-settings";
 
-type ContactPageProps = { params: { locale: string } };
+type ContactPageProps = { params: Promise<{ locale: string }> };
 
-export async function generateMetadata({ params }: ContactPageProps) {
+export async function generateMetadata(props: ContactPageProps) {
+  const params = await props.params;
   const t = await getTranslations({ locale: params.locale, namespace: "contact" });
   return {
     title: `${t("title")} — AlphaSeekers`,
@@ -14,7 +15,8 @@ export async function generateMetadata({ params }: ContactPageProps) {
 
 // Every channel below is admin-editable in Site Settings. A channel with no URL
 // saved is simply not rendered, so this page never shows a dead link.
-export default async function ContactPage({ params }: ContactPageProps) {
+export default async function ContactPage(props: ContactPageProps) {
+  const params = await props.params;
   const locale = params.locale;
   const t = await getTranslations({ locale, namespace: "contact" });
   const s = await getSiteSettings();

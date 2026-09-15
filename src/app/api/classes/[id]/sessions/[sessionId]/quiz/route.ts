@@ -15,8 +15,9 @@ import { checkSessionAccess } from "@/lib/session-access";
 
 export async function GET(
   _request: Request,
-  { params }: { params: { id: string; sessionId: string } },
+  props: { params: Promise<{ id: string; sessionId: string }> }
 ) {
+  const params = await props.params;
   const user = await getSessionUser();
   if (!user) return unauthorized();
 
@@ -42,8 +43,9 @@ export async function GET(
 
 export async function POST(
   _request: Request,
-  { params }: { params: { id: string; sessionId: string } },
+  props: { params: Promise<{ id: string; sessionId: string }> }
 ) {
+  const params = await props.params;
   const user = await getSessionUser();
   if (!user) return unauthorized();
 

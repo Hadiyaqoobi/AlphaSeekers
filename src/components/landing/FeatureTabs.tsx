@@ -321,7 +321,8 @@ export function FeatureTabs() {
   const [activeTab, setActiveTab] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const lastInteraction = useRef(0);
-  const timerRef = useRef<ReturnType<typeof setTimeout>>();
+  // React 19 types require an explicit initial value for useRef.
+  const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const tabs = TAB_MOCKUPS.map((Mockup, i) => ({
     Mockup,

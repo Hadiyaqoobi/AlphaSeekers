@@ -6,7 +6,7 @@ import { AccessError, isSuper, requirePermission } from "@/lib/security/permissi
 import { getClientIp } from "@/lib/security/rate-limit";
 
 type Params = {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 };
 
 const ROLES = ["STUDENT", "TEACHER", "ADMIN"] as const;
@@ -33,7 +33,8 @@ function accessErrorResponse(error: unknown) {
  * teacher who submits without flipping the toggle is stored as a STUDENT and
  * never appears in the Create Class lecturer dropdown.
  */
-export async function PATCH(request: NextRequest, { params }: Params) {
+export async function PATCH(request: NextRequest, props: Params) {
+  const params = await props.params;
   const body = (await request.json().catch(() => ({}))) as {
     approved?: unknown;
     role?: unknown;
@@ -144,7 +145,8 @@ export async function PATCH(request: NextRequest, { params }: Params) {
  * users.delete and refuses accounts that still own classes or materials
  * (see getUserDeletionBlockers — those FKs are restrict + NOT NULL).
  */
-export async function DELETE(request: NextRequest, { params }: Params) {
+export async function DELETE(request: NextRequest, props: Params) {
+  const params = await props.params;
   let access;
   try {
     access = await requirePermission("users.delete");

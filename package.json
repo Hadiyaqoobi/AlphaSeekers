@@ -6,9 +6,9 @@
     "postinstall": "prisma generate",
     "clean": "node -e \"const fs=require('fs'); fs.rmSync('.next',{recursive:true,force:true,maxRetries:20,retryDelay:50});\"",
     "dev": "sh -c 'PORT=${PORT:-3005}; node -e \"require(\\\"fs\\\").rmSync(\\\".next/cache\\\",{recursive:true,force:true})\" 2>/dev/null; npx -p node@20.18.1 node ./node_modules/.bin/next dev -p $PORT'",
-    "build": "npx -p node@20.18.1 node ./node_modules/.bin/next build --no-lint",
+    "build": "npx -p node@20.18.1 node ./node_modules/.bin/next build",
     "start": "npx -p node@20.18.1 node ./node_modules/.bin/next start",
-    "lint": "npx -p node@20.18.1 node ./node_modules/.bin/next lint",
+    "lint": "npx -p node@20.18.1 node ./node_modules/.bin/eslint .",
     "smoke": "npx -p node@20.18.1 node scripts/smoke.mjs",
     "stories": "npm run smoke",
     "typecheck": "tsc --noEmit",
@@ -17,6 +17,12 @@
     "prisma:generate": "sh -c 'set -a; [ -f .env.local ] && . ./.env.local; set +a; npx -p node@20.18.1 node ./node_modules/.bin/prisma generate'",
     "prisma:migrate:deploy": "sh -c 'set -a; [ -f .env.local ] && . ./.env.local; set +a; npx -p node@20.18.1 node ./node_modules/.bin/prisma migrate deploy'",
     "prisma:migrate:dev": "sh -c 'set -a; [ -f .env.local ] && . ./.env.local; set +a; npx -p node@20.18.1 node ./node_modules/.bin/prisma migrate dev'"
+  },
+  "overrides": {
+    "next-auth": {
+      "nodemailer": "$nodemailer"
+    },
+    "deepmerge-ts": "^8.0.0"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.600.0",
@@ -30,12 +36,12 @@
     "googleapis": "^144.0.0",
     "has-symbols": "^1.0.3",
     "imapflow": "^1.2.16",
-    "next": "14.2.35",
+    "next": "^16.3.5",
     "next-auth": "^4.24.13",
-    "next-intl": "^4.8.2",
+    "next-intl": "^4.14.5",
     "nodemailer": "^10.0.10",
-    "react": "^18",
-    "react-dom": "^18",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
     "sanitize-html": "^2.13.0",
     "web-push": "^3.6.7",
     "zod": "^4.3.6"
@@ -43,12 +49,12 @@
   "devDependencies": {
     "@types/node": "^20",
     "@types/nodemailer": "^7.0.11",
-    "@types/react": "^18.3.28",
-    "@types/react-dom": "^18",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
     "@types/sanitize-html": "^2.13.0",
     "caniuse-lite": "^1.0.30001787",
-    "eslint": "^8",
-    "eslint-config-next": "14.2.35",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "^16.3.5",
     "postcss": "^8",
     "prisma": "^6.19.2",
     "tailwindcss": "^3.4.1",

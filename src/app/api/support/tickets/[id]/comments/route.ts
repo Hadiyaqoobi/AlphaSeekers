@@ -6,7 +6,8 @@ import { AccessError, requirePermission } from "@/lib/security/permissions";
 
 const commentSchema = z.object({ body: z.string().trim().min(1).max(5000) });
 
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   let access;
   try {
     // Replying is the conversation this whole feature exists to hold, so it is
