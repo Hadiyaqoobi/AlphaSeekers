@@ -2,13 +2,28 @@ import type { UserRole } from "@prisma/client";
 import type { NextAuthOptions } from "next-auth";
 import type { JWT } from "next-auth/jwt";
 import CredentialsProvider from "next-auth/providers/credentials";
+import GoogleProvider from "next-auth/providers/google";
 import { z } from "zod";
 
 import { DEMO_USERS } from "@/lib/constants";
 import { prisma } from "@/lib/prisma";
 import { runtime, warnIfInsecureProductionConfig } from "@/lib/runtime";
+import { evaluateGoogleProfile, GOOGLE_ERROR_PARAM } from "@/lib/security/google-signin";
 import { verifyPassword } from "@/lib/security/passwords";
 import { checkRateLimitDistributed } from "@/lib/security/rate-limit";
+
+/**
+ * Errors from authorize() that are MEANT to reach the user, rather than being
+ * flattened into "wrong email or password". Each is safe to disclose:
+ *  - TOO_MANY_ATTEMPTS  describes the request, not the account
+ *  - ACCOUNT_DEACTIVATED / PENDING_APPROVAL  are only reachable AFTER the
+ *    password has been verified, so they reveal nothing to someone guessing.
+ */
+const AUTH_SIGNAL_ERRORS = new Set([
+  "TOO_MANY_ATTEMPTS",
+  "ACCOUNT_DEACTIVATED",
+  "PENDING_APPROVAL",
+]);
 
 const credentialsSchema = z.object({
   email: z.string().email(),
@@ -63,6 +78,21 @@ export const authOptions: NextAuthOptions = {
     error: "/fa/login",
   },
   providers: [
+    // Google is listed FIRST so it renders as the primary option. It is only
+    // registered when credentials are present, so local/demo environments
+    // without a Google client still boot and still show the password form.
+    ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
+      ? [
+        GoogleProvider({
+          clientId: process.env.GOOGLE_CLIENT_ID,
+          clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+          // Always show the chooser. Shared phones and shared computers are
+          // common here, and silent reuse of whichever account Google happens
+          // to remember is how one student ends up inside another's account.
+          authorization: { params: { prompt: "select_account" } },
+        }),
+      ]
+      : []),
     CredentialsProvider({
       name: "Email and Password",
       credentials: {
@@ -86,7 +116,16 @@ export const authOptions: NextAuthOptions = {
         const ip = ipFromAuthRequest(req);
         const rl = await checkRateLimitDistributed(`login:${ip}:${email}`);
         if (!rl.allowed) {
-          return null;
+          // Was `return null`, which NextAuth renders as the SAME message a
+          // wrong password gets. Five mistyped attempts therefore looked
+          // identical to "your password is wrong", and a student who tried
+          // again carefully still failed — so they concluded the account was
+          // broken. Say what actually happened instead.
+          //
+          // This leaks nothing: the limiter is keyed on ip+email and answers
+          // "you have tried too often", which is true whether or not that
+          // account exists, so it is not a user-enumeration oracle.
+          throw new Error("TOO_MANY_ATTEMPTS");
         }
 
         // Demo auth is impossible in production regardless of any stray toggle:
@@ -138,7 +177,11 @@ export const authOptions: NextAuthOptions = {
           // logging in and riding a fresh 7-day JWT. Checked after password
           // verification so timing matches a normal login (no user enumeration).
           if (dbUser.deactivatedAt) {
-            return null;
+            // Told plainly rather than as a generic failure. Safe to reveal
+            // here specifically because it is checked AFTER the password
+            // verified: an attacker who cannot supply the password never
+            // reaches this branch, so it is not an enumeration oracle either.
+            throw new Error("ACCOUNT_DEACTIVATED");
           }
 
           if (dbUser.role !== "ADMIN" && !dbUser.approvedAt) {
@@ -153,7 +196,11 @@ export const authOptions: NextAuthOptions = {
             approved: true,
           };
         } catch (error) {
-          if (error instanceof Error && error.message === "PENDING_APPROVAL") {
+          // These are deliberate signals, not faults: re-throw so NextAuth
+          // carries the reason to the login page. Anything else is a genuine
+          // error and collapses to a generic failure, which is what keeps a
+          // real fault from telling an attacker whether an account exists.
+          if (error instanceof Error && AUTH_SIGNAL_ERRORS.has(error.message)) {
             throw error;
           }
 
@@ -163,6 +210,87 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
+    /**
+     * Google sign-in: resolve the account, or create a STUDENT.
+     *
+     * Runs before `jwt`. On success it writes the DATABASE id (and role) onto
+     * `user`, which `jwt` below already knows how to seed claims from — without
+     * that, `user.id` would be Google's subject and every Google session would
+     * carry a subject that matches no row in our user table.
+     *
+     * Returning a string redirects to it; that is how a refusal reaches the
+     * login page as something a student can act on instead of NextAuth's
+     * generic "AccessDenied".
+     */
+    async signIn({ user, account, profile }) {
+      if (account?.provider !== "google") {
+        return true; // credentials path already decided in authorize()
+      }
+
+      const decision = evaluateGoogleProfile(profile);
+      if (!decision.ok) {
+        return `/fa/login?${GOOGLE_ERROR_PARAM}=${decision.reason}`;
+      }
+
+      try {
+        const existing = await prisma.user.findUnique({
+          where: { email: decision.email },
+          select: {
+            id: true,
+            name: true,
+            role: true,
+            approvedAt: true,
+            deactivatedAt: true,
+          },
+        });
+
+        if (existing) {
+          // A deactivated account must not be revivable by arriving through a
+          // different door. Same rule the credentials path enforces.
+          if (existing.deactivatedAt) {
+            return `/fa/login?${GOOGLE_ERROR_PARAM}=ACCOUNT_DEACTIVATED`;
+          }
+
+          // Link, do not duplicate: this is the existing account, whatever way
+          // it was originally created. Role is READ, never written — Google
+          // sign-in can never grant or raise privilege.
+          user.id = existing.id;
+          user.name = existing.name;
+          (user as { role?: string }).role = existing.role;
+          (user as { approved?: boolean }).approved =
+            existing.role === "ADMIN" || existing.approvedAt != null;
+          return true;
+        }
+
+        // First time through: create the student. No passwordHash is written,
+        // so this account simply has no password to forget — the whole point.
+        const created = await prisma.user.create({
+          data: {
+            name: decision.name,
+            email: decision.email,
+            role: "STUDENT",
+            requestedRole: "STUDENT",
+            // Signing up has not waited on an admin since the register route
+            // stopped gating it; course access is the real gate. Matching that
+            // here keeps the two entry paths consistent.
+            approvedAt: new Date(),
+            language: "FA",
+            timezone: "Asia/Kabul",
+          },
+          select: { id: true, name: true, role: true },
+        });
+
+        user.id = created.id;
+        user.name = created.name;
+        (user as { role?: string }).role = created.role;
+        (user as { approved?: boolean }).approved = true;
+        return true;
+      } catch (error) {
+        console.error("[auth] google sign-in failed:", error);
+        return `/fa/login?${GOOGLE_ERROR_PARAM}=SIGNIN_FAILED`;
+      }
+    },
+
     async jwt({ token, user }) {
       // Initial sign-in: seed claims from the authorize() result.
       if (user) {

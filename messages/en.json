@@ -536,7 +536,14 @@
     "showPassword": "Show password",
     "hidePassword": "Hide password",
     "newToPlatform": "New to AlphaSeekers?",
-    "requestAccessArrow": "Request access →"
+    "requestAccessArrow": "Request access →",
+    "continueWithGoogle": "Continue with Google",
+    "orUseEmail": "or use your email",
+    "tooManyAttempts": "Too many sign-in attempts. Please wait about 15 minutes and try again — your account is not locked.",
+    "deactivated": "This account has been turned off. Please ask your teacher or the AlphaSeekers team.",
+    "googleEmailUnverified": "Google has not verified that email address, so we cannot sign you in with it. Please use your email and password instead.",
+    "googleNoEmail": "Google did not share an email address with us. Please use your email and password instead.",
+    "googleFailed": "Something went wrong signing in with Google. Please try again, or use your email and password."
   },
   "register": {
     "eyebrow": "Create account",

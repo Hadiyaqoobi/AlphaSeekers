@@ -1,15 +1,44 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { signIn } from "next-auth/react";
+import { getProviders, signIn } from "next-auth/react";
 
 const SOFT = "#93A9BC";
 const FAINT = "#5F7C93";
 const GREEN = "#00E676";
+
+/**
+ * Every way a sign-in can be refused, mapped to something the student can act
+ * on. Previously all of these rendered as one generic "wrong email or
+ * password", so a rate-limited student retried carefully, failed again, and
+ * concluded their account was broken.
+ */
+function messageForError(
+  code: string | null | undefined,
+  t: (key: string) => string,
+): string | null {
+  if (!code) return null;
+  switch (code) {
+    case "PENDING_APPROVAL":
+      return t("pending");
+    case "TOO_MANY_ATTEMPTS":
+      return t("tooManyAttempts");
+    case "ACCOUNT_DEACTIVATED":
+      return t("deactivated");
+    case "EMAIL_UNVERIFIED":
+      return t("googleEmailUnverified");
+    case "NO_EMAIL":
+      return t("googleNoEmail");
+    case "SIGNIN_FAILED":
+      return t("googleFailed");
+    default:
+      return t("error");
+  }
+}
 
 export default function LoginPage() {
   const t = useTranslations("login");
@@ -29,10 +58,33 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [shakeError, setShakeError] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(() => {
-    const err = searchParams.get("error");
-    return err === "PENDING_APPROVAL" ? t("pending") : null;
-  });
+  const [errorMessage, setErrorMessage] = useState<string | null>(() =>
+    // `googleError` is set by the signIn callback's redirect; `error` is
+    // NextAuth's own parameter.
+    messageForError(searchParams.get("googleError") ?? searchParams.get("error"), t),
+  );
+
+  const [googleSubmitting, setGoogleSubmitting] = useState(false);
+
+  // Ask NextAuth what is actually configured rather than reading an env var.
+  // The provider is only registered when GOOGLE_CLIENT_ID/SECRET are present,
+  // so this keeps the button and the server in step with no extra env to set,
+  // and no broken button in environments without Google credentials.
+  const [googleEnabled, setGoogleEnabled] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    getProviders()
+      .then((providers) => {
+        if (!cancelled) setGoogleEnabled(Boolean(providers?.google));
+      })
+      .catch(() => {
+        // Never let a failed probe hide the password form.
+        if (!cancelled) setGoogleEnabled(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -43,8 +95,7 @@ export default function LoginPage() {
     setSubmitting(false);
 
     if (!result || !result.ok) {
-      const pending = result?.error === "PENDING_APPROVAL" || result?.url?.includes("PENDING_APPROVAL");
-      setErrorMessage(pending ? t("pending") : t("error"));
+      setErrorMessage(messageForError(result?.error, t) ?? t("error"));
       setShakeError(true);
       setTimeout(() => setShakeError(false), 600);
       return;
@@ -167,7 +218,37 @@ export default function LoginPage() {
             {t("tagline")}
           </p>
 
-          <form className="mt-7 flex flex-col gap-[18px]" onSubmit={handleSubmit}>
+          {/* Google first and above the password form: for a student who has a
+              Gmail account this is one tap, with no password to invent now and
+              none to recover later. The password form stays for everyone else. */}
+          {googleEnabled ? (
+            <>
+              <button
+                className="auth-google mt-7"
+                disabled={googleSubmitting || submitting}
+                onClick={() => {
+                  setGoogleSubmitting(true);
+                  setErrorMessage(null);
+                  void signIn("google", { callbackUrl: safeNext ?? `/${locale}/dashboard` });
+                }}
+                type="button"
+              >
+                <svg aria-hidden="true" height="18" viewBox="0 0 18 18" width="18">
+                  <path d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 01-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62z" fill="#4285F4" />
+                  <path d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.81.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.03-3.7H.96v2.33A9 9 0 009 18z" fill="#34A853" />
+                  <path d="M3.97 10.72a5.4 5.4 0 010-3.44V4.95H.96a9 9 0 000 8.1l3.01-2.33z" fill="#FBBC05" />
+                  <path d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58C13.46.9 11.43 0 9 0A9 9 0 00.96 4.95l3.01 2.33C4.68 5.16 6.66 3.58 9 3.58z" fill="#EA4335" />
+                </svg>
+                <span>{googleSubmitting ? t("signingIn") : t("continueWithGoogle")}</span>
+              </button>
+
+              <div className="auth-divider" role="separator">
+                <span>{t("orUseEmail")}</span>
+              </div>
+            </>
+          ) : null}
+
+          <form className={`${googleEnabled ? "" : "mt-7 "}flex flex-col gap-[18px]`} onSubmit={handleSubmit}>
             {/* Email */}
             <div>
               <label className="mb-2 block text-[11px] font-bold uppercase tracking-[0.11em]" style={{ color: SOFT }}>
@@ -245,7 +326,12 @@ export default function LoginPage() {
                 <svg className="mt-0.5 h-4 w-4 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                 </svg>
-                <span>{errorMessage}</span>
+                {/* dir="auto" so the browser picks direction from the text
+                    itself. Without it an English message inside the RTL (fa)
+                    layout renders with its punctuation detached to the wrong
+                    end — ".and try again" instead of "and try again." — which
+                    is exactly how these strings look until the Dari lands. */}
+                <span dir="auto">{errorMessage}</span>
               </div>
             )}
 
