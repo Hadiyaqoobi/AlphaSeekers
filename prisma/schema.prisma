@@ -79,54 +79,54 @@ enum SchedulerJobStatus {
 }
 
 model User {
-  id                    String                @id @default(cuid())
-  name                  String
-  email                 String                @unique
-  phone                 String?
-  passwordHash          String?
-  role                  UserRole
+  id                 String          @id @default(cuid())
+  name               String
+  email              String          @unique
+  phone              String?
+  passwordHash       String?
+  role               UserRole
   // Staff access tier layered ON TOP of role. Only meaningful for role=ADMIN.
   // Values: SUPER_ADMIN, ADMIN, CONTENT_MANAGER, FINANCE, MODERATOR, SUPPORT.
   // Null on a legacy ADMIN = unrestricted full admin (backward compatible).
-  accessLevel           String?
+  accessLevel        String?
   // Granular per-module permission grants, e.g. ["users.view","classes.edit"].
   // Null on a legacy ADMIN = unrestricted. See src/lib/security/permissions.ts.
-  permissions           Json?
+  permissions        Json?
   // Employee lifecycle: set to deactivate an employee immediately (checked live).
-  deactivatedAt         DateTime?
+  deactivatedAt      DateTime?
   // Force a password reset on next login (temp-password onboarding flow).
-  mustChangePassword    Boolean               @default(false)
-  passwordResets        PasswordReset[]
+  mustChangePassword Boolean         @default(false)
+  passwordResets     PasswordReset[]
   // Which super-admin created this employee account (audit trail).
-  createdById           String?
-  timezone              String                @default("Asia/Kabul")
-  language              UserLanguage          @default(FA)
-  approvedAt            DateTime?
+  createdById        String?
+  timezone           String          @default("Asia/Kabul")
+  language           UserLanguage    @default(FA)
+  approvedAt         DateTime?
   // What the applicant asked to be at signup. Registration ALWAYS creates a
   // STUDENT (privilege-escalation prevention, api/auth/register), so this is the
   // only record of intent — the approvals screen shows it so an admin can grant
   // the teacher role deliberately instead of guessing. Null = pre-dates this
   // field, or no preference expressed.
-  requestedRole         UserRole?
-  createdAt             DateTime              @default(now())
-  updatedAt             DateTime              @updatedAt
+  requestedRole      UserRole?
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
 
-  teachingClasses       Class[]               @relation("ClassTeacher")
-  enrollments           Enrollment[]
-  attendance            Attendance[]
-  availabilitySlots     TeacherAvailability[]
-  uploadedMaterials     Material[]            @relation("MaterialUploader")
-  notifications         Notification[]
-  webinarRegistrations  WebinarRegistration[]
-  aiInteractions        AIInteraction[]
-  posts                 StudentPost[]
-  learningPaths         LearningPath[]
-  reportedTickets       Ticket[]              @relation("TicketReporter")
-  ticketComments        TicketComment[]
-  googleAccountLink     GoogleAccountLink?
-  telegramChatId        String?
-  pushSubscription      String?
-  notificationPrefs     String?               // JSON: { telegram: bool, webPush: bool, email: bool }
+  teachingClasses      Class[]               @relation("ClassTeacher")
+  enrollments          Enrollment[]
+  attendance           Attendance[]
+  availabilitySlots    TeacherAvailability[]
+  uploadedMaterials    Material[]            @relation("MaterialUploader")
+  notifications        Notification[]
+  webinarRegistrations WebinarRegistration[]
+  aiInteractions       AIInteraction[]
+  posts                StudentPost[]
+  learningPaths        LearningPath[]
+  reportedTickets      Ticket[]              @relation("TicketReporter")
+  ticketComments       TicketComment[]
+  googleAccountLink    GoogleAccountLink?
+  telegramChatId       String?
+  pushSubscription     String?
+  notificationPrefs    String? // JSON: { telegram: bool, webPush: bool, email: bool }
 
   // Role-filtered lists/counts (teachers, students) and approval-queue filters
   // scan large user tables; index the discriminators.
@@ -137,61 +137,65 @@ model User {
 }
 
 model Class {
-  id                    String                @id @default(cuid())
-  name                  String
-  subjectCategory       String
-  description           String
-  teacherId             String
-  maxStudents           Int
-  durationMinutes       Int                   @default(60)
-  schedulePreference    String?
-  language              String                @default("Dari")
-  registrationFormUrl   String?
-  whatsappGroupUrl      String?
-  published             Boolean               @default(true)
-  status                ClassStatus           @default(ACTIVE)
-  schedulingMode        SchedulingMode        @default(AUTO)
-  termId                String?
-  createdAt             DateTime              @default(now())
-  updatedAt             DateTime              @updatedAt
+  id                   String         @id @default(cuid())
+  name                 String
+  subjectCategory      String
+  description          String
+  teacherId            String
+  maxStudents          Int
+  durationMinutes      Int            @default(60)
+  schedulePreference   String?
+  language             String         @default("Dari")
+  registrationFormUrl  String?
+  whatsappGroupUrl     String?
+  /// Last moment a student may REQUEST to join. Null = open indefinitely, which
+  /// is how every class behaved before this field existed. Enforced server-side
+  /// in enrollStudent(); already-enrolled students are never affected by it.
+  registrationDeadline DateTime?
+  published            Boolean        @default(true)
+  status               ClassStatus    @default(ACTIVE)
+  schedulingMode       SchedulingMode @default(AUTO)
+  termId               String?
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
 
-  teacher               User                  @relation("ClassTeacher", fields: [teacherId], references: [id])
-  sessions              Session[]
-  enrollments           Enrollment[]
-  materials             Material[]
-  documentChunks        DocumentChunk[]
-  announcements         ClassAnnouncement[]
+  teacher        User                @relation("ClassTeacher", fields: [teacherId], references: [id])
+  sessions       Session[]
+  enrollments    Enrollment[]
+  materials      Material[]
+  documentChunks DocumentChunk[]
+  announcements  ClassAnnouncement[]
 }
 
 model Session {
-  id                    String                @id @default(cuid())
-  classId               String
-  startTime             DateTime
-  endTime               DateTime
-  meetLink              String?
-  meetLinkStatus        MeetLinkStatus        @default(PENDING)
+  id               String         @id @default(cuid())
+  classId          String
+  startTime        DateTime
+  endTime          DateTime
+  meetLink         String?
+  meetLinkStatus   MeetLinkStatus @default(PENDING)
   // The Google Calendar event backing this session's Meet link, so a reschedule
   // can PATCH the same event (preserving the link) and a cancel can delete it —
   // instead of orphaning events + leaving old Meet links joinable.
-  googleEventId         String?
-  googleCalendarId      String?
-  cancelled             Boolean               @default(false)
+  googleEventId    String?
+  googleCalendarId String?
+  cancelled        Boolean        @default(false)
   // Set when the instructor explicitly set/confirmed this session's time.
   // null on an auto-proposed session awaiting confirmation.
-  confirmedAt           DateTime?
-  createdAt             DateTime              @default(now())
+  confirmedAt      DateTime?
+  createdAt        DateTime       @default(now())
 
   // Attendance check-in: teacher generates a 4-digit code during class;
   // students enter it to verify they were actually present.
-  checkinCode           String?
-  checkinCodeExpiresAt  DateTime?
+  checkinCode          String?
+  checkinCodeExpiresAt DateTime?
 
-  class                 Class                 @relation(fields: [classId], references: [id], onDelete: Cascade)
-  attendance            Attendance[]
-  materials             Material[]
-  summary               SessionSummary?
-  notes                 SessionNote[]
-  homeworkAssignments   HomeworkAssignment[]
+  class               Class                @relation(fields: [classId], references: [id], onDelete: Cascade)
+  attendance          Attendance[]
+  materials           Material[]
+  summary             SessionSummary?
+  notes               SessionNote[]
+  homeworkAssignments HomeworkAssignment[]
 
   // Hot paths: filter by class (schedule/join-now), by time window (reminder/today
   // batches), and by both together (per-class upcoming lookups).
@@ -201,14 +205,14 @@ model Session {
 }
 
 model Enrollment {
-  id                    String                @id @default(cuid())
-  studentId             String
-  classId               String
-  enrolledAt            DateTime              @default(now())
-  status                EnrollmentStatus      @default(ACTIVE)
+  id         String           @id @default(cuid())
+  studentId  String
+  classId    String
+  enrolledAt DateTime         @default(now())
+  status     EnrollmentStatus @default(ACTIVE)
 
-  student               User                  @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  class                 Class                 @relation(fields: [classId], references: [id], onDelete: Cascade)
+  student User  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  class   Class @relation(fields: [classId], references: [id], onDelete: Cascade)
 
   @@unique([studentId, classId])
   // Roster/count queries filter by classId first; the unique above is studentId-first
@@ -217,18 +221,18 @@ model Enrollment {
 }
 
 model Attendance {
-  id                    String                @id @default(cuid())
-  sessionId             String
-  studentId             String
-  attended              Boolean               @default(false)
-  joinedAt              DateTime?
+  id        String    @id @default(cuid())
+  sessionId String
+  studentId String
+  attended  Boolean   @default(false)
+  joinedAt  DateTime?
 
   // Second-layer verification: did the student enter the check-in code?
-  checkinVerified       Boolean               @default(false)
-  checkinAt             DateTime?
+  checkinVerified Boolean   @default(false)
+  checkinAt       DateTime?
 
-  session               Session               @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  student               User                  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  student User    @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@unique([sessionId, studentId])
   // sessionId-first lookups (session attendance) are already served by the
@@ -238,139 +242,139 @@ model Attendance {
 }
 
 model TeacherAvailability {
-  id                    String                @id @default(cuid())
-  teacherId             String
-  dayOfWeek             Int
-  startTimeUTC          DateTime
-  endTimeUTC            DateTime
+  id           String   @id @default(cuid())
+  teacherId    String
+  dayOfWeek    Int
+  startTimeUTC DateTime
+  endTimeUTC   DateTime
 
-  teacher               User                  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  teacher User @relation(fields: [teacherId], references: [id], onDelete: Cascade)
 
   @@index([teacherId, dayOfWeek])
 }
 
 model Material {
-  id                    String                @id @default(cuid())
-  classId               String
-  title                 String
-  fileUrl               String
-  fileSize              Int
-  uploadedBy            String
-  sessionId             String?
-  createdAt             DateTime              @default(now())
+  id         String   @id @default(cuid())
+  classId    String
+  title      String
+  fileUrl    String
+  fileSize   Int
+  uploadedBy String
+  sessionId  String?
+  createdAt  DateTime @default(now())
 
-  class                 Class                 @relation(fields: [classId], references: [id], onDelete: Cascade)
-  uploader              User                  @relation("MaterialUploader", fields: [uploadedBy], references: [id])
-  session               Session?              @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  class    Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  uploader User     @relation("MaterialUploader", fields: [uploadedBy], references: [id])
+  session  Session? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
 }
 
 model Opportunity {
-  id                    String                @id @default(cuid())
-  title                 String
-  type                  OpportunityType
-  description           String
-  deadline              DateTime
-  externalUrl           String
-  createdAt             DateTime              @default(now())
-  updatedAt             DateTime              @updatedAt
+  id          String          @id @default(cuid())
+  title       String
+  type        OpportunityType
+  description String
+  deadline    DateTime
+  externalUrl String
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
 }
 
 model LibraryResource {
-  id                    String                @id @default(cuid())
-  title                 String
-  author                String?
-  category              String
-  fileUrl               String?
-  externalUrl           String?
-  fileSize              Int?
-  createdAt             DateTime              @default(now())
-  updatedAt             DateTime              @updatedAt
+  id          String   @id @default(cuid())
+  title       String
+  author      String?
+  category    String
+  fileUrl     String?
+  externalUrl String?
+  fileSize    Int?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model Webinar {
-  id                    String                @id @default(cuid())
-  title                 String
-  description           String
-  startsAt              DateTime
-  meetLink              String
-  language              String                @default("Dari")
-  createdAt             DateTime              @default(now())
-  updatedAt             DateTime              @updatedAt
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  startsAt    DateTime
+  meetLink    String
+  language    String   @default("Dari")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  registrations         WebinarRegistration[]
+  registrations WebinarRegistration[]
 }
 
 model WebinarRegistration {
-  id                    String                @id @default(cuid())
-  webinarId             String
-  userId                String
-  registeredAt          DateTime              @default(now())
+  id           String   @id @default(cuid())
+  webinarId    String
+  userId       String
+  registeredAt DateTime @default(now())
 
-  webinar               Webinar               @relation(fields: [webinarId], references: [id], onDelete: Cascade)
-  user                  User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  webinar Webinar @relation(fields: [webinarId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([webinarId, userId])
 }
 
 model Notification {
-  id                    String                @id @default(cuid())
-  userId                String
-  dedupeKey             String?
-  channel               NotificationChannel
-  content               String
-  status                NotificationStatus    @default(PENDING)
-  sentAt                DateTime?
-  createdAt             DateTime              @default(now())
+  id        String              @id @default(cuid())
+  userId    String
+  dedupeKey String?
+  channel   NotificationChannel
+  content   String
+  status    NotificationStatus  @default(PENDING)
+  sentAt    DateTime?
+  createdAt DateTime            @default(now())
 
-  user                  User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@unique([dedupeKey, channel])
   @@index([userId, status])
   // Per-user notification feed is ordered newest-first; index (userId, createdAt).
   @@index([userId, createdAt])
-  @@unique([dedupeKey, channel])
 }
 
 model SchedulerJob {
-  id                    String                @id @default(cuid())
-  status                SchedulerJobStatus    @default(PENDING)
-  processedCount        Int                   @default(0)
-  totalCount            Int                   @default(0)
-  lastRunAt             DateTime?
-  createdAt             DateTime              @default(now())
-  updatedAt             DateTime              @updatedAt
+  id             String             @id @default(cuid())
+  status         SchedulerJobStatus @default(PENDING)
+  processedCount Int                @default(0)
+  totalCount     Int                @default(0)
+  lastRunAt      DateTime?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
 }
 
 model GoogleAccountLink {
-  id                    String                @id @default(cuid())
-  userId                String                @unique
-  googleEmail           String?
-  refreshToken          String
-  accessToken           String?
-  scope                 String?
-  expiryDate            DateTime?
-  calendarId            String                @default("primary")
-  createdAt             DateTime              @default(now())
-  updatedAt             DateTime              @updatedAt
+  id           String    @id @default(cuid())
+  userId       String    @unique
+  googleEmail  String?
+  refreshToken String
+  accessToken  String?
+  scope        String?
+  expiryDate   DateTime?
+  calendarId   String    @default("primary")
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
-  user                  User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 // ─── RAG Study Assistant ───
 
 model DocumentChunk {
-  id                    String                @id
-  sourceType            String                // "LIBRARY" | "MATERIAL"
-  sourceId              String
-  sourceTitle           String
-  content               String
-  chunkIndex            Int
-  tokenCount            Int                   @default(0)
-  classId               String?               // FK to Class — which class does this material belong to?
+  id          String   @id
+  sourceType  String // "LIBRARY" | "MATERIAL"
+  sourceId    String
+  sourceTitle String
+  content     String
+  chunkIndex  Int
+  tokenCount  Int      @default(0)
+  classId     String? // FK to Class — which class does this material belong to?
   // embedding vector(384) — managed via raw SQL, not Prisma
   // See: prisma/migrations/20260413000000_add_rag_vector_store/migration.sql
-  createdAt             DateTime              @default(now())
+  createdAt   DateTime @default(now())
 
-  class                 Class?                @relation(fields: [classId], references: [id])
+  class Class? @relation(fields: [classId], references: [id])
 
   @@index([sourceType, sourceId])
   @@index([classId])
@@ -379,39 +383,39 @@ model DocumentChunk {
 // ─── AI Response Cache ───
 
 model CachedResponse {
-  id            String    @id @default(cuid())
-  questionHash  String    @unique
-  questionText  String
-  questionLang  String    @default("en")
-  answer        String    @db.Text
-  sources       String?   @db.Text
-  provider      String
-  quality       Float?
-  hitCount      Int       @default(0)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  expiresAt     DateTime?
+  id           String    @id @default(cuid())
+  questionHash String    @unique
+  questionText String
+  questionLang String    @default("en")
+  answer       String    @db.Text
+  sources      String?   @db.Text
+  provider     String
+  quality      Float?
+  hitCount     Int       @default(0)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  expiresAt    DateTime?
 }
 
 // ─── AI Interaction Tracking ───
 
 model AIInteraction {
-  id          String   @id @default(cuid())
-  userId      String
-  sessionId   String?  // Chat session ID from sessionStorage
-  query       String   @db.Text
-  answer      String?  @db.Text
-  sources     String?  @db.Text  // JSON array of source citations
-  mode        String   @default("study") // study, practice, quiz, explain, vocabulary, prepare
-  topics      String?  // Comma-separated detected topics
-  rating      String?  // positive, negative, null
-  provider    String?  // groq, gemma, cache
-  classIds    String?  // Comma-separated class IDs searched
-  responseMs  Int?     // Time to first byte in ms
-  createdAt   DateTime @default(now())
+  id         String   @id @default(cuid())
+  userId     String
+  sessionId  String? // Chat session ID from sessionStorage
+  query      String   @db.Text
+  answer     String?  @db.Text
+  sources    String?  @db.Text // JSON array of source citations
+  mode       String   @default("study") // study, practice, quiz, explain, vocabulary, prepare
+  topics     String? // Comma-separated detected topics
+  rating     String? // positive, negative, null
+  provider   String? // groq, gemma, cache
+  classIds   String? // Comma-separated class IDs searched
+  responseMs Int? // Time to first byte in ms
+  createdAt  DateTime @default(now())
 
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  evaluation  AIEvaluation?
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  evaluation AIEvaluation?
 
   @@index([userId, createdAt])
   @@index([mode, createdAt])
@@ -423,10 +427,10 @@ model AISafetyLog {
   id                  String    @id @default(cuid())
   interactionId       String?
   confidenceScore     Float
-  confidenceLevel     String    // high, medium, low
+  confidenceLevel     String // high, medium, low
   safetyPassed        Boolean
-  safetyCategory      String?   // harmful, off_topic, inappropriate
-  safetyAction        String    // allow, warn, block
+  safetyCategory      String? // harmful, off_topic, inappropriate
+  safetyAction        String // allow, warn, block
   guardrailViolations String?   @db.Text // JSON array of violated principles
   blockedResponse     String?   @db.Text // The response that was blocked
   reviewedBy          String?
@@ -457,25 +461,25 @@ model AIEvaluation {
   humanNotes        String?   @db.Text
   reviewedBy        String?
   reviewedAt        DateTime?
-  promptVariant     String?   // A/B test variant
+  promptVariant     String? // A/B test variant
   createdAt         DateTime  @default(now())
 
-  interaction       AIInteraction @relation(fields: [interactionId], references: [id], onDelete: Cascade)
+  interaction AIInteraction @relation(fields: [interactionId], references: [id], onDelete: Cascade)
 
   @@index([overall, createdAt])
   @@index([promptVariant, createdAt])
 }
 
 model AuditLog {
-  id          String   @id @default(cuid())
-  actorId     String
-  actorEmail  String?
-  action      String
-  targetType  String
-  targetId    String
-  details     String?  @db.Text
-  ipAddress   String?
-  createdAt   DateTime @default(now())
+  id         String   @id @default(cuid())
+  actorId    String
+  actorEmail String?
+  action     String
+  targetType String
+  targetId   String
+  details    String?  @db.Text
+  ipAddress  String?
+  createdAt  DateTime @default(now())
 
   @@index([actorId, createdAt])
   @@index([action, createdAt])
@@ -518,20 +522,20 @@ model Ticket {
   status      TicketStatus   @default(OPEN)
 
   // Where in the platform the problem is, free text ("Create Class page").
-  area        String?
+  area          String?
   // Reserved for the R2 presign flow if object storage is ever configured.
   // Screenshots today go to TicketAttachment instead; see the note there.
   attachmentUrl String?
 
-  reporterId  String
-  reporter    User           @relation("TicketReporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  reporterId String
+  reporter   User   @relation("TicketReporter", fields: [reporterId], references: [id], onDelete: Cascade)
 
-  comments    TicketComment[]
-  attachment  TicketAttachment?
+  comments   TicketComment[]
+  attachment TicketAttachment?
 
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
-  resolvedAt  DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  resolvedAt DateTime?
 
   // The list view filters on status/type and always sorts newest-first.
   @@index([status, createdAt])
@@ -572,40 +576,40 @@ model TicketComment {
 // ─── Self Learning (open-topic AI-generated lessons) ───
 
 model LearningPath {
-  id              String    @id @default(cuid())
-  userId          String
-  topic           String
-  title           String
-  description     String?
-  estimatedHours  Float?
-  lessons         Json      // Array of lesson outlines
-  currentLesson   Int       @default(1)
-  status          String    @default("in_progress") // in_progress, completed, abandoned
-  completedAt     DateTime?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id             String    @id @default(cuid())
+  userId         String
+  topic          String
+  title          String
+  description    String?
+  estimatedHours Float?
+  lessons        Json // Array of lesson outlines
+  currentLesson  Int       @default(1)
+  status         String    @default("in_progress") // in_progress, completed, abandoned
+  completedAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
-  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  progress        LessonProgress[]
+  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  progress LessonProgress[]
 
   @@index([userId, status])
 }
 
 model LessonProgress {
-  id            String    @id @default(cuid())
-  pathId        String
-  lessonNumber  Int
-  userId        String
-  content       Json?     // The generated lesson content (sections array)
-  quizScore     Float?    // 0.0 - 1.0
-  quizAnswers   Json?     // Student's selected answers
-  completed     Boolean   @default(false)
-  timeSpentSec  Int       @default(0)
-  startedAt     DateTime?
-  completedAt   DateTime?
-  createdAt     DateTime  @default(now())
+  id           String    @id @default(cuid())
+  pathId       String
+  lessonNumber Int
+  userId       String
+  content      Json? // The generated lesson content (sections array)
+  quizScore    Float? // 0.0 - 1.0
+  quizAnswers  Json? // Student's selected answers
+  completed    Boolean   @default(false)
+  timeSpentSec Int       @default(0)
+  startedAt    DateTime?
+  completedAt  DateTime?
+  createdAt    DateTime  @default(now())
 
-  path          LearningPath @relation(fields: [pathId], references: [id], onDelete: Cascade)
+  path LearningPath @relation(fields: [pathId], references: [id], onDelete: Cascade)
 
   @@unique([pathId, lessonNumber])
   @@index([userId, completed])
@@ -616,12 +620,12 @@ model LessonProgress {
 model SessionSummary {
   id          String   @id @default(cuid())
   sessionId   String   @unique
-  content     String   @db.Text         // Markdown summary
+  content     String   @db.Text // Markdown summary
   contentDari String?  @db.Text
-  quizData    String?  @db.Text         // JSON quiz generated from the summary
+  quizData    String?  @db.Text // JSON quiz generated from the summary
   generatedAt DateTime @default(now())
 
-  session     Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 }
 
 model SessionNote {
@@ -632,7 +636,7 @@ model SessionNote {
   updatedAt DateTime @updatedAt
   createdAt DateTime @default(now())
 
-  session   Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   @@unique([sessionId, studentId])
   @@index([studentId])
@@ -647,7 +651,7 @@ model HomeworkAssignment {
   dueDate     DateTime?
   createdAt   DateTime  @default(now())
 
-  session     Session   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  session     Session              @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   submissions HomeworkSubmission[]
 
   @@index([classId, dueDate])
@@ -665,7 +669,7 @@ model HomeworkSubmission {
   teacherNotes String?  @db.Text
   submittedAt  DateTime @default(now())
 
-  assignment   HomeworkAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  assignment HomeworkAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
 
   @@unique([assignmentId, studentId])
   @@index([studentId])
@@ -674,49 +678,49 @@ model HomeworkSubmission {
 // ─── Student Voices (community-generated content) ───
 
 model StudentPost {
-  id            String    @id @default(cuid())
-  authorId      String
+  id       String @id @default(cuid())
+  authorId String
 
   // Content
-  type          String    // article, creative_writing, poetry, art, spotlight
-  title         String
-  titleDari     String?
-  slug          String    @unique // URL-friendly
-  content       String?   @db.Text
-  contentDari   String?   @db.Text
-  excerpt       String?
-  excerptDari   String?
+  type        String // article, creative_writing, poetry, art, spotlight
+  title       String
+  titleDari   String?
+  slug        String  @unique // URL-friendly
+  content     String? @db.Text
+  contentDari String? @db.Text
+  excerpt     String?
+  excerptDari String?
 
   // Media
   coverImageUrl String?
-  galleryUrls   String?   @db.Text // JSON array of image URLs
+  galleryUrls   String? @db.Text // JSON array of image URLs
 
   // Metadata
-  language      String    @default("en") // en, da, both
-  category      String?
-  tags          String?   // Comma-separated
-  readTimeMin   Int?
+  language    String  @default("en") // en, da, both
+  category    String?
+  tags        String? // Comma-separated
+  readTimeMin Int?
 
   // Publishing
-  status        String    @default("draft") // draft, pending_review, published, rejected, archived
-  publishedAt   DateTime?
-  featured      Boolean   @default(false)
-  anonymous     Boolean   @default(false)
+  status      String    @default("draft") // draft, pending_review, published, rejected, archived
+  publishedAt DateTime?
+  featured    Boolean   @default(false)
+  anonymous   Boolean   @default(false)
 
   // Moderation
-  reviewedBy    String?
-  reviewedAt    DateTime?
-  reviewNotes   String?   @db.Text
+  reviewedBy  String?
+  reviewedAt  DateTime?
+  reviewNotes String?   @db.Text
 
   // Engagement
-  viewCount     Int       @default(0)
-  likeCount     Int       @default(0)
+  viewCount Int @default(0)
+  likeCount Int @default(0)
 
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  author        User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  likes         PostLike[]
+  author User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  likes  PostLike[]
 
   @@index([status, publishedAt])
   @@index([type, status])
@@ -725,12 +729,12 @@ model StudentPost {
 }
 
 model PostLike {
-  id        String      @id @default(cuid())
+  id        String   @id @default(cuid())
   postId    String
   userId    String
-  createdAt DateTime    @default(now())
+  createdAt DateTime @default(now())
 
-  post      StudentPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  post StudentPost @relation(fields: [postId], references: [id], onDelete: Cascade)
 
   @@unique([postId, userId])
   @@index([userId])
@@ -739,21 +743,21 @@ model PostLike {
 // ─── Spaced Repetition (SM-2 algorithm) ───
 
 model SpacedRepetitionItem {
-  id             String    @id @default(cuid())
-  userId         String
-  term           String    // The word or concept
-  definition     String    @db.Text
-  context        String?   @db.Text // Example sentence or source reference
-  classId        String?
+  id         String  @id @default(cuid())
+  userId     String
+  term       String // The word or concept
+  definition String  @db.Text
+  context    String? @db.Text // Example sentence or source reference
+  classId    String?
 
   // SM-2 fields
-  easeFactor     Float     @default(2.5)   // 1.3 - 4.0
-  interval       Int       @default(1)     // Days until next review
-  repetitions    Int       @default(0)     // Consecutive correct answers
+  easeFactor     Float     @default(2.5) // 1.3 - 4.0
+  interval       Int       @default(1) // Days until next review
+  repetitions    Int       @default(0) // Consecutive correct answers
   nextReviewAt   DateTime  @default(now()) // When to show again
   lastReviewedAt DateTime?
 
-  createdAt      DateTime  @default(now())
+  createdAt DateTime @default(now())
 
   @@index([userId, nextReviewAt])
   @@index([userId, classId])
@@ -794,7 +798,7 @@ model ClassAnnouncement {
   content    String
   createdAt  DateTime @default(now())
 
-  klass      Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  klass Class @relation(fields: [classId], references: [id], onDelete: Cascade)
 
   @@index([classId, createdAt])
 }
@@ -850,7 +854,6 @@ model Job {
   @@index([status, runAt, priority])
   @@index([type, status])
 }
-
 
 /// Single-use, time-limited password-reset tokens. We store only the SHA-256
 /// hash of the token (never the raw value); the raw token is emailed as a link.

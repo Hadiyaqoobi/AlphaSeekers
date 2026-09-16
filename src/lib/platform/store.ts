@@ -102,6 +102,8 @@ export async function createClass(input: {
   language: string;
   registrationFormUrl?: string;
   whatsappGroupUrl?: string;
+  /** Last moment a student may request to join. null/undefined = open indefinitely. */
+  registrationDeadline?: Date | null;
   schedulingMode?: "AUTO" | "MANUAL";
 }) {
   return viaDatabase(() => dbStore.createClass(input));
@@ -118,6 +120,8 @@ export async function createClassWithSession(input: {
   language: string;
   registrationFormUrl?: string;
   whatsappGroupUrl?: string;
+  /** Last moment a student may request to join. null/undefined = open indefinitely. */
+  registrationDeadline?: Date | null;
   schedulingMode?: "AUTO" | "MANUAL";
 }) {
   return viaDatabase(() => dbStore.createClassWithSession(input));
@@ -134,6 +138,8 @@ export async function updateClass(
     durationMinutes: number;
     schedulePreference: string;
     language: string;
+    /** Pass null to clear an existing deadline (reopen registration). */
+    registrationDeadline: Date | null;
   }>,
 ) {
   return viaDatabase(() => dbStore.updateClass(classId, input));

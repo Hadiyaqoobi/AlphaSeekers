@@ -33,6 +33,7 @@ type FormState = {
     materialUrl: string;
     registrationFormUrl: string;
     whatsappGroupUrl: string;
+    registrationDeadline: string;
     schedulingMode: "AUTO" | "MANUAL";
 };
 
@@ -84,6 +85,7 @@ const DEFAULT_FORM: FormState = {
     materialUrl: "",
     registrationFormUrl: "",
     whatsappGroupUrl: "",
+    registrationDeadline: "",
     schedulingMode: "AUTO",
 };
 
@@ -131,6 +133,7 @@ export function StaffClassForm({ teachers }: StaffClassFormProps) {
             language: form.language,
             registrationFormUrl: form.registrationFormUrl || undefined,
             whatsappGroupUrl: form.whatsappGroupUrl || undefined,
+            registrationDeadline: form.registrationDeadline || undefined,
             schedulingMode: form.schedulingMode,
         };
 
@@ -552,6 +555,27 @@ export function StaffClassForm({ teachers }: StaffClassFormProps) {
                     type="url"
                     value={form.whatsappGroupUrl}
                 />
+
+                {/* Registration cutoff. Left blank the class stays open, which is
+                    how every class behaved before this field existed. */}
+                <div className="space-y-1">
+                    <label
+                        className="text-xs font-semibold uppercase tracking-wide text-ink-soft"
+                        htmlFor="staff-class-registration-deadline"
+                    >
+                        {t("registrationDeadlineLabel")}
+                    </label>
+                    <input
+                        className="field"
+                        id="staff-class-registration-deadline"
+                        onChange={(event) =>
+                            setForm((current) => ({ ...current, registrationDeadline: event.target.value }))
+                        }
+                        type="date"
+                        value={form.registrationDeadline}
+                    />
+                    <p className="text-xs text-ink-faint">{t("registrationDeadlineHint")}</p>
+                </div>
             </fieldset>
 
             <button className="btn-primary w-full" disabled={saving} id="staff-class-submit" type="submit">

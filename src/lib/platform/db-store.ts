@@ -28,6 +28,8 @@ type CreateClassInput = {
   language: string;
   registrationFormUrl?: string;
   whatsappGroupUrl?: string;
+  /** Last moment a student may request to join. null/undefined = open indefinitely. */
+  registrationDeadline?: Date | null;
   // AUTO (default) = availability-driven auto-scheduler creates sessions.
   // MANUAL = the instructor sets/confirms exact session times; class creation
   // does NOT auto-create a session and the auto-scheduler skips this class.
@@ -813,6 +815,7 @@ export async function listClasses(params: ClassListParams = {}) {
         maxStudents: item.maxStudents,
         durationMinutes: normalizeDurationMinutes(item.durationMinutes),
         enrolledCount: countMap.get(item.id) ?? 0,
+        registrationDeadline: item.registrationDeadline?.toISOString() ?? null,
         nextSessionStart: nextSession?.startTime.toISOString() ?? null,
         meetLink: nextSession?.meetLink ?? null,
       };
@@ -882,6 +885,8 @@ export async function getClassById(
     schedulePreference: klass.schedulePreference ?? "TBD",
     language: klass.language,
     whatsappGroupUrl: (klass as { whatsappGroupUrl?: string | null }).whatsappGroupUrl ?? null,
+    registrationDeadline:
+      (klass as { registrationDeadline?: Date | null }).registrationDeadline?.toISOString() ?? null,
     status: klass.status,
     createdAt: klass.createdAt.toISOString(),
     updatedAt: klass.updatedAt.toISOString(),
@@ -1325,6 +1330,7 @@ export async function createClass(input: CreateClassInput) {
       // These columns require prisma db push; cast to bypass generated types
       ...(input.registrationFormUrl ? { registrationFormUrl: input.registrationFormUrl } : {}),
       ...(input.whatsappGroupUrl ? { whatsappGroupUrl: input.whatsappGroupUrl } : {}),
+      ...(input.registrationDeadline ? { registrationDeadline: input.registrationDeadline } : {}),
       ...(({ published: true }) as Record<string, unknown>),
     } as Parameters<typeof prisma.class.create>[0]["data"],
   });
@@ -1370,6 +1376,7 @@ export async function createClassWithSession(input: CreateClassInput) {
       // These columns require prisma db push; cast to bypass generated types
       ...(input.registrationFormUrl ? { registrationFormUrl: input.registrationFormUrl } : {}),
       ...(input.whatsappGroupUrl ? { whatsappGroupUrl: input.whatsappGroupUrl } : {}),
+      ...(input.registrationDeadline ? { registrationDeadline: input.registrationDeadline } : {}),
       ...(({ published: true }) as Record<string, unknown>),
     } as Parameters<typeof prisma.class.create>[0]["data"],
   });
@@ -1421,6 +1428,8 @@ export async function createClassWithSession(input: CreateClassInput) {
       sessions: [],
       registrationFormUrl: (klass as Record<string, unknown>).registrationFormUrl ?? null,
       whatsappGroupUrl: (klass as Record<string, unknown>).whatsappGroupUrl ?? null,
+      registrationDeadline:
+        (klass as { registrationDeadline?: Date | null }).registrationDeadline?.toISOString() ?? null,
     };
   }
 
@@ -1535,6 +1544,8 @@ export async function createClassWithSession(input: CreateClassInput) {
     sessions: createdSessions,
     registrationFormUrl: (klass as Record<string, unknown>).registrationFormUrl ?? null,
     whatsappGroupUrl: (klass as Record<string, unknown>).whatsappGroupUrl ?? null,
+    registrationDeadline:
+      (klass as { registrationDeadline?: Date | null }).registrationDeadline?.toISOString() ?? null,
   };
 }
 
@@ -1649,11 +1660,21 @@ export async function enrollStudentInClass(studentId: string, classId: string) {
     // (or archival) is honored.
     const klassInTx = await tx.class.findUnique({
       where: { id: classId },
-      select: { maxStudents: true, status: true },
+      select: { maxStudents: true, status: true, registrationDeadline: true },
     });
 
     if (!klassInTx || klassInTx.status !== ClassStatus.ACTIVE) {
       throw new Error("Class not found");
+    }
+
+    // Registration cutoff. Checked inside the transaction alongside capacity so a
+    // deadline edited mid-request is honoured, and so the UI hiding the button is
+    // never the only thing standing between a late request and the database.
+    // A null deadline means open indefinitely — the behaviour of every class that
+    // predates this field. Students already enrolled are unaffected: this guards
+    // the request path only.
+    if (klassInTx.registrationDeadline && klassInTx.registrationDeadline.getTime() < Date.now()) {
+      throw new Error("Registration closed");
     }
 
     const activeCount = await tx.enrollment.count({

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
+import { parseRegistrationDeadline } from "@/lib/platform/registration-deadline";
 import { archiveClass, deleteClassPermanently, updateClass } from "@/lib/platform/store";
 import { recordAudit } from "@/lib/security/audit";
 import { AccessError, requirePermission, requireSuperAdmin } from "@/lib/security/permissions";
@@ -26,6 +27,23 @@ const updateClassSchema = z
     registrationFormUrl: z.string().trim().max(300).regex(/^(https?:\/\/.+)?$/, "must be a URL or blank").optional(),
     whatsappGroupUrl: z.string().trim().max(300).regex(/^(https?:\/\/.+)?$/, "must be a URL or blank").optional(),
     schedulingMode: z.enum(["AUTO", "MANUAL"]).optional(),
+    /**
+     * Registration cutoff. A date-only "YYYY-MM-DD" keeps the whole named day
+     * open (see parseRegistrationDeadline). Omitted = leave unchanged; null or
+     * "" = clear it and reopen registration.
+     */
+    registrationDeadline: z
+      .union([z.string().trim().max(40), z.null()])
+      .optional()
+      .transform((value, ctx) => {
+        if (value === undefined) return undefined;
+        const result = parseRegistrationDeadline(value);
+        if (!result.ok) {
+          ctx.addIssue({ code: z.ZodIssueCode.custom, message: result.message });
+          return z.NEVER;
+        }
+        return result.value;
+      }),
   })
   .strict();
 

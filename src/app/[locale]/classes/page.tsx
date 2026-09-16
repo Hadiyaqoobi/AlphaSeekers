@@ -3,7 +3,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { EnrollButton } from "@/components/classes/enroll-button";
-import { formatDateTime } from "@/lib/format-date";
+import { formatDate, formatDateTime } from "@/lib/format-date";
+import { isRegistrationClosed } from "@/lib/platform/registration-deadline";
 import { listClasses, listStudentClasses } from "@/lib/platform/store";
 import { getSessionUser } from "@/lib/security/session";
 
@@ -229,6 +230,23 @@ export default async function ClassesPage({ params, searchParams }: ClassesPageP
                       </span>
                     ) : null}
                   </p>
+
+                  {/* Registration cutoff, shown only when the class has one. */}
+                  {item.registrationDeadline ? (
+                    <p
+                      className={`mt-1.5 text-xs font-medium ${
+                        isRegistrationClosed(item.registrationDeadline)
+                          ? "text-red-600"
+                          : "text-amber-700"
+                      }`}
+                    >
+                      {isRegistrationClosed(item.registrationDeadline)
+                        ? t("registrationClosed")
+                        : t("registrationCloses", {
+                          date: formatDate(item.registrationDeadline, locale),
+                        })}
+                    </p>
+                  ) : null}
                 </div>
 
                 {/* Footer */}
@@ -240,7 +258,11 @@ export default async function ClassesPage({ params, searchParams }: ClassesPageP
                     {t("details")}
                   </Link>
                   {user?.role === "STUDENT" ? (
-                    <EnrollButton classId={item.id} initiallyEnrolled={enrolledSet.has(item.id)} />
+                    <EnrollButton
+                      classId={item.id}
+                      initiallyEnrolled={enrolledSet.has(item.id)}
+                      registrationDeadline={item.registrationDeadline}
+                    />
                   ) : null}
                 </div>
               </article>

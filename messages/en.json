@@ -648,7 +648,9 @@
     "sessionPending": "Session pending",
     "prev": "Prev",
     "next": "Next",
-    "pageLabel": "Page"
+    "pageLabel": "Page",
+    "registrationCloses": "Registration closes {date}",
+    "registrationClosed": "Registration closed"
   },
   "classDetail": {
     "backToClasses": "Back to classes",
@@ -690,7 +692,8 @@
     "unenrollFailed": "Unable to drop class",
     "limitReached": "You can join up to {limit} classes at a time. Drop one to add another.",
     "requestToJoin": "Request to join",
-    "requestSent": "Request sent — an admin will review it."
+    "requestSent": "Request sent — an admin will review it.",
+    "registrationClosed": "Registration for this class has closed."
   },
   "materials": {
     "title": "Upload material",
@@ -1108,7 +1111,9 @@
     "inviteNew": "Invite New",
     "newTeacherNamePlaceholder": "Teacher's full name",
     "newTeacherEmailPlaceholder": "Teacher's email address",
-    "inviteHint": "A new account will be created and the teacher will receive login details by email."
+    "inviteHint": "A new account will be created and the teacher will receive login details by email.",
+    "registrationDeadlineLabel": "Registration deadline (optional)",
+    "registrationDeadlineHint": "The last day students can ask to join. Leave blank to keep the class open."
   },
   "admin": {
     "title": "Admin",

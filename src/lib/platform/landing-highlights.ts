@@ -21,6 +21,8 @@ export type LandingClass = {
   seatsLeft: number | null;
   /** A course's own registration form, when it has one. */
   registrationFormUrl: string | null;
+  /** ISO cutoff for joining, or null when the class is open indefinitely. */
+  registrationDeadline: string | null;
 };
 
 export type LandingWebinar = {
@@ -64,7 +66,15 @@ export async function getLandingHighlights(): Promise<LandingHighlights> {
       // it is still being set up. It was written on every class but never
       // filtered on anywhere until now.
       prisma.class.findMany({
-        where: { status: ClassStatus.ACTIVE, published: true },
+        // A class whose registration has closed is no longer "open now", so it
+        // drops off the public page the moment its deadline passes. Null means
+        // no deadline was ever set, which stays open — that is every class that
+        // predates the field.
+        where: {
+          status: ClassStatus.ACTIVE,
+          published: true,
+          OR: [{ registrationDeadline: null }, { registrationDeadline: { gte: now } }],
+        },
         orderBy: { createdAt: "desc" },
         take: 6,
         select: {
@@ -75,6 +85,7 @@ export async function getLandingHighlights(): Promise<LandingHighlights> {
           language: true,
           maxStudents: true,
           registrationFormUrl: true,
+          registrationDeadline: true,
           teacher: { select: { name: true } },
           _count: { select: { enrollments: true } },
         },
@@ -104,6 +115,7 @@ export async function getLandingHighlights(): Promise<LandingHighlights> {
         // Defence in depth: rows predate the write-side guard, and this value
         // is rendered as an href on a public page.
         registrationFormUrl: normaliseHttpUrl(c.registrationFormUrl),
+        registrationDeadline: c.registrationDeadline?.toISOString() ?? null,
         seatsLeft:
           typeof c.maxStudents === "number"
             ? Math.max(0, c.maxStudents - c._count.enrollments)

@@ -648,7 +648,9 @@
     "sessionPending": "جلسه در انتظار",
     "prev": "قبلی",
     "next": "بعدی",
-    "pageLabel": "صفحه"
+    "pageLabel": "صفحه",
+    "registrationCloses": "Registration closes {date}",
+    "registrationClosed": "Registration closed"
   },
   "classDetail": {
     "backToClasses": "برگشت به صنف‌ها",
@@ -690,7 +692,8 @@
     "unenrollFailed": "لغو ثبت‌نام ممکن نشد",
     "limitReached": "شما می‌توانید همزمان در {limit} صنف اشتراک داشته باشید. برای ثبت‌نام در صنف جدید، یکی را لغو کنید.",
     "requestToJoin": "Request to join",
-    "requestSent": "Request sent — an admin will review it."
+    "requestSent": "Request sent — an admin will review it.",
+    "registrationClosed": "Registration for this class has closed."
   },
   "materials": {
     "title": "آپلود ماده",
@@ -1108,7 +1111,9 @@
     "inviteNew": "دعوت استاد جدید",
     "newTeacherNamePlaceholder": "نام کامل استاد",
     "newTeacherEmailPlaceholder": "ایمیل آدرس استاد",
-    "inviteHint": "یک حساب جدید ساخته می‌شود و استاد اطلاعات ورود را از طریق ایمیل دریافت می‌کند."
+    "inviteHint": "یک حساب جدید ساخته می‌شود و استاد اطلاعات ورود را از طریق ایمیل دریافت می‌کند.",
+    "registrationDeadlineLabel": "Registration deadline (optional)",
+    "registrationDeadlineHint": "The last day students can ask to join. Leave blank to keep the class open."
   },
   "admin": {
     "title": "مدیریت",

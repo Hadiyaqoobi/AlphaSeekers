@@ -5,12 +5,20 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 
+import { isRegistrationClosed } from "@/lib/platform/registration-deadline";
+
 type EnrollButtonProps = {
   classId: string;
   initiallyEnrolled?: boolean;
+  /** ISO cutoff for joining, or null/undefined when the class is open indefinitely. */
+  registrationDeadline?: string | null;
 };
 
-export function EnrollButton({ classId, initiallyEnrolled = false }: EnrollButtonProps) {
+export function EnrollButton({
+  classId,
+  initiallyEnrolled = false,
+  registrationDeadline = null,
+}: EnrollButtonProps) {
   const router = useRouter();
   const t = useTranslations("enroll");
   const [enrolled, setEnrolled] = useState(initiallyEnrolled);
@@ -73,6 +81,20 @@ export function EnrollButton({ classId, initiallyEnrolled = false }: EnrollButto
     setEnrolled(false);
     setLoading(false);
     router.refresh();
+  }
+
+  // Hiding the button is a courtesy, not the control: the server re-checks the
+  // deadline inside the enrolment transaction, so a stale page cannot sneak a
+  // late request through. A student who is already in the class keeps the
+  // unenrol button — the cutoff governs joining, not leaving.
+  const closed = !enrolled && isRegistrationClosed(registrationDeadline);
+
+  if (closed) {
+    return (
+      <p className="rounded-lg border border-white/10 bg-dark-100 px-4 py-2.5 text-sm text-ink-soft">
+        {t("registrationClosed")}
+      </p>
+    );
   }
 
   return (
