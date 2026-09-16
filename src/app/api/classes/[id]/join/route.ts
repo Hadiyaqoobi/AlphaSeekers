@@ -70,6 +70,7 @@ const FAILURES: Record<string, { status: number; message: string }> = {
   CLASS_NOT_FOUND: { status: 404, message: "This class could not be found." },
   CLASS_CLOSED: { status: 409, message: "This class is not open for registration." },
   CLASS_FULL: { status: 409, message: "This class is full." },
+  REGISTRATION_CLOSED: { status: 409, message: "Registration for this class has closed." },
   WRONG_PASSWORD: {
     status: 409,
     message:

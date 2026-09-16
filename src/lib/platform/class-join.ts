@@ -20,6 +20,7 @@
 import { EnrollmentStatus, ClassStatus } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
+import { isRegistrationClosed } from "@/lib/platform/registration-deadline";
 import { hashPassword, verifyPassword } from "@/lib/security/passwords";
 import { encryptPhone } from "@/lib/security/phone-crypto";
 
@@ -30,6 +31,7 @@ export type JoinOutcome =
 export type JoinFailure =
   | "CLASS_NOT_FOUND"
   | "CLASS_CLOSED"
+  | "REGISTRATION_CLOSED"
   | "CLASS_FULL"
   | "WRONG_PASSWORD"
   | "ACCOUNT_DEACTIVATED"
@@ -59,7 +61,13 @@ export async function joinClassWithNewAccount(input: JoinInput): Promise<JoinOut
 
   const klass = await prisma.class.findUnique({
     where: { id: input.classId },
-    select: { id: true, status: true, published: true, maxStudents: true },
+    select: {
+      id: true,
+      status: true,
+      published: true,
+      maxStudents: true,
+      registrationDeadline: true,
+    },
   });
 
   if (!klass) return { ok: false, code: "CLASS_NOT_FOUND" };
@@ -68,6 +76,12 @@ export async function joinClassWithNewAccount(input: JoinInput): Promise<JoinOut
   // link must not work just because someone kept the URL.
   if (klass.status !== ClassStatus.ACTIVE || !klass.published) {
     return { ok: false, code: "CLASS_CLOSED" };
+  }
+
+  // The registration cutoff applies here exactly as it does to the in-platform
+  // join button: the public form must not be a way around a closed class.
+  if (isRegistrationClosed(klass.registrationDeadline)) {
+    return { ok: false, code: "REGISTRATION_CLOSED" };
   }
 
   const existing = await prisma.user.findUnique({

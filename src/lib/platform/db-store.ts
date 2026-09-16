@@ -1644,11 +1644,15 @@ export async function enrollStudentInClass(studentId: string, classId: string) {
       return { enrollment: current, state: "ALREADY_ENROLLED" as const, activeCount: 0 };
     }
 
-    // Already asked and waiting — say so rather than silently resetting the
-    // request and pushing them to the back of the queue.
-    if (current?.status === EnrollmentStatus.PENDING) {
-      return { enrollment: current, state: "ALREADY_REQUESTED" as const, activeCount: 0 };
-    }
+    // A PENDING row is a student who asked under the old model and was never
+    // approved. Since nothing creates pending rows any more, nobody is watching
+    // that queue — telling her "you have already asked, keep waiting" would
+    // strand her permanently. So she falls through and is admitted now, subject
+    // to the same capacity and deadline checks as anyone else. This is what
+    // un-sticks the students who have been waiting since before this change.
+    //
+    // REJECTED is different and is still honoured below: that was a deliberate
+    // human decision to remove someone, and clicking again must not undo it.
 
     // A previous rejection is not something a student can undo by clicking
     // again; an admin has to change it.
@@ -1685,21 +1689,30 @@ export async function enrollStudentInClass(studentId: string, classId: string) {
       throw new Error("Class is full");
     }
 
-    // Joining a class is a REQUEST, not an instant enrolment: platform access and
-    // course access are separate. An admin moves this to ACTIVE.
+    // Joining is IMMEDIATE. It used to create a PENDING request an admin had to
+    // approve, which put a human — usually a volunteer who is also a student —
+    // between a learner and the class they had already found, signed up for and
+    // been accepted into by capacity. People waited days, or forever. The class
+    // page's own controls (capacity, the registration deadline, publishing) are
+    // the gate now, and a teacher can remove anyone who should not be there.
+    //
+    // NOTE: this stops CREATING pending rows. It deliberately does not touch
+    // rows that already exist — there are real students sitting in PENDING in
+    // production, and the admin approval screen stays working so they can still
+    // be let in rather than being stranded by this change.
     const enrollment = current
       ? await tx.enrollment.update({
         where: { studentId_classId: { studentId, classId } },
-        data: { status: EnrollmentStatus.PENDING, enrolledAt: new Date() },
+        data: { status: EnrollmentStatus.ACTIVE, enrolledAt: new Date() },
       })
       : await tx.enrollment.create({
-        data: { studentId, classId, status: EnrollmentStatus.PENDING },
+        data: { studentId, classId, status: EnrollmentStatus.ACTIVE },
       });
 
-    return { enrollment, state: "REQUESTED" as const, activeCount };
+    return { enrollment, state: "JOINED" as const, activeCount };
   });
 
-  if (result.state === "ALREADY_ENROLLED" || result.state === "ALREADY_REQUESTED") {
+  if (result.state === "ALREADY_ENROLLED") {
     return {
       enrollment: {
         ...result.enrollment,
@@ -1722,7 +1735,7 @@ export async function enrollStudentInClass(studentId: string, classId: string) {
       ...enrollment,
       enrolledAt: enrollment.enrolledAt.toISOString(),
     },
-    state: "REQUESTED" as const,
+    state: "JOINED" as const,
     // Deliveries are dispatched asynchronously after commit, so there are no
     // synchronously-known results; the key is retained for response-shape stability.
     deliveries: [] as NotificationDelivery[],

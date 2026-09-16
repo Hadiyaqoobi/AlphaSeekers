@@ -670,7 +670,13 @@
     "materialsRestricted": "مواد درسی برای دانش‌آموزان ثبت‌نام‌شده و کارکنان صنف قابل دسترس است.",
     "noMaterials": "هنوز ماده‌ای نیست.",
     "download": "دانلود",
-    "studentsTitle": "دانش‌آموزان ثبت‌نام‌شده"
+    "studentsTitle": "دانش‌آموزان ثبت‌نام‌شده",
+    "remove": "Remove",
+    "confirmRemove": "Yes, remove",
+    "removing": "Removing...",
+    "cancel": "Cancel",
+    "removeFailed": "Could not remove this student. Please try again.",
+    "removeStudentAria": "Remove {name} from this class"
   },
   "sessionActions": {
     "cancel": "لغو جلسه",
@@ -691,8 +697,8 @@
     "enrollFailed": "ثبت‌نام ناموفق بود",
     "unenrollFailed": "لغو ثبت‌نام ممکن نشد",
     "limitReached": "شما می‌توانید همزمان در {limit} صنف اشتراک داشته باشید. برای ثبت‌نام در صنف جدید، یکی را لغو کنید.",
-    "requestToJoin": "Request to join",
-    "requestSent": "Request sent — an admin will review it.",
+    "requestToJoin": "Join this class",
+    "requestSent": "You have joined this class.",
     "registrationClosed": "Registration for this class has closed."
   },
   "materials": {

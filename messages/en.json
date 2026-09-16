@@ -670,7 +670,13 @@
     "materialsRestricted": "Materials are available to enrolled students and class staff.",
     "noMaterials": "No materials yet.",
     "download": "Download",
-    "studentsTitle": "Enrolled students"
+    "studentsTitle": "Enrolled students",
+    "remove": "Remove",
+    "confirmRemove": "Yes, remove",
+    "removing": "Removing...",
+    "cancel": "Cancel",
+    "removeFailed": "Could not remove this student. Please try again.",
+    "removeStudentAria": "Remove {name} from this class"
   },
   "sessionActions": {
     "cancel": "Cancel session",
@@ -691,8 +697,8 @@
     "enrollFailed": "Enrollment failed",
     "unenrollFailed": "Unable to drop class",
     "limitReached": "You can join up to {limit} classes at a time. Drop one to add another.",
-    "requestToJoin": "Request to join",
-    "requestSent": "Request sent — an admin will review it.",
+    "requestToJoin": "Join this class",
+    "requestSent": "You have joined this class.",
     "registrationClosed": "Registration for this class has closed."
   },
   "materials": {

@@ -56,23 +56,23 @@ export async function POST(_: Request, { params }: Params) {
   try {
     const result = await enrollStudentInClass(user.id, params.id);
 
-    // No student.enrolled event here any more: joining is now a REQUEST, and the
-    // welcome only makes sense once an admin approves it. The approval route
-    // emits it instead.
+    // The student is in the class straight away now, so this is the welcome
+    // moment: `student.enrolled` fans out to welcome_student and welcome_teacher.
+    // It used to emit `enrollment.requested` (an admin "someone is waiting"
+    // nudge) and leave the welcome to the approval route — with nothing left to
+    // approve, that path would have sent the student nothing at all.
     //
-    // The request itself still has to reach a human, though — without this the
-    // only way to learn someone is waiting is to open the class and look.
-    // Failing to notify must not fail the request: the student has successfully
-    // asked, and telling her otherwise would make her ask again.
-    if (result.state === "REQUESTED") {
+    // Failing to notify must never fail the join: she IS enrolled, and telling
+    // her otherwise would make her try again.
+    if (result.state === "JOINED") {
       try {
         await emit(
-          "enrollment.requested",
+          "student.enrolled",
           { classId: params.id, studentId: user.id },
-          { dedupeKey: `enrollment.requested:${result.enrollment.id}` },
+          { dedupeKey: `student.enrolled:${result.enrollment.id}` },
         );
       } catch (error) {
-        console.error("[classes/enroll] failed to emit enrollment.requested", params.id, error);
+        console.error("[classes/enroll] failed to emit student.enrolled", params.id, error);
       }
     }
 

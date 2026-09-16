@@ -8,6 +8,7 @@ import { ClassDangerZone } from "@/components/admin/class-danger-zone";
 import { EnrollButton } from "@/components/classes/enroll-button";
 import { formatDateTime } from "@/lib/format-date";
 import { MaterialUploadForm } from "@/components/classes/material-upload-form";
+import { RemoveStudentButton } from "@/components/classes/remove-student-button";
 import { DataCostBadge } from "@/components/data-cost-badge";
 import { SaveOfflineButton } from "@/components/save-offline-button";
 import { getClassById, isStudentEnrolledInClass, listClassAnnouncements, listClassEnrollments } from "@/lib/platform/store";
@@ -241,7 +242,14 @@ export default async function ClassDetailPage({ params }: ClassDetailPageProps) 
                   <p className="text-sm font-medium text-ink-main">{student.name}</p>
                   <p className="text-xs text-ink-soft">{student.email}</p>
                 </div>
-                <p className="text-xs text-ink-faint">{formatDateTime(student.enrolledAt, locale)}</p>
+                <div className="flex items-center gap-3">
+                  <p className="text-xs text-ink-faint">{formatDateTime(student.enrolledAt, locale)}</p>
+                  <RemoveStudentButton
+                    classId={record.id}
+                    studentId={student.studentId}
+                    studentName={student.name}
+                  />
+                </div>
               </div>
             ))}
           </div>

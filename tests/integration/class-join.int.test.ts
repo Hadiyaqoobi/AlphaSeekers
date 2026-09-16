@@ -205,3 +205,59 @@ d("one-step class join", () => {
     expect(await getPublicClassForJoin("does-not-exist")).toBeNull();
   });
 });
+
+d("legacy pending students", () => {
+  beforeEach(cleanup);
+  afterAll(cleanup);
+
+  it("a student stuck in PENDING is admitted when they try again", async () => {
+    // Real students were left in PENDING when joining stopped requiring
+    // approval. Nothing watches that queue any more, so "you have already
+    // asked, keep waiting" would have stranded them for good.
+    const { enrollStudentInClass } = await import("@/lib/platform/db-store");
+    const klass = await makeClass("stranded");
+    const student = await prisma.user.create({
+      data: {
+        name: "Waiting since forever",
+        email: email("stranded"),
+        role: "STUDENT",
+        approvedAt: new Date(),
+        passwordHash: await hashPassword(GOOD),
+      },
+      select: { id: true },
+    });
+    await prisma.enrollment.create({
+      data: { studentId: student.id, classId: klass.id, status: "PENDING" },
+    });
+
+    const result = await enrollStudentInClass(student.id, klass.id);
+    expect(result.state).toBe("JOINED");
+
+    const enrollment = await prisma.enrollment.findFirst({
+      where: { studentId: student.id, classId: klass.id },
+      select: { status: true },
+    });
+    expect(enrollment?.status).toBe("ACTIVE");
+  });
+
+  it("a REJECTED student is still kept out", async () => {
+    // The one human decision that still overrides immediate joining.
+    const { enrollStudentInClass } = await import("@/lib/platform/db-store");
+    const klass = await makeClass("removed");
+    const student = await prisma.user.create({
+      data: {
+        name: "Removed",
+        email: email("removed"),
+        role: "STUDENT",
+        approvedAt: new Date(),
+        passwordHash: await hashPassword(GOOD),
+      },
+      select: { id: true },
+    });
+    await prisma.enrollment.create({
+      data: { studentId: student.id, classId: klass.id, status: "REJECTED" },
+    });
+
+    await expect(enrollStudentInClass(student.id, klass.id)).rejects.toThrow("Enrollment rejected");
+  });
+});

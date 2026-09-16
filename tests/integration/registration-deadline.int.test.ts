@@ -10,7 +10,7 @@
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
 import { prisma } from "@/lib/prisma";
-import { decideEnrollment, enrollStudentInClass, listPendingEnrollments } from "@/lib/platform/db-store";
+import { enrollStudentInClass, listPendingEnrollments } from "@/lib/platform/db-store";
 
 const shouldRun = process.env.RUN_DB_TESTS === "1";
 const d = shouldRun ? describe : describe.skip;
@@ -68,7 +68,7 @@ d("class registration deadline", () => {
     const student = await makeStudent("intime");
 
     const result = await enrollStudentInClass(student.id, klass.id);
-    expect(result.state).toBe("REQUESTED");
+    expect(result.state).toBe("JOINED");
   });
 
   it("refuses a request once the deadline has passed", async () => {
@@ -86,7 +86,7 @@ d("class registration deadline", () => {
     const student = await makeStudent("whenever");
 
     const result = await enrollStudentInClass(student.id, klass.id);
-    expect(result.state).toBe("REQUESTED");
+    expect(result.state).toBe("JOINED");
   });
 
   it("does not disturb a student who was already approved before the cutoff", async () => {
@@ -95,9 +95,8 @@ d("class registration deadline", () => {
     const klass = await makeClass("grandfathered", new Date(Date.now() + DAY));
     const student = await makeStudent("early");
 
+    // Joining is immediate now, so they are ACTIVE the moment they join.
     await enrollStudentInClass(student.id, klass.id);
-    const [pending] = await listPendingEnrollments(klass.id);
-    await decideEnrollment(pending.enrollmentId, "APPROVE");
 
     await prisma.class.update({
       where: { id: klass.id },
