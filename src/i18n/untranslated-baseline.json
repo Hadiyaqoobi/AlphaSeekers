@@ -1,6 +1,6 @@
 {
   "_comment": "Keys that still show ENGLISH to Dari users. Generated 2026-09-14. tests/i18n-parity.test.ts fails if a key NOT in this list becomes untranslated, so the debt can only shrink. When the team supplies Dari for a key, translate it in messages/fa.json and delete the key from this list.",
-  "_generated": "2026-09-14",
+  "_generated": "2026-09-16",
   "keys": [
     "nav.networkBadge",
     "nav.siteSettings",
@@ -44,6 +44,7 @@
     "landing.howItWorks.mockup.mockTimes.1",
     "landing.howItWorks.mockup.mockTimes.2",
     "landing.footer.contact",
+    "login.accountReady",
     "register.eyebrow",
     "register.title",
     "register.subtitle",

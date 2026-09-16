@@ -34,6 +34,11 @@ export default function LoginPage() {
     return err === "PENDING_APPROVAL" ? t("pending") : null;
   });
 
+  // Arrived here straight from a successful registration whose auto sign-in did
+  // not take. The account EXISTS and works — say so, because the previous
+  // journey ended on a page telling people they were waiting for approval.
+  const justRegistered = searchParams.get("justRegistered") === "1";
+
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSubmitting(true);
@@ -236,6 +241,18 @@ export default function LoginPage() {
                 </button>
               </div>
             </div>
+
+            {justRegistered && !errorMessage ? (
+              <div
+                className="flex items-start gap-2 rounded-xl p-3 text-sm"
+                style={{ background: "rgba(0,230,118,0.10)", border: "1px solid rgba(0,230,118,0.25)", color: "#00E676" }}
+              >
+                <svg className="mt-0.5 h-4 w-4 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M16.7 5.3a1 1 0 010 1.4l-7.5 7.5a1 1 0 01-1.4 0L3.3 9.7a1 1 0 011.4-1.4l3.8 3.8 6.8-6.8a1 1 0 011.4 0z" clipRule="evenodd" />
+                </svg>
+                <span dir="auto">{t("accountReady")}</span>
+              </div>
+            ) : null}
 
             {errorMessage && (
               <div

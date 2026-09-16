@@ -536,7 +536,8 @@
     "showPassword": "نمایش رمز عبور",
     "hidePassword": "مخفی‌کردن رمز عبور",
     "newToPlatform": "تازه به AlphaSeekers پیوسته‌اید؟",
-    "requestAccessArrow": "درخواست دسترسی ←"
+    "requestAccessArrow": "درخواست دسترسی ←",
+    "accountReady": "Your account is ready. Sign in with the email and password you just chose."
   },
   "register": {
     "eyebrow": "Create account",

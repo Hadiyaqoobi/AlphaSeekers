@@ -536,7 +536,8 @@
     "showPassword": "Show password",
     "hidePassword": "Hide password",
     "newToPlatform": "New to AlphaSeekers?",
-    "requestAccessArrow": "Request access →"
+    "requestAccessArrow": "Request access →",
+    "accountReady": "Your account is ready. Sign in with the email and password you just chose."
   },
   "register": {
     "eyebrow": "Create account",

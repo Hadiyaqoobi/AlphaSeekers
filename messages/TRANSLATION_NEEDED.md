@@ -22,6 +22,23 @@ string from being added, so this list can only get shorter.
 
 ---
 
+## Outside the message files — 3 strings hard-coded in `public/sw.js`
+
+These live in the service worker's offline page, which is a static file and
+cannot read `messages/fa.json`. Send the Dari and we paste it in directly (and
+set `lang="fa" dir="rtl"` on that page at the same time).
+
+- **English:** "No internet connection"
+  **Dari:** 
+
+- **English:** "This page could not load. Check your connection and try again."
+  **Dari:** 
+
+- **English:** "Try again"
+  **Dari:** 
+
+---
+
 ## Support / ticket queue  ·  46 strings
 
 - **English:** "Requests & issues"

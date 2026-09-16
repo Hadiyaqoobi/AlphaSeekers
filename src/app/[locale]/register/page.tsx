@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import Link from "next/link";
 import { useTranslations } from "next-intl";
+import { signIn } from "next-auth/react";
 import { useParams, useRouter } from "next/navigation";
 
 import { useAutosaveForm } from "@/components/forms/use-autosave-form";
@@ -115,7 +116,37 @@ export default function RegisterPage() {
       // localStorage may be unavailable (private mode, restricted device)
     }
 
-    router.push(`/${locale}/pending-approval`);
+    // Sign the new account in and go straight to the dashboard.
+    //
+    // This used to push to /pending-approval, which told the student:
+    //   "Your access request was received. Please check back after your account
+    //    is approved."  and  "only approved accounts can sign in."
+    //
+    // Both statements stopped being true when registration began setting
+    // approvedAt immediately (see api/auth/register: course access is the real
+    // gate now, not the account). So a student who had just successfully
+    // created a WORKING account was told to go away and wait for an approval
+    // that would never come, because it had already happened. Nothing on that
+    // page corrected it, and no one was ever going to click approve.
+    //
+    // They already typed this password one second ago; making them type it
+    // again on /login is the second-worst option, so sign in for them.
+    const signedIn = await signIn("credentials", {
+      email: payload.email,
+      password: payload.password,
+      redirect: false,
+    });
+
+    if (signedIn?.ok) {
+      router.push(`/${locale}/dashboard`);
+      router.refresh();
+      return;
+    }
+
+    // Auto sign-in failed (rate limit, transient error). The ACCOUNT still
+    // exists and works, so send them to the sign-in form with that said
+    // plainly, rather than to a page implying they are blocked.
+    router.push(`/${locale}/login?justRegistered=1`);
     router.refresh();
   }
 
