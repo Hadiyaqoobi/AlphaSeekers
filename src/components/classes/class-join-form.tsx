@@ -143,7 +143,7 @@ export function ClassJoinForm({ classId, locale, isFull }: ClassJoinFormProps) {
         <div className="relative">
           <input
             autoComplete="new-password"
-            className="join-field w-full"
+            className="join-field w-full pe-12"
             dir="ltr"
             id="join-password"
             minLength={8}
@@ -153,14 +153,27 @@ export function ClassJoinForm({ classId, locale, isFull }: ClassJoinFormProps) {
             value={password}
           />
           {/* Reveal toggle: typing a password blind on a phone keyboard is a
-              common reason people give up. */}
+              common reason people give up.
+
+              An ICON, not the word "Show" — as text inside an empty field it
+              read as placeholder content, so the field looked pre-filled with
+              the word "Show". Same eye control the sign-in page uses. */}
           <button
             aria-label={showPassword ? t("hidePassword") : t("showPassword")}
-            className="absolute inset-y-0 end-3 flex items-center text-ink-faint"
+            className="absolute inset-y-0 end-0 flex w-12 items-center justify-center text-ink-faint hover:text-ink-soft"
             onClick={() => setShowPassword((v) => !v)}
             type="button"
           >
-            {showPassword ? t("hide") : t("show")}
+            {showPassword ? (
+              <svg fill="none" height="20" stroke="currentColor" strokeWidth="1.6" viewBox="0 0 24 24" width="20">
+                <path d="M3 3l18 18M10.6 10.7a2 2 0 002.7 2.7M9.9 5.1A9.6 9.6 0 0112 5c6.5 0 10 7 10 7a13 13 0 01-3 3.8M6 6.3A13 13 0 002 12s3.5 7 10 7a9.3 9.3 0 004-.9" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            ) : (
+              <svg fill="none" height="20" stroke="currentColor" strokeWidth="1.6" viewBox="0 0 24 24" width="20">
+                <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+            )}
           </button>
         </div>
       </div>

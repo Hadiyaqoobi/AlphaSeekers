@@ -132,14 +132,19 @@ d("per-course access", () => {
     expect(await listClassEnrollments(klass.id)).toHaveLength(1);
   });
 
-  it("re-checks capacity at approval time, not just when the request was made", async () => {
-    // Requests can sit in the queue while the class fills up. Approving blindly
-    // would put more students in the room than the teacher agreed to.
+  it("LEGACY: re-checks capacity at approval time, not just when the request was made", async () => {
+    // Pending rows predate immediate joining and can sit there while the class
+    // fills up, so approving one blindly would put more students in the room
+    // than the teacher agreed to. Created directly, because joining no longer
+    // produces pending rows.
     const klass = await makeClass("tiny", 1);
     const first = await makeStudent("first");
     const second = await makeStudent("second");
-    await enrollStudentInClass(first.id, klass.id);
-    await enrollStudentInClass(second.id, klass.id);
+    for (const student of [first, second]) {
+      await prisma.enrollment.create({
+        data: { studentId: student.id, classId: klass.id, status: "PENDING" },
+      });
+    }
 
     const reqs = await listPendingEnrollments(klass.id);
     expect((await decideEnrollment(reqs[0].enrollmentId, "APPROVE")).status).toBe("APPROVED");
@@ -148,10 +153,12 @@ d("per-course access", () => {
     expect(await listClassEnrollments(klass.id)).toHaveLength(1);
   });
 
-  it("will not decide the same request twice", async () => {
+  it("LEGACY: will not decide the same request twice", async () => {
     const student = await makeStudent("double");
     const klass = await makeClass("once");
-    await enrollStudentInClass(student.id, klass.id);
+    await prisma.enrollment.create({
+      data: { studentId: student.id, classId: klass.id, status: "PENDING" },
+    });
     const [req] = await listPendingEnrollments(klass.id);
 
     expect((await decideEnrollment(req.enrollmentId, "APPROVE")).status).toBe("APPROVED");
