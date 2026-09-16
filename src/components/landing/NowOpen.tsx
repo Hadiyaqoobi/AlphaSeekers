@@ -29,16 +29,24 @@ export function NowOpen({ locale, signedIn, highlights }: NowOpenProps) {
   const total = classes.length + webinars.length + opportunities.length;
   if (total === 0) return null;
 
-  // A signed-out visitor cannot open the class page (it is behind login), so
-  // point them at registration rather than a redirect they will bounce off.
   const joinHref = signedIn ? `/${locale}/classes` : `/${locale}/register`;
 
-  // A course with its own registration form takes priority: signing up for
-  // AlphaSeekers is not the same as signing up for that course, which is the
-  // whole point of the field.
-  const courseHref = (c: { registrationFormUrl: string | null }) =>
-    c.registrationFormUrl ?? joinHref;
-  const isExternal = (c: { registrationFormUrl: string | null }) => Boolean(c.registrationFormUrl);
+  // Every class now has its own join page, and it works signed-out: one form
+  // that creates the account AND enrols them.
+  //
+  // This used to prefer `registrationFormUrl` — an external Google Form — which
+  // was a dead end. The student filled it in on Google and came back with no
+  // account, no class and no meeting link, while the teacher got a spreadsheet
+  // to reconcile by hand. An external form is still honoured for a signed-IN
+  // user (they already have an account, so the teacher's own form may be
+  // collecting something else), but a signed-out visitor is sent to the join
+  // page, because that is the one path that actually ends with them in a class.
+  const courseHref = (c: { id: string; registrationFormUrl: string | null }) => {
+    if (!signedIn) return `/${locale}/join/${c.id}`;
+    return c.registrationFormUrl ?? joinHref;
+  };
+  const isExternal = (c: { registrationFormUrl: string | null }) =>
+    signedIn && Boolean(c.registrationFormUrl);
 
   const dateFmt = new Intl.DateTimeFormat(locale === 'fa' ? 'fa-AF' : 'en-GB', {
     day: 'numeric',

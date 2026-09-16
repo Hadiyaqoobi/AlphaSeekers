@@ -1458,5 +1458,30 @@
     "helpLink": "Support",
     "helpSuffix": " and we will look into it.",
     "optional": "Optional"
+  },
+  "classJoin": {
+    "eyebrow": "Join this class",
+    "teacher": "Teacher",
+    "subject": "Subject",
+    "when": "When",
+    "seatsLeft": "Seats left",
+    "formTitle": "Register for this class",
+    "formSubtitle": "Fill this in once. It creates your AlphaSeekers account and puts you in the class — there is nothing else to sign up for.",
+    "nameLabel": "Your full name",
+    "emailLabel": "Your email address",
+    "emailHint": "You will use this email to sign in later.",
+    "passwordLabel": "Choose a password",
+    "passwordHint": "At least 8 characters, with one letter and one number. You will use this to sign in.",
+    "show": "Show",
+    "hide": "Hide",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "submit": "Join this class",
+    "joining": "Joining...",
+    "failed": "Could not join this class. Please try again.",
+    "networkError": "We could not reach AlphaSeekers. Check your internet connection and try again.",
+    "classFull": "This class is full. Please check the other classes that are open.",
+    "alreadyHaveAccount": "Already have an account?",
+    "signInInstead": "Sign in"
   }
 }
