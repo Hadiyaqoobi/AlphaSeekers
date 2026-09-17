@@ -25,10 +25,17 @@ services:
     # Render gates rollouts and restarts unhealthy instances on this endpoint.
     # /api/health is a cheap `SELECT 1` liveness probe (200 when the DB is reachable).
     healthCheckPath: /api/health
-    # Migrations are applied OUT-OF-BAND against the Neon DIRECT (unpooled) endpoint,
-    # because `prisma migrate deploy` cannot acquire its advisory lock over the pooled
-    # (PgBouncer) DATABASE_URL. See docs/DEPLOYMENT_RUNBOOK.md for the migrate step.
     buildCommand: npm install && npx prisma generate && npm run build
+    # Migrations run HERE, after the build and before this release takes traffic.
+    # If the script exits non-zero Render aborts the deploy and keeps the current
+    # version serving, so code can never reach users ahead of its schema.
+    #
+    # They were previously applied out-of-band by hand, which went wrong exactly
+    # as you would expect: a migration was run over the POOLED url, failed, and
+    # stranded its advisory lock so the retry timed out until the holding session
+    # was killed manually. The script uses DIRECT_DATABASE_URL specifically to
+    # avoid the pooler, and refuses to run at all if it is unset.
+    preDeployCommand: ./scripts/predeploy-migrate.sh
     startCommand: npm start
     envVars:
       - key: NODE_VERSION
@@ -44,6 +51,12 @@ services:
         sync: false
       # Optional: per-instance Prisma connection cap appended to DATABASE_URL.
       - key: DATABASE_CONNECTION_LIMIT
+        sync: false
+      # Neon DIRECT (unpooled) string — the same as DATABASE_URL but WITHOUT
+      # `-pooler` in the hostname. Used ONLY by preDeployCommand to run
+      # migrations; the app itself never touches it. Migrations cannot hold their
+      # advisory lock through PgBouncer, which is why this exists separately.
+      - key: DIRECT_DATABASE_URL
         sync: false
       - key: NEXTAUTH_URL
         sync: false

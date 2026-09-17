@@ -52,10 +52,24 @@ be provided manually (they are `sync: false` in `render.yaml`).
 
 - Use the **Neon pooled endpoint** for `DATABASE_URL`. See `src/lib/prisma.ts` for why
   (serverless load exhausts the direct endpoint's connection cap).
-- Migrations run automatically on every deploy via the build command in `render.yaml`:
+- Migrations run automatically on every deploy, via `preDeployCommand` in
+  `render.yaml` — NOT the build command:
   ```
-  npm install && npx prisma generate && npx prisma migrate deploy && npm run build
+  preDeployCommand: ./scripts/predeploy-migrate.sh
   ```
+  This runs after the build and before the release takes traffic; a non-zero
+  exit aborts the deploy and leaves the current version serving.
+
+  **This section used to claim migrations ran inside the build command. They did
+  not** — the build command has never included `migrate deploy`, so migrations
+  were in fact a manual step nobody was reminded to do. Following the old text
+  would have meant deploying code whose schema had never been applied.
+
+- The script uses **`DIRECT_DATABASE_URL`** (Neon direct, no `-pooler`), which
+  must be set on the service. `prisma migrate deploy` cannot hold its advisory
+  lock through PgBouncer: a run over the pooled URL will hang, or strand the
+  lock on a pooled session and block every later attempt until that session is
+  terminated. The script refuses to run without it rather than trying the pooler.
 - `prisma migrate deploy` applies committed migrations only (no schema drift, no prompts).
 
 ---
