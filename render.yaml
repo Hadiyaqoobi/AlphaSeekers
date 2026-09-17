@@ -32,7 +32,7 @@ services:
     startCommand: npm start
     envVars:
       - key: NODE_VERSION
-        value: "20.18.1"
+        value: "22.23.2"
       # Force production runtime posture: disables demo auth, auto-seed, mock Meet
       # links, and DB→memory fallback. Without this the app can silently run in demo mode.
       - key: ALPHASEEKERS_MODE

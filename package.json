@@ -2,21 +2,24 @@
   "name": "alphaseekers-platform",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "scripts": {
     "postinstall": "prisma generate",
     "clean": "node -e \"const fs=require('fs'); fs.rmSync('.next',{recursive:true,force:true,maxRetries:20,retryDelay:50});\"",
-    "dev": "sh -c 'PORT=${PORT:-3005}; node -e \"require(\\\"fs\\\").rmSync(\\\".next/cache\\\",{recursive:true,force:true})\" 2>/dev/null; npx -p node@20.18.1 node ./node_modules/.bin/next dev -p $PORT'",
-    "build": "npx -p node@20.18.1 node ./node_modules/.bin/next build --no-lint",
-    "start": "npx -p node@20.18.1 node ./node_modules/.bin/next start",
-    "lint": "npx -p node@20.18.1 node ./node_modules/.bin/next lint",
-    "smoke": "npx -p node@20.18.1 node scripts/smoke.mjs",
+    "dev": "sh -c 'PORT=${PORT:-3005}; node -e \"require(\\\"fs\\\").rmSync(\\\".next/cache\\\",{recursive:true,force:true})\" 2>/dev/null; npx -p node@22.23.2 node ./node_modules/.bin/next dev -p $PORT'",
+    "build": "npx -p node@22.23.2 node ./node_modules/.bin/next build --no-lint",
+    "start": "npx -p node@22.23.2 node ./node_modules/.bin/next start",
+    "lint": "npx -p node@22.23.2 node ./node_modules/.bin/next lint",
+    "smoke": "npx -p node@22.23.2 node scripts/smoke.mjs",
     "stories": "npm run smoke",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:stress": "vitest run tests/stress --no-file-parallelism",
-    "prisma:generate": "sh -c 'set -a; [ -f .env.local ] && . ./.env.local; set +a; npx -p node@20.18.1 node ./node_modules/.bin/prisma generate'",
-    "prisma:migrate:deploy": "sh -c 'set -a; [ -f .env.local ] && . ./.env.local; set +a; npx -p node@20.18.1 node ./node_modules/.bin/prisma migrate deploy'",
-    "prisma:migrate:dev": "sh -c 'set -a; [ -f .env.local ] && . ./.env.local; set +a; npx -p node@20.18.1 node ./node_modules/.bin/prisma migrate dev'"
+    "prisma:generate": "sh -c 'set -a; [ -f .env.local ] && . ./.env.local; set +a; npx -p node@22.23.2 node ./node_modules/.bin/prisma generate'",
+    "prisma:migrate:deploy": "sh -c 'set -a; [ -f .env.local ] && . ./.env.local; set +a; npx -p node@22.23.2 node ./node_modules/.bin/prisma migrate deploy'",
+    "prisma:migrate:dev": "sh -c 'set -a; [ -f .env.local ] && . ./.env.local; set +a; npx -p node@22.23.2 node ./node_modules/.bin/prisma migrate dev'"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.600.0",
