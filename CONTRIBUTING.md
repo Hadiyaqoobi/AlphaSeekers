@@ -51,6 +51,43 @@ time (find src -name '*.ts*' | xargs cat > /dev/null)   # want well under 1s
 
 ---
 
+## Regenerate the lockfile with npm 10.8.2, not whatever npm you have
+
+CI pins Node **20.18.1**, which bundles **npm 10.8.2**, and it installs with
+`npm ci` — which refuses to run at all if `package-lock.json` and
+`package.json` disagree:
+
+```
+npm error code EUSAGE
+npm ci can only install packages when your package.json and
+package-lock.json are in sync.
+Missing: @swc/helpers@0.5.23 from lock file
+```
+
+A newer npm (11.x) resolves that same tree without complaining and writes a
+lockfile npm 10.8.2 then rejects. So a lockfile regenerated on a modern local
+npm can break CI while working perfectly on your machine — which is exactly
+what happened: **every CI run from 2026-07-19 to 2026-09-16 failed here**, at
+the first step, so typecheck, tests and build never ran once.
+
+When you change dependencies, regenerate the lockfile with the version CI uses:
+
+```bash
+npx -y npm@10.8.2 install --package-lock-only
+```
+
+and verify the way CI will:
+
+```bash
+rm -rf node_modules && npx -y npm@10.8.2 ci
+```
+
+(The `EBADENGINE` warnings about packages wanting Node >= 20.19 are noise on
+20.18.1 — warnings, not errors. They are a hint that the Node pin is getting
+old, not the cause of a failure.)
+
+---
+
 ## `npm install` alone does not regenerate the Prisma client
 
 npm 11 gates dependency lifecycle scripts behind `allowScripts`, so
