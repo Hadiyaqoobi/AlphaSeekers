@@ -26,6 +26,32 @@ mapping, so it has to be re-added by raw SQL after each migration.
 
 ---
 
+## Node is pinned to 22.23.2 — and the pin is load-bearing
+
+`render.yaml` (`NODE_VERSION`), `.github/workflows/ci.yml` and every `npx -p
+node@…` in the npm scripts must agree. `package.json` declares
+`engines: { node: ">=22.12.0" }` so a too-old Node fails loudly at install
+instead of breaking subtly later.
+
+It used to be 20.18.1, which broke in a way worth remembering. `sanitize-html`
+declares `engines: { node: ">=22.12.0" }`, and on Node 20 it cannot `require()`
+its now-ESM `htmlparser2` dependency:
+
+```
+Error: require() of ES Module .../htmlparser2/dist/index.js
+from .../sanitize-html/index.js not supported.
+```
+
+The production app did not crash, because Next bundles sanitize-html at build
+time and never hits that runtime `require`. It worked by luck of bundling, not
+because it was correct — only the test suite, which loads the raw module,
+exposed it. Downgrading was not an option either: 2.17.6 has the same engine
+floor, and anything older reopens a stored-XSS advisory.
+
+Node 20 also reached end of life in April 2026, and GitHub Actions had already
+started forcing its own actions onto Node 24 with a deprecation warning on
+every run.
+
 ## Do not keep your working copy in iCloud Drive
 
 Check where you cloned this repo. If the path is under `~/Documents` or
@@ -51,11 +77,10 @@ time (find src -name '*.ts*' | xargs cat > /dev/null)   # want well under 1s
 
 ---
 
-## Regenerate the lockfile with npm 10.8.2, not whatever npm you have
+## Keep the lockfile in sync, and regenerate it with the npm CI uses
 
-CI pins Node **20.18.1**, which bundles **npm 10.8.2**, and it installs with
-`npm ci` — which refuses to run at all if `package-lock.json` and
-`package.json` disagree:
+CI installs with `npm ci`, which refuses to run at all if `package-lock.json`
+and `package.json` disagree:
 
 ```
 npm error code EUSAGE
@@ -64,27 +89,22 @@ package-lock.json are in sync.
 Missing: @swc/helpers@0.5.23 from lock file
 ```
 
-A newer npm (11.x) resolves that same tree without complaining and writes a
-lockfile npm 10.8.2 then rejects. So a lockfile regenerated on a modern local
-npm can break CI while working perfectly on your machine — which is exactly
-what happened: **every CI run from 2026-07-19 to 2026-09-16 failed here**, at
-the first step, so typecheck, tests and build never ran once.
+This is not hypothetical — **every CI run from 2026-07-19 to 2026-09-16 failed
+here**, at the first step, so typecheck, tests and build never ran once. It was
+invisible locally because npm majors disagree: npm 11 resolves a tree that npm
+10 then rejects, so a lockfile regenerated on a newer npm can break CI while
+working perfectly on your machine.
 
-When you change dependencies, regenerate the lockfile with the version CI uses:
-
-```bash
-npx -y npm@10.8.2 install --package-lock-only
-```
-
-and verify the way CI will:
+After changing dependencies, verify the way CI does, and against both majors if
+you are unsure which one the pinned Node ships:
 
 ```bash
-rm -rf node_modules && npx -y npm@10.8.2 ci
+rm -rf node_modules && npx -y npm@10.8.2 ci   # stricter
+rm -rf node_modules && npx -y npm@11.17.0 ci  # more permissive
 ```
 
-(The `EBADENGINE` warnings about packages wanting Node >= 20.19 are noise on
-20.18.1 — warnings, not errors. They are a hint that the Node pin is getting
-old, not the cause of a failure.)
+(`EBADENGINE` warnings are worth reading rather than ignoring — see the Node
+version note below. One of them was the real cause of a test failure.)
 
 ---
 
