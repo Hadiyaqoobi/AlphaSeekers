@@ -83,7 +83,14 @@ export async function POST(request: NextRequest) {
     });
 
     const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3005";
-    const registrationUrl = `${baseUrl}/fa/classes/${result.class.id}`;
+    // The PUBLIC join page, not /classes/[id].
+    //
+    // This is the link staff copy and send to students, so it has to work for
+    // someone who is not signed in. /classes/[id] redirects anyone signed-out to
+    // /login — so the person who received the link hit a wall, could not see the
+    // class, and had no way in. /join/[classId] is the one-form page that creates
+    // their account and enrols them in a single step.
+    const registrationUrl = `${baseUrl}/fa/join/${result.class.id}`;
 
     return NextResponse.json(
         {
