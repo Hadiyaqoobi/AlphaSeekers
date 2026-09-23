@@ -676,7 +676,12 @@
     "removing": "Removing...",
     "cancel": "Cancel",
     "removeFailed": "Could not remove this student. Please try again.",
-    "removeStudentAria": "Remove {name} from this class"
+    "removeStudentAria": "Remove {name} from this class",
+    "shareLinkLabel": "Registration link — share this with students",
+    "shareLinkHint": "Anyone can open this without an account. It creates their account and puts them in this class.",
+    "copy": "Copy",
+    "copied": "Copied",
+    "copyFailed": "Could not copy automatically. Select the link above and copy it."
   },
   "sessionActions": {
     "cancel": "Cancel session",

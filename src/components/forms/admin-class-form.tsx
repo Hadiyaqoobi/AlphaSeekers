@@ -205,41 +205,65 @@ export function AdminClassForm({ teachers }: AdminClassFormProps) {
         )}
       </div>
 
-      <input
-        className="field"
-        min={1}
-        onChange={(event) => setForm((current) => ({ ...current, maxStudents: event.target.value }))}
-        placeholder={t("maxStudents")}
-        required
-        type="number"
-        value={form.maxStudents}
-      />
+      <div className="space-y-1">
+        <label className="text-xs font-bold uppercase tracking-wide text-ink-faint" htmlFor="admin-class-max-students">
+          {t("maxStudents")}
+        </label>
+        <input
+          id="admin-class-max-students"
+          className="field"
+          min={1}
+          onChange={(event) => setForm((current) => ({ ...current, maxStudents: event.target.value }))}
+          placeholder={t("maxStudents")}
+          required
+          type="number"
+          value={form.maxStudents}
+        />
+      </div>
 
-      <input
-        className="field"
-        min={30}
-        onChange={(event) => setForm((current) => ({ ...current, durationMinutes: event.target.value }))}
-        placeholder={t("classDuration")}
-        required
-        type="number"
-        value={form.durationMinutes}
-      />
+      <div className="space-y-1">
+        <label className="text-xs font-bold uppercase tracking-wide text-ink-faint" htmlFor="admin-class-duration">
+          {t("classDuration")}
+        </label>
+        <input
+          id="admin-class-duration"
+          className="field"
+          min={30}
+          onChange={(event) => setForm((current) => ({ ...current, durationMinutes: event.target.value }))}
+          placeholder={t("classDuration")}
+          required
+          type="number"
+          value={form.durationMinutes}
+        />
+      </div>
 
-      <input
-        className="field"
-        onChange={(event) => setForm((current) => ({ ...current, schedulePreference: event.target.value }))}
-        placeholder={t("schedule")}
-        required
-        value={form.schedulePreference}
-      />
+      <div className="space-y-1">
+        <label className="text-xs font-bold uppercase tracking-wide text-ink-faint" htmlFor="admin-class-schedule">
+          {t("schedule")}
+        </label>
+        <input
+          id="admin-class-schedule"
+          className="field"
+          onChange={(event) => setForm((current) => ({ ...current, schedulePreference: event.target.value }))}
+          placeholder={t("schedule")}
+          required
+          value={form.schedulePreference}
+        />
+      </div>
 
-      <input
-        className="field"
-        onChange={(event) => setForm((current) => ({ ...current, language: event.target.value }))}
-        placeholder={t("language")}
-        required
-        value={form.language}
-      />
+      <div className="space-y-1">
+        <label className="text-xs font-bold uppercase tracking-wide text-ink-faint" htmlFor="admin-class-language">
+          {t("language")}
+        </label>
+        <input
+          id="admin-class-language"
+          className="field"
+          onChange={(event) => setForm((current) => ({ ...current, language: event.target.value }))}
+          placeholder={t("language")}
+          required
+          value={form.language}
+        />
+      </div>
 
       <input
         className="field"

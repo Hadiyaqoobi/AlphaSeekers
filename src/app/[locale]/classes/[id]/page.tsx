@@ -9,6 +9,7 @@ import { EnrollButton } from "@/components/classes/enroll-button";
 import { formatDateTime } from "@/lib/format-date";
 import { MaterialUploadForm } from "@/components/classes/material-upload-form";
 import { RemoveStudentButton } from "@/components/classes/remove-student-button";
+import { ShareLink } from "@/components/classes/share-link";
 import { DataCostBadge } from "@/components/data-cost-badge";
 import { SaveOfflineButton } from "@/components/save-offline-button";
 import { getClassById, isStudentEnrolledInClass, listClassAnnouncements, listClassEnrollments } from "@/lib/platform/store";
@@ -97,6 +98,10 @@ export default async function ClassDetailPage({ params }: ClassDetailPageProps) 
             {t("multiSegmentNotice")}
           </p>
         ) : null}
+
+        {/* Staff only: the address to send students. Students are already in the
+            class, and showing it to them invites confusion with the Meet link. */}
+        {canUploadMaterials ? <ShareLink classId={record.id} locale={locale} /> : null}
 
         {user?.role === "STUDENT" ? (
           <div className="mt-4">
