@@ -1682,3 +1682,39 @@ select:-webkit-autofill {
   border-radius: inherit;
   transition: background-color 100000s ease-in-out 0s;
 }
+
+/* ── Class join form ────────────────────────────────────────────────────────
+   Sized for a phone held in one hand on a bad connection. 16px is not a style
+   choice: below it, iOS Safari zooms the page on focus, which reads to a
+   first-time user as the form jumping away from them. 52px targets clear the
+   ~44px minimum comfortably for someone tapping while walking or on a cracked
+   screen. */
+.join-field {
+  width: 100%;
+  min-height: 52px;
+  padding: 14px 16px;
+  font-size: 16px;
+  color: #E8F5EC;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 12px;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.join-field:focus {
+  border-color: #00C853;
+  box-shadow: 0 0 0 3px rgba(0, 200, 83, 0.18);
+}
+.join-submit {
+  width: 100%;
+  min-height: 54px;
+  border: 0;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 800;
+  color: #04140B;
+  background: linear-gradient(180deg, #00F080, #00C853);
+  box-shadow: 0 10px 26px rgba(0, 230, 118, 0.28);
+  cursor: pointer;
+}
+.join-submit:disabled { opacity: 0.6; cursor: default; }

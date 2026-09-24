@@ -31,6 +31,7 @@ type FormState = {
   schedulePreference: string;
   language: string;
   whatsappGroupUrl: string;
+  registrationDeadline: string;
   schedulingMode: "AUTO" | "MANUAL";
 };
 
@@ -47,6 +48,7 @@ const DEFAULT_FORM: FormState = {
   schedulePreference: "Tue 6:00 PM",
   language: "Dari",
   whatsappGroupUrl: "",
+  registrationDeadline: "",
   schedulingMode: "AUTO",
 };
 
@@ -93,6 +95,7 @@ export function AdminClassForm({ teachers }: AdminClassFormProps) {
         maxStudents: Number(form.maxStudents),
         durationMinutes: Number(form.durationMinutes),
         ...(form.whatsappGroupUrl.trim() ? { whatsappGroupUrl: form.whatsappGroupUrl.trim() } : {}),
+        ...(form.registrationDeadline ? { registrationDeadline: form.registrationDeadline } : {}),
         ...teacherFields,
       }),
     });
@@ -202,41 +205,65 @@ export function AdminClassForm({ teachers }: AdminClassFormProps) {
         )}
       </div>
 
-      <input
-        className="field"
-        min={1}
-        onChange={(event) => setForm((current) => ({ ...current, maxStudents: event.target.value }))}
-        placeholder={t("maxStudents")}
-        required
-        type="number"
-        value={form.maxStudents}
-      />
+      <div className="space-y-1">
+        <label className="text-xs font-bold uppercase tracking-wide text-ink-faint" htmlFor="admin-class-max-students">
+          {t("maxStudents")}
+        </label>
+        <input
+          id="admin-class-max-students"
+          className="field"
+          min={1}
+          onChange={(event) => setForm((current) => ({ ...current, maxStudents: event.target.value }))}
+          placeholder={t("maxStudents")}
+          required
+          type="number"
+          value={form.maxStudents}
+        />
+      </div>
 
-      <input
-        className="field"
-        min={30}
-        onChange={(event) => setForm((current) => ({ ...current, durationMinutes: event.target.value }))}
-        placeholder={t("classDuration")}
-        required
-        type="number"
-        value={form.durationMinutes}
-      />
+      <div className="space-y-1">
+        <label className="text-xs font-bold uppercase tracking-wide text-ink-faint" htmlFor="admin-class-duration">
+          {t("classDuration")}
+        </label>
+        <input
+          id="admin-class-duration"
+          className="field"
+          min={30}
+          onChange={(event) => setForm((current) => ({ ...current, durationMinutes: event.target.value }))}
+          placeholder={t("classDuration")}
+          required
+          type="number"
+          value={form.durationMinutes}
+        />
+      </div>
 
-      <input
-        className="field"
-        onChange={(event) => setForm((current) => ({ ...current, schedulePreference: event.target.value }))}
-        placeholder={t("schedule")}
-        required
-        value={form.schedulePreference}
-      />
+      <div className="space-y-1">
+        <label className="text-xs font-bold uppercase tracking-wide text-ink-faint" htmlFor="admin-class-schedule">
+          {t("schedule")}
+        </label>
+        <input
+          id="admin-class-schedule"
+          className="field"
+          onChange={(event) => setForm((current) => ({ ...current, schedulePreference: event.target.value }))}
+          placeholder={t("schedule")}
+          required
+          value={form.schedulePreference}
+        />
+      </div>
 
-      <input
-        className="field"
-        onChange={(event) => setForm((current) => ({ ...current, language: event.target.value }))}
-        placeholder={t("language")}
-        required
-        value={form.language}
-      />
+      <div className="space-y-1">
+        <label className="text-xs font-bold uppercase tracking-wide text-ink-faint" htmlFor="admin-class-language">
+          {t("language")}
+        </label>
+        <input
+          id="admin-class-language"
+          className="field"
+          onChange={(event) => setForm((current) => ({ ...current, language: event.target.value }))}
+          placeholder={t("language")}
+          required
+          value={form.language}
+        />
+      </div>
 
       <input
         className="field"
@@ -245,6 +272,26 @@ export function AdminClassForm({ teachers }: AdminClassFormProps) {
         type="url"
         value={form.whatsappGroupUrl}
       />
+
+      {/* Registration cutoff. Blank = open indefinitely. */}
+      <div className="space-y-1">
+        <label
+          className="text-xs font-bold uppercase tracking-wide text-ink-faint"
+          htmlFor="admin-class-registration-deadline"
+        >
+          {ts("registrationDeadlineLabel")}
+        </label>
+        <input
+          className="field"
+          id="admin-class-registration-deadline"
+          onChange={(event) =>
+            setForm((current) => ({ ...current, registrationDeadline: event.target.value }))
+          }
+          type="date"
+          value={form.registrationDeadline}
+        />
+        <p className="text-xs text-ink-faint">{ts("registrationDeadlineHint")}</p>
+      </div>
 
       <div className="space-y-1">
         <label className="text-xs font-bold uppercase tracking-wide text-ink-faint" htmlFor="admin-class-scheduling-mode">

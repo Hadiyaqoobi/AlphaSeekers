@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { createClassWithSession } from "@/lib/platform/store";
 import { normaliseHttpUrl } from "@/lib/security/safe-url";
+import { parseRegistrationDeadline } from "@/lib/platform/registration-deadline";
 import { resolveTeacherId } from "@/lib/platform/teacher-invite";
 import { guardPermission } from "@/lib/security/api-guard";
 import { getSessionUser } from "@/lib/security/session";
@@ -41,6 +42,14 @@ export async function POST(request: NextRequest) {
     }
     const schedulingMode: "AUTO" | "MANUAL" = body.schedulingMode === "MANUAL" ? "MANUAL" : "AUTO";
 
+    // Optional registration cutoff. Rejected rather than silently dropped: a
+    // deadline the teacher believes they set, but which never saved, is worse
+    // than a 400.
+    const deadline = parseRegistrationDeadline(body.registrationDeadline);
+    if (!deadline.ok) {
+        return NextResponse.json({ message: deadline.message }, { status: 400 });
+    }
+
     // Resolve the instructor: existing teacher, or invite a new one (creates the
     // account + emails onboarding credentials). Shared with /api/admin/classes.
     const resolved = await resolveTeacherId({
@@ -69,11 +78,19 @@ export async function POST(request: NextRequest) {
         // so anything that is not http(s) is dropped rather than stored.
         registrationFormUrl: normaliseHttpUrl(body.registrationFormUrl) ?? undefined,
         whatsappGroupUrl: normaliseHttpUrl(body.whatsappGroupUrl) ?? undefined,
+        registrationDeadline: deadline.value,
         schedulingMode,
     });
 
     const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3005";
-    const registrationUrl = `${baseUrl}/fa/classes/${result.class.id}`;
+    // The PUBLIC join page, not /classes/[id].
+    //
+    // This is the link staff copy and send to students, so it has to work for
+    // someone who is not signed in. /classes/[id] redirects anyone signed-out to
+    // /login — so the person who received the link hit a wall, could not see the
+    // class, and had no way in. /join/[classId] is the one-form page that creates
+    // their account and enrols them in a single step.
+    const registrationUrl = `${baseUrl}/fa/join/${result.class.id}`;
 
     return NextResponse.json(
         {

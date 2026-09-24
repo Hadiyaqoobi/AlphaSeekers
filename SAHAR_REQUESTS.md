@@ -52,6 +52,29 @@ don't lose any of them. Update the status column as items move.
 
 ---
 
+## Social links — applied 2026-09-17
+
+Sahar sent a new Instagram link and a YouTube link.
+
+| Channel | Action |
+|---|---|
+| Instagram | **Changed** `alphaseekers_org` → `alphaseekers_organization`. Live on the landing pages and /contact. |
+| YouTube | **No change needed** — already set to `@AlphaSeekersOrganization`. The link sent is the same channel, differing only in letter case plus a `?si=` share tag. |
+
+Applied directly to `SiteSettings` rather than through the admin panel, so
+`updatedBy` is null (no admin was signed in). Tracking parameters (`?igsi=`,
+`?si=`) were stripped — they are share-attribution tokens, not part of the
+profile addresses, and would otherwise appear on every public page.
+
+**Open question for Sahar:** both Instagram accounts still exist and both are
+titled "AlphaSeekers Organization". If `alphaseekers_org` is being retired,
+followers there should be pointed at the new one.
+
+**Reminder:** she can do this herself at `/fa/admin/settings` — it goes live
+instantly with no deploy. That is request #2 from her 2026-05-01 email.
+
+---
+
 ## Email correspondence log
 
 | Date | Direction | Subject | Summary |

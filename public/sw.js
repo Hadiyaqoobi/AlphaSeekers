@@ -9,10 +9,52 @@
 // deleted on install/activate, so saved files survive updates. Only stale
 // *runtime* caches from older SW versions are pruned on activate.
 
-const RUNTIME_CACHE = "alphaseekers-runtime-v6";
+const RUNTIME_CACHE = "alphaseekers-runtime-v7";
 // Must match MATERIAL_CACHE in src/components/save-offline-button.tsx.
 const MATERIAL_CACHE = "alphaseekers-materials-v1";
 const KEEP_CACHES = [RUNTIME_CACHE, MATERIAL_CACHE];
+
+// How long a navigation waits for the network before falling back to a cached
+// copy of that same page. Tuned for "slow", not "broken": long enough that a
+// merely sluggish connection still serves fresh content, short enough that a
+// student is not left looking at a blank screen wondering if it is working.
+const NAVIGATION_TIMEOUT_MS = 3000;
+
+/**
+ * Last-resort offline page: nothing cached, and the network failed.
+ *
+ * The previous version returned the bare string "Offline" as text/plain — no
+ * styling, nothing to do next, on a phone. This is a real page with a retry.
+ *
+ * ENGLISH ONLY, DELIBERATELY. This file is a static service worker; it cannot
+ * reach next-intl, so any Dari here would have to be hand-written into the
+ * source — and Dari on this platform is written by a native speaker on the
+ * team, never invented. The two strings below are listed in
+ * messages/TRANSLATION_NEEDED.md; once the team supplies the Dari, paste it in
+ * and set lang/dir accordingly. Until then English is honest; invented Dari
+ * would not be.
+ */
+function offlineFallback() {
+  return new Response(
+    `<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AlphaSeekers</title>
+<style>
+  body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;
+       background:#04140B;color:#E8F5EC;font-family:system-ui,-apple-system,sans-serif;padding:24px}
+  .card{max-width:22rem;text-align:center}
+  h1{font-size:1.25rem;margin:0 0 .5rem}
+  p{font-size:.95rem;line-height:1.7;color:#9DB3A6;margin:0 0 1.25rem}
+  button{background:#00C853;color:#04140B;border:0;border-radius:12px;
+         padding:13px 22px;font-size:1rem;font-weight:700;cursor:pointer}
+</style></head><body><div class="card">
+<h1>No internet connection</h1>
+<p>This page could not load. Check your connection and try again.</p>
+<button onclick="location.reload()">Try again</button>
+</div></body></html>`,
+    { status: 503, headers: { "Content-Type": "text/html; charset=utf-8" } },
+  );
+}
 
 self.addEventListener("install", () => {
   // Activate this version as soon as it has installed. We do not pre-delete
@@ -77,23 +119,51 @@ self.addEventListener("fetch", (event) => {
         }
       }
 
-      // 3. Navigations: network-first, fall back to a cached copy of the page,
-      // then to a minimal offline response.
+      // 3. Navigations: network-first, but with a DEADLINE.
+      //
+      // Plain network-first only helps when the network fails. On the
+      // connections this platform is actually used on, the common case is not
+      // "offline" — it is "so slow that fetch never settles". The request does
+      // not reject, so the old code sat on a blank screen indefinitely while a
+      // perfectly good cached copy of the page was sitting right there.
+      //
+      // So: race the network against a timer. If the network wins, serve and
+      // re-cache it. If the timer wins and we have a cached copy, serve that
+      // immediately — the student gets a usable page in about three seconds
+      // instead of staring at white. The network request is NOT aborted; it is
+      // left to finish and refresh the cache for next time.
       if (request.mode === "navigate") {
         const runtimeCache = await caches.open(RUNTIME_CACHE);
-        try {
-          const response = await fetch(request);
-          if (response && response.ok) {
-            runtimeCache.put(request, response.clone());
-          }
-          return response;
-        } catch {
-          const cachedPage = await runtimeCache.match(request);
-          if (cachedPage) return cachedPage;
-          return new Response("Offline", {
-            status: 503,
-            headers: { "Content-Type": "text/plain" },
+
+        const network = fetch(request)
+          .then((response) => {
+            if (response && response.ok) {
+              // clone() before the body is consumed by whoever we hand it to.
+              runtimeCache.put(request, response.clone()).catch(() => {});
+            }
+            return response;
           });
+
+        const cachedPage = await runtimeCache.match(request);
+
+        if (cachedPage) {
+          const timeout = new Promise((resolve) =>
+            setTimeout(() => resolve(null), NAVIGATION_TIMEOUT_MS),
+          );
+          try {
+            const winner = await Promise.race([network, timeout]);
+            if (winner) return winner;
+          } catch {
+            // Network rejected outright — fall through to the cached copy.
+          }
+          return cachedPage;
+        }
+
+        // Nothing cached: we have no choice but to wait for the network.
+        try {
+          return await network;
+        } catch {
+          return offlineFallback();
         }
       }
 

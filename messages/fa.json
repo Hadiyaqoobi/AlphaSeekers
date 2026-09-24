@@ -543,7 +543,8 @@
     "deactivated": "This account has been turned off. Please ask your teacher or the AlphaSeekers team.",
     "googleEmailUnverified": "Google has not verified that email address, so we cannot sign you in with it. Please use your email and password instead.",
     "googleNoEmail": "Google did not share an email address with us. Please use your email and password instead.",
-    "googleFailed": "Something went wrong signing in with Google. Please try again, or use your email and password."
+    "googleFailed": "Something went wrong signing in with Google. Please try again, or use your email and password.",
+    "accountReady": "Your account is ready. Sign in with the email and password you just chose."
   },
   "register": {
     "eyebrow": "Create account",
@@ -654,7 +655,9 @@
     "sessionPending": "جلسه در انتظار",
     "prev": "قبلی",
     "next": "بعدی",
-    "pageLabel": "صفحه"
+    "pageLabel": "صفحه",
+    "registrationCloses": "Registration closes {date}",
+    "registrationClosed": "Registration closed"
   },
   "classDetail": {
     "backToClasses": "برگشت به صنف‌ها",
@@ -674,7 +677,18 @@
     "materialsRestricted": "مواد درسی برای دانش‌آموزان ثبت‌نام‌شده و کارکنان صنف قابل دسترس است.",
     "noMaterials": "هنوز ماده‌ای نیست.",
     "download": "دانلود",
-    "studentsTitle": "دانش‌آموزان ثبت‌نام‌شده"
+    "studentsTitle": "دانش‌آموزان ثبت‌نام‌شده",
+    "remove": "Remove",
+    "confirmRemove": "Yes, remove",
+    "removing": "Removing...",
+    "cancel": "Cancel",
+    "removeFailed": "Could not remove this student. Please try again.",
+    "removeStudentAria": "Remove {name} from this class",
+    "shareLinkLabel": "Registration link — share this with students",
+    "shareLinkHint": "Anyone can open this without an account. It creates their account and puts them in this class.",
+    "copy": "Copy",
+    "copied": "Copied",
+    "copyFailed": "Could not copy automatically. Select the link above and copy it."
   },
   "sessionActions": {
     "cancel": "لغو جلسه",
@@ -695,8 +709,9 @@
     "enrollFailed": "ثبت‌نام ناموفق بود",
     "unenrollFailed": "لغو ثبت‌نام ممکن نشد",
     "limitReached": "شما می‌توانید همزمان در {limit} صنف اشتراک داشته باشید. برای ثبت‌نام در صنف جدید، یکی را لغو کنید.",
-    "requestToJoin": "Request to join",
-    "requestSent": "Request sent — an admin will review it."
+    "requestToJoin": "Join this class",
+    "requestSent": "You have joined this class.",
+    "registrationClosed": "Registration for this class has closed."
   },
   "materials": {
     "title": "آپلود ماده",
@@ -1114,7 +1129,9 @@
     "inviteNew": "دعوت استاد جدید",
     "newTeacherNamePlaceholder": "نام کامل استاد",
     "newTeacherEmailPlaceholder": "ایمیل آدرس استاد",
-    "inviteHint": "یک حساب جدید ساخته می‌شود و استاد اطلاعات ورود را از طریق ایمیل دریافت می‌کند."
+    "inviteHint": "یک حساب جدید ساخته می‌شود و استاد اطلاعات ورود را از طریق ایمیل دریافت می‌کند.",
+    "registrationDeadlineLabel": "Registration deadline (optional)",
+    "registrationDeadlineHint": "The last day students can ask to join. Leave blank to keep the class open."
   },
   "admin": {
     "title": "مدیریت",
@@ -1464,5 +1481,30 @@
     "helpLink": "Support",
     "helpSuffix": " and we will look into it.",
     "optional": "Optional"
+  },
+  "classJoin": {
+    "eyebrow": "Join this class",
+    "teacher": "Teacher",
+    "subject": "Subject",
+    "when": "When",
+    "seatsLeft": "Seats left",
+    "formTitle": "Register for this class",
+    "formSubtitle": "Fill this in once. It creates your AlphaSeekers account and puts you in the class — there is nothing else to sign up for.",
+    "nameLabel": "Your full name",
+    "emailLabel": "Your email address",
+    "emailHint": "You will use this email to sign in later.",
+    "passwordLabel": "Choose a password",
+    "passwordHint": "At least 8 characters, with one letter and one number. You will use this to sign in.",
+    "show": "Show",
+    "hide": "Hide",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "submit": "Join this class",
+    "joining": "Joining...",
+    "failed": "Could not join this class. Please try again.",
+    "networkError": "We could not reach AlphaSeekers. Check your internet connection and try again.",
+    "classFull": "This class is full. Please check the other classes that are open.",
+    "alreadyHaveAccount": "Already have an account?",
+    "signInInstead": "Sign in"
   }
 }
