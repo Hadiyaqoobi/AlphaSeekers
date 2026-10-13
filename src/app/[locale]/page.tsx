@@ -2,8 +2,7 @@ import { getTranslations } from "next-intl/server";
 import { redirect } from "next/navigation";
 
 import { getSessionUser } from "@/lib/security/session";
-import { getSiteSettings } from "@/lib/platform/site-settings";
-import { getLandingHighlights } from "@/lib/platform/landing-highlights";
+import { getPublicLandingHighlights, getPublicSiteSettings } from "@/lib/platform/public-data";
 import { LandingShell } from "@/components/landing/LandingShell";
 
 type HomePageProps = { params: { locale: string } };
@@ -25,7 +24,13 @@ export default async function HomePage({ params }: HomePageProps) {
   // settings: contact details for the footer, from admin Site Settings.
   // highlights: what is open right now, so a visitor arriving from a poster can
   // see the advertised class exists without having to sign up first.
-  const [settings, highlights] = await Promise.all([getSiteSettings(), getLandingHighlights()]);
+  //
+  // Both come from the public-page cache: this page is what crawlers and
+  // first-time visitors hit, and it must not wake the database for each of them.
+  const [settings, highlights] = await Promise.all([
+    getPublicSiteSettings(),
+    getPublicLandingHighlights(),
+  ]);
 
   return (
     <LandingShell

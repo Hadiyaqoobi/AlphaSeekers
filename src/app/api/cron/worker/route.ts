@@ -3,15 +3,21 @@ import { NextRequest, NextResponse } from "next/server";
 import { registerAllHandlers } from "@/lib/jobs/handlers";
 import { reapStalled } from "@/lib/jobs/queue";
 import { drainOnce } from "@/lib/jobs/worker";
+import { refreshPublicCache } from "@/lib/platform/public-cache";
 import { assertCronAuthorized } from "@/lib/security/cron-auth";
 
 export const dynamic = "force-dynamic";
 
 /**
  * Cron-triggered worker drain. For single-service / free-tier deployments that
- * have no dedicated worker process, a per-minute cron hits this route to make
- * real progress on the queue. We drain up to ~5 batches (stopping early once a
- * drain finds nothing) so one invocation clears a meaningful chunk of backlog.
+ * have no dedicated worker process, the hourly cron pulse hits this route to
+ * make real progress on the queue. We drain up to ~5 batches (stopping early
+ * once a drain finds nothing) so one invocation clears a meaningful chunk of
+ * backlog.
+ *
+ * It is the LAST step of the pulse, so it also renews the public-page cache
+ * here: the database is already awake, which makes this the one moment a
+ * refresh costs nothing. See `src/lib/platform/public-cache.ts`.
  */
 export async function POST(request: NextRequest) {
   const denied = await assertCronAuthorized(request);
@@ -36,5 +42,8 @@ export async function POST(request: NextRequest) {
     if (result.processed === 0) break;
   }
 
-  return NextResponse.json(totals);
+  // Fail-soft per entry, so this cannot fail the drain it rides on.
+  const publicCache = await refreshPublicCache();
+
+  return NextResponse.json({ ...totals, publicCache });
 }

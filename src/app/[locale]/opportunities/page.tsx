@@ -4,7 +4,7 @@ import Link from "next/link";
 import { formatDate } from "@/lib/format-date";
 import { DeleteContentButton } from "@/components/admin/delete-content-button";
 import { OpportunityForm } from "@/components/forms/opportunity-form";
-import { listOpportunities } from "@/lib/platform/store";
+import { getPublicOpportunities } from "@/lib/platform/public-data";
 import { getSessionUser } from "@/lib/security/session";
 
 type OpportunitiesPageProps = {
@@ -27,7 +27,7 @@ export default async function OpportunitiesPage({ params, searchParams }: Opport
   const user = await getSessionUser();
 
   const currentType = searchParams.type ?? "ALL";
-  const items = await listOpportunities(currentType === "ALL" ? undefined : currentType);
+  const items = await getPublicOpportunities(currentType === "ALL" ? undefined : currentType);
 
   // Opportunities are public-by-design (BRD §5.3): scholarships and grants
   // should be browsable by every Afghan girl who lands on the site, signed

@@ -52,6 +52,22 @@ function shape(row: {
 }
 
 /**
+ * Fetch the singleton SiteSettings row, or throw if the database cannot be
+ * reached. A row that does not exist yet is not an error — nothing has been
+ * saved, so every field is empty.
+ *
+ * Separate from `getSiteSettings` so the public-page cache can tell "no settings
+ * saved" from "could not ask", and never stores the second as if it were the first.
+ */
+export async function loadSiteSettings(): Promise<SiteSettings> {
+  const row = await prisma.siteSettings.findUnique({
+    where: { id: SETTINGS_ROW_ID },
+  });
+  if (!row) return EMPTY_SITE_SETTINGS;
+  return shape(row);
+}
+
+/**
  * Fetch the singleton SiteSettings row. Fails open with EMPTY_SITE_SETTINGS
  * if the table doesn't exist yet (migration not applied), the DB is
  * unavailable, or the row hasn't been created yet. The public footer must
@@ -59,11 +75,7 @@ function shape(row: {
  */
 export async function getSiteSettings(): Promise<SiteSettings> {
   try {
-    const row = await prisma.siteSettings.findUnique({
-      where: { id: SETTINGS_ROW_ID },
-    });
-    if (!row) return EMPTY_SITE_SETTINGS;
-    return shape(row);
+    return await loadSiteSettings();
   } catch {
     return EMPTY_SITE_SETTINGS;
   }
