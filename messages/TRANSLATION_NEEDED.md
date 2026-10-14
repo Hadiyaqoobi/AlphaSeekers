@@ -1,6 +1,6 @@
 # Dari translation needed
 
-**529 strings** in the app are still showing **English** to Dari readers.
+**530 strings** in the app are still showing **English** to Dari readers.
 The keys exist in `messages/fa.json`, so nothing errors — the English text was left in place
 when these features shipped. The sections are ordered by who sees them: what students see first
 (the class join page, the live class page, sign-in), then teachers, then staff screens.
@@ -2191,6 +2191,21 @@ Evening"
   <sub>`contentForms.applyLink`</sub>
 
 
+## `materials`  ·  3 strings
+
+- **English:** "Or paste a link"
+  **Dari:** 
+  <sub>`materials.orPasteLink`</sub>
+
+- **English:** "Share a Google Drive, OneDrive or public PDF link. Make sure it is set so students can open it."
+  **Dari:** 
+  <sub>`materials.linkHint`</sub>
+
+- **English:** "Link to the material (Google Drive, OneDrive or a public PDF)"
+  **Dari:** 
+  <sub>`materials.pasteLink`</sub>
+
+
 ## `admin`  ·  3 strings
 
 - **English:** "Manage users"
@@ -2204,17 +2219,6 @@ Evening"
 - **English:** "Could not delete. Please try again."
   **Dari:** 
   <sub>`admin.deleteFailed`</sub>
-
-
-## `materials`  ·  2 strings
-
-- **English:** "Or paste a link"
-  **Dari:** 
-  <sub>`materials.orPasteLink`</sub>
-
-- **English:** "Share a Google Drive, OneDrive or public PDF link. Make sure it is set so students can open it."
-  **Dari:** 
-  <sub>`materials.linkHint`</sub>
 
 
 ## `staffForms`  ·  2 strings

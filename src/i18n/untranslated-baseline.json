@@ -530,6 +530,7 @@
     "classLifecycle.teacherHoursOutside",
     "dashboard.cards.myClasses",
     "dashboard.cards.myStudents",
-    "dashboard.cards.next7Days"
+    "dashboard.cards.next7Days",
+    "materials.pasteLink"
   ]
 }
