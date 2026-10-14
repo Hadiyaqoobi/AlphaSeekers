@@ -1575,13 +1575,10 @@ export async function createClassWithSession(input: CreateClassInput) {
 
     if (teacher) {
       const firstSession = createdSessions[0];
-      const meetInfo = firstSession?.meetLink ?? (teacher.language === "FA" ? "لینک در حال آماده‌سازی است" : "Meet link pending");
-      // The teacher only needs the time and the link: staff set the schedule, and
-      // the Meet link is resent before every session. It used to end with "please
-      // set your availability", a task the teacher does not need to do.
-      const teacherContent = teacher.language === "FA"
-        ? `صنف جدید "${klass.name}" برای شما ایجاد شده است.\nبرنامه: ${input.schedulePreference}\nلینک: ${meetInfo}`
-        : `New class "${klass.name}" has been assigned to you.\nSchedule: ${input.schedulePreference} (Kabul time)\nMeet link: ${meetInfo}\n\nThere is nothing for you to set up: the AlphaSeekers team manages the schedule, and you will get the Meet link again before every session.`;
+      // Always English: every message to a teacher is in English (decided
+      // 2026-10-14), whatever language their account is set to.
+      const meetInfo = firstSession?.meetLink ?? "Meet link pending";
+      const teacherContent = `New class "${klass.name}" has been assigned to you.\nSchedule: ${input.schedulePreference} (Kabul time)\nMeet link: ${meetInfo}\n\nThere is nothing for you to set up: the AlphaSeekers team manages the schedule, and you will get the Meet link again before every session.`;
 
       const teacherDeliveries = await deliverWithFallback(
         { userId: teacher.id, email: teacher.email, phone: teacher.phone, telegramChatId: teacher.telegramChatId, pushSubscription: teacher.pushSubscription },
@@ -3214,7 +3211,8 @@ export async function runReminderBatch() {
       userId: teacher.id,
       dedupeKey: `session_reminder:${session.id}:${session.startTime.getTime()}:teacher:${teacher.id}`,
       content: buildTeacherSessionReminderContent({
-        language: teacher.language,
+        // Teachers always get English (decided 2026-10-14).
+        language: "EN",
         timezone: teacher.timezone,
         className: session.class.name,
         startTime: session.startTime,

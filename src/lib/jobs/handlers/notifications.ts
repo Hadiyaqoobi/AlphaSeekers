@@ -209,10 +209,8 @@ export async function welcomeTeacher(payload: Record<string, unknown>): Promise<
     where: { classId, status: "ACTIVE" },
   });
 
-  const content =
-    klass.teacher.language === "FA"
-      ? `شاگرد جدید "${student.name}" در صنف "${klass.name}" ثبت‌نام کرد. (${activeCount}/${klass.maxStudents})`
-      : `New student "${student.name}" enrolled in "${klass.name}". (${activeCount}/${klass.maxStudents} enrolled)`;
+  // Teachers always get English (decided 2026-10-14).
+  const content = `New student "${student.name}" enrolled in "${klass.name}". (${activeCount}/${klass.maxStudents} enrolled)`;
 
   await deliverOrThrow(toTarget(klass.teacher), content);
 }

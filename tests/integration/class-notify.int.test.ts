@@ -77,6 +77,37 @@ d("new class notifies its teacher", () => {
     expect(body).not.toMatch(/hours you can teach/i);
   });
 
+  it("an invited teacher is set to English and every message to them is English", async () => {
+    const { createClassFromBody, parseCreateClassBody } = await import("@/lib/platform/class-create");
+    const parsed = parseCreateClassBody({
+      name: `${TAG} Invited`,
+      subjectCategory: "English",
+      description: "fixture",
+      newTeacherName: `${TAG} Invited Teacher`,
+      newTeacherEmail: email("invited"),
+      day: "Sat",
+      time: "10:00",
+    });
+    if (!parsed.ok) throw new Error(parsed.body.message);
+    const created = await createClassFromBody(parsed.data);
+    if (!created.ok) throw new Error(created.message);
+
+    const teacher = await prisma.user.findUniqueOrThrow({
+      where: { email: email("invited") },
+      select: { id: true, language: true },
+    });
+    expect(teacher.language).toBe("EN");
+
+    const notes = await prisma.notification.findMany({ where: { userId: teacher.id }, select: { content: true } });
+    expect(notes.length).toBeGreaterThan(0);
+    for (const note of notes) {
+      // No Dari script and no setup task in anything sent to the teacher.
+      expect(note.content).not.toMatch(/[\u0600-\u06FF]/);
+      expect(note.content).not.toMatch(/set your availability/i);
+    }
+    expect(notes.some((note) => /New class ".*Invited" has been assigned to you/.test(note.content))).toBe(true);
+  });
+
   it("does not invent a session at a guessed time", async () => {
     const teacher = await makeTeacher("no-guess");
 

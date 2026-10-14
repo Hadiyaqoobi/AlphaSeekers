@@ -54,7 +54,9 @@ export async function resolveTeacherId(input: {
         passwordHash: await hashPassword(tempPassword),
         phone: input.newTeacherPhone ? encryptPhone(String(input.newTeacherPhone).trim()) : null,
         role: "TEACHER",
-        language: "FA",
+        // Teachers are communicated with in English (decided 2026-10-14); a new
+        // teacher's emails used to arrive in Dari because this defaulted to FA.
+        language: "EN",
         timezone: "Asia/Kabul",
         approvedAt: new Date(),
         // The temporary password travels by email/Telegram in plain text. Until
@@ -66,14 +68,16 @@ export async function resolveTeacherId(input: {
     });
 
     const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3005";
-    const locale = input.locale === "en" ? "en" : "fa";
+    // English, and no setup task: staff run the schedule and the Meet link is
+    // emailed before every session. This used to send the teacher to set their
+    // availability, on the Dari site.
     const onboardingContent =
       `Welcome to AlphaSeekers, ${name}!\n` +
-      `Your account has been created.\n` +
+      `An account has been created for you so you can teach with us.\n` +
       `Email: ${email}\n` +
       `Temporary password: ${tempPassword}\n` +
-      `Please log in and set your availability: ${baseUrl}/${locale}/teacher/availability\n` +
-      `Change your password after first login.`;
+      `Sign in here and choose your own password: ${baseUrl}/en/login\n` +
+      `There is nothing else to set up: you will get each class's Google Meet link by email before it starts.`;
 
     deliverWithFallback(
       {
