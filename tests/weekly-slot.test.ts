@@ -63,10 +63,10 @@ describe("planAutoSlot", () => {
     });
   });
 
-  it("requires availability and a readable time", () => {
+  it("books the posted time when the teacher saved no availability, but needs a readable time", () => {
     expect(planAutoSlot({ schedulePreference: "Wed 2:00 PM", spanMinutes: 60, availability: [] })).toEqual({
-      ok: false,
-      reason: "no-availability",
+      ok: true,
+      slot: { dayOfWeek: 3, hour: 14, minute: 0 },
     });
     expect(planAutoSlot({ schedulePreference: "evenings", spanMinutes: 60, availability: wed14to15 })).toEqual({
       ok: false,

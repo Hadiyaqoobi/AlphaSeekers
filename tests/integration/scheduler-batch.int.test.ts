@@ -120,18 +120,18 @@ d("scheduler batch claim", () => {
     expect(job?.totalCount).toBe(live);
   });
 
-  it("still refuses to schedule a class whose teacher has no availability", async () => {
-    // The gate exists so the scheduler never invents a time the teacher may not
-    // attend (QA 2026-04-19). Unsticking the batch claim must not weaken it.
+  it("books a teacher with no saved availability at the posted time, exactly once", async () => {
+    // Decision 2026-10-14: the posted time is the agreed time when the teacher has
+    // not saved availability. Repeated batches must not double-book it.
     const teacher = await prisma.user.create({
       data: { name: `${TAG} no-avail`, email: email("no-avail"), role: "TEACHER", approvedAt: new Date() },
       select: { id: true },
     });
-    const klass = await makeAutoClass(teacher.id, "unschedulable");
+    const klass = await makeAutoClass(teacher.id, "no-avail");
 
     await runSchedulerBatch();
     await runSchedulerBatch();
 
-    expect(await prisma.session.count({ where: { classId: klass.id } })).toBe(0);
+    expect(await prisma.session.count({ where: { classId: klass.id } })).toBe(1);
   });
 });

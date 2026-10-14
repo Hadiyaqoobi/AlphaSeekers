@@ -9,12 +9,15 @@
  * THE RULE (AUTO classes):
  *   1. The class runs at the day and time chosen when it was posted. That time is
  *      the time used. The scheduler never moves a class to another day or hour.
- *   2. It is booked only if the whole class (every 60-minute segment and the
- *      breaks between them) fits inside ONE of the teacher's availability windows
- *      on that day.
- *   3. A teacher with no availability at all gets nothing booked (QA 2026-04-19:
- *      never book a teacher into an hour they never agreed to). Availability is
- *      the teacher's consent to the posted time, so it stays required.
+ *   2. If the teacher HAS saved availability, the class is booked only when the
+ *      whole class (every 60-minute segment and the breaks between them) fits
+ *      inside ONE of their availability windows on that day.
+ *   3. If the teacher has saved NO availability, the class is booked at the
+ *      posted time. Decided by the organisation on 2026-10-14: staff agree the
+ *      time with the teacher when they post the class, and most volunteer
+ *      teachers never fill in availability, so requiring it left their classes
+ *      with no sessions and no Meet link. (This replaces the 2026-04-19 QA rule
+ *      that refused to book without availability.)
  *   4. If the slot would overlap another of the teacher's sessions, nothing is
  *      booked (the old code shifted the class by an hour up to eight times and
  *      then booked the overlap anyway).
@@ -131,7 +134,8 @@ export function planAutoSlot(input: {
 }): SlotPlan {
   const slot = parseStoredWeeklySlot(input.schedulePreference);
   if (!slot) return { ok: false, reason: "unparseable" };
-  if (input.availability.length === 0) return { ok: false, reason: "no-availability" };
+  // No saved availability: the posted time is the agreed time (rule 3).
+  if (input.availability.length === 0) return { ok: true, slot };
   if (!slotFitsAvailability(slot, input.spanMinutes, input.availability)) {
     return { ok: false, reason: "outside-availability" };
   }

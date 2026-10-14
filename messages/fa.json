@@ -1570,7 +1570,7 @@
     "subtitle": "One step before your class can run. It takes about two minutes.",
     "subtitleDone": "You are all set. Your sessions are created automatically from the hours you set.",
     "step1Title": "Set the hours you can teach",
-    "step1Body": "Tick each day you teach, enter a start and end time, and save. Sessions are only ever created inside these hours — the platform never guesses a time for you.",
+    "step1Body": "Tick each day you teach, enter a start and end time, and save. Once you have saved hours, sessions are only created inside them. Until then, classes run at the time chosen when they were posted.",
     "step1Done": "Saved for {days} day(s) a week. Change it any time.",
     "step1Cta": "Set my hours",
     "step1Change": "Change my hours",

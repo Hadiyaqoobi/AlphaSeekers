@@ -166,13 +166,14 @@ d("class lifecycle (real Postgres)", () => {
     expect(await prisma.session.count({ where: { class: { teacherId: teacher.id } } })).toBe(1);
   });
 
-  it("books nothing when the teacher has no availability (all days unticked) (C8)", async () => {
+  it("books the posted time once when the teacher saved no availability (decision 2026-10-14)", async () => {
     const teacher = await makeTeacher("none");
     const klass = await makeClass(teacher.id);
 
     await scheduleTeacherClasses(teacher.id);
+    await scheduleTeacherClasses(teacher.id);
 
-    expect(await prisma.session.count({ where: { classId: klass.id } })).toBe(0);
+    expect(await prisma.session.count({ where: { classId: klass.id } })).toBe(1);
   });
 
   it("concurrent post-availability and scheduler runs cannot double-book (C8 lock)", async () => {
@@ -450,7 +451,9 @@ d("class lifecycle (real Postgres)", () => {
       schedulePreference: "Tue 6:00 PM",
       language: "English",
     });
-    expect(waiting.sessions).toHaveLength(0);
-    expect(waiting.scheduleIssue).toBe("no-availability");
+    // No saved availability: the posted time is booked (decision 2026-10-14).
+    expect(waiting.scheduleIssue).toBeNull();
+    expect(waiting.sessions).toHaveLength(1);
+    expect(kabulParts(new Date(waiting.sessions[0].startTime))).toEqual({ day: 2, hour: 18, minute: 0 });
   });
 });

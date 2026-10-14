@@ -158,24 +158,11 @@ export async function collectClassIssues(): Promise<ClassIssue[]> {
       });
     }
 
-    // An AUTO class whose teacher has declared nothing can never generate a
-    // session, and will present as "no upcoming sessions" with no stated cause.
-    if (klass.schedulingMode === "AUTO" && klass.teacherId && availabilityWindows.length === 0) {
-      issues.push({
-        severity: "urgent",
-        kind: "no-availability",
-        classId: klass.id,
-        className: name,
-        detail:
-          `${klass.teacher?.name ?? "The teacher"} has not set any availability, ` +
-          `so no sessions can be generated automatically.`,
-      });
-    }
-
-    // The scheduler books an AUTO class only at its posted day/time and only when
-    // that lies inside the teacher's availability; it never moves the class.
-    // When it cannot, say exactly why instead of a bare "no upcoming sessions".
-    if (klass.schedulingMode === "AUTO" && availabilityWindows.length > 0) {
+    // The scheduler books an AUTO class only at its posted day/time, and, when the
+    // teacher has saved availability, only inside it; it never moves the class.
+    // (No saved availability = the posted time is used, so that is not an issue.)
+    // When it cannot book, say exactly why instead of a bare "no upcoming sessions".
+    if (klass.schedulingMode === "AUTO") {
       const plan = planAutoSlot({
         schedulePreference: klass.schedulePreference,
         spanMinutes: classSpanMinutes(klass.durationMinutes),

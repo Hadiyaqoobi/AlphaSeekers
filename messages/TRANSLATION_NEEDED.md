@@ -1363,7 +1363,7 @@ set `lang="fa" dir="rtl"` on that page at the same time).
   **Dari:** 
   <sub>`teacherSetup.step1Title`</sub>
 
-- **English:** "Tick each day you teach, enter a start and end time, and save. Sessions are only ever created inside these hours — the platform never guesses a time for you."
+- **English:** "Tick each day you teach, enter a start and end time, and save. Once you have saved hours, sessions are only created inside them. Until then, classes run at the time chosen when they were posted."
   **Dari:** 
   <sub>`teacherSetup.step1Body`</sub>
 
