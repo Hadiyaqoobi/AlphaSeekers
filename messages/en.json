@@ -709,7 +709,7 @@
     "dayLabel": "Day",
     "timeLabel": "Time (Kabul time)",
     "durationLabel": "Length (minutes)",
-    "whenHint": "The class runs every week on this day at this time, Kabul time. Sessions are booked at exactly this time once it is inside the teacher's available hours.",
+    "whenHint": "The class runs every week on this day at this time, Kabul time. If the teacher has saved their available hours, the time must be inside them; if not, sessions are booked at exactly this time.",
     "manualLabel": "The teacher will set each date themselves",
     "manualHint": "Nothing is booked automatically. The teacher adds each date on their schedule page.",
     "moreOptions": "More options",

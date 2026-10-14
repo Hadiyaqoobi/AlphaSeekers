@@ -10,7 +10,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getTranslations } from "next-intl/server";
 
-import { displayAnswer, toCsv } from "@/lib/platform/join-answers";
+import { displayAnswer, toCsv, type CsvCell } from "@/lib/platform/join-answers";
 import { optionLabel, questionLabel, readJoinQuestions } from "@/lib/platform/join-questions";
 import { listClassEnrollments } from "@/lib/platform/store";
 import { prisma } from "@/lib/prisma";
@@ -57,15 +57,17 @@ export async function GET(request: NextRequest, { params }: Params) {
   const questions = readJoinQuestions(klass.joinQuestions);
   const students = await listClassEnrollments(klass.id);
 
-  const rows: string[][] = [
+  const rows: CsvCell[][] = [
     [t("csv.name"), t("csv.email"), t("csv.joined"), ...questions.map((q) => questionLabel(q, tr))],
     ...students.map((student) => [
       student.name,
       student.email,
       kabulStamp(student.enrolledAt),
-      ...questions.map((q) =>
-        displayAnswer(q, student.answers[q.id], (question, option) => optionLabel(question, option, tr)),
-      ),
+      ...questions.map((q): CsvCell => {
+        const answer = displayAnswer(q, student.answers[q.id], (question, option) => optionLabel(question, option, tr));
+        // Shown exactly as typed: no formula, no lost leading zero, no ' prefix.
+        return q.kind === "phone" && answer ? { asText: answer } : answer;
+      }),
     ]),
   ];
 
