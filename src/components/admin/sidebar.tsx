@@ -234,9 +234,10 @@ export function Sidebar({
         <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden" onClick={close} aria-hidden="true" />
       )}
 
-      {/* Sidebar panel */}
+      {/* Sidebar panel. On desktop it is sticky, not static: static, it scrolled
+          away with the page and left "Log out" floating halfway down long pages. */}
       <aside
-        className={`fixed top-0 start-0 z-40 h-screen w-64 transition-transform lg:translate-x-0 lg:rtl:translate-x-0 lg:static lg:z-auto ${
+        className={`fixed top-0 start-0 z-40 h-screen w-64 transition-transform lg:translate-x-0 lg:rtl:translate-x-0 lg:sticky lg:top-0 lg:z-auto ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full rtl:translate-x-full'
         }`}
         style={{ background: '#0A1118', borderInlineEnd: '1px solid #1A2D3D' }}

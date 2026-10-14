@@ -641,7 +641,8 @@
       "count": "{count} waiting",
       "since": "oldest since {date}",
       "review": "Review"
-    }
+    },
+    "sessionsToday": "{count, plural, one {# session today} other {# sessions today}}"
   },
   "classes": {
     "title": "Classes",
@@ -678,7 +679,7 @@
     "upcomingSessions": "Upcoming sessions",
     "meetStatus": "Meet status",
     "openMeet": "Open Meet link",
-    "joinAfterEnroll": "Join link available after enrollment/approval.",
+    "joinAfterEnroll": "The Meet link appears here once you join.",
     "meetPending": "Meet link pending",
     "materialsTitle": "Class materials",
     "materialsRestricted": "Materials are available to enrolled students and class staff.",

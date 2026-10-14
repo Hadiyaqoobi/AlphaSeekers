@@ -305,6 +305,7 @@ export default async function AdminClassDetailPage({ params }: AdminClassDetailP
 
       {can(access, "classes.delete") ? (
         <ClassDangerZone
+          archived={archived}
           canHardDelete={isSuper(access)}
           classId={record.id}
           className={record.name}

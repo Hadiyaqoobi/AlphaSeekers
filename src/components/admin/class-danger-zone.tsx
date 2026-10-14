@@ -13,6 +13,8 @@ type ClassDangerZoneProps = {
   canHardDelete: boolean;
   /** Where to send the user after archive/delete. Defaults to the admin list. */
   returnTo?: string;
+  /** Already archived: the page offers "Restore class" instead, so no Archive row. */
+  archived?: boolean;
 };
 
 const DANGER_BTN =
@@ -25,7 +27,7 @@ const WARN_BTN =
  * students) and — for super admins only — permanent delete behind a
  * type-the-name confirmation so it can't be triggered by a stray click.
  */
-export function ClassDangerZone({ classId, className, locale, canHardDelete, returnTo }: ClassDangerZoneProps) {
+export function ClassDangerZone({ classId, className, locale, canHardDelete, returnTo, archived = false }: ClassDangerZoneProps) {
   const t = useTranslations("adminClassDetail");
   const router = useRouter();
   const [busy, setBusy] = useState<null | "archive" | "delete">(null);
@@ -63,34 +65,36 @@ export function ClassDangerZone({ classId, className, locale, canHardDelete, ret
       </div>
 
       {/* Archive — recoverable */}
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-line bg-dark-100 p-3">
-        <div className="min-w-0">
-          <p className="text-sm font-semibold text-ink-main">{t("archiveTitle")}</p>
-          <p className="text-xs text-ink-soft">{t("archiveDesc")}</p>
-        </div>
-        {confirmArchive ? (
-          <div className="flex items-center gap-2">
-            <button className="btn-secondary" disabled={busy !== null} onClick={() => setConfirmArchive(false)} type="button">
-              {t("cancel")}
-            </button>
-            <button className={WARN_BTN} disabled={busy !== null} onClick={() => run("archive")} type="button">
-              {busy === "archive" ? t("archiving") : t("archiveConfirm")}
-            </button>
+      {!archived ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-line bg-dark-100 p-3">
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-ink-main">{t("archiveTitle")}</p>
+            <p className="text-xs text-ink-soft">{t("archiveDesc")}</p>
           </div>
-        ) : (
-          <button
-            className="btn-secondary"
-            onClick={() => {
-              setConfirmArchive(true);
-              setConfirmDelete(false);
-              setError(null);
-            }}
-            type="button"
-          >
-            {t("archiveButton")}
-          </button>
-        )}
-      </div>
+          {confirmArchive ? (
+            <div className="flex items-center gap-2">
+              <button className="btn-secondary" disabled={busy !== null} onClick={() => setConfirmArchive(false)} type="button">
+                {t("cancel")}
+              </button>
+              <button className={WARN_BTN} disabled={busy !== null} onClick={() => run("archive")} type="button">
+                {busy === "archive" ? t("archiving") : t("archiveConfirm")}
+              </button>
+            </div>
+          ) : (
+            <button
+              className="btn-secondary"
+              onClick={() => {
+                setConfirmArchive(true);
+                setConfirmDelete(false);
+                setError(null);
+              }}
+              type="button"
+            >
+              {t("archiveButton")}
+            </button>
+          )}
+        </div>
+      ) : null}
 
       {/* Permanent delete — super admin only */}
       {canHardDelete ? (

@@ -1549,6 +1549,13 @@ input[type="radio"] {
   padding-inline-start: 0;
 }
 .auth-field input::placeholder { color: #405A6F; }
+/* The wrapper draws the focus ring; without this the global input:focus rule
+   drew a second, inner box around the text on the sign-in page. */
+.auth-field input:focus {
+  border: 0;
+  box-shadow: none;
+  outline: 0;
+}
 .auth-field .auth-eye {
   flex: none;
   display: flex;
@@ -1660,10 +1667,15 @@ input[type="radio"] {
 }
 .auth-shake { animation: auth-shake 0.5s ease-in-out; }
 
-/* ── Mobile: never let a stray element widen the page past the viewport ── */
+/* ── Mobile: never let a stray element widen the page past the viewport ──
+   `clip`, not `hidden`: hidden turns html/body into scroll containers, which
+   silently breaks position: sticky (the desktop sidebar scrolled away and left
+   "Log out" floating mid-page). `hidden` stays first as the fallback for
+   browsers without `clip`. */
 html,
 body {
   overflow-x: hidden;
+  overflow-x: clip;
   max-width: 100vw;
 }
 

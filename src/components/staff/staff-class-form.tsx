@@ -152,7 +152,17 @@ export function ClassCreateForm({ teachers, autosaveKey = "class-create" }: Clas
     const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
 
     useAutosaveForm(autosaveKey, form, (payload) => {
-        setForm((current) => ({ ...current, ...(payload as Partial<FormState>) }));
+        const draft = payload as Partial<FormState>;
+        // A saved draft can name a teacher who no longer exists (deleted, or a
+        // draft from another database). The list then showed the first teacher
+        // while the form still held the missing id, so the teacher's hours did not
+        // appear and posting failed. Fall back to the first teacher in the list.
+        const teacherKnown = teachers.some((teacher) => teacher.id === draft.teacherId);
+        setForm((current) => ({
+            ...current,
+            ...draft,
+            teacherId: teacherKnown ? (draft.teacherId as string) : current.teacherId,
+        }));
     });
 
     // The teacher being assigned (existing teachers only: an invited one has no

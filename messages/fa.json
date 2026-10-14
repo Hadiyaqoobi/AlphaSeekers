@@ -641,7 +641,8 @@
       "count": "{count} waiting",
       "since": "oldest since {date}",
       "review": "Review"
-    }
+    },
+    "sessionsToday": "{count, plural, one {# session today} other {# sessions today}}"
   },
   "classes": {
     "title": "صنف‌ها",
