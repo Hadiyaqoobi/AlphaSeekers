@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 
 import { JoinQuestionsEditor, toDraft, toPayload, type DraftQuestion } from "@/components/classes/join-questions-editor";
 import type { JoinQuestion } from "@/lib/platform/join-questions";
+import { toDateInputValue } from "@/lib/platform/registration-deadline";
 import { DAY_ABBREVIATIONS, parseStoredWeeklySlot } from "@/lib/scheduling/weekly-slot";
 
 type Teacher = { id: string; name: string; email: string };
@@ -55,12 +56,6 @@ function pad(value: number) {
   return String(value).padStart(2, "0");
 }
 
-/** Deadline instant → the Kabul calendar date the date input shows. */
-function deadlineToKabulDate(iso: string | null): string {
-  if (!iso) return "";
-  const local = new Date(new Date(iso).getTime() + (4 * 60 + 30) * 60_000);
-  return `${local.getUTCFullYear()}-${pad(local.getUTCMonth() + 1)}-${pad(local.getUTCDate())}`;
-}
 
 function toEditState(initial: EditableClass): EditState {
   const slot = parseStoredWeeklySlot(initial.schedulePreference);
@@ -72,7 +67,10 @@ function toEditState(initial: EditableClass): EditState {
     durationMinutes: String(initial.durationMinutes),
     day: slot ? DAY_ABBREVIATIONS[slot.dayOfWeek] : "",
     time: slot ? `${pad(slot.hour)}:${pad(slot.minute)}` : "",
-    registrationDeadline: deadlineToKabulDate(initial.registrationDeadline),
+    // The same conversion the server uses for a date-only deadline (end of that
+    // day, UTC), so the form shows the date that was saved. Converting to Kabul
+    // time here showed the NEXT day, and saving the form moved the deadline.
+    registrationDeadline: toDateInputValue(initial.registrationDeadline),
     whatsappGroupUrl: initial.whatsappGroupUrl ?? "",
     registrationFormUrl: initial.registrationFormUrl ?? "",
     joinQuestions: toDraft(initial.joinQuestions),
