@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 
 interface LessonChatProps {
@@ -16,6 +17,8 @@ type Entry = {
 };
 
 export function LessonChat({ pathId, lessonNumber, isDari }: LessonChatProps) {
+  const t = useTranslations("learn");
+  const tError = useTranslations("error");
   const [input, setInput] = useState("");
   const [history, setHistory] = useState<Entry[]>([]);
   const [submitting, setSubmitting] = useState(false);
@@ -34,16 +37,14 @@ export function LessonChat({ pathId, lessonNumber, isDari }: LessonChatProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ pathId, lessonNumber, query }),
       });
-      const data = await res.json();
-      const answer =
-        data.answer ||
-        data.message ||
-        "I couldn't answer that — try asking a different way.";
+      const data = await res.json().catch(() => ({}));
+      // Never the server's English `message` — a translated fallback instead.
+      const answer = (res.ok && data.answer) || t("chatNoAnswer");
       setHistory((h) => h.map((e) => (e.id === id ? { ...e, answer, loading: false } : e)));
     } catch {
       setHistory((h) =>
         h.map((e) =>
-          e.id === id ? { ...e, answer: "Network error. Try again.", loading: false } : e,
+          e.id === id ? { ...e, answer: tError("body"), loading: false } : e,
         ),
       );
     } finally {

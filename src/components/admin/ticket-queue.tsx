@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 
+import { formatDateTime } from "@/lib/format-date";
+
 type Ticket = {
   id: string;
   title: string;
@@ -30,7 +32,10 @@ export function TicketQueue({
 }) {
   const t = useTranslations("support");
   const [tickets, setTickets] = useState<Ticket[]>([]);
-  const [status, setStatus] = useState<string>("OPEN");
+  // ALL, not OPEN: the dashboard counts open + in-progress tickets, and an
+  // OPEN-only default hid every IN_PROGRESS ticket it was pointing at. (The API
+  // takes a single status or ALL; there is no "open + in progress" filter.)
+  const [status, setStatus] = useState<string>("ALL");
   const [type, setType] = useState<string>("ALL");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -139,7 +144,7 @@ export function TicketQueue({
                 <p className="mt-2 text-base font-semibold text-ink-main">{ticket.title}</p>
                 <p className="mt-1 text-xs text-ink-faint">
                   {t("reportedBy", { name: ticket.reporter.name ?? ticket.reporter.email ?? "—" })} ·{" "}
-                  {new Date(ticket.createdAt).toLocaleString()}
+                  {formatDateTime(ticket.createdAt, locale)}
                   {ticket.area ? ` · ${ticket.area}` : ""}
                 </p>
               </Link>
@@ -203,8 +208,9 @@ function NewTicketForm({ onCreated, onCancel }: { onCreated: () => void; onCance
       }
 
       onCreated();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t("saveFailed"));
+    } catch {
+      // The server's message is English; the translated fallback is shown instead.
+      setError(t("saveFailed"));
     } finally {
       setSaving(false);
     }

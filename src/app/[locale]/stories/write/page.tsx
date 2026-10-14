@@ -3,7 +3,9 @@ import { redirect } from "next/navigation";
 
 import { prisma } from "@/lib/prisma";
 import { PostEditor } from "@/components/stories/post-editor";
+import { DirArrow } from "@/components/ui/dir-arrow";
 import { getSessionUser } from "@/lib/security/session";
+import { loginHref } from "@/lib/ui/safe-next";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +17,7 @@ interface PageProps {
 export default async function WritePage({ params, searchParams }: PageProps) {
   const user = await getSessionUser();
   if (!user) {
-    redirect(`/${params.locale}/login?callbackUrl=/${params.locale}/stories/write`);
+    redirect(loginHref(params.locale, `/${params.locale}/stories/write`));
   }
   if (!user.approved) {
     redirect(`/${params.locale}/pending-approval`);
@@ -42,7 +44,7 @@ export default async function WritePage({ params, searchParams }: PageProps) {
             href={`/${params.locale}/stories`}
             className="inline-flex items-center gap-1.5 text-sm text-ink-soft hover:text-ink-main font-medium"
           >
-            ← {isDari ? "بازگشت به داستان‌ها" : "Back to Stories"}
+            <DirArrow back /> {isDari ? "بازگشت به داستان‌ها" : "Back to Stories"}
           </Link>
         </div>
 

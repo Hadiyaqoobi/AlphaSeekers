@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
+
+import { formatDateTime } from "@/lib/format-date";
 
 type Comment = {
   id: string;
@@ -39,6 +41,7 @@ export function TicketDetail({
   currentUserId: string;
 }) {
   const t = useTranslations("support");
+  const locale = useLocale();
   const router = useRouter();
 
   const [status, setStatus] = useState(ticket.status);
@@ -110,7 +113,7 @@ export function TicketDetail({
         <h1 className="mt-3 text-2xl font-bold tracking-tight text-ink-main sm:text-3xl">{ticket.title}</h1>
         <p className="mt-2 text-xs text-ink-faint">
           {t("reportedBy", { name: ticket.reporter.name ?? ticket.reporter.email ?? "—" })} ·{" "}
-          {new Date(ticket.createdAt).toLocaleString()}
+          {formatDateTime(ticket.createdAt, locale)}
           {ticket.area ? ` · ${ticket.area}` : ""}
         </p>
 
@@ -185,7 +188,7 @@ export function TicketDetail({
                 key={c.id}
               >
                 <p className="text-xs font-semibold text-ink-soft">
-                  {c.author.name ?? c.author.email ?? "—"} · {new Date(c.createdAt).toLocaleString()}
+                  {c.author.name ?? c.author.email ?? "—"} · {formatDateTime(c.createdAt, locale)}
                 </p>
                 <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-ink-main">{c.body}</p>
               </li>

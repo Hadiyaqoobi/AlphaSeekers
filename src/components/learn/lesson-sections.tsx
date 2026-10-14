@@ -199,7 +199,7 @@ function TryIt({
             color: feedback.correct ? "#00E676" : "#FFCA28",
           }}
         >
-          <span className="font-bold mr-1">{feedback.correct ? "✓" : "💭"}</span>
+          <span className="font-bold me-1">{feedback.correct ? "✓" : "💭"}</span>
           {feedback.feedback}
         </div>
       )}
@@ -339,7 +339,7 @@ function Quiz({
               type="button"
               onClick={() => !revealed && setSelected(i)}
               disabled={revealed}
-              className="w-full text-left px-4 py-3 rounded-lg text-sm transition-colors"
+              className="w-full text-start px-4 py-3 rounded-lg text-sm transition-colors"
               style={{
                 background: showCorrect
                   ? "rgba(0,230,118,0.10)"

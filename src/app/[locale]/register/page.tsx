@@ -264,7 +264,7 @@ export default function RegisterPage() {
           <form className="mt-6 flex flex-col gap-[15px]" onSubmit={submit}>
             {/* Name */}
             <div>
-              <label className="mb-2 block text-[11px] font-bold uppercase tracking-[0.11em]" style={{ color: SOFT }}>
+              <label className="mb-2 block text-[11px] font-bold uppercase tracking-[0.11em]" htmlFor="register-name" style={{ color: SOFT }}>
                 {t("name")}
               </label>
               <div className="auth-field">
@@ -275,6 +275,7 @@ export default function RegisterPage() {
                   </svg>
                 </span>
                 <input
+                  id="register-name"
                   value={form.name}
                   onChange={(e) => setForm((c) => ({ ...c, name: e.target.value }))}
                   required
@@ -284,7 +285,7 @@ export default function RegisterPage() {
 
             {/* Email */}
             <div>
-              <label className="mb-2 block text-[11px] font-bold uppercase tracking-[0.11em]" style={{ color: SOFT }}>
+              <label className="mb-2 block text-[11px] font-bold uppercase tracking-[0.11em]" htmlFor="register-email" style={{ color: SOFT }}>
                 {t("email")}
               </label>
               <div className="auth-field">
@@ -295,6 +296,7 @@ export default function RegisterPage() {
                   </svg>
                 </span>
                 <input
+                  id="register-email"
                   autoComplete="email"
                   type="email"
                   value={form.email}
@@ -307,7 +309,7 @@ export default function RegisterPage() {
             {/* Password + Phone */}
             <div className="grid grid-cols-1 gap-[15px] sm:grid-cols-2">
               <div>
-                <label className="mb-2 block text-[11px] font-bold uppercase tracking-[0.11em]" style={{ color: SOFT }}>
+                <label className="mb-2 block text-[11px] font-bold uppercase tracking-[0.11em]" htmlFor="register-password" style={{ color: SOFT }}>
                   {t("password")}
                 </label>
                 <div className="auth-field">
@@ -318,6 +320,7 @@ export default function RegisterPage() {
                     </svg>
                   </span>
                   <input
+                    id="register-password"
                     autoComplete="new-password"
                     type="password"
                     value={form.password}
@@ -327,7 +330,7 @@ export default function RegisterPage() {
                 </div>
               </div>
               <div>
-                <label className="mb-2 block text-[11px] font-bold uppercase tracking-[0.11em]" style={{ color: SOFT }}>
+                <label className="mb-2 block text-[11px] font-bold uppercase tracking-[0.11em]" htmlFor="register-phone" style={{ color: SOFT }}>
                   {t("phone")}
                 </label>
                 <div className="auth-field">
@@ -337,6 +340,7 @@ export default function RegisterPage() {
                     </svg>
                   </span>
                   <input
+                    id="register-phone"
                     value={form.phone}
                     onChange={(e) => setForm((c) => ({ ...c, phone: e.target.value }))}
                     placeholder="+93…"
@@ -347,10 +351,10 @@ export default function RegisterPage() {
 
             {/* Role */}
             <div>
-              <label className="mb-2 block text-[11px] font-bold uppercase tracking-[0.11em]" style={{ color: SOFT }}>
+              <p className="mb-2 block text-[11px] font-bold uppercase tracking-[0.11em]" id="register-role" style={{ color: SOFT }}>
                 {t("role")}
-              </label>
-              <div className="auth-seg">
+              </p>
+              <div aria-labelledby="register-role" className="auth-seg" role="group">
                 <button type="button" data-on={form.role === "STUDENT"} onClick={() => setForm((c) => ({ ...c, role: "STUDENT" }))}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 3L2 8l10 5 8-4v6" />

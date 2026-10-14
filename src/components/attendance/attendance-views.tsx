@@ -4,6 +4,9 @@ import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
+import { DirArrow } from "@/components/ui/dir-arrow";
+import { formatKabulLongDate, formatKabulTime } from "@/lib/ui/kabul-time";
+
 type Student = {
     studentId: string;
     studentName: string;
@@ -41,9 +44,16 @@ type SummaryData = {
     students: SummaryStudent[];
 };
 
-function formatTime(iso: string | null | undefined): string | null {
+function formatTime(iso: string | null | undefined, locale: string): string | null {
     if (!iso) return null;
-    return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    return formatKabulTime(iso, locale);
+}
+
+/** Fetch JSON, treating any non-2xx (403/404/500) as "no data" instead of crashing on it. */
+async function fetchJsonOrNull<T>(url: string): Promise<T | null> {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    return (await res.json()) as T;
 }
 
 export function AttendanceSheet({
@@ -57,10 +67,10 @@ export function AttendanceSheet({
     const [data, setData] = useState<SessionData | null>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState<string | null>(null);
+    const [saveError, setSaveError] = useState<string | null>(null);
 
     useEffect(() => {
-        fetch(`/api/classes/sessions/${sessionId}/attendance`)
-            .then((r) => r.json())
+        fetchJsonOrNull<SessionData>(`/api/classes/sessions/${sessionId}/attendance`)
             .then(setData)
             .catch(() => setData(null))
             .finally(() => setLoading(false));
@@ -68,23 +78,31 @@ export function AttendanceSheet({
 
     async function toggleAttendance(studentId: string, attended: boolean) {
         setSaving(studentId);
-        try {
-            await fetch(`/api/classes/sessions/${sessionId}/attendance`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ studentId, attended }),
-            });
+        setSaveError(null);
+        const previous = data?.students.find((s) => s.studentId === studentId) ?? null;
+        const apply = (patch: Partial<Student> | null) =>
             setData((prev) => {
                 if (!prev) return null;
                 return {
                     ...prev,
                     students: prev.students.map((s) =>
-                        s.studentId === studentId
-                            ? { ...s, attended, joinedAt: attended ? new Date().toISOString() : null }
-                            : s,
+                        s.studentId === studentId ? (patch ? { ...s, ...patch } : s) : s,
                     ),
                 };
             });
+        // Show the change straight away, then put it back if the server refused
+        // it — a teacher must never see "present" for a mark that was not saved.
+        apply({ attended, joinedAt: attended ? new Date().toISOString() : null });
+        try {
+            const res = await fetch(`/api/classes/sessions/${sessionId}/attendance`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ studentId, attended }),
+            });
+            if (!res.ok) throw new Error(String(res.status));
+        } catch {
+            if (previous) apply({ attended: previous.attended, joinedAt: previous.joinedAt });
+            setSaveError(t("saveFailed"));
         } finally {
             setSaving(null);
         }
@@ -101,7 +119,7 @@ export function AttendanceSheet({
     if (!data) {
         return (
             <div className="panel panel-strong p-6 text-center text-ink-soft">
-                Session not found.
+                {t("sessionNotFound")}
             </div>
         );
     }
@@ -116,49 +134,49 @@ export function AttendanceSheet({
                     className="text-sm font-semibold text-indigo-600 hover:underline"
                     href={`/${locale}/classes/${data.classId}`}
                 >
-                    ← {data.className}
+                    <DirArrow back /> {data.className}
                 </Link>
                 <h1 className="mt-1 text-2xl font-black text-ink-main">
-                    Session Attendance
+                    {t("title")}
                 </h1>
                 <p className="text-sm text-ink-soft">
-                    {new Date(data.startTime).toLocaleDateString(undefined, {
-                        weekday: "long",
-                        month: "short",
-                        day: "numeric",
-                    })}{" "}
+                    {formatKabulLongDate(data.startTime, locale)}{" "}
                     •{" "}
-                    {new Date(data.startTime).toLocaleTimeString(undefined, {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                    })}{" "}
+                    {formatKabulTime(data.startTime, locale)}{" "}
                     –{" "}
-                    {new Date(data.endTime).toLocaleTimeString(undefined, {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                    })}
+                    {formatKabulTime(data.endTime, locale)}
                 </p>
                 <p className="mt-2 text-sm font-semibold text-neon-700">
-                    {verifiedCount} verified · {presentCount} / {data.students.length} joined
+                    {t("verifiedJoinedCount", {
+                        verified: verifiedCount,
+                        joined: presentCount,
+                        total: data.students.length,
+                    })}
                 </p>
                 <p className="mt-1 text-[11px] text-ink-faint">
                     ✓✓ {t("legend.verified")} · ✓ {t("legend.joinedOnly")} · ✗ {t("legend.absent")}
                 </p>
             </header>
 
+            {saveError ? (
+                <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300" role="alert">
+                    {saveError}
+                </p>
+            ) : null}
+
             {data.students.length === 0 ? (
                 <div className="panel panel-strong p-6 text-center text-ink-soft">
-                    No students enrolled in this class.
+                    {t("noStudents")}
                 </div>
             ) : (
                 <div className="panel panel-strong overflow-x-auto p-4">
-                    <table className="w-full min-w-[560px] border-collapse text-left text-sm">
+                    <table className="w-full min-w-[560px] border-collapse text-start text-sm">
                         <thead>
                             <tr className="border-b border-line text-ink-soft">
-                                <th className="py-2 font-semibold" scope="col">Student</th>
-                                <th className="py-2 font-semibold" scope="col">Email</th>
-                                <th className="py-2 text-center font-semibold" scope="col">Status</th>
-                                <th className="py-2 text-center font-semibold" scope="col">Manual</th>
+                                <th className="py-2 font-semibold" scope="col">{t("student")}</th>
+                                <th className="py-2 font-semibold" scope="col">{t("email")}</th>
+                                <th className="py-2 text-center font-semibold" scope="col">{t("status")}</th>
+                                <th className="py-2 text-center font-semibold" scope="col">{t("manual")}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -177,9 +195,9 @@ export function AttendanceSheet({
                                             : "bg-red-500/10 text-red-400";
                                 const detail =
                                     state === "verified"
-                                        ? `${t("legend.verified")} · ${formatTime(student.checkinAt) ?? ""}`
+                                        ? `${t("legend.verified")} · ${formatTime(student.checkinAt, locale) ?? ""}`
                                         : state === "joined"
-                                            ? `${t("legend.joinedOnly")} · ${formatTime(student.joinedAt) ?? ""}`
+                                            ? `${t("legend.joinedOnly")} · ${formatTime(student.joinedAt, locale) ?? ""}`
                                             : t("legend.absent");
                                 return (
                                     <tr
@@ -200,8 +218,8 @@ export function AttendanceSheet({
                                         </td>
                                         <td className="py-2 text-center">
                                             <button
-                                                aria-label={student.attended ? `Mark ${student.studentName} as absent` : `Mark ${student.studentName} as present`}
-                                                className={`inline-flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold transition-colors ${student.attended
+                                                aria-label={student.attended ? t("markAbsent", { name: student.studentName }) : t("markPresent", { name: student.studentName })}
+                                                className={`inline-flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold transition-colors ${student.attended
                                                         ? "bg-neon-100 text-neon-700"
                                                         : "bg-dark-100 text-ink-faint hover:bg-red-50 hover:text-red-500"
                                                     }`}
@@ -233,12 +251,12 @@ export function ClassAttendanceSummary({
     locale: string;
 }) {
     const t = useTranslations("attendance");
+    const tClasses = useTranslations("teacherClasses");
     const [data, setData] = useState<SummaryData | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetch(`/api/classes/${classId}/attendance`)
-            .then((r) => r.json())
+        fetchJsonOrNull<SummaryData>(`/api/classes/${classId}/attendance`)
             .then(setData)
             .catch(() => setData(null))
             .finally(() => setLoading(false));
@@ -255,7 +273,7 @@ export function ClassAttendanceSummary({
     if (!data || data.totalStudents === 0) {
         return (
             <div className="panel panel-strong p-6 text-center text-ink-soft">
-                No attendance data yet.
+                {t("noAttendanceData")}
             </div>
         );
     }
@@ -265,28 +283,29 @@ export function ClassAttendanceSummary({
             <header className="hero-panel p-5">
                 <Link
                     className="text-sm font-semibold text-indigo-600 hover:underline"
-                    href={`/${locale}/staff/dashboard`}
+                    href={`/${locale}/teacher/classes`}
                 >
-                    ← Staff Dashboard
+                    {/* Was "Staff Dashboard", an admin-only page that bounced teachers. */}
+                    <DirArrow back /> {tClasses("title")}
                 </Link>
                 <h1 className="mt-1 text-2xl font-black text-ink-main">
-                    Attendance Summary
+                    {t("summaryTitle")}
                 </h1>
                 <p className="text-sm text-ink-soft">
-                    {data.totalStudents} students • {data.totalSessions} sessions
+                    {t("summaryStats", { students: data.totalStudents, sessions: data.totalSessions })}
                 </p>
             </header>
 
             <div className="panel panel-strong overflow-x-auto p-4">
-                <table className="w-full min-w-[480px] border-collapse text-left text-sm">
+                <table className="w-full min-w-[480px] border-collapse text-start text-sm">
                     <thead>
                         <tr className="border-b border-line text-ink-soft">
-                            <th className="py-2 font-semibold" scope="col">Student</th>
-                            <th className="py-2 font-semibold" scope="col">Email</th>
-                            <th className="py-2 text-center font-semibold" scope="col">Joined</th>
-                            <th className="py-2 text-center font-semibold" scope="col">Join rate</th>
-                            <th className="py-2 text-center font-semibold" scope="col">Verified</th>
-                            <th className="py-2 text-center font-semibold" scope="col">Verify rate</th>
+                            <th className="py-2 font-semibold" scope="col">{t("student")}</th>
+                            <th className="py-2 font-semibold" scope="col">{t("email")}</th>
+                            <th className="py-2 text-center font-semibold" scope="col">{t("joinedColumn")}</th>
+                            <th className="py-2 text-center font-semibold" scope="col">{t("joinRate")}</th>
+                            <th className="py-2 text-center font-semibold" scope="col">{t("verifiedColumn")}</th>
+                            <th className="py-2 text-center font-semibold" scope="col">{t("verifyRate")}</th>
                         </tr>
                     </thead>
                     <tbody>

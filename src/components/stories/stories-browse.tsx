@@ -2,9 +2,11 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 
 import { PostCard, type PostCardData } from "./post-card";
+import { DirArrow } from "@/components/ui/dir-arrow";
 
 type FilterType = "all" | "article" | "poetry" | "art" | "spotlight" | "dari";
 
@@ -89,7 +91,7 @@ export function StoriesBrowse({ locale, initialPosts, featuredPosts }: StoriesBr
               href={`/${locale}/stories/write`}
               className="inline-flex items-center px-6 py-3 rounded-xl bg-dark-100 text-land-green-700 font-bold hover:-translate-y-0.5 hover:shadow-xl transition-all"
             >
-              {isDari ? "داستان خود را بنویسید" : "Write your story"} →
+              {isDari ? "داستان خود را بنویسید" : "Write your story"} <DirArrow />
             </Link>
           </div>
         </div>
@@ -162,9 +164,10 @@ export function StoriesBrowse({ locale, initialPosts, featuredPosts }: StoriesBr
 
 function FeaturedPostHero({ post, locale }: { post: PostCardData; locale: string }) {
   const isDari = locale === "fa";
+  const t = useTranslations("stories");
   const title = isDari && post.titleDari ? post.titleDari : post.title;
   const excerpt = isDari && post.excerptDari ? post.excerptDari : post.excerpt;
-  const authorName = post.anonymous ? "Anonymous" : post.author?.name || "Student";
+  const authorName = post.anonymous ? t("anonymous") : post.author?.name || t("student");
 
   return (
     <Link
@@ -184,7 +187,7 @@ function FeaturedPostHero({ post, locale }: { post: PostCardData; locale: string
         ) : (
           <div className="absolute inset-0 bg-gradient-to-br from-neon-600 to-teal-700" />
         )}
-        <div className="absolute top-4 left-4">
+        <div className="absolute top-4 start-4">
           <span className="inline-flex items-center gap-1 bg-dark-100/90 backdrop-blur px-3 py-1 rounded-full text-xs font-semibold text-neon-700">
             ⭐ {isDari ? "برگزیده" : "Featured"}
           </span>

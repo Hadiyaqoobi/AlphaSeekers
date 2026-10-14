@@ -1,10 +1,14 @@
+import { getTranslations } from "next-intl/server";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { prisma } from "@/lib/prisma";
 import { CompanionPanel } from "@/components/session/companion-panel";
+import { DirArrow } from "@/components/ui/dir-arrow";
 import { getSessionUser } from "@/lib/security/session";
 import { checkSessionAccess } from "@/lib/session-access";
+import { liveAccessReason } from "@/lib/ui/live-session";
+import { loginHref } from "@/lib/ui/safe-next";
 
 export const dynamic = "force-dynamic";
 
@@ -13,13 +17,14 @@ interface PageProps {
 }
 
 export async function generateMetadata({ params }: PageProps) {
+  const t = await getTranslations({ locale: params.locale, namespace: "liveSession" });
   const session = await prisma.session.findUnique({
     where: { id: params.sessionId },
     include: { class: { select: { name: true } } },
   });
-  if (!session) return { title: "Session — AlphaSeekers" };
+  if (!session) return { title: `${t("metaFallback")} — AlphaSeekers` };
   return {
-    title: `${session.class.name} live session — AlphaSeekers`,
+    title: `${t("metaTitle", { className: session.class.name })} — AlphaSeekers`,
   };
 }
 
@@ -27,24 +32,29 @@ export default async function LiveSessionPage({ params }: PageProps) {
   const user = await getSessionUser();
   if (!user) {
     redirect(
-      `/${params.locale}/login?callbackUrl=/${params.locale}/classes/${params.id}/live/${params.sessionId}`,
+      loginHref(params.locale, `/${params.locale}/classes/${params.id}/live/${params.sessionId}`),
     );
   }
+
+  const t = await getTranslations({ locale: params.locale, namespace: "liveSession" });
+  const tAttendance = await getTranslations({ locale: params.locale, namespace: "attendance" });
 
   const access = await checkSessionAccess(user, params.id, params.sessionId);
   if (!access.ok) {
     if (access.status === 404) notFound();
+    // session-access returns English only; show the translated reason instead.
+    const reason = liveAccessReason(access.status, access.message);
     return (
       <main className="mx-auto max-w-2xl px-6 py-16 text-center">
         <h1 className="text-2xl font-bold text-ink-main mb-3">
-          {access.status === 410 ? "Session cancelled" : "Cannot open this session"}
+          {access.status === 410 ? t("cancelledTitle") : t("cannotOpenTitle")}
         </h1>
-        <p className="text-ink-soft mb-8">{access.message}</p>
+        <p className="text-ink-soft mb-8">{t(`reasons.${reason}`)}</p>
         <Link
           href={`/${params.locale}/classes/${params.id}`}
           className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-neon-600 text-white font-semibold hover:bg-neon-700"
         >
-          ← Back to class
+          <DirArrow back /> {tAttendance("backToClass")}
         </Link>
       </main>
     );
@@ -174,7 +184,7 @@ export default async function LiveSessionPage({ params }: PageProps) {
             href={`/${params.locale}/classes/${params.id}`}
             className="inline-flex items-center gap-1.5 text-sm text-ink-soft hover:text-ink-main font-medium"
           >
-            ← Back to class
+            <DirArrow back /> {tAttendance("backToClass")}
           </Link>
         </div>
 

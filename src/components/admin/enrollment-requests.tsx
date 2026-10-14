@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
+
+import { formatDate } from "@/lib/format-date";
 
 type Request = {
   enrollmentId: string;
@@ -19,6 +21,7 @@ type Request = {
  */
 export function EnrollmentRequests({ requests }: { requests: Request[] }) {
   const t = useTranslations("adminClassDetail");
+  const locale = useLocale();
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -34,16 +37,16 @@ export function EnrollmentRequests({ requests }: { requests: Request[] }) {
         body: JSON.stringify({ decision }),
       });
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.message ?? String(res.status));
+        throw new Error(String(res.status));
       }
       setHandled((prev) => ({
         ...prev,
         [enrollmentId]: decision === "APPROVE" ? "APPROVED" : "REJECTED",
       }));
       router.refresh();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t("actionFailed"));
+    } catch {
+      // Translated message; the server's English text is not shown.
+      setError(t("actionFailed"));
     } finally {
       setBusy(null);
     }
@@ -70,7 +73,7 @@ export function EnrollmentRequests({ requests }: { requests: Request[] }) {
               <div className="min-w-0 flex-1">
                 <p className="font-semibold text-ink-main">{r.name ?? r.email ?? "—"}</p>
                 <p className="text-xs text-ink-faint">
-                  {r.email} · {new Date(r.requestedAt).toLocaleDateString()}
+                  {r.email} · {formatDate(r.requestedAt, locale)}
                 </p>
               </div>
 

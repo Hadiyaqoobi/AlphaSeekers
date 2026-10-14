@@ -121,8 +121,8 @@ export function TeacherAvailabilityForm() {
     });
 
     if (!response.ok) {
-      const body = (await response.json().catch(() => ({ message: t("saveFailed") }))) as { message?: string };
-      setMessage(body.message ?? t("saveFailed"));
+      // Translated fallback; the server's English `message` is not shown.
+      setMessage(t("saveFailed"));
       setSaving(false);
       return;
     }

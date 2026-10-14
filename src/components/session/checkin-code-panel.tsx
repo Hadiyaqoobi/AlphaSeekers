@@ -57,9 +57,10 @@ export function CheckinCodePanel({ classId, sessionId, initial }: CheckinCodePan
         `/api/classes/${classId}/sessions/${sessionId}/checkin-code`,
         { method: "POST" },
       );
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(data.message ?? t("generateFailed"));
+        // Translated fallback; the server's English `message` is not shown.
+        setError(t("generateFailed"));
         return;
       }
       setCode(data.code);

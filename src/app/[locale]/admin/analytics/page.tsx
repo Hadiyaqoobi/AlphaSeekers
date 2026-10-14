@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { AnalyticsDashboard } from "@/components/admin/analytics-dashboard";
-import { getAccessControl, can } from "@/lib/security/permissions";
+import { getAccessControl, can, isSuper } from "@/lib/security/permissions";
 
 export const dynamic = "force-dynamic";
 
@@ -22,7 +22,7 @@ export default async function AdminAnalyticsPage({ params }: Props) {
           Real platform metrics — growth, engagement, AI performance.
         </p>
       </div>
-      <AnalyticsDashboard />
+      <AnalyticsDashboard showInterviewSummary={isSuper(access)} />
     </main>
   );
 }

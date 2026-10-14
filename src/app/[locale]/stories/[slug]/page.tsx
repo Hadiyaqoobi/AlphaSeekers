@@ -1,10 +1,12 @@
 import Image from "next/image";
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
 
 import { getPublicStory } from "@/lib/platform/public-data";
 import { PostActions } from "@/components/stories/post-actions";
 import { PostCard } from "@/components/stories/post-card";
+import { DirArrow } from "@/components/ui/dir-arrow";
 import { ArtLightbox } from "@/components/stories/art-lightbox";
 import { BilingualToggle } from "@/components/stories/bilingual-toggle";
 import { renderMarkdown } from "@/lib/stories/markdown";
@@ -29,7 +31,8 @@ export async function generateMetadata({ params }: PageProps) {
   if (!story) return {};
   const { post } = story;
 
-  const authorName = post.anonymous ? "Anonymous" : post.author.name;
+  const tStories = await getTranslations({ locale: params.locale, namespace: "stories" });
+  const authorName = post.anonymous ? tStories("anonymous") : post.author.name;
   const title = params.locale === "fa" && post.titleDari ? post.titleDari : post.title;
   const description = post.excerpt || "";
 
@@ -59,7 +62,8 @@ export default async function PostPage({ params }: PageProps) {
 
   const isDari = params.locale === "fa";
   const typeInfo = TYPE_LABELS[post.type] || TYPE_LABELS.article;
-  const authorName = post.anonymous ? "Anonymous" : post.author.name;
+  const tStories = await getTranslations({ locale: params.locale, namespace: "stories" });
+  const authorName = post.anonymous ? tStories("anonymous") : post.author.name;
 
   const primaryTitle = isDari && post.titleDari ? post.titleDari : post.title;
   const titleDir = /[\u0600-\u06FF]/.test(primaryTitle) ? "rtl" : "ltr";
@@ -82,7 +86,7 @@ export default async function PostPage({ params }: PageProps) {
 
   const shapedMorePosts = morePosts.map((p) => ({
     ...p,
-    author: p.anonymous ? { name: "Anonymous" } : p.author,
+    author: p.anonymous ? { name: tStories("anonymous") } : p.author,
     publishedAt: p.publishedAt?.toISOString() ?? null,
   }));
 
@@ -101,6 +105,7 @@ export default async function PostPage({ params }: PageProps) {
             {post.publishedAt && (
               <time dateTime={post.publishedAt.toISOString()}>
                 {post.publishedAt.toLocaleDateString(isDari ? "fa-AF" : "en-US", {
+                  timeZone: "Asia/Kabul",
                   year: "numeric",
                   month: "long",
                   day: "numeric",
@@ -188,7 +193,7 @@ export default async function PostPage({ params }: PageProps) {
         <section className="bg-dark-50 py-16 border-t border-line">
           <div className="mx-auto max-w-6xl px-6 lg:px-8">
             <h2 className="text-xl font-bold text-ink-main mb-6">
-              {isDari ? "داستان‌های بیشتر" : "More from Student Voices"} →
+              {isDari ? "داستان‌های بیشتر" : "More from Student Voices"} <DirArrow />
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {shapedMorePosts.map((p) => (
@@ -200,7 +205,7 @@ export default async function PostPage({ params }: PageProps) {
                 href={`/${params.locale}/stories`}
                 className="inline-flex items-center gap-2 text-neon-600 font-semibold hover:text-neon-700"
               >
-                {isDari ? "همه داستان‌ها" : "Browse all stories"} →
+                {isDari ? "همه داستان‌ها" : "Browse all stories"} <DirArrow />
               </Link>
             </div>
           </div>

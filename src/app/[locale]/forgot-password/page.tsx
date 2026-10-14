@@ -71,7 +71,7 @@ export default function ForgotPasswordPage() {
 
             <form className="mt-7 flex flex-col gap-[18px]" onSubmit={handleSubmit}>
               <div>
-                <label className="mb-2 block text-[11px] font-bold uppercase tracking-[0.11em]" style={{ color: SOFT }}>
+                <label className="mb-2 block text-[11px] font-bold uppercase tracking-[0.11em]" htmlFor="forgot-email" style={{ color: SOFT }}>
                   {tl("email")}
                 </label>
                 <div className="auth-field">
@@ -82,6 +82,7 @@ export default function ForgotPasswordPage() {
                     </svg>
                   </span>
                   <input
+                    id="forgot-email"
                     type="email"
                     required
                     autoComplete="email"

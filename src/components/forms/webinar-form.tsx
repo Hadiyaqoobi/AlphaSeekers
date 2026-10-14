@@ -51,8 +51,8 @@ export function WebinarForm() {
     });
 
     if (!response.ok) {
-      const body = (await response.json().catch(() => ({ message: t("failed") }))) as { message?: string };
-      setStatus(body.message ?? t("failed"));
+      // Translated fallback; the server's English `message` is not shown.
+      setStatus(t("failed"));
       return;
     }
 
@@ -64,42 +64,57 @@ export function WebinarForm() {
   return (
     <form className="panel panel-strong space-y-3 p-4" onSubmit={submit}>
       <h2 className="text-lg font-black text-ink-main">{t("createWebinar")}</h2>
-      <input
-        className="field"
-        onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))}
-        placeholder={t("title")}
-        required
-        value={form.title}
-      />
-      <textarea
-        className="area-field"
-        onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
-        placeholder={t("description")}
-        required
-        value={form.description}
-      />
-      <input
-        className="field"
-        onChange={(event) => setForm((current) => ({ ...current, startsAt: event.target.value }))}
-        required
-        type="datetime-local"
-        value={form.startsAt}
-      />
-      <input
-        className="field"
-        onChange={(event) => setForm((current) => ({ ...current, meetLink: event.target.value }))}
-        placeholder={t("meetLink")}
-        required
-        type="url"
-        value={form.meetLink}
-      />
-      <input
-        className="field"
-        onChange={(event) => setForm((current) => ({ ...current, language: event.target.value }))}
-        placeholder={t("language")}
-        required
-        value={form.language}
-      />
+      <label className="block space-y-1">
+        <span className="text-xs font-semibold text-ink-soft">{t("title")}</span>
+        <input
+          className="field"
+          onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))}
+          placeholder={t("title")}
+          required
+          value={form.title}
+        />
+      </label>
+      <label className="block space-y-1">
+        <span className="text-xs font-semibold text-ink-soft">{t("description")}</span>
+        <textarea
+          className="area-field"
+          onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
+          placeholder={t("description")}
+          required
+          value={form.description}
+        />
+      </label>
+      <label className="block space-y-1">
+        <span className="text-xs font-semibold text-ink-soft">{t("startsAt")}</span>
+        <input
+          className="field"
+          onChange={(event) => setForm((current) => ({ ...current, startsAt: event.target.value }))}
+          required
+          type="datetime-local"
+          value={form.startsAt}
+        />
+      </label>
+      <label className="block space-y-1">
+        <span className="text-xs font-semibold text-ink-soft">{t("meetLink")}</span>
+        <input
+          className="field"
+          onChange={(event) => setForm((current) => ({ ...current, meetLink: event.target.value }))}
+          placeholder={t("meetLink")}
+          required
+          type="url"
+          value={form.meetLink}
+        />
+      </label>
+      <label className="block space-y-1">
+        <span className="text-xs font-semibold text-ink-soft">{t("language")}</span>
+        <input
+          className="field"
+          onChange={(event) => setForm((current) => ({ ...current, language: event.target.value }))}
+          placeholder={t("language")}
+          required
+          value={form.language}
+        />
+      </label>
       <button className="btn-primary" type="submit">
         {t("publishWebinar")}
       </button>

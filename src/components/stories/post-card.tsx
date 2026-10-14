@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 
 export type PostCardData = {
   slug: string;
@@ -40,11 +41,12 @@ const TYPE_ICONS: Record<string, string> = {
 
 export function PostCard({ post, locale }: PostCardProps) {
   const isDari = locale === "fa";
+  const t = useTranslations("stories");
   const isArabic = /[\u0600-\u06FF]/.test(post.title);
   const title = isDari && post.titleDari ? post.titleDari : post.title;
   const excerpt = isDari && post.excerptDari ? post.excerptDari : post.excerpt;
   const titleDir = isDari || isArabic ? "rtl" : "ltr";
-  const authorName = post.anonymous ? "Anonymous" : post.author?.name || "Student";
+  const authorName = post.anonymous ? t("anonymous") : post.author?.name || t("student");
 
   // Poetry card variant
   if (post.type === "poetry") {

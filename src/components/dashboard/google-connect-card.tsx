@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 
 import { useTranslations } from "next-intl";
 
+import { formatDateTime } from "@/lib/format-date";
+
 type GoogleStatusPayload = {
   connected: boolean;
   accountEmail: string | null;
@@ -75,7 +77,7 @@ export function GoogleConnectCard({ locale, notice }: GoogleConnectCardProps) {
           {status.connectedAt
             ? t("connectedAsOn", {
                 email: status.accountEmail ?? t("accountFallback"),
-                time: new Date(status.connectedAt).toLocaleString(),
+                time: formatDateTime(status.connectedAt, locale),
               })
             : t("connectedAs", { email: status.accountEmail ?? t("accountFallback") })}
         </p>
