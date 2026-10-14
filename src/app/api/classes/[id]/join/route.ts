@@ -12,9 +12,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
-import { joinClassWithNewAccount } from "@/lib/platform/class-join";
+import { joinClassWithNewAccount, MAX_ACTIVE_ENROLLMENTS } from "@/lib/platform/class-join";
 import { validateEmailStrict } from "@/lib/security/email";
-import { checkRateLimitDistributed, getClientIp } from "@/lib/security/rate-limit";
+import { checkRateLimit, checkRateLimitDistributed, getClientIp } from "@/lib/security/rate-limit";
 import { stripHtml } from "@/lib/security/sanitize";
 
 type Params = { params: { id: string } };
@@ -55,6 +55,11 @@ const joinSchema = z.object({
 // route: Afghan carriers put many subscribers behind one public IP, so an
 // IP-only limit means the sixth student on a carrier is refused on their first
 // ever attempt. The address identifies a person; the IP only catches floods.
+//
+// The per-network flood guard is in memory (one instance; no database write
+// per junk POST). The per-address one stays in Postgres on purpose: this form
+// checks an existing account's password, so its budget must survive a restart
+// or a restart becomes a fresh round of guesses.
 const JOIN_PER_EMAIL = { limit: 5, windowMs: 15 * 60 * 1000 };
 const JOIN_PER_IP = { limit: 40, windowMs: 15 * 60 * 1000 };
 
@@ -76,21 +81,24 @@ const FAILURES: Record<string, { status: number; message: string }> = {
     message:
       "An account already uses this email. Enter that account's password to join, or sign in first.",
   },
-  ACCOUNT_DEACTIVATED: {
-    status: 403,
-    message: "This account has been turned off. Please ask your teacher or the AlphaSeekers team.",
-  },
-  NOT_A_STUDENT: {
+  // Deliberately the same answer for a deactivated account and a staff
+  // account, and only reachable with the right password (see class-join.ts).
+  USE_SIGN_IN: {
     status: 409,
-    message: "This email belongs to a teacher or admin account. Please sign in instead.",
+    message: "This account cannot join from this page. Please sign in instead.",
+  },
+  NOT_ALLOWED: {
+    status: 403,
+    message: "You cannot join this class. Please contact your teacher.",
+  },
+  ENROLLMENT_LIMIT: {
+    status: 409,
+    message: `You can join up to ${MAX_ACTIVE_ENROLLMENTS} classes at a time. Leave one to join another.`,
   },
 };
 
 export async function POST(request: NextRequest, { params }: Params) {
-  const ip = getClientIp(request);
-  const byIp = await checkRateLimitDistributed(`join:ip:${ip}`, JOIN_PER_IP);
-  if (!byIp.allowed) return tooMany(byIp.retryAfterMs);
-
+  // Validate before touching any limiter: a malformed POST is refused for free.
   const parsed = joinSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
     const issues = parsed.error.issues.map((i) => ({ field: i.path.join("."), message: i.message }));
@@ -99,6 +107,10 @@ export async function POST(request: NextRequest, { params }: Params) {
       { status: 400 },
     );
   }
+
+  const ip = getClientIp(request);
+  const byIp = checkRateLimit(`join:ip:${ip}`, JOIN_PER_IP);
+  if (!byIp.allowed) return tooMany(byIp.retryAfterMs);
 
   const byEmail = await checkRateLimitDistributed(
     `join:email:${parsed.data.email.toLowerCase()}`,

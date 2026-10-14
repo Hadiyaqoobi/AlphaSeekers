@@ -24,12 +24,15 @@ export async function GET(request: NextRequest) {
   const search = request.nextUrl.searchParams.get("search") ?? "";
   const result = await listClasses({ page, limit, search });
 
+  // private, no-store: this answers a SIGNED-IN request, so no shared cache
+  // may keep a copy (it was `public, s-maxage=300`, and also carried every
+  // class's Meet link — see listClasses).
   return withCors(
     NextResponse.json(
       result,
       {
         headers: {
-          "Cache-Control": "public, max-age=60, s-maxage=300, stale-while-revalidate=300",
+          "Cache-Control": "private, no-store",
         },
       },
     ),

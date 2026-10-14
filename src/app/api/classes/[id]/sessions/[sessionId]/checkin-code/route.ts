@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { prisma } from "@/lib/prisma";
+import { can, getAccessControl } from "@/lib/security/permissions";
 import { forbidden, getSessionUser, unauthorized, type SessionUser } from "@/lib/security/session";
 
 type RouteContext = { params: { id: string; sessionId: string } };
@@ -11,6 +12,7 @@ async function assertTeacherOnThisClass(
   user: SessionUser,
   classId: string,
   sessionId: string,
+  permission: "classes.view" | "classes.edit",
 ): Promise<{ ok: true } | { ok: false; response: NextResponse }> {
   const session = await prisma.session.findUnique({
     where: { id: sessionId },
@@ -22,12 +24,17 @@ async function assertTeacherOnThisClass(
       response: NextResponse.json({ message: "Session not found" }, { status: 404 }),
     };
   }
-  // IDOR guard: only the class's own teacher (or an admin) may touch the code.
-  if (user.role !== "ADMIN" && session.class.teacherId !== user.id) {
-    return {
-      ok: false,
-      response: forbidden("You do not teach this class."),
-    };
+  // IDOR guard: only the class's own teacher, or staff holding the permission
+  // (classes.view to read the code, classes.edit to issue one), may touch it.
+  // role=ADMIN alone is not enough — every scoped employee has that role.
+  if (session.class.teacherId !== user.id) {
+    const isStaff = user.role === "ADMIN" && can(await getAccessControl(), permission);
+    if (!isStaff) {
+      return {
+        ok: false,
+        response: forbidden("You do not teach this class."),
+      };
+    }
   }
   return { ok: true };
 }
@@ -46,7 +53,7 @@ export async function POST(_request: NextRequest, { params }: RouteContext) {
     return forbidden("Only teachers or admins can generate a check-in code.");
   }
 
-  const check = await assertTeacherOnThisClass(user, params.id, params.sessionId);
+  const check = await assertTeacherOnThisClass(user, params.id, params.sessionId, "classes.edit");
   if (!check.ok) return check.response;
 
   // 4-digit code, 1000–9999 (never leading zero, so it's always 4 visible digits)
@@ -77,7 +84,7 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
     return forbidden("Only teachers or admins can view the check-in code.");
   }
 
-  const check = await assertTeacherOnThisClass(user, params.id, params.sessionId);
+  const check = await assertTeacherOnThisClass(user, params.id, params.sessionId, "classes.view");
   if (!check.ok) return check.response;
 
   const session = await prisma.session.findUnique({

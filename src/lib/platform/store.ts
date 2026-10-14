@@ -27,11 +27,8 @@ export async function listClasses(params: { page?: number; limit?: number; searc
   return viaDatabase(() => dbStore.listClasses(params));
 }
 
-export async function getClassById(
-  classId: string,
-  options: { includeArchived?: boolean } = {},
-) {
-  return viaDatabase(() => dbStore.getClassById(classId, options));
+export async function getClassById(...args: Parameters<typeof dbStore.getClassById>) {
+  return viaDatabase(() => dbStore.getClassById(...args));
 }
 
 export async function listClassEnrollments(classId: string) {
@@ -157,8 +154,8 @@ export async function enrollStudentInClass(studentId: string, classId: string) {
   return viaDatabase(() => dbStore.enrollStudentInClass(studentId, classId));
 }
 
-export async function dropStudentFromClass(studentId: string, classId: string) {
-  return viaDatabase(() => dbStore.dropStudentFromClass(studentId, classId));
+export async function dropStudentFromClass(...args: Parameters<typeof dbStore.dropStudentFromClass>) {
+  return viaDatabase(() => dbStore.dropStudentFromClass(...args));
 }
 
 export async function isStudentEnrolledInClass(studentId: string, classId: string) {

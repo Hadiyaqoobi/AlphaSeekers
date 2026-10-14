@@ -10,8 +10,11 @@
  * Authorised by guardClassManagement: the class's OWN teacher, or an admin who
  * can manage it. A teacher cannot touch another teacher's roster.
  *
- * Sets the enrolment to DROPPED rather than deleting it, so attendance and
- * history survive and the removal is visible afterwards.
+ * Sets the enrolment to REJECTED rather than deleting it, so attendance and
+ * history survive and the removal is visible afterwards. REJECTED (not
+ * DROPPED, which is what a student leaving gets) is what keeps them out: both
+ * the in-app enroll and the public join refuse it, while a DROPPED student can
+ * simply join again — which made "remove" undoable by one click.
  */
 import { NextRequest, NextResponse } from "next/server";
 
@@ -25,7 +28,7 @@ export async function DELETE(_request: NextRequest, { params }: Params) {
   const guard = await guardClassManagement(params.id);
   if (!guard.ok) return guard.response;
 
-  const dropped = await dropStudentFromClass(params.studentId, params.id);
+  const dropped = await dropStudentFromClass(params.studentId, params.id, { by: "staff" });
   if (!dropped) {
     return NextResponse.json({ message: "That student is not in this class." }, { status: 404 });
   }

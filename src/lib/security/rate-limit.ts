@@ -69,12 +69,50 @@ export function checkRateLimit(
 }
 
 /**
+ * How many proxies we trust to APPEND to X-Forwarded-For. Default 1: Render's
+ * edge proxy appends the address that connected to it, so the right-most entry
+ * is the only one a client cannot write. Raise it only if another proxy we
+ * control sits in front (each one appends one more hop).
+ */
+function trustedProxyHops(): number {
+    const raw = Number(process.env.TRUSTED_PROXY_HOPS);
+    return Number.isInteger(raw) && raw > 0 ? raw : 1;
+}
+
+/**
+ * Client IP from request headers, using the RIGHT-most trusted hop.
+ *
+ * The left-most X-Forwarded-For entry is whatever the client sent — it used to
+ * be the rate-limit key, so rotating a fake header per request gave an attacker
+ * a fresh login budget every time. Proxies append, never prepend, so counting
+ * hops from the right is what cannot be forged.
+ *
+ * `CLIENT_IP_HEADER` (e.g. "cf-connecting-ip") overrides this when the platform
+ * documents a single header its edge sets and overwrites.
+ */
+export function clientIpFromHeaders(get: (name: string) => string | null | undefined): string {
+    const override = process.env.CLIENT_IP_HEADER?.trim().toLowerCase();
+    if (override) {
+        const value = get(override)?.split(",")[0]?.trim();
+        if (value) return value;
+    }
+
+    const hops = (get("x-forwarded-for") ?? "")
+        .split(",")
+        .map((part) => part.trim())
+        .filter(Boolean);
+    if (hops.length > 0) {
+        return hops[Math.max(0, hops.length - trustedProxyHops())];
+    }
+
+    return get("x-real-ip")?.trim() || "unknown";
+}
+
+/**
  * Extract a best-effort client IP from a Next.js request.
  */
 export function getClientIp(request: Request): string {
-    const forwarded = (request.headers.get("x-forwarded-for") ?? "").split(",")[0]?.trim();
-    const real = request.headers.get("x-real-ip");
-    return forwarded || real || "unknown";
+    return clientIpFromHeaders((name) => request.headers.get(name));
 }
 
 /**

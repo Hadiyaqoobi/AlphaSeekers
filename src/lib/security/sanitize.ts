@@ -17,3 +17,16 @@
 export function stripHtml(input: string): string {
   return input.replace(/<[^>]*>/g, "").trim();
 }
+
+/**
+ * Persian (U+06F0-06F9) and Arabic-Indic (U+0660-0669) digits → 0-9. Phones set
+ * to Dari type these by default, so any numeric code a person reads off a
+ * screen (a check-in code, a one-time number) must be normalised before it is
+ * compared — otherwise the right answer is refused as "invalid format".
+ */
+export function normaliseDigits(value: string): string {
+  return value.replace(/[\u06F0-\u06F9\u0660-\u0669]/g, (ch) => {
+    const code = ch.charCodeAt(0);
+    return String(code >= 0x06f0 ? code - 0x06f0 : code - 0x0660);
+  });
+}

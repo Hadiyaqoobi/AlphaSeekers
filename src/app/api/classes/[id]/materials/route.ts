@@ -21,14 +21,17 @@ export async function GET(_: NextRequest, { params }: Params) {
     return pendingApproval();
   }
 
-  const klass = await getClassById(params.id);
+  // Unpublished is fine here: only staff, the teacher and enrolled students
+  // get past the check below, and those already belong to the class.
+  const klass = await getClassById(params.id, { includeUnpublished: true });
 
   if (!klass) {
     return NextResponse.json({ message: "Class not found" }, { status: 404 });
   }
 
+  // Staff by permission, not role=ADMIN (which every scoped employee has).
   const allowed =
-    user.role === "ADMIN" ||
+    (user.role === "ADMIN" && can(await getAccessControl(), "classes.view")) ||
     (user.role === "TEACHER" && user.id === klass.teacherId) ||
     (user.role === "STUDENT" && (await isStudentEnrolledInClass(user.id, klass.id)));
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { getClassAttendanceSummary } from "@/lib/platform/store";
+import { can, getAccessControl } from "@/lib/security/permissions";
 import { getSessionUser } from "@/lib/security/session";
 import { prisma } from "@/lib/prisma";
 
@@ -18,7 +19,9 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
     }
 
     // IDOR guard: a teacher may only read attendance for a class they teach.
-    if (user.role !== "ADMIN") {
+    // Staff need classes.view — role=ADMIN alone is every scoped employee.
+    const isStaff = user.role === "ADMIN" && can(await getAccessControl(), "classes.view");
+    if (!isStaff) {
         const klass = await prisma.class.findUnique({ where: { id: params.id }, select: { teacherId: true } });
         if (!klass) return NextResponse.json({ message: "Class not found" }, { status: 404 });
         if (klass.teacherId !== user.id) return NextResponse.json({ message: "Forbidden" }, { status: 403 });

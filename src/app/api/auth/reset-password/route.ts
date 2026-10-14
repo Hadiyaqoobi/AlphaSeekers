@@ -13,7 +13,7 @@ import { z } from "zod";
 
 import { prisma } from "@/lib/prisma";
 import { hashPassword } from "@/lib/security/passwords";
-import { checkRateLimitDistributed, getClientIp } from "@/lib/security/rate-limit";
+import { checkRateLimit, getClientIp } from "@/lib/security/rate-limit";
 
 const schema = z.object({
   token: z.string().min(16).max(256),
@@ -27,21 +27,25 @@ const schema = z.object({
 });
 
 export async function POST(request: NextRequest) {
-  const ip = getClientIp(request);
-  const rl = await checkRateLimitDistributed(`reset-password:${ip}`);
-  if (!rl.allowed) {
-    return NextResponse.json(
-      { code: "rate_limited", message: "Too many attempts. Please try again later." },
-      { status: 429, headers: { "Retry-After": String(Math.ceil(rl.retryAfterMs / 1000)) } },
-    );
-  }
-
+  // Validate first, then limit: a junk POST must not cost a database write.
+  // The limiter is in memory — this is one instance, and a 256-bit token
+  // cannot be guessed, so the limit only has to stop hammering, not survive a
+  // restart.
   const body = await request.json().catch(() => null);
   const parsed = schema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
       { code: "weak_password", message: parsed.error.issues[0]?.message ?? "Invalid input." },
       { status: 400 },
+    );
+  }
+
+  const ip = getClientIp(request);
+  const rl = checkRateLimit(`reset-password:${ip}`);
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { code: "rate_limited", message: "Too many attempts. Please try again later." },
+      { status: 429, headers: { "Retry-After": String(Math.ceil(rl.retryAfterMs / 1000)) } },
     );
   }
 
@@ -62,7 +66,10 @@ export async function POST(request: NextRequest) {
   await prisma.$transaction([
     prisma.user.update({
       where: { id: record.userId },
-      data: { passwordHash: newHash, mustChangePassword: false },
+      // passwordChangedAt revokes every session issued before now (see the
+      // jwt callback in src/lib/auth.ts) — whoever knew the old password is
+      // out within minutes, not when their 7-day token happens to expire.
+      data: { passwordHash: newHash, mustChangePassword: false, passwordChangedAt: new Date() },
     }),
     prisma.passwordReset.update({
       where: { id: record.id },

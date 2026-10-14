@@ -13,14 +13,15 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // IDOR guard: only admin, the owning teacher, or an enrolled student may
+  // IDOR guard: only staff holding classes.view (not merely role=ADMIN, which
+  // every scoped employee has), the owning teacher, or an enrolled student may
   // read a class's announcements (matches the materials route).
-  const klass = await getClassById(params.id);
+  const klass = await getClassById(params.id, { includeUnpublished: true });
   if (!klass) {
     return NextResponse.json({ error: "Class not found" }, { status: 404 });
   }
   const canRead =
-    user.role === "ADMIN" ||
+    (user.role === "ADMIN" && can(await getAccessControl(), "classes.view")) ||
     (user.role === "TEACHER" && user.id === klass.teacherId) ||
     (user.role === "STUDENT" && (await isStudentEnrolledInClass(user.id, params.id)));
   if (!canRead) {

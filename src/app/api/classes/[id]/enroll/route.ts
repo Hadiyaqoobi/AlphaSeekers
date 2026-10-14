@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { emit } from "@/lib/events/bus";
 import { prisma } from "@/lib/prisma";
+import { MAX_ACTIVE_ENROLLMENTS } from "@/lib/platform/class-join";
 import { dropStudentFromClass, enrollStudentInClass } from "@/lib/platform/store";
 import { getSessionUser, isApproved, pendingApproval, roleAllowed, unauthorized } from "@/lib/security/session";
 
@@ -9,13 +10,9 @@ type Params = {
   params: { id: string };
 };
 
-// Cap simultaneous enrollments per student. Admins are exempt so they can
-// help with QA / impersonate test flows. Override via env if a partner
-// program needs more (UAT 2026-04-26 MED-A — Tester 1, Shahla).
-const MAX_ACTIVE_ENROLLMENTS = (() => {
-  const raw = Number(process.env.MAX_ACTIVE_ENROLLMENTS);
-  return Number.isFinite(raw) && raw > 0 ? raw : 3;
-})();
+// Cap simultaneous enrollments per student (MAX_ACTIVE_ENROLLMENTS, shared
+// with the public join form so both doors agree). Admins are exempt so they
+// can help with QA / impersonate test flows.
 
 export async function POST(_: Request, { params }: Params) {
   const user = await getSessionUser();
@@ -130,7 +127,11 @@ export async function DELETE(_: Request, { params }: Params) {
     return pendingApproval();
   }
 
-  const dropped = await dropStudentFromClass(user.id, params.id);
+  // Leaving is the student's own choice, so it is reversible: DROPPED, and
+  // they may join again. It only ever touches an ACTIVE or PENDING row — a
+  // student a teacher removed (REJECTED) cannot turn that into DROPPED here
+  // and walk back in.
+  const dropped = await dropStudentFromClass(user.id, params.id, { by: "self" });
 
   if (!dropped) {
     return NextResponse.json({ message: "Enrollment not found" }, { status: 404 });

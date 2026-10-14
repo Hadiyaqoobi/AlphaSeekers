@@ -28,3 +28,24 @@ export function isSafeHttpUrl(value: unknown): value is string {
 export function normaliseHttpUrl(value: unknown): string | null {
   return isSafeHttpUrl(value) ? value.trim() : null;
 }
+
+/**
+ * Push services a real browser subscription points at. The server later POSTs
+ * to the stored endpoint (web-push), so an arbitrary URL here would make it
+ * send requests wherever a user says — including internal addresses.
+ */
+const PUSH_HOSTS = ["fcm.googleapis.com", "web.push.apple.com"];
+const PUSH_HOST_SUFFIXES = [".push.services.mozilla.com", ".notify.windows.com", ".push.apple.com"];
+
+export function isAllowedPushEndpoint(endpoint: unknown): boolean {
+  if (typeof endpoint !== "string" || endpoint.length > 2000) return false;
+  let url: URL;
+  try {
+    url = new URL(endpoint);
+  } catch {
+    return false;
+  }
+  if (url.protocol !== "https:" || url.port !== "" || url.username || url.password) return false;
+  const host = url.hostname.toLowerCase();
+  return PUSH_HOSTS.includes(host) || PUSH_HOST_SUFFIXES.some((suffix) => host.endsWith(suffix));
+}
