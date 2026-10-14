@@ -30,8 +30,10 @@ export function EnrollButton({
   const router = useRouter();
   const t = useTranslations("enroll");
   const [enrolled, setEnrolled] = useState(initiallyEnrolled);
-  const [requested, setRequested] = useState(false);
   const [loading, setLoading] = useState(false);
+  // Leaving takes two taps. It used to be one: the only button on the class page
+  // said "Enrolled (tap to unenroll)", and a single tap gave the seat away.
+  const [confirmingLeave, setConfirmingLeave] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function enroll() {
@@ -81,7 +83,6 @@ export function EnrollButton({
     // state now: the student sees the confirmation AND the leave button without
     // reloading the page.
     setEnrolled(true);
-    setRequested(true);
     setLoading(false);
     router.refresh();
   }
@@ -107,7 +108,7 @@ export function EnrollButton({
     }
 
     setEnrolled(false);
-    setRequested(false);
+    setConfirmingLeave(false);
     setLoading(false);
     router.refresh();
   }
@@ -130,19 +131,26 @@ export function EnrollButton({
     <div className="space-y-2">
       {enrolled ? (
         <>
-          {requested ? (
-            <p className="rounded-lg border border-white/10 bg-dark-100 px-4 py-2.5 text-sm text-ink-soft" role="status">
-              {t("requestSent")}
-            </p>
-          ) : null}
-          <button
-            className="btn-muted"
-            disabled={loading}
-            onClick={drop}
-            type="button"
-          >
-            {loading ? "..." : t("enrolledTapToUnenroll")}
-          </button>
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="rounded-lg bg-neon-100 px-3 py-2 text-sm font-semibold text-neon-600" role="status">
+              ✓ {t("inClass")}
+            </span>
+            {confirmingLeave ? (
+              <>
+                <span className="text-sm text-ink-soft">{t("leaveConfirm")}</span>
+                <button className="text-sm font-semibold text-red-400 hover:underline" disabled={loading} onClick={drop} type="button">
+                  {loading ? "..." : t("leaveYes")}
+                </button>
+                <button className="text-sm text-ink-soft hover:underline" disabled={loading} onClick={() => setConfirmingLeave(false)} type="button">
+                  {t("leaveCancel")}
+                </button>
+              </>
+            ) : (
+              <button className="text-sm text-ink-faint hover:text-ink-soft hover:underline" onClick={() => setConfirmingLeave(true)} type="button">
+                {t("leave")}
+              </button>
+            )}
+          </div>
         </>
       ) : joinHref ? (
         <Link className="btn-primary inline-block" href={joinHref}>

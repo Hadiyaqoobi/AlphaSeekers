@@ -31,22 +31,16 @@ export function NowOpen({ locale, signedIn, highlights }: NowOpenProps) {
 
   const joinHref = signedIn ? `/${locale}/classes` : `/${locale}/register`;
 
-  // Every class now has its own join page, and it works signed-out: one form
-  // that creates the account AND enrols them.
+  // Every class card goes to that class's own join page, signed in or not. It
+  // creates the account and enrols in one step for a visitor, asks the class's
+  // questions and shows a Join button to a signed-in student, and sends staff
+  // and students already in the class on to the class page.
   //
-  // This used to prefer `registrationFormUrl` — an external Google Form — which
-  // was a dead end. The student filled it in on Google and came back with no
-  // account, no class and no meeting link, while the teacher got a spreadsheet
-  // to reconcile by hand. An external form is still honoured for a signed-IN
-  // user (they already have an account, so the teacher's own form may be
-  // collecting something else), but a signed-out visitor is sent to the join
-  // page, because that is the one path that actually ends with them in a class.
-  const courseHref = (c: { id: string; registrationFormUrl: string | null }) => {
-    if (!signedIn) return `/${locale}/join/${c.id}`;
-    return c.registrationFormUrl ?? joinHref;
-  };
-  const isExternal = (c: { registrationFormUrl: string | null }) =>
-    signedIn && Boolean(c.registrationFormUrl);
+  // The card used to link to /register (signed out) or /classes (signed in):
+  // the student made an account, or landed on the catalogue, and was never put
+  // in the class they had clicked. A teacher's own Google Form is not linked
+  // from here either; students see it on the class page once they are in.
+  const courseHref = (c: { id: string }) => `/${locale}/join/${c.id}`;
 
   const dateFmt = new Intl.DateTimeFormat(locale === 'fa' ? 'fa-AF' : 'en-GB', {
     day: 'numeric',
@@ -124,25 +118,13 @@ export function NowOpen({ locale, signedIn, highlights }: NowOpenProps) {
                 ) : null}
               </dl>
 
-              {isExternal(c) ? (
-                <a
-                  className="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-land-green-400 transition-colors hover:text-land-green-300"
-                  href={courseHref(c)}
-                  rel="noopener noreferrer"
-                  target="_blank"
-                >
-                  {t('nowOpen.register')}
-                  <span aria-hidden="true" className="inline-block rtl:-scale-x-100">→</span>
-                </a>
-              ) : (
-                <Link
-                  className="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-land-green-400 transition-colors hover:text-land-green-300"
-                  href={joinHref}
-                >
-                  {t('nowOpen.enrol')}
-                  <span aria-hidden="true" className="inline-block rtl:-scale-x-100">→</span>
-                </Link>
-              )}
+              <Link
+                className="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-land-green-400 transition-colors hover:text-land-green-300"
+                href={courseHref(c)}
+              >
+                {t('nowOpen.enrol')}
+                <span aria-hidden="true" className="inline-block rtl:-scale-x-100">→</span>
+              </Link>
             </article>
           ))}
 

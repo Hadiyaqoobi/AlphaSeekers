@@ -553,7 +553,7 @@
   "register": {
     "eyebrow": "Create account",
     "title": "Create your account",
-    "subtitle": "Sign up and start straight away. Joining a class is approved separately by the team.",
+    "subtitle": "Sign up and start straight away. To join a class, open it and press Join: you are in at once.",
     "name": "Full name",
     "email": "Email",
     "password": "Password",
@@ -692,7 +692,8 @@
     "shareLinkHint": "Anyone can open this without an account. It creates their account and puts them in this class.",
     "copy": "Copy",
     "copied": "Copied",
-    "copyFailed": "Could not copy automatically. Select the link above and copy it."
+    "copyFailed": "Could not copy automatically. Select the link above and copy it.",
+    "registrationClosedNote": "Registration for this class has closed, so its link now tells students it is closed. Change the registration deadline to open it again."
   },
   "classLifecycle": {
     "formTitle": "Post a class",
@@ -709,7 +710,7 @@
     "dayLabel": "Day",
     "timeLabel": "Time (Kabul time)",
     "durationLabel": "Length (minutes)",
-    "whenHint": "The class runs every week on this day at this time, Kabul time. Sessions are booked at exactly this time once it is inside the teacher's available hours.",
+    "whenHint": "The class runs every week on this day at this time, Kabul time. If the teacher has saved their available hours, the time must be inside them; if not, sessions are booked at exactly this time.",
     "manualLabel": "The teacher will set each date themselves",
     "manualHint": "Nothing is booked automatically. The teacher adds each date on their schedule page.",
     "moreOptions": "More options",
@@ -786,7 +787,12 @@
     "requestSent": "You have joined this class.",
     "registrationClosed": "Registration for this class has closed.",
     "classFull": "This class is full.",
-    "rejected": "Your request for this class was not approved."
+    "rejected": "Your request for this class was not approved.",
+    "inClass": "You are in this class",
+    "leave": "Leave class",
+    "leaveConfirm": "Leave this class? Your seat can go to someone else.",
+    "leaveYes": "Yes, leave",
+    "leaveCancel": "Stay"
   },
   "materials": {
     "title": "Upload material",
@@ -1632,7 +1638,8 @@
     "orFillIn": "or fill in the form",
     "signedInAs": "You are signed in as {name}.",
     "memberFormTitle": "Join this class",
-    "memberFormSubtitle": "Answer the questions below and press Join. You are already signed in, so there is no password to choose."
+    "memberFormSubtitle": "Answer the questions below and press Join. You are already signed in, so there is no password to choose.",
+    "seeOpenClasses": "See the classes that are open"
   },
   "liveSession": {
     "metaTitle": "{className} live session",

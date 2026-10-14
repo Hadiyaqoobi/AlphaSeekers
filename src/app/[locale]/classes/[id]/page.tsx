@@ -15,10 +15,16 @@ import { SaveOfflineButton } from "@/components/save-offline-button";
 import { getClassLifecycleExtras } from "@/lib/platform/db-store";
 import { displayAnswer } from "@/lib/platform/join-answers";
 import { optionLabel, questionLabel, readJoinQuestions } from "@/lib/platform/join-questions";
+import { isRegistrationClosed } from "@/lib/platform/registration-deadline";
 import { getClassById, isStudentEnrolledInClass, listClassAnnouncements, listClassEnrollments } from "@/lib/platform/store";
 import { isWithinLiveWindow } from "@/lib/scheduling/weekly-slot";
 import { getAccessControl, can, isSuper } from "@/lib/security/permissions";
 import { getSessionUser } from "@/lib/security/session";
+
+/** "Label:" unless the label already ends in its own punctuation ("…better?" not "…better?:"). */
+function withColon(label: string): string {
+  return /[?؟:：]$/.test(label.trim()) ? label : `${label}:`;
+}
 
 type ClassDetailPageProps = {
   params: { locale: string; id: string };
@@ -134,6 +140,12 @@ export default async function ClassDetailPage({ params }: ClassDetailPageProps) 
         {/* Staff only: the address to send students. Students are already in the
             class, and showing it to them invites confusion with the Meet link. */}
         {canUploadMaterials ? <ShareLink classId={record.id} locale={locale} /> : null}
+        {/* Otherwise staff keep sharing a link that only says "closed". */}
+        {canUploadMaterials && isRegistrationClosed(record.registrationDeadline) ? (
+          <p className="mt-3 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-900">
+            {t("registrationClosedNote")}
+          </p>
+        ) : null}
 
         {user?.role === "STUDENT" ? (
           <div className="mt-4">
@@ -299,7 +311,7 @@ export default async function ClassDetailPage({ params }: ClassDetailPageProps) 
                       {joinQuestions.map((question) =>
                         student.answers[question.id] ? (
                           <div className="flex flex-wrap gap-1" key={question.id}>
-                            <dt className="text-ink-faint" dir="auto">{questionLabel(question, tqKey)}:</dt>
+                            <dt className="text-ink-faint" dir="auto">{withColon(questionLabel(question, tqKey))}</dt>
                             <dd className="break-words text-ink-soft" dir="auto">
                               {displayAnswer(question, student.answers[question.id], (q, option) => optionLabel(q, option, tqKey))}
                             </dd>

@@ -22,6 +22,7 @@ import { notFound, redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
 import { ClassJoinForm } from "@/components/classes/class-join-form";
+import { getPreviousAnswers } from "@/lib/platform/class-join";
 import { getPublicJoinClass } from "@/lib/platform/public-data";
 import { isRegistrationClosed } from "@/lib/platform/registration-deadline";
 import { isStudentEnrolledInClass } from "@/lib/platform/store";
@@ -49,6 +50,8 @@ export default async function JoinClassPage({ params, searchParams }: JoinPagePr
   // then hear that registration closed. Compared to the clock on every render,
   // so it holds even while the class summary is cached.
   const closed = isRegistrationClosed(klass.registrationDeadline);
+  // Signed-in student coming back: start from what they answered last time.
+  const previousAnswers = user && !closed && !klass.isFull ? await getPreviousAnswers(user.id, classId) : {};
 
   return (
     <main className="mx-auto w-full max-w-lg px-5 py-10 sm:py-14">
@@ -90,10 +93,17 @@ export default async function JoinClassPage({ params, searchParams }: JoinPagePr
       </section>
 
       <section className="mt-6 rounded-2xl border border-line-soft bg-dark-50/40 p-5 sm:p-6">
-        {closed ? (
-          <p className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-200" dir="auto">
-            {t("errors.registrationClosed")}
-          </p>
+        {closed || klass.isFull ? (
+          // Nothing to fill in: say why, and point at classes that are open,
+          // instead of a "Register for this class" heading over a dead end.
+          <div className="space-y-3">
+            <p className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-200" dir="auto">
+              {closed ? t("errors.registrationClosed") : t("classFull")}
+            </p>
+            <a className="inline-block text-sm font-semibold text-neon-400 hover:underline" href={`/${locale}#now-open`}>
+              {t("seeOpenClasses")} →
+            </a>
+          </div>
         ) : (
           <>
             <h2 className="text-lg font-bold text-ink-main" dir="auto">
@@ -105,6 +115,7 @@ export default async function JoinClassPage({ params, searchParams }: JoinPagePr
 
             <ClassJoinForm
               autoSubmit={searchParams?.via === "google"}
+              initialAnswers={previousAnswers}
               classId={klass.id}
               isFull={klass.isFull}
               locale={locale}

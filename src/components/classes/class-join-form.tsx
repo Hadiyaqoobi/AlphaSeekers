@@ -49,6 +49,8 @@ type ClassJoinFormProps = {
   memberName?: string | null;
   /** member mode: they just came back from Google; finish the join without another tap. */
   autoSubmit?: boolean;
+  /** member mode: answers from an earlier time in this class, shown filled in. */
+  initialAnswers?: JoinAnswers;
 };
 
 /** Answers typed before going to Google, so the student does not type them twice. */
@@ -81,6 +83,7 @@ export function ClassJoinForm({
   mode = "guest",
   memberName = null,
   autoSubmit = false,
+  initialAnswers,
 }: ClassJoinFormProps) {
   const t = useTranslations("classJoin");
   const tRegister = useTranslations("register");
@@ -120,7 +123,8 @@ export function ClassJoinForm({
   // finish joining straight away. One tap on "Join with Google" is the whole join.
   useEffect(() => {
     if (mode !== "member") return;
-    const restored = loadDraft(classId);
+    // What they typed before Google wins over what they answered last time.
+    const restored = { ...(initialAnswers ?? {}), ...loadDraft(classId) };
     setAnswers(restored);
     if (autoSubmit && !autoSubmitted.current && checkAnswers(questions, restored).ok) {
       autoSubmitted.current = true;
@@ -314,12 +318,15 @@ export function ClassJoinForm({
     const label = questionLabel(question, tqKey);
     const problem = questionError?.id === question.id ? questionError.reason : null;
     const value = answers[question.id] ?? "";
+    // Labels follow the page's direction (right-aligned on the Dari site, like
+    // the name and email labels above them); <bdi> keeps a label typed in the
+    // other language readable, e.g. an English "?" stays at its end.
     return (
       <div className="flex flex-col gap-1.5" key={question.id}>
         {question.type === "choice" ? (
           <fieldset aria-describedby={problem ? `${id}-error` : undefined} className="flex flex-col gap-2" id={id} tabIndex={-1}>
-            <legend className="mb-1.5 text-sm font-semibold text-ink-main" dir="auto">
-              {label}
+            <legend className="mb-1.5 text-sm font-semibold text-ink-main">
+              <bdi>{label}</bdi>
               {question.required ? null : <span className="font-normal text-ink-faint"> {tq("optional")}</span>}
             </legend>
             {(question.options ?? []).map((option) => (
@@ -331,14 +338,14 @@ export function ClassJoinForm({
                   type="radio"
                   value={option}
                 />
-                <span dir="auto">{optionLabel(question, option, tqKey)}</span>
+                <bdi>{optionLabel(question, option, tqKey)}</bdi>
               </label>
             ))}
           </fieldset>
         ) : (
           <>
-            <label className="text-sm font-semibold text-ink-main" dir="auto" htmlFor={id}>
-              {label}
+            <label className="text-sm font-semibold text-ink-main" htmlFor={id}>
+              <bdi>{label}</bdi>
               {question.required ? null : <span className="font-normal text-ink-faint"> {tq("optional")}</span>}
             </label>
             {question.type === "paragraph" ? (
@@ -369,8 +376,10 @@ export function ClassJoinForm({
           </>
         )}
         {problem ? (
-          <p className="text-xs text-red-300" dir="auto" id={`${id}-error`} role="alert">
-            {problem === "required" ? tq("errors.required") : tq(`errors.invalid.${question.kind === "phone" || question.kind === "age" ? question.kind : "other"}`)}
+          <p className="text-xs text-red-300" id={`${id}-error`} role="alert">
+            <bdi>
+              {problem === "required" ? tq("errors.required") : tq(`errors.invalid.${question.kind === "phone" || question.kind === "age" ? question.kind : "other"}`)}
+            </bdi>
           </p>
         ) : null}
       </div>
@@ -467,7 +476,9 @@ export function ClassJoinForm({
         {/* The rule is stated up front. Telling someone their password is wrong
             only after they submit is how you lose a nervous first-time user. */}
         <p className="text-xs text-ink-faint" dir="auto">{t("passwordHint")}</p>
-        <div className="relative">
+        {/* LTR box: the password itself is LTR, and on the Dari site the eye
+            button otherwise lands on the left, on top of what is typed. */}
+        <div className="relative" dir="ltr">
           <input
             autoComplete="new-password"
             className="join-field w-full pe-12"

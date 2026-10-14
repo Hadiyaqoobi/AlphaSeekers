@@ -32,11 +32,25 @@ export function openAnswers(stored: unknown): JoinAnswers {
 }
 
 /**
+ * A cell spreadsheets must show exactly as typed: a phone number. Left plain,
+ * "+93 700 …" is read as a formula and "0700 …" loses its leading zero.
+ */
+export type CsvCell = string | { asText: string };
+
+/**
  * A spreadsheet cell. Quoted always; and a value starting with = + - @ (or a
  * tab/CR) is prefixed with ' so Google Sheets and Excel show it as text instead
  * of running it as a formula — the answers are typed by the public.
+ *
+ * An `asText` value made only of digits, spaces and + ( ) - is written as the
+ * formula ="…", which both programs display as that exact text with no visible
+ * prefix. Nothing else can go through that form, so it cannot carry a formula.
  */
-export function csvCell(value: string): string {
+export function csvCell(value: CsvCell): string {
+  if (typeof value !== "string") {
+    if (/^[0-9+ ()-]+$/.test(value.asText)) return `"=""${value.asText}"""`;
+    value = value.asText;
+  }
   const safe = /^[=+\-@\t\r]/.test(value) ? `'${value}` : value;
   return `"${safe.replace(/"/g, '""')}"`;
 }
@@ -45,8 +59,8 @@ export function csvCell(value: string): string {
  * The whole file. Starts with a UTF-8 byte-order mark: without it Excel opens
  * Dari text as mojibake. CRLF line ends, the CSV standard.
  */
-export function toCsv(rows: string[][]): string {
-  return "﻿" + rows.map((row) => row.map(csvCell).join(",")).join("\r\n") + "\r\n";
+export function toCsv(rows: CsvCell[][]): string {
+  return "\uFEFF" + rows.map((row) => row.map(csvCell).join(",")).join("\r\n") + "\r\n";
 }
 
 /** One answer as a person reads it: a preset choice shows its translated label. */

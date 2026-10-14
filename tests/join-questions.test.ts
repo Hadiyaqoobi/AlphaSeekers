@@ -148,6 +148,17 @@ describe("the spreadsheet", () => {
     expect(csvCell('He said "hi", then left')).toBe('"He said ""hi"", then left"');
   });
 
+  it("writes a phone number so it shows exactly as typed, with no ' prefix", () => {
+    expect(csvCell({ asText: "+93 700 123 456" })).toBe('"=""+93 700 123 456"""');
+    expect(csvCell({ asText: "0700123456" })).toBe('"=""0700123456"""');
+  });
+
+  it("never lets a phone cell carry anything but digits and + ( ) -", () => {
+    // Not a valid phone shape: falls back to the ordinary guarded cell.
+    expect(csvCell({ asText: '=HYPERLINK("x")' })).toBe('"\'=HYPERLINK(""x"")"');
+    expect(csvCell({ asText: '1" & cmd' })).toBe('"1"" & cmd"');
+  });
+
   it("never lets an answer run as a spreadsheet formula", () => {
     expect(csvCell("=HYPERLINK(\"http://x\")")).toBe('"\'=HYPERLINK(""http://x"")"');
     expect(csvCell("+93 700")).toBe("\"'+93 700\"");

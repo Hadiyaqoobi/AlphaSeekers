@@ -515,6 +515,13 @@
     "joinQuestions.editor.options",
     "joinQuestions.editor.optionsPlaceholder",
     "joinQuestions.editor.addOwn",
-    "joinQuestions.editor.maxReached"
+    "joinQuestions.editor.maxReached",
+    "enroll.inClass",
+    "enroll.leave",
+    "enroll.leaveConfirm",
+    "enroll.leaveYes",
+    "enroll.leaveCancel",
+    "classJoin.seeOpenClasses",
+    "classDetail.registrationClosedNote"
   ]
 }

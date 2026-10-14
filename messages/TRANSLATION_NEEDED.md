@@ -1,6 +1,6 @@
 # Dari translation needed
 
-**514 strings** in the app are still showing **English** to Dari readers.
+**521 strings** in the app are still showing **English** to Dari readers.
 The keys exist in `messages/fa.json`, so nothing errors — the English text was left in place
 when these features shipped. The sections are ordered by who sees them: what students see first
 (the class join page, the live class page, sign-in), then teachers, then staff screens.
@@ -42,7 +42,7 @@ set `lang="fa" dir="rtl"` on that page at the same time).
 
 ---
 
-## `classJoin`  ·  37 strings
+## `classJoin`  ·  38 strings
 
 - **English:** "Join this class"
   **Dari:** 
@@ -192,6 +192,10 @@ set `lang="fa" dir="rtl"` on that page at the same time).
   **Dari:** 
   <sub>`classJoin.memberFormSubtitle`</sub>
 
+- **English:** "See the classes that are open"
+  **Dari:** 
+  <sub>`classJoin.seeOpenClasses`</sub>
+
 
 ## `joinQuestions`  ·  34 strings
 
@@ -334,7 +338,7 @@ Evening"
   <sub>`joinQuestions.editor.maxReached`</sub>
 
 
-## `enroll`  ·  5 strings
+## `enroll`  ·  10 strings
 
 - **English:** "Join this class"
   **Dari:** 
@@ -355,6 +359,26 @@ Evening"
 - **English:** "Your request for this class was not approved."
   **Dari:** 
   <sub>`enroll.rejected`</sub>
+
+- **English:** "You are in this class"
+  **Dari:** 
+  <sub>`enroll.inClass`</sub>
+
+- **English:** "Leave class"
+  **Dari:** 
+  <sub>`enroll.leave`</sub>
+
+- **English:** "Leave this class? Your seat can go to someone else."
+  **Dari:** 
+  <sub>`enroll.leaveConfirm`</sub>
+
+- **English:** "Yes, leave"
+  **Dari:** 
+  <sub>`enroll.leaveYes`</sub>
+
+- **English:** "Stay"
+  **Dari:** 
+  <sub>`enroll.leaveCancel`</sub>
 
 
 ## `liveSession`  ·  84 strings
@@ -741,7 +765,7 @@ Evening"
   **Dari:** 
   <sub>`register.title`</sub>
 
-- **English:** "Sign up and start straight away. Joining a class is approved separately by the team."
+- **English:** "Sign up and start straight away. To join a class, open it and press Join: you are in at once."
   **Dari:** 
   <sub>`register.subtitle`</sub>
 
@@ -848,7 +872,7 @@ Evening"
   <sub>`resetPassword.failed`</sub>
 
 
-## `classDetail`  ·  11 strings
+## `classDetail`  ·  12 strings
 
 - **English:** "Remove"
   **Dari:** 
@@ -893,6 +917,10 @@ Evening"
 - **English:** "Could not copy automatically. Select the link above and copy it."
   **Dari:** 
   <sub>`classDetail.copyFailed`</sub>
+
+- **English:** "Registration for this class has closed, so its link now tells students it is closed. Change the registration deadline to open it again."
+  **Dari:** 
+  <sub>`classDetail.registrationClosedNote`</sub>
 
 
 ## `classes`  ·  2 strings
@@ -1289,7 +1317,7 @@ Evening"
   **Dari:** 
   <sub>`classLifecycle.durationLabel`</sub>
 
-- **English:** "The class runs every week on this day at this time, Kabul time. Sessions are booked at exactly this time once it is inside the teacher's available hours."
+- **English:** "The class runs every week on this day at this time, Kabul time. If the teacher has saved their available hours, the time must be inside them; if not, sessions are booked at exactly this time."
   **Dari:** 
   <sub>`classLifecycle.whenHint`</sub>
 
