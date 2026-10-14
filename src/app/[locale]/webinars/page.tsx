@@ -5,7 +5,8 @@ import { formatDateTime } from "@/lib/format-date";
 import { DeleteContentButton } from "@/components/admin/delete-content-button";
 import { WebinarForm } from "@/components/forms/webinar-form";
 import { WebinarRegisterButton } from "@/components/forms/webinar-register-button";
-import { listRegisteredWebinarIds, listWebinars } from "@/lib/platform/store";
+import { getPublicWebinars } from "@/lib/platform/public-data";
+import { listRegisteredWebinarIds } from "@/lib/platform/store";
 import { getSessionUser } from "@/lib/security/session";
 
 type WebinarsPageProps = {
@@ -17,7 +18,7 @@ export default async function WebinarsPage({ params }: WebinarsPageProps) {
   const t = await getTranslations({ locale, namespace: "webinars" });
   const user = await getSessionUser();
 
-  const items = await listWebinars();
+  const items = await getPublicWebinars();
 
   // Show coming soon for everyone when no content exists
   if (items.length === 0 && !user?.role?.includes("ADMIN")) {

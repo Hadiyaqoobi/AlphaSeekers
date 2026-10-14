@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { prisma } from "@/lib/prisma";
+import { getPublicStory } from "@/lib/platform/public-data";
 import { PostActions } from "@/components/stories/post-actions";
 import { PostCard } from "@/components/stories/post-card";
 import { ArtLightbox } from "@/components/stories/art-lightbox";
@@ -24,12 +24,10 @@ const TYPE_LABELS: Record<string, { en: string; fa: string; icon: string }> = {
 };
 
 export async function generateMetadata({ params }: PageProps) {
-  const post = await prisma.studentPost.findUnique({
-    where: { slug: params.slug },
-    include: { author: { select: { name: true } } },
-  });
+  const story = await getPublicStory(params.slug);
 
-  if (!post || post.status !== "published") return {};
+  if (!story) return {};
+  const { post } = story;
 
   const authorName = post.anonymous ? "Anonymous" : post.author.name;
   const title = params.locale === "fa" && post.titleDari ? post.titleDari : post.title;
@@ -50,14 +48,14 @@ export async function generateMetadata({ params }: PageProps) {
 }
 
 export default async function PostPage({ params }: PageProps) {
-  const post = await prisma.studentPost.findUnique({
-    where: { slug: params.slug },
-    include: { author: { select: { name: true } } },
-  });
+  // Cached with the "more stories" strip, and shared with generateMetadata
+  // above, so a crawler walking every story does not wake the database.
+  const story = await getPublicStory(params.slug);
 
-  if (!post || post.status !== "published") {
+  if (!story) {
     notFound();
   }
+  const { post, morePosts } = story;
 
   const isDari = params.locale === "fa";
   const typeInfo = TYPE_LABELS[post.type] || TYPE_LABELS.article;
@@ -81,30 +79,6 @@ export default async function PostPage({ params }: PageProps) {
       /* ignore */
     }
   }
-
-  // More posts
-  const morePosts = await prisma.studentPost.findMany({
-    where: { status: "published", id: { not: post.id } },
-    orderBy: { publishedAt: "desc" },
-    take: 3,
-    select: {
-      id: true,
-      slug: true,
-      type: true,
-      title: true,
-      titleDari: true,
-      excerpt: true,
-      excerptDari: true,
-      coverImageUrl: true,
-      galleryUrls: true,
-      language: true,
-      readTimeMin: true,
-      anonymous: true,
-      likeCount: true,
-      publishedAt: true,
-      author: { select: { name: true } },
-    },
-  });
 
   const shapedMorePosts = morePosts.map((p) => ({
     ...p,

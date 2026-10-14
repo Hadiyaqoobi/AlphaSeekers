@@ -1,6 +1,6 @@
 import { getTranslations } from "next-intl/server";
 
-import { getSiteSettings } from "@/lib/platform/site-settings";
+import { getPublicSiteSettings } from "@/lib/platform/public-data";
 
 type ContactPageProps = { params: { locale: string } };
 
@@ -17,7 +17,7 @@ export async function generateMetadata({ params }: ContactPageProps) {
 export default async function ContactPage({ params }: ContactPageProps) {
   const locale = params.locale;
   const t = await getTranslations({ locale, namespace: "contact" });
-  const s = await getSiteSettings();
+  const s = await getPublicSiteSettings();
 
   const channels: Array<{ key: string; label: string; value: string; href: string; icon: React.ReactNode }> = [];
 

@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import { getPublicStoriesIndex } from "@/lib/platform/public-data";
 import { StoriesBrowse } from "@/components/stories/stories-browse";
 import { StoriesComingSoon } from "@/components/stories/stories-coming-soon";
 
@@ -19,60 +19,13 @@ export async function generateMetadata({ params }: PageProps) {
 }
 
 export default async function StoriesPage({ params }: PageProps) {
-  const publishedCount = await prisma.studentPost.count({
-    where: { status: "published" },
-  });
+  // From the public-page cache: this index is linked from the landing page, so
+  // crawlers reach it, and it must not wake the database for each of them.
+  const { publishedCount, posts, featuredPosts } = await getPublicStoriesIndex();
 
   if (publishedCount === 0) {
     return <StoriesComingSoon locale={params.locale} />;
   }
-
-  const [posts, featuredPosts] = await Promise.all([
-    prisma.studentPost.findMany({
-      where: { status: "published" },
-      orderBy: [{ featured: "desc" }, { publishedAt: "desc" }],
-      take: 24,
-      select: {
-        id: true,
-        slug: true,
-        type: true,
-        title: true,
-        titleDari: true,
-        excerpt: true,
-        excerptDari: true,
-        coverImageUrl: true,
-        galleryUrls: true,
-        language: true,
-        readTimeMin: true,
-        anonymous: true,
-        likeCount: true,
-        publishedAt: true,
-        featured: true,
-        author: { select: { name: true } },
-      },
-    }),
-    prisma.studentPost.findMany({
-      where: { status: "published", featured: true },
-      orderBy: { publishedAt: "desc" },
-      take: 2,
-      select: {
-        id: true,
-        slug: true,
-        type: true,
-        title: true,
-        titleDari: true,
-        excerpt: true,
-        excerptDari: true,
-        coverImageUrl: true,
-        language: true,
-        readTimeMin: true,
-        anonymous: true,
-        likeCount: true,
-        publishedAt: true,
-        author: { select: { name: true } },
-      },
-    }),
-  ]);
 
   const shapedPosts = posts.map((p) => ({
     ...p,

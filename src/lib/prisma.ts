@@ -1,5 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 
+import { invalidatePublicCache, type PublicScope } from "@/lib/platform/public-cache";
+
 declare global {
   // eslint-disable-next-line no-var
   var prisma: PrismaClient | undefined;
@@ -42,20 +44,92 @@ function buildDatabaseUrl(): string | undefined {
 
 const databaseUrl = buildDatabaseUrl();
 
+/**
+ * Which public-page cache scopes each model feeds (see
+ * `src/lib/platform/public-cache.ts`). A write to one of these models marks the
+ * scopes stale, so an admin's change is visible on the public site at once.
+ *
+ * `User` is deliberately absent even though a teacher's name appears on the
+ * landing page: users are written constantly (every sign-up), and a renamed
+ * teacher is picked up by the hourly refresh anyway.
+ */
+const PUBLIC_SCOPES_BY_MODEL: Record<string, PublicScope[]> = {
+  SiteSettings: ["settings"],
+  Class: ["landing"],
+  Enrollment: ["landing"],
+  Webinar: ["webinars", "landing"],
+  Opportunity: ["opportunities", "landing"],
+  LibraryResource: ["library"],
+  StudentPost: ["stories"],
+};
+
+const WRITE_OPERATIONS = new Set([
+  "create",
+  "createMany",
+  "createManyAndReturn",
+  "update",
+  "updateMany",
+  "updateManyAndReturn",
+  "upsert",
+  "delete",
+  "deleteMany",
+]);
+
+/**
+ * Invalidate the public cache from ONE place rather than at every call site.
+ * Writes to these models happen in the stores, in API routes and inside
+ * transactions; a hook on the client catches all of them, including ones added
+ * later. Reads pass straight through.
+ *
+ * Not covered: rows removed by a database-level cascade, and raw SQL. Both are
+ * picked up by the hourly refresh.
+ */
+function withPublicCacheInvalidation(client: PrismaClient): PrismaClient {
+  const extended = client.$extends({
+    name: "public-cache-invalidation",
+    query: {
+      $allModels: {
+        async $allOperations({ model, operation, args, query }) {
+          const scopes = WRITE_OPERATIONS.has(operation)
+            ? PUBLIC_SCOPES_BY_MODEL[model]
+            : undefined;
+
+          if (!scopes) return query(args);
+
+          try {
+            return await query(args);
+          } finally {
+            // Also on failure: a statement that threw may still have changed
+            // rows inside a transaction that goes on to commit.
+            for (const scope of scopes) invalidatePublicCache(scope);
+          }
+        },
+      },
+    },
+  });
+
+  // The extension only observes queries; it adds no models, fields or methods.
+  // Keeping the plain PrismaClient type means nothing else in the codebase has
+  // to know the client is extended.
+  return extended as unknown as PrismaClient;
+}
+
 export const prisma =
   global.prisma ||
-  new PrismaClient({
-    log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
-    ...(databaseUrl
-      ? {
-          datasources: {
-            db: {
-              url: databaseUrl,
+  withPublicCacheInvalidation(
+    new PrismaClient({
+      log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
+      ...(databaseUrl
+        ? {
+            datasources: {
+              db: {
+                url: databaseUrl,
+              },
             },
-          },
-        }
-      : {}),
-  });
+          }
+        : {}),
+    }),
+  );
 
 if (process.env.NODE_ENV !== "production") {
   global.prisma = prisma;

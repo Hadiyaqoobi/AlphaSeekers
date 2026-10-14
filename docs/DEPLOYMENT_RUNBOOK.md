@@ -76,14 +76,23 @@ be provided manually (they are `sync: false` in `render.yaml`).
 
 ## 4. Cron jobs on Render
 
-Five scheduled jobs are declared in `render.yaml` as `type: cron` services. Each curls
-an app endpoint with the `CRON_SECRET` bearer token. Set `APP_BASE_URL` and `CRON_SECRET`
-on each cron service (CRON_SECRET must match the web service).
+**One** scheduled job is declared in `render.yaml` as a `type: cron` service. It curls
+the app's endpoints in order with the `CRON_SECRET` bearer token. Set `APP_BASE_URL` and
+`CRON_SECRET` on it (CRON_SECRET must match the web service).
 
-| Job | Schedule | Endpoint | Method |
+| Job | Schedule | Endpoints, in order | Method |
 | --- | --- | --- | --- |
-| pulse | `*/30 * * * *` (every 30 min) | `/api/cron/reminders` → `scheduler` → `ai-prep` → `worker` | POST/GET |
-| data-retention | `30 3 * * *` (nightly) | `/api/cron/data-retention` | GET |
+| pulse | `0 * * * *` (hourly) | `/api/cron/reminders` → `scheduler` → `ai-prep` → *(03 UTC only)* `data-retention` → *(06 UTC only)* `kpi-digest` → `worker` | POST/GET |
+
+It is the only thing that wakes the database on a schedule, and that is the point: Neon
+bills the hours its compute is awake and suspends after five idle minutes, so every
+separate cron is a separate wake. The daily jobs ride the hourly pulse instead of having
+services of their own ([ADR-0007](./adr/0007-let-the-database-sleep.md)).
+
+**Removing a service from `render.yaml` does not delete it on Render.** If
+`alphaseekers-data-retention` or `alphaseekers-kpi-digest` still exist in the dashboard
+from before 2026-10-13, delete them there. Left running they are harmless (both jobs are
+idempotent) but are still billed and still wake the database.
 
 If your Render plan/region does not honor blueprint `cron` services, create them
 manually in the dashboard as **Cron Job** services using the schedules/commands above.
@@ -348,17 +357,26 @@ adapter — so nothing is lost even with no tracker installed. To activate Sentr
 - The super-admin **Jobs panel** at `/super/jobs` shows live queue health (per-status
   counts, oldest pending age) and supports **one-click requeue** of dead-lettered jobs
   (`requeueJob` flips `DEAD`/`FAILED` back to `PENDING`).
-- The **daily KPI digest** (06:00 UTC cron) surfaces the **DEAD job count** in its
+- The **daily KPI digest** (enqueued by the 06:00 UTC pulse) surfaces the **DEAD job count** in its
   message (`src/lib/jobs/handlers/digest.ts`), so a stuck worker or dead-lettering job
   is noticed without opening the console.
 
 ### 10.4 Health check
 
 `GET /api/health` is the Render **health check** endpoint: unauthenticated, fast,
-leak-free. It runs `SELECT 1` and returns `200 {ok:true}` when healthy or `503`
-`degraded` when the DB is required but unreachable (in demo mode a missing DB is
-reported but not fatal, since the app serves from the memory store). Point Render's
-health check and any external uptime monitor at it.
+leak-free, and a pure **liveness** probe — it answers `200 {ok:true, db:"unchecked"}`
+without touching the database.
+
+That is deliberate. Render calls the path every few seconds for as long as the service
+runs; when it ran `SELECT 1` each time, Neon's compute could never go five minutes idle,
+never suspended, and used roughly 180 compute-unit hours a month against a free allowance
+of 100 ([ADR-0007](./adr/0007-let-the-database-sleep.md)).
+
+`GET /api/health?deep=1` is the **readiness** form: it runs `SELECT 1` and returns
+`200 {db:"up"}` or `503 degraded` when the DB is required but unreachable (in demo mode a
+missing DB is reported but not fatal). Use it by hand after a deploy. If an external
+uptime monitor is pointed at it, keep the interval at 15 minutes or more — anything
+tighter recreates the always-awake database.
 
 ---
 
@@ -374,10 +392,10 @@ A concise, ordered gate. Do not launch with any box unchecked.
       Meet links, DB→memory fallback).
 - [ ] **Migrations applied** cleanly on deploy (`prisma migrate deploy` green in build
       logs); `DocumentChunk` HNSW index present (§8.3).
-- [ ] **All cron services provisioned** with matching `CRON_SECRET` + `APP_BASE_URL`:
-      pulse (every 30 min), data-retention, kpi-digest. Do NOT reinstate a
-      warm-the-database cron: it defeats Neon's auto-suspend and exhausts the
-      compute allowance.
+- [ ] **The one cron service provisioned** with matching `CRON_SECRET` + `APP_BASE_URL`:
+      pulse (hourly). Do NOT reinstate a warm-the-database cron, add a second
+      scheduled service, or point a frequent monitor at `/api/health?deep=1`: each
+      defeats Neon's auto-suspend and exhausts the compute allowance.
 - [ ] **Transactional ESP** configured (Resend/Postmark/SES) — not Gmail SMTP.
 - [ ] **Demo credentials rotated / removed** and seeded demo accounts purged.
 - [ ] **Restore rehearsed** (§7.3) — real RTO measured, encrypted columns proven to
@@ -385,4 +403,4 @@ A concise, ordered gate. Do not launch with any box unchecked.
 - [ ] **Error tracking wired** — `SENTRY_DSN` set and the `instrumentation.ts` seam
       registered (§10.2), or a conscious decision to run on structured logs only.
 - [ ] **Smoke test** on production: auth (sign in) → enroll → schedule a session →
-      receive a notification. `GET /api/health` returns `200 ok`.
+      receive a notification. `GET /api/health?deep=1` returns `200` with `db: "up"`.

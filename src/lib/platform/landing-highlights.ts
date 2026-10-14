@@ -53,88 +53,99 @@ export const EMPTY_HIGHLIGHTS: LandingHighlights = {
 };
 
 /**
+ * Query what is open right now, or throw if the database cannot be reached.
+ *
+ * Separate from `getLandingHighlights` so the public-page cache can tell
+ * "nothing is open" from "could not ask", and never stores a failure as an
+ * empty front page.
+ */
+export async function loadLandingHighlights(): Promise<LandingHighlights> {
+  const now = new Date();
+
+  const [classes, webinars, opportunities] = await Promise.all([
+    // `published` gives admins a way to keep a class off the public page while
+    // it is still being set up. It was written on every class but never
+    // filtered on anywhere until now.
+    prisma.class.findMany({
+      // A class whose registration has closed is no longer "open now", so it
+      // drops off the public page the moment its deadline passes. Null means
+      // no deadline was ever set, which stays open — that is every class that
+      // predates the field.
+      where: {
+        status: ClassStatus.ACTIVE,
+        published: true,
+        OR: [{ registrationDeadline: null }, { registrationDeadline: { gte: now } }],
+      },
+      orderBy: { createdAt: "desc" },
+      take: 6,
+      select: {
+        id: true,
+        name: true,
+        subjectCategory: true,
+        schedulePreference: true,
+        language: true,
+        maxStudents: true,
+        registrationFormUrl: true,
+        registrationDeadline: true,
+        teacher: { select: { name: true } },
+        _count: { select: { enrollments: true } },
+      },
+    }),
+    prisma.webinar.findMany({
+      where: { startsAt: { gte: now } },
+      orderBy: { startsAt: "asc" },
+      take: 3,
+      select: { id: true, title: true, startsAt: true, language: true },
+    }),
+    prisma.opportunity.findMany({
+      where: { deadline: { gte: now } },
+      orderBy: { deadline: "asc" },
+      take: 3,
+      select: { id: true, title: true, type: true, deadline: true, externalUrl: true },
+    }),
+  ]);
+
+  return {
+    classes: classes.map((c) => ({
+      id: c.id,
+      name: c.name,
+      subjectCategory: c.subjectCategory,
+      schedulePreference: c.schedulePreference,
+      language: c.language,
+      teacherName: c.teacher?.name ?? null,
+      // Defence in depth: rows predate the write-side guard, and this value
+      // is rendered as an href on a public page.
+      registrationFormUrl: normaliseHttpUrl(c.registrationFormUrl),
+      registrationDeadline: c.registrationDeadline?.toISOString() ?? null,
+      seatsLeft:
+        typeof c.maxStudents === "number"
+          ? Math.max(0, c.maxStudents - c._count.enrollments)
+          : null,
+    })),
+    webinars: webinars.map((w) => ({
+      id: w.id,
+      title: w.title,
+      startsAt: w.startsAt.toISOString(),
+      language: w.language,
+    })),
+    opportunities: opportunities.map((o) => ({
+      id: o.id,
+      title: o.title,
+      type: o.type,
+      deadline: o.deadline.toISOString(),
+      externalUrl: o.externalUrl,
+    })),
+  };
+}
+
+/**
  * Fails open to an empty set: the marketing page must keep rendering even if
  * the database is unreachable. An empty section is hidden entirely rather than
  * shown as a broken or "nothing here" panel.
  */
 export async function getLandingHighlights(): Promise<LandingHighlights> {
-  const now = new Date();
-
   try {
-    const [classes, webinars, opportunities] = await Promise.all([
-      // `published` gives admins a way to keep a class off the public page while
-      // it is still being set up. It was written on every class but never
-      // filtered on anywhere until now.
-      prisma.class.findMany({
-        // A class whose registration has closed is no longer "open now", so it
-        // drops off the public page the moment its deadline passes. Null means
-        // no deadline was ever set, which stays open — that is every class that
-        // predates the field.
-        where: {
-          status: ClassStatus.ACTIVE,
-          published: true,
-          OR: [{ registrationDeadline: null }, { registrationDeadline: { gte: now } }],
-        },
-        orderBy: { createdAt: "desc" },
-        take: 6,
-        select: {
-          id: true,
-          name: true,
-          subjectCategory: true,
-          schedulePreference: true,
-          language: true,
-          maxStudents: true,
-          registrationFormUrl: true,
-          registrationDeadline: true,
-          teacher: { select: { name: true } },
-          _count: { select: { enrollments: true } },
-        },
-      }),
-      prisma.webinar.findMany({
-        where: { startsAt: { gte: now } },
-        orderBy: { startsAt: "asc" },
-        take: 3,
-        select: { id: true, title: true, startsAt: true, language: true },
-      }),
-      prisma.opportunity.findMany({
-        where: { deadline: { gte: now } },
-        orderBy: { deadline: "asc" },
-        take: 3,
-        select: { id: true, title: true, type: true, deadline: true, externalUrl: true },
-      }),
-    ]);
-
-    return {
-      classes: classes.map((c) => ({
-        id: c.id,
-        name: c.name,
-        subjectCategory: c.subjectCategory,
-        schedulePreference: c.schedulePreference,
-        language: c.language,
-        teacherName: c.teacher?.name ?? null,
-        // Defence in depth: rows predate the write-side guard, and this value
-        // is rendered as an href on a public page.
-        registrationFormUrl: normaliseHttpUrl(c.registrationFormUrl),
-        registrationDeadline: c.registrationDeadline?.toISOString() ?? null,
-        seatsLeft:
-          typeof c.maxStudents === "number"
-            ? Math.max(0, c.maxStudents - c._count.enrollments)
-            : null,
-      })),
-      webinars: webinars.map((w) => ({
-        id: w.id,
-        title: w.title,
-        startsAt: w.startsAt.toISOString(),
-        language: w.language,
-      })),
-      opportunities: opportunities.map((o) => ({
-        id: o.id,
-        title: o.title,
-        type: o.type,
-        deadline: o.deadline.toISOString(),
-        externalUrl: o.externalUrl,
-      })),
-    };
+    return await loadLandingHighlights();
   } catch {
     return EMPTY_HIGHLIGHTS;
   }

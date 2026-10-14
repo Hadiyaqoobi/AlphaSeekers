@@ -4,7 +4,7 @@ import { LibraryComingSoon } from "@/components/coming-soon/library-coming-soon"
 import { DataCostBadge } from "@/components/data-cost-badge";
 import { LibraryForm } from "@/components/forms/library-form";
 import { SaveOfflineButton } from "@/components/save-offline-button";
-import { listLibraryResources } from "@/lib/platform/store";
+import { getPublicLibrary } from "@/lib/platform/public-data";
 import { getSessionUser } from "@/lib/security/session";
 
 type LibraryPageProps = {
@@ -18,7 +18,7 @@ export default async function LibraryPage({ params, searchParams }: LibraryPageP
   const user = await getSessionUser();
 
   const query = searchParams.q ?? "";
-  const items = await listLibraryResources(query);
+  const items = await getPublicLibrary(query);
 
   // Show coming soon for everyone when no content exists
   if (items.length === 0 && !user?.role?.includes("ADMIN")) {
