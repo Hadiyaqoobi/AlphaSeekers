@@ -189,6 +189,8 @@ d("one-step class join", () => {
       classId: klass.id, name: "Second", email: email("second"), password: GOOD,
     });
     expect(second).toEqual({ ok: false, code: "CLASS_FULL" });
+    // Refused: no account was left behind for the person who did not get a seat.
+    expect(await prisma.user.count({ where: { email: email("second") } })).toBe(0);
   });
 
   it("is idempotent — submitting twice does not duplicate anything", async () => {

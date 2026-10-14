@@ -81,6 +81,14 @@ describe("isRegistrationClosed", () => {
 });
 
 describe("toDateInputValue", () => {
+  it("shows the same date that was saved (the edit form showed the next day)", () => {
+    for (const day of ["2026-10-31", "2026-01-01", "2026-12-31"]) {
+      const saved = parseRegistrationDeadline(day);
+      if (!saved.ok) throw new Error("parse failed");
+      expect(toDateInputValue(saved.value)).toBe(day);
+    }
+  });
+
   it("round-trips a stored deadline back into the date input", () => {
     const parsed = parseRegistrationDeadline("2026-10-01");
     if (!parsed.ok) return;

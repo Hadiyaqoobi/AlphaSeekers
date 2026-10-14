@@ -236,6 +236,14 @@ export async function joinClassWithNewAccount(input: JoinInput): Promise<JoinOut
       return { alreadyEnrolled: false, enrollmentId: enrollment.id };
     });
   } catch (error) {
+    // The account was made a moment ago for THIS join. If the join is refused
+    // (the last seat went to someone else), remove it again: the promise of this
+    // page is account and class together, never an account with no class.
+    if (created) {
+      await prisma.user.delete({ where: { id: userId } }).catch((cleanupError) => {
+        console.error("[class-join] could not remove the account of a refused join", userId, cleanupError);
+      });
+    }
     if (
       error instanceof Error &&
       (error.message === "CLASS_FULL" ||
