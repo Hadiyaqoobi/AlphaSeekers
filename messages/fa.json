@@ -598,7 +598,10 @@
       "classes": "صنف‌های فعال",
       "students": "دانش‌آموزان",
       "teachers": "استادان",
-      "today": "جلسات امروز"
+      "today": "جلسات امروز",
+      "myClasses": "My classes",
+      "myStudents": "My students",
+      "next7Days": "Sessions in the next 7 days"
     },
     "sections": {
       "myClasses": "صنف‌های من",
@@ -762,7 +765,12 @@
     "manualClass": "You set the dates for this class yourself.",
     "addSessions": "Add sessions",
     "problemOutsideAvailability": "Not booked: the class time is outside the hours you set. Add these hours, or ask the team to change the class time.",
-    "problemUnparseable": "Not booked: the class time is unclear. Ask the team to set the class day and time."
+    "problemUnparseable": "Not booked: the class time is unclear. Ask the team to set the class day and time.",
+    "teacherHoursTitle": "{name}'s available hours (Kabul time). Tap one to use it:",
+    "teacherHoursNone": "{name} has not saved available hours, so sessions are booked at exactly this time.",
+    "teacherHoursUse": "Use this time",
+    "teacherHoursFits": "This time fits the teacher's hours, so sessions will be booked.",
+    "teacherHoursOutside": "This time is outside {name}'s available hours, so no session will be booked. Tap one of the hours above, or ask the teacher to add this time."
   },
   "sessionActions": {
     "cancel": "لغو جلسه",

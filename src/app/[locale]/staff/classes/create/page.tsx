@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { getTranslations } from "next-intl/server";
 
+import { loadAvailabilityByTeacher } from "@/lib/platform/db-store";
 import { ClassCreateForm } from "@/components/staff/staff-class-form";
 import { listUsersByRole } from "@/lib/platform/store";
 import { getSessionUser } from "@/lib/security/session";
@@ -23,7 +24,11 @@ export default async function StaffCreateClassPage({ params }: CreateClassPagePr
     }
 
     const t = await getTranslations({ locale: params.locale, namespace: "staff" });
-    const teachers = await listUsersByRole("TEACHER");
+    const teacherRows = await listUsersByRole("TEACHER");
+    // Each teacher's saved hours, so the form can show them and warn before a
+    // time is chosen that would book nothing.
+    const hours = await loadAvailabilityByTeacher(teacherRows.map((teacher) => teacher.id));
+    const teachers = teacherRows.map((teacher) => ({ ...teacher, availability: hours[teacher.id] ?? [] }));
 
     return (
         <section className="mx-auto max-w-xl space-y-4 sm:space-y-5">

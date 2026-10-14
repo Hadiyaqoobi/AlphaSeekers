@@ -9,6 +9,12 @@ import { useLocale, useTranslations } from "next-intl";
 import { JoinQuestionsEditor, toPayload, type DraftQuestion } from "@/components/classes/join-questions-editor";
 import { useAutosaveForm } from "@/components/forms/use-autosave-form";
 import { formatDateTime } from "@/lib/format-date";
+import {
+    classSpanMinutes,
+    slotFitsAvailability,
+    slotFromDayAndTime,
+    type AvailabilityWindow,
+} from "@/lib/scheduling/weekly-slot";
 
 /**
  * THE "post a class" form, used on both /staff/classes/create and /admin/classes.
@@ -25,7 +31,22 @@ type Teacher = {
     id: string;
     name: string;
     email: string;
+    /** Saved weekly hours, Kabul minutes. Empty = none saved (the posted time is used). */
+    availability?: AvailabilityWindow[];
 };
+
+/** 1170 → "7:30 PM" (Kabul wall clock). */
+function minuteLabel(minute: number): string {
+    const hour24 = Math.floor(minute / 60) % 24;
+    const mins = String(minute % 60).padStart(2, "0");
+    const hour12 = hour24 % 12 === 0 ? 12 : hour24 % 12;
+    return `${hour12}:${mins} ${hour24 < 12 ? "AM" : "PM"}`;
+}
+
+/** 1170 → "19:30", the value a time input takes. */
+function minuteToInput(minute: number): string {
+    return `${String(Math.floor(minute / 60) % 24).padStart(2, "0")}:${String(minute % 60).padStart(2, "0")}`;
+}
 
 type ClassCreateFormProps = {
     teachers: Teacher[];
@@ -133,6 +154,16 @@ export function ClassCreateForm({ teachers, autosaveKey = "class-create" }: Clas
     useAutosaveForm(autosaveKey, form, (payload) => {
         setForm((current) => ({ ...current, ...(payload as Partial<FormState>) }));
     });
+
+    // The teacher being assigned (existing teachers only: an invited one has no
+    // saved hours yet, so the posted time is used) and whether the time fits.
+    const selectedTeacher =
+        form.teacherMode === "existing" ? teachers.find((teacher) => teacher.id === form.teacherId) ?? null : null;
+    const teacherHours = selectedTeacher?.availability ?? [];
+    const chosenSlot = slotFromDayAndTime(form.day, form.time);
+    const timeFits =
+        chosenSlot !== null &&
+        slotFitsAvailability(chosenSlot, classSpanMinutes(Number(form.durationMinutes) || 60), teacherHours);
 
     function update<K extends keyof FormState>(key: K, value: FormState[K]) {
         setForm((current) => ({ ...current, [key]: value }));
@@ -445,6 +476,45 @@ export function ClassCreateForm({ teachers, autosaveKey = "class-create" }: Clas
                     </div>
                 </div>
                 <p className="text-xs text-ink-faint">{t("whenHint")}</p>
+
+                {/* The chosen teacher's hours, right where the time is picked. Staff
+                    used to find out only after posting ("no session booked"). */}
+                {selectedTeacher && !form.manualDates ? (
+                    <div className="space-y-2 rounded-lg border border-line-soft p-3" id="class-teacher-hours">
+                        {teacherHours.length === 0 ? (
+                            <p className="text-xs text-ink-soft">{t("teacherHoursNone", { name: selectedTeacher.name })}</p>
+                        ) : (
+                            <>
+                                <p className="text-xs font-semibold text-ink-soft">
+                                    {t("teacherHoursTitle", { name: selectedTeacher.name })}
+                                </p>
+                                <div className="flex flex-wrap gap-2">
+                                    {teacherHours.map((window) => (
+                                        <button
+                                            className="rounded-full border border-line px-3 py-1 text-xs text-ink-main hover:border-neon-400"
+                                            key={`${window.dayOfWeek}-${window.startMinute}`}
+                                            onClick={() => {
+                                                update("day", DAY_VALUES[window.dayOfWeek]);
+                                                update("time", minuteToInput(window.startMinute));
+                                            }}
+                                            title={t("teacherHoursUse")}
+                                            type="button"
+                                        >
+                                            {ts(DAY_KEYS[window.dayOfWeek])} {minuteLabel(window.startMinute)}–{minuteLabel(window.endMinute)}
+                                        </button>
+                                    ))}
+                                </div>
+                                {timeFits ? (
+                                    <p className="text-xs font-semibold text-neon-400">✓ {t("teacherHoursFits")}</p>
+                                ) : (
+                                    <p className="rounded-md border border-amber-300 bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-900">
+                                        {t("teacherHoursOutside", { name: selectedTeacher.name })}
+                                    </p>
+                                )}
+                            </>
+                        )}
+                    </div>
+                ) : null}
 
                 <label className="flex items-start gap-2 text-sm text-ink-main" htmlFor="class-manual-dates">
                     <input

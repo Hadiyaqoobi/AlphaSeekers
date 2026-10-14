@@ -12,6 +12,7 @@ import { OfflineSchedule } from "@/components/dashboard/offline-schedule";
 import {
   getDashboardStats,
   getJoinNowSession,
+  getTeacherDashboardStats,
   groupPendingEnrollmentsByClass,
   listStudentClasses,
   listTeacherClasses,
@@ -82,9 +83,11 @@ export default async function DashboardPage({ params, searchParams }: DashboardP
     todaySessionsRaw,
     ticketCounts,
     pendingByClass,
+    teacherStats,
   ] =
     await Promise.all([
-      getDashboardStats(),
+      // Platform totals are not shown to teachers (they get their own below).
+      isTeacher ? Promise.resolve(null) : getDashboardStats(),
       listUserNotifications(user.id),
       isStudent ? getJoinNowSession(user.id) : Promise.resolve(null),
       isStudent ? listStudentClasses(user.id) : Promise.resolve([]),
@@ -98,6 +101,7 @@ export default async function DashboardPage({ params, searchParams }: DashboardP
       // discover someone is waiting is to open every class in turn, which is
       // how five requests sat unseen on the day they arrived.
       isAdmin && canClasses ? groupPendingEnrollmentsByClass() : Promise.resolve([]),
+      isTeacher ? getTeacherDashboardStats(user.id) : Promise.resolve(null),
     ]);
 
   const pendingTotal = pendingByClass.reduce((sum, row) => sum + row.count, 0);
@@ -110,12 +114,23 @@ export default async function DashboardPage({ params, searchParams }: DashboardP
   const greeting = locale === "fa" ? getGreetingDari() : getGreeting();
   const dateStr = formatKabulLongDate(new Date(), locale);
 
-  const statCards = [
-    { value: stats.activeClasses, label: t("cards.classes"), iconBg: "rgba(0, 230, 118, 0.10)", iconColor: "#00E676", icon: "M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" },
-    { value: stats.students, label: t("cards.students"), iconBg: "rgba(0, 229, 255, 0.10)", iconColor: "#00E5FF", icon: "M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" },
-    { value: stats.teachers, label: t("cards.teachers"), iconBg: "rgba(41, 121, 255, 0.10)", iconColor: "#2979FF", icon: "M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" },
-    { value: stats.sessionsToday, label: t("cards.today"), iconBg: "rgba(255, 179, 0, 0.10)", iconColor: "#FFB300", icon: "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" },
-  ];
+  // A teacher sees their own classes, students and sessions; everyone else sees
+  // the platform's totals.
+  const todayCount = teacherStats?.sessionsToday ?? stats?.sessionsToday ?? 0;
+  const statCards = teacherStats || !stats
+    ? [
+        { value: teacherStats?.activeClasses ?? 0, label: t("cards.myClasses"), iconBg: "rgba(0, 230, 118, 0.10)", iconColor: "#00E676", icon: "M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" },
+        { value: teacherStats?.students ?? 0, label: t("cards.myStudents"), iconBg: "rgba(0, 229, 255, 0.10)", iconColor: "#00E5FF", icon: "M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" },
+        { value: teacherStats?.sessionsThisWeek ?? 0, label: t("cards.next7Days"), iconBg: "rgba(41, 121, 255, 0.10)", iconColor: "#2979FF", icon: "M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" },
+        { value: todayCount, label: t("cards.today"), iconBg: "rgba(255, 179, 0, 0.10)", iconColor: "#FFB300", icon: "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" },
+      ]
+    : [
+        { value: stats.activeClasses, label: t("cards.classes"), iconBg: "rgba(0, 230, 118, 0.10)", iconColor: "#00E676", icon: "M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" },
+        { value: stats.students, label: t("cards.students"), iconBg: "rgba(0, 229, 255, 0.10)", iconColor: "#00E5FF", icon: "M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" },
+        { value: stats.teachers, label: t("cards.teachers"), iconBg: "rgba(41, 121, 255, 0.10)", iconColor: "#2979FF", icon: "M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" },
+        { value: stats.sessionsToday, label: t("cards.today"), iconBg: "rgba(255, 179, 0, 0.10)", iconColor: "#FFB300", icon: "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" },
+      ];
+
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-8">
@@ -128,8 +143,8 @@ export default async function DashboardPage({ params, searchParams }: DashboardP
           <div>
             <h1 className="text-2xl font-bold" style={{ color: "#E8EEF2" }}>{greeting}, {firstName}</h1>
             <p className="mt-1 text-sm" style={{ color: "#8AA4B8" }}>
-              {stats.sessionsToday > 0
-                ? `${stats.sessionsToday} ${t("cards.today").toLowerCase()} — ${dateStr}`
+              {todayCount > 0
+                ? `${todayCount} ${t("cards.today").toLowerCase()} — ${dateStr}`
                 : dateStr}
             </p>
           </div>
