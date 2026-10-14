@@ -84,9 +84,24 @@ function mockMeetLink(note: string): MeetGenerationResult {
  * calendar and made THEM the Meet host. With the variable unset, an unlinked
  * teacher's session gets a PENDING link that staff can fill in by hand.
  */
-async function getPlatformCalendarLink(): Promise<GoogleAccountLink | null> {
+/**
+ * The shared AlphaSeekers Google account that creates Meet links for teachers
+ * who have not connected their own. GOOGLE_CALENDAR_OWNER_EMAIL may name either
+ * the GOOGLE account (the calendar's owner, e.g. alphaseekers2026@gmail.com) or
+ * the AlphaSeekers login that connected it.
+ *
+ * Only the login was matched before. Production sets the Google address, which
+ * is connected under an admin's login with a different email, so the lookup
+ * found nothing and every such session's Meet link stayed PENDING.
+ */
+export async function getPlatformCalendarLink(): Promise<GoogleAccountLink | null> {
   const email = process.env.GOOGLE_CALENDAR_OWNER_EMAIL?.trim().toLowerCase();
   if (!email) return null;
+  const byGoogleAccount = await prisma.googleAccountLink.findFirst({
+    where: { googleEmail: { equals: email, mode: "insensitive" }, NOT: { refreshToken: "" } },
+    orderBy: { updatedAt: "desc" },
+  });
+  if (byGoogleAccount?.refreshToken) return byGoogleAccount;
   const owner = await prisma.user.findUnique({ where: { email } });
   if (!owner) return null;
   const link = await prisma.googleAccountLink.findUnique({ where: { userId: owner.id } });
