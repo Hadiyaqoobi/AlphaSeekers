@@ -1,8 +1,9 @@
 /**
  * GET /api/classes/[id]/answer-pack
  *
- * Download a JSON pack of the top Q&A for this class.
- * Student must be enrolled to download.
+ * Download this class's offline study pack: the class's own indexed material
+ * plus the requesting student's OWN past Q&A for it (no other students'
+ * questions — see pack-generator.ts). Student must be actively enrolled.
  */
 
 import { prisma } from "@/lib/prisma";
@@ -20,7 +21,8 @@ export async function GET(_request: Request, { params }: { params: { id: string 
   // Staff with class-content management (classes.edit) can download any pack;
   // everyone else must be an active enrollee. A scoped employee (role=ADMIN
   // without classes.edit) no longer bypasses the enrollment check.
-  if (!can(access, "classes.edit")) {
+  const isStaff = can(access, "classes.edit");
+  if (!isStaff) {
     const enrollment = await prisma.enrollment.findUnique({
       where: { studentId_classId: { studentId: user.id, classId: params.id } },
     });
@@ -30,7 +32,8 @@ export async function GET(_request: Request, { params }: { params: { id: string 
   }
 
   try {
-    const pack = await generateAnswerPack(params.id);
+    const pack = await generateAnswerPack(params.id, isStaff ? null : user.id);
+    if (!pack) return Response.json({ message: "Class not found" }, { status: 404 });
     const safeFilename = pack.className.replace(/[^a-zA-Z0-9]+/g, "_");
 
     return new Response(JSON.stringify(pack, null, 2), {
@@ -40,9 +43,7 @@ export async function GET(_request: Request, { params }: { params: { id: string 
       },
     });
   } catch (error) {
-    return Response.json(
-      { message: (error as Error).message || "Failed to generate pack" },
-      { status: 500 },
-    );
+    console.error("[Answer pack] failed:", error);
+    return Response.json({ message: "Failed to generate pack" }, { status: 500 });
   }
 }

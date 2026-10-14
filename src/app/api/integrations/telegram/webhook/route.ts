@@ -8,6 +8,7 @@ import { prisma } from "@/lib/prisma";
 import { runtime } from "@/lib/runtime";
 import { aiConfig } from "@/lib/ai/config";
 import { ragQuery } from "@/lib/ai/rag-pipeline";
+import { checkRateLimitDistributed } from "@/lib/security/rate-limit";
 
 /** Constant-time string compare over fixed-length digests. */
 function timingSafeEqualStrings(a: string, b: string): boolean {
@@ -119,6 +120,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
+  // A deactivated account keeps its linked chat id; it must not keep the tutor.
+  if (user.deactivatedAt) {
+    await sendTelegramReply(chatId, "This account is no longer active. Please contact AlphaSeekers.");
+    return NextResponse.json({ ok: true });
+  }
+
   if (!user.approvedAt && user.role !== "ADMIN") {
     await sendTelegramReply(
       chatId,
@@ -139,15 +146,30 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
+  // Same per-user budget (and key) as the web study assistant.
+  const rl = await checkRateLimitDistributed(`ai-ask:${user.id}`, aiConfig.rateLimits.ask);
+  if (!rl.allowed) {
+    await sendTelegramReply(chatId, "You've asked a lot of questions recently. Please wait a few minutes.");
+    return NextResponse.json({ ok: true });
+  }
+
+  // ACK FIRST. Telegram re-delivers an update when the webhook is slow to
+  // answer, and a RAG answer can take tens of seconds — the student got the
+  // same answer several times and the quota paid for each. The answer is sent
+  // from a detached task: this runs on Render's long-lived Node server, so the
+  // promise keeps running after the 200 goes back.
+  // Same 1,000-character cap as the web /api/ai/ask route.
+  void answerInBackground(chatId, text.slice(0, 1000), user.id, user.language === "FA" ? "fa" : "en");
+
+  return NextResponse.json({ ok: true });
+}
+
+async function answerInBackground(chatId: string, text: string, userId: string, locale: "fa" | "en") {
   // Send "thinking" indicator for long queries
   await sendChatAction(chatId, "typing");
 
   try {
-    const result = await ragQuery({
-      query: text,
-      locale: user.language === "FA" ? "fa" : "en",
-      userId: user.id,
-    });
+    const result = await ragQuery({ query: text, locale, userId });
 
     let response = result.answer;
 
@@ -169,8 +191,6 @@ export async function POST(request: NextRequest) {
       "I couldn't process your question right now. Please try again or use the website.",
     );
   }
-
-  return NextResponse.json({ ok: true });
 }
 
 async function sendTelegramReply(chatId: string, text: string) {
@@ -181,6 +201,7 @@ async function sendTelegramReply(chatId: string, text: string) {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ chat_id: chatId, text, disable_web_page_preview: true }),
+    signal: AbortSignal.timeout(15_000),
   }).catch(() => {});
 }
 
@@ -192,5 +213,6 @@ async function sendChatAction(chatId: string, action: "typing") {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ chat_id: chatId, action }),
+    signal: AbortSignal.timeout(15_000),
   }).catch(() => {});
 }

@@ -7,15 +7,55 @@
  *
  * Then: chunk → embed → store in DocumentChunk with sourceType = 'RECORDING'.
  * Future RAG queries can search class recordings the same way they search materials.
+ *
+ * Re-uploading a recording REPLACES that session's chunks (shared
+ * ingestDocument → replaceChunksForSource). The old insert-only path left the
+ * tail chunks of a longer earlier transcript behind as stale search results.
  */
 
 import { aiConfig } from "../config";
-import { chunkDocument } from "../chunker";
-import { generateEmbeddings } from "../embeddings";
-import { insertChunks } from "../vector-store";
+import { ingestDocument } from "../ingest";
 
 const WHISPER_URL = "https://api.groq.com/openai/v1/audio/transcriptions";
 const WHISPER_MODEL = "whisper-large-v3";
+
+/** Groq's free tier rejects audio files over 25 MB. */
+export const MAX_AUDIO_BYTES = 25 * 1024 * 1024;
+
+const AUDIO_EXTENSIONS: Record<string, string> = {
+  "audio/mpeg": "mp3",
+  "audio/mp3": "mp3",
+  "audio/mp4": "m4a",
+  "audio/x-m4a": "m4a",
+  "audio/m4a": "m4a",
+  "audio/aac": "m4a",
+  "audio/wav": "wav",
+  "audio/x-wav": "wav",
+  "audio/wave": "wav",
+  "audio/webm": "webm",
+  "video/webm": "webm",
+  "audio/ogg": "ogg",
+  "audio/opus": "ogg",
+  "audio/flac": "flac",
+  "audio/x-flac": "flac",
+  "video/mp4": "mp4",
+  "video/mpeg": "mpeg",
+};
+const KNOWN_EXTENSIONS = new Set(["flac", "mp3", "mp4", "mpeg", "mpga", "m4a", "ogg", "opus", "wav", "webm"]);
+
+/**
+ * Whisper picks the decoder from the FILE NAME's extension, so "recording.audio"
+ * was rejected for every upload. Use the original name's extension when it is a
+ * known audio type, else derive one from the MIME type (mp3 as a last resort).
+ */
+export function whisperFilename(mimeType?: string | null, originalName?: string | null): string {
+  const fromName = (originalName ?? "").split(".").pop()?.toLowerCase() ?? "";
+  if (originalName && originalName.includes(".") && KNOWN_EXTENSIONS.has(fromName)) {
+    return `recording.${fromName}`;
+  }
+  const mime = (mimeType ?? "").split(";")[0].trim().toLowerCase();
+  return `recording.${AUDIO_EXTENSIONS[mime] ?? "mp3"}`;
+}
 
 export interface IngestRecordingParams {
   sessionId: string;
@@ -26,6 +66,8 @@ export interface IngestRecordingParams {
   transcript?: string;
   audioFile?: Blob;
   audioMimeType?: string;
+  /** Original upload name — its extension tells Whisper the format. */
+  audioFileName?: string;
   language?: "en" | "fa";
 }
 
@@ -37,13 +79,17 @@ export interface IngestResult {
 export async function transcribeWithGroq(
   audio: Blob,
   language: "en" | "fa" = "en",
+  fileName?: string,
 ): Promise<string> {
   if (!aiConfig.groq.configured) {
     throw new Error("GROQ_API_KEY required for audio transcription");
   }
+  if (audio.size > MAX_AUDIO_BYTES) {
+    throw new Error("Audio file is larger than the 25 MB transcription limit");
+  }
 
   const formData = new FormData();
-  formData.append("file", audio, "recording.audio");
+  formData.append("file", audio, whisperFilename(audio.type, fileName));
   formData.append("model", WHISPER_MODEL);
   formData.append("language", language);
   formData.append("response_format", "json");
@@ -52,6 +98,7 @@ export async function transcribeWithGroq(
     method: "POST",
     headers: { Authorization: `Bearer ${aiConfig.groq.apiKey}` },
     body: formData,
+    signal: AbortSignal.timeout(5 * 60 * 1000), // long audio takes a while
   });
 
   if (!response.ok) {
@@ -72,7 +119,7 @@ export async function ingestRecording(params: IngestRecordingParams): Promise<In
 
   // Transcribe if audio was provided
   if (!transcript && params.audioFile) {
-    transcript = await transcribeWithGroq(params.audioFile, params.language || "en");
+    transcript = await transcribeWithGroq(params.audioFile, params.language || "en", params.audioFileName);
   }
 
   if (!transcript || transcript.trim().length < 50) {
@@ -83,35 +130,14 @@ export async function ingestRecording(params: IngestRecordingParams): Promise<In
   const sourceTitle = `Class Recording: ${params.className} — ${dateStr}`;
   const sourceId = `recording_${params.sessionId}`;
 
-  // Chunk the transcript
-  const chunks = chunkDocument({
+  const result = await ingestDocument({
     content: transcript,
     sourceType: "RECORDING",
     sourceId,
     sourceTitle,
-  });
-
-  if (chunks.length === 0) {
-    return { chunksCreated: 0, transcriptLength: transcript.length };
-  }
-
-  // Generate embeddings
-  const embeddings = await generateEmbeddings(chunks.map((c) => c.content));
-
-  // Insert into vector store with classId
-  const chunkRecords = chunks.map((chunk, i) => ({
-    id: `${sourceId}_chunk_${chunk.chunkIndex}`,
-    sourceType: chunk.sourceType,
-    sourceId: chunk.sourceId,
-    sourceTitle: chunk.sourceTitle,
-    content: chunk.content,
-    chunkIndex: chunk.chunkIndex,
-    tokenCount: chunk.tokenCount,
-    embedding: embeddings[i],
     classId: params.classId,
-  }));
-
-  const inserted = await insertChunks(chunkRecords);
+  });
+  const inserted = result.chunksCreated;
 
   return {
     chunksCreated: inserted,

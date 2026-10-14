@@ -1337,7 +1337,10 @@
     "modeQuiz": "حالت امتحان",
     "modeExplain": "حالت توضیح",
     "modeVocab": "حالت لغت",
-    "modePrepare": "حالت آمادگی"
+    "modePrepare": "حالت آمادگی",
+    "errorBusy": "You're asking great questions! Give me a moment to catch up — try again in a few seconds.",
+    "errorUnavailable": "The study assistant isn't available right now. Please try again later or ask your teacher.",
+    "errorFailed": "I couldn't get an answer right now. Please try again."
   },
   "checkin": {
     "title": "کد حضور",

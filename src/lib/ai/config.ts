@@ -56,12 +56,23 @@ export const aiConfig = (() => {
     },
     embeddings: {
       apiToken: hfApiToken,
-      model: process.env.HF_EMBEDDING_MODEL ?? "sentence-transformers/all-MiniLM-L6-v2",
+      // Multilingual (50+ languages incl. Persian) so Dari questions and Dari
+      // material land near each other. all-MiniLM-L6-v2 (the old default) is
+      // English-only. MUST stay 384-dim: the DocumentChunk.embedding column and
+      // its HNSW index are vector(384). Changing the model invalidates every
+      // stored vector — re-embed (POST /api/ai/ingest {"action":"reembed"}).
+      model: process.env.HF_EMBEDDING_MODEL ?? "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
       dimension: 384,
       configured: hfApiToken.length > 0,
     },
     rag: {
-      chunkSize: intEnv("RAG_CHUNK_SIZE", 1500),
+      // The embedding model reads only its first 128 word-pieces (~400-550
+      // characters) of a chunk and ignores the rest. 600-char chunks with a
+      // 200-char overlap advance ~400 characters per chunk, so every part of a
+      // document falls inside SOME chunk's embedded window. (1,500-char chunks
+      // left ~2/3 of every chunk invisible to search.) The whole chunk still
+      // goes to the LLM as context.
+      chunkSize: intEnv("RAG_CHUNK_SIZE", 600),
       chunkOverlap: intEnv("RAG_CHUNK_OVERLAP", 200),
       topK: intEnv("RAG_TOP_K", 5),
       similarityThreshold: floatEnv("RAG_SIMILARITY_THRESHOLD", 0.3),
@@ -71,6 +82,21 @@ export const aiConfig = (() => {
      */
     limits: {
       maxOutputTokens: intEnv("AI_MAX_OUTPUT_TOKENS", 1024),
+      /**
+       * The self-paced lesson is a 7-section JSON document; 1,024 tokens cut it
+       * off mid-object, which failed JSON.parse AND burned the quota.
+       */
+      lessonMaxOutputTokens: intEnv("AI_LESSON_MAX_OUTPUT_TOKENS", 2500),
+      /** Characters of a material's text we index (each ~400 chars = 1 embedding call). */
+      ingestMaxChars: intEnv("AI_INGEST_MAX_CHARS", 100_000),
+    },
+    /**
+     * LLM-as-judge grading of study-assistant answers. Every graded answer is a
+     * second model call against the same free-tier per-minute token budget the
+     * students use, so grade only a sample. 0 turns it off, 1 grades everything.
+     */
+    evaluation: {
+      sampleRate: Math.min(1, Math.max(0, floatEnv("AI_EVAL_SAMPLE_RATE", 0.05))),
     },
     /**
      * Network timeouts (ms). A single hung generation otherwise pins the CPU
@@ -113,6 +139,21 @@ export const aiConfig = (() => {
         windowMs: intEnv("AI_RL_HOMEWORK_WINDOW_MS", 10 * 60 * 1000),
       },
       ingest: { limit: intEnv("AI_RL_INGEST_LIMIT", 30), windowMs: intEnv("AI_RL_INGEST_WINDOW_MS", 60 * 1000) },
+      /** Lesson "Your turn" answer checks. */
+      checkAnswer: {
+        limit: intEnv("AI_RL_CHECK_ANSWER_LIMIT", 20),
+        windowMs: intEnv("AI_RL_CHECK_ANSWER_WINDOW_MS", 10 * 60 * 1000),
+      },
+      /** AI review of a typed homework submission (per student). */
+      homeworkText: {
+        limit: intEnv("AI_RL_HOMEWORK_TEXT_LIMIT", 6),
+        windowMs: intEnv("AI_RL_HOMEWORK_TEXT_WINDOW_MS", 60 * 60 * 1000),
+      },
+      /** Teacher-side generation: session summary, quiz, curriculum-gap material. */
+      teacherGenerate: {
+        limit: intEnv("AI_RL_TEACHER_GENERATE_LIMIT", 10),
+        windowMs: intEnv("AI_RL_TEACHER_GENERATE_WINDOW_MS", 60 * 60 * 1000),
+      },
     },
     /**
      * Cache TTL (ms). Cached answers expire after this so a stale answer never
@@ -121,8 +162,20 @@ export const aiConfig = (() => {
     cache: {
       ttlMs: intEnv("AI_CACHE_TTL_MS", 7 * 24 * 60 * 60 * 1000),
     },
+    /**
+     * Text generation works: at least one LLM provider has a key. Enough for
+     * features that never search course material (summary, quiz, lessons,
+     * homework feedback, lesson chat).
+     */
+    get llmEnabled() {
+      return this.groq.configured || this.gemma.configured;
+    },
+    /**
+     * Retrieval features (study assistant, quick AI, ingestion) additionally
+     * need the embedding provider.
+     */
     get enabled() {
-      return this.groq.configured && this.embeddings.configured;
+      return this.llmEnabled && this.embeddings.configured;
     },
   };
 })();
@@ -130,8 +183,12 @@ export const aiConfig = (() => {
 export function assertAiConfigured(): void {
   if (!aiConfig.enabled) {
     throw new Error(
-      "AI features require GROQ_API_KEY and HF_API_TOKEN. " +
+      "AI features require an LLM key (GROQ_API_KEY or GEMMA_API_KEY) and HF_API_TOKEN. " +
       "See .env.example for configuration.",
     );
   }
 }
+
+/** User-facing 503 body when a feature's AI provider keys are not set. */
+export const AI_NOT_CONFIGURED_MESSAGE =
+  "The AI assistant is not set up on this site yet. Please ask your teacher or try again later.";

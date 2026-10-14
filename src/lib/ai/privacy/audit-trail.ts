@@ -19,6 +19,8 @@ export type AuditAction =
   | "ai.review_response"
   | "ai.clear_cache"
   | "ai.view_logs"
+  | "ai.summary_draft" // details = the AI draft text (teacher must publish it)
+  | "ai.summary_publish"
   | "admin.view_student_data"
   | "admin.export_data"
   | "settings.change";

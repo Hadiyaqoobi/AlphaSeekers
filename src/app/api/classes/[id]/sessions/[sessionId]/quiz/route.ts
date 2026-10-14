@@ -1,15 +1,16 @@
 /**
  * POST /api/classes/[id]/sessions/[sessionId]/quiz
  *
- * Generate a 5-question quiz from the session's summary.
- * Teacher (or admin) only. Requires summary to exist.
+ * Generate a 5-question quiz from the session's PUBLISHED (teacher-approved)
+ * summary. Teacher (or admin) only. Requires summary to exist.
  *
  * GET returns the existing quiz (any session participant).
  */
 
 import { prisma } from "@/lib/prisma";
 import { generatePostClassQuiz } from "@/lib/ai/session/quiz-generator";
-import { aiConfig } from "@/lib/ai/config";
+import { AI_NOT_CONFIGURED_MESSAGE, aiConfig } from "@/lib/ai/config";
+import { checkRateLimitDistributed } from "@/lib/security/rate-limit";
 import { getSessionUser, unauthorized, forbidden } from "@/lib/security/session";
 import { checkSessionAccess } from "@/lib/session-access";
 
@@ -53,8 +54,9 @@ export async function POST(
     return forbidden("Only teachers and admins can generate quizzes");
   }
 
-  if (!aiConfig.enabled) {
-    return Response.json({ message: "AI features not configured" }, { status: 503 });
+  // Built from the summary text only — an LLM key is enough.
+  if (!aiConfig.llmEnabled) {
+    return Response.json({ message: AI_NOT_CONFIGURED_MESSAGE }, { status: 503 });
   }
 
   const summary = await prisma.sessionSummary.findUnique({
@@ -62,8 +64,18 @@ export async function POST(
   });
   if (!summary) {
     return Response.json(
-      { message: "Generate a session summary first before creating a quiz" },
+      { message: "Generate and publish a session summary first before creating a quiz" },
       { status: 409 },
+    );
+  }
+
+  // Same teacher-side generation budget as the summary.
+  const rl = await checkRateLimitDistributed(`ai-teacher-gen:${user.id}`, aiConfig.rateLimits.teacherGenerate);
+  if (!rl.allowed) {
+    const retryAfter = Math.ceil(rl.retryAfterMs / 1000);
+    return Response.json(
+      { message: "Too many AI generations. Please wait before trying again.", retryAfter },
+      { status: 429, headers: { "Retry-After": String(retryAfter) } },
     );
   }
 
@@ -77,9 +89,6 @@ export async function POST(
     return Response.json({ ok: true, quiz });
   } catch (err) {
     console.error("[Quiz] Generation failed:", err);
-    return Response.json(
-      { message: (err as Error).message || "Failed to generate quiz" },
-      { status: 500 },
-    );
+    return Response.json({ message: "Failed to generate quiz" }, { status: 500 });
   }
 }
