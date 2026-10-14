@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 
+import { scheduleAgendaRefresh } from "@/lib/platform/agenda";
 import { invalidatePublicCache, type PublicScope } from "@/lib/platform/public-cache";
 
 declare global {
@@ -20,7 +21,8 @@ declare global {
  *
  * We also allow DATABASE_CONNECTION_LIMIT to append ?connection_limit=<n> to the
  * URL when the caller hasn't already set it. For PgBouncer/pooled connections a
- * small per-instance limit (e.g. 5) is recommended.
+ * small per-instance limit (e.g. 5) is recommended. It is a cap per CLIENT, and
+ * there is exactly one client per process (see the bottom of this file).
  */
 function buildDatabaseUrl(): string | undefined {
   const base = process.env.DATABASE_URL;
@@ -51,7 +53,7 @@ const databaseUrl = buildDatabaseUrl();
  *
  * `User` is deliberately absent even though a teacher's name appears on the
  * landing page: users are written constantly (every sign-up), and a renamed
- * teacher is picked up by the hourly refresh anyway.
+ * teacher is picked up by the daily refresh anyway.
  */
 const PUBLIC_SCOPES_BY_MODEL: Record<string, PublicScope[]> = {
   SiteSettings: ["settings"],
@@ -62,6 +64,32 @@ const PUBLIC_SCOPES_BY_MODEL: Record<string, PublicScope[]> = {
   LibraryResource: ["library"],
   StudentPost: ["stories"],
 };
+
+/**
+ * Models the cron tick's in-memory agenda is built from (see
+ * `src/lib/platform/agenda.ts`). A write to one schedules a debounced agenda
+ * refresh, so the tick knows about a new session or a newly queued job without
+ * having to wake the database to ask. The database is awake at that moment
+ * because of the write itself.
+ */
+const AGENDA_MODELS = new Set(["Session", "Job"]);
+
+/**
+ * Story fields that change on every like (and, when flushed, every view) but
+ * that do not justify throwing away every cached Student Voices page. An update
+ * that touches only these is not treated as a content change; the counts on
+ * public pages catch up at the next daily refresh or the next real edit.
+ */
+const COUNTER_ONLY_FIELDS = new Set(["viewCount", "likeCount"]);
+
+function isCounterOnlyUpdate(model: string | undefined, operation: string, args: unknown): boolean {
+  if (model !== "StudentPost") return false;
+  if (operation !== "update" && operation !== "updateMany") return false;
+  const data = (args as { data?: unknown } | undefined)?.data;
+  if (!data || typeof data !== "object") return false;
+  const keys = Object.keys(data);
+  return keys.length > 0 && keys.every((key) => COUNTER_ONLY_FIELDS.has(key));
+}
 
 const WRITE_OPERATIONS = new Set([
   "create",
@@ -82,7 +110,10 @@ const WRITE_OPERATIONS = new Set([
  * later. Reads pass straight through.
  *
  * Not covered: rows removed by a database-level cascade, and raw SQL. Both are
- * picked up by the hourly refresh.
+ * picked up by the daily refresh.
+ *
+ * The same hook keeps the cron tick's agenda current (writes to `Session` and
+ * `Job`); see AGENDA_MODELS.
  */
 function withPublicCacheInvalidation(client: PrismaClient): PrismaClient {
   const extended = client.$extends({
@@ -90,18 +121,23 @@ function withPublicCacheInvalidation(client: PrismaClient): PrismaClient {
     query: {
       $allModels: {
         async $allOperations({ model, operation, args, query }) {
-          const scopes = WRITE_OPERATIONS.has(operation)
-            ? PUBLIC_SCOPES_BY_MODEL[model]
-            : undefined;
+          if (!WRITE_OPERATIONS.has(operation)) return query(args);
 
-          if (!scopes) return query(args);
+          const scopes = isCounterOnlyUpdate(model, operation, args)
+            ? undefined
+            : PUBLIC_SCOPES_BY_MODEL[model];
+          const touchesAgenda = AGENDA_MODELS.has(model);
+
+          if (!scopes && !touchesAgenda) return query(args);
 
           try {
             return await query(args);
           } finally {
             // Also on failure: a statement that threw may still have changed
             // rows inside a transaction that goes on to commit.
-            for (const scope of scopes) invalidatePublicCache(scope);
+            for (const scope of scopes ?? []) invalidatePublicCache(scope);
+            // Debounced and never throws; it reads only after the writes settle.
+            if (touchesAgenda) scheduleAgendaRefresh();
           }
         },
       },
@@ -131,6 +167,10 @@ export const prisma =
     }),
   );
 
-if (process.env.NODE_ENV !== "production") {
-  global.prisma = prisma;
-}
+// ALWAYS kept on globalThis, production included. Next bundles pages and route
+// handlers separately; a module-level client would be created once per bundle
+// that imports this file, each with its own connection pool (and its own copy
+// of the hooks above). One client per process keeps `connection_limit` an
+// actual per-process cap. It used to be stored only outside production, which
+// is the usual hot-reload idiom but is wrong for this reason.
+global.prisma = prisma;

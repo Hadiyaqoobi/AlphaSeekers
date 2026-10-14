@@ -15,15 +15,21 @@
  *   - Every write to a model a public page shows invalidates the matching scope,
  *     automatically, from one Prisma extension (`src/lib/prisma.ts`). No call
  *     site has to remember to do it.
- *   - The hourly cron pulse re-runs every cached loader while the database is
- *     already awake for the queue (`refreshPublicCache`), so entries are replaced
- *     before they expire and time-based changes show up within the hour.
+ *   - A few seconds after an invalidation the scope's entries are re-loaded
+ *     (`scheduleScopeReload`). The database is awake at that moment because of
+ *     the write, so the reload is free; waiting for the next visitor instead
+ *     could mean waking it again later.
+ *   - The daily cron tick re-runs every cached loader (`refreshPublicCache`).
+ *     There is no longer an hourly pulse to do this (ADR-0008), which is why the
+ *     TTL is 26 hours: longer than a day, so a refreshed entry never expires
+ *     between two daily ticks and a stranger never has to wake the database.
  *   - The TTL is only a safety net for changes this process cannot see: a row
  *     edited by hand in the Neon console, or a write handled by another instance.
+ *     Those can take up to a day to appear; a redeploy clears the cache at once.
  *
  * KNOWN LIMIT: the cache is per process. The app runs as a single web instance
  * today. With more than one, a write invalidates only the instance that handled
- * it and the others stay stale until their next hourly refresh. Move this to a
+ * it and the others stay stale until their next daily refresh. Move this to a
  * shared store before scaling out.
  */
 
@@ -57,10 +63,12 @@ type CacheState = {
   /** Per scope: entries loaded before this instant are not trusted. */
   staleBefore: Map<PublicScope, number>;
   inflight: Map<string, Promise<unknown>>;
+  /** Per scope: the pending post-write reload, so a burst of writes runs one. */
+  reloadTimers: Map<PublicScope, ReturnType<typeof setTimeout>>;
 };
 
-/** Longer than the hourly refresh, so a refreshed entry never expires in between. */
-const DEFAULT_TTL_MS = 2 * 60 * 60 * 1000;
+/** Longer than a day, so an entry renewed by the daily tick never expires in between. */
+const DEFAULT_TTL_MS = 26 * 60 * 60 * 1000;
 
 /**
  * A write invalidates its scope until slightly AFTER it happened, not just up to
@@ -68,6 +76,15 @@ const DEFAULT_TTL_MS = 2 * 60 * 60 * 1000;
  * write and the commit would otherwise cache the pre-commit rows as fresh.
  */
 const SETTLE_MS = 3_000;
+
+/**
+ * How long after a write its scope is re-loaded. Must be past SETTLE_MS, or the
+ * reloaded value would itself be stamped inside the untrusted window and thrown
+ * away; and past Prisma's default interactive-transaction timeout (5s), so a
+ * write made inside a transaction has committed (or rolled back) by the time the
+ * reload reads. Short enough that the database is still awake from the write.
+ */
+const RELOAD_AFTER_WRITE_MS = 6_000;
 
 /** Story pages are keyed by slug; cap the map so it cannot grow without bound. */
 const MAX_ENTRIES = 200;
@@ -86,8 +103,11 @@ function state(): CacheState {
       entries: new Map(),
       staleBefore: new Map(),
       inflight: new Map(),
+      reloadTimers: new Map(),
     };
   }
+  // A state object left by an older build (dev hot reload) predates this field.
+  globalThis.alphaseekersPublicCache.reloadTimers ??= new Map();
   return globalThis.alphaseekersPublicCache;
 }
 
@@ -190,15 +210,66 @@ export async function readThroughPublicCache<T>(
   }
 }
 
-/** Mark everything in `scope` stale. Called by the Prisma extension on a write. */
+/**
+ * Mark everything in `scope` stale. Called by the Prisma extension on a write.
+ * Also schedules a reload of the scope's entries, see `scheduleScopeReload`.
+ */
 export function invalidatePublicCache(scope: PublicScope): void {
   state().staleBefore.set(scope, Date.now() + SETTLE_MS);
+  scheduleScopeReload(scope);
 }
 
 /**
- * Re-run every cached loader. Called from the hourly cron pulse while the
- * database is awake anyway, so that entries are renewed on our schedule and a
- * stranger's request never has to wake the database to renew one.
+ * Re-load every entry in `scope` shortly after a write, while the write has the
+ * database awake. Without this, the first stranger to open the page after the
+ * database went back to sleep would wake it again just to rebuild the entry.
+ *
+ * Debounced per scope (a burst of writes, such as an import, runs one reload,
+ * timed from the last write). Runs only once the settle window has passed, so
+ * the values it stores are trusted. Never throws, and the timer does not keep
+ * the process alive.
+ */
+function scheduleScopeReload(scope: PublicScope): void {
+  if (ttlMs() === 0) return;
+  const { reloadTimers } = state();
+  const existing = reloadTimers.get(scope);
+  if (existing) clearTimeout(existing);
+
+  const timer = setTimeout(() => {
+    state().reloadTimers.delete(scope);
+    // A later write may have pushed the settle window past this timer.
+    const staleBefore = state().staleBefore.get(scope) ?? 0;
+    if (Date.now() < staleBefore) {
+      scheduleScopeReload(scope);
+      return;
+    }
+    void reloadScope(scope).catch(() => undefined);
+  }, RELOAD_AFTER_WRITE_MS);
+  timer.unref?.();
+  reloadTimers.set(scope, timer);
+}
+
+async function reloadScope(scope: PublicScope): Promise<void> {
+  for (const [cacheKey, entry] of Array.from(state().entries)) {
+    if (entry.scope !== scope) continue;
+    try {
+      await loadAndStore(
+        cacheKey,
+        entry.scope,
+        entry.load,
+        entry.shouldCache as ((value: unknown) => boolean) | undefined,
+      );
+    } catch {
+      // Keep the old value; the next reader or the daily refresh tries again.
+    }
+  }
+}
+
+/**
+ * Re-run every cached loader. Called from the daily cron tick (and the manual
+ * worker route) while the database is awake anyway, so that entries are renewed
+ * on our schedule and a stranger's request never has to wake the database to
+ * renew one.
  *
  * Fail-soft per entry: one failing loader keeps its old value and does not stop
  * the rest.
@@ -226,5 +297,9 @@ export async function refreshPublicCache(): Promise<{ refreshed: number; failed:
 
 /** Test seam: drop everything, including invalidation marks. */
 export function resetPublicCacheForTests(): void {
+  const current = globalThis.alphaseekersPublicCache;
+  if (current) {
+    for (const timer of Array.from(current.reloadTimers.values())) clearTimeout(timer);
+  }
   globalThis.alphaseekersPublicCache = undefined;
 }

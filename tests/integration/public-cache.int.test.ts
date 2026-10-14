@@ -15,11 +15,19 @@ import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vites
 import { prisma } from "@/lib/prisma";
 import { refreshPublicCache, resetPublicCacheForTests } from "@/lib/platform/public-cache";
 import {
+  getPublicJoinClass,
   getPublicLandingHighlights,
+  getPublicOpportunities,
   getPublicSiteSettings,
   getPublicStory,
 } from "@/lib/platform/public-data";
 import { updateSiteSettings } from "@/lib/platform/site-settings";
+import {
+  flushStoryViews,
+  pendingStoryViewCount,
+  recordStoryView,
+  resetStoryViewsForTests,
+} from "@/lib/platform/story-views";
 
 const shouldRun = process.env.RUN_DB_TESTS === "1";
 const d = shouldRun ? describe : describe.skip;
@@ -42,6 +50,7 @@ async function cleanup() {
   const ids = users.map((u) => u.id);
   if (ids.length) {
     await prisma.studentPost.deleteMany({ where: { authorId: { in: ids } } });
+    await prisma.enrollment.deleteMany({ where: { studentId: { in: ids } } });
     await prisma.class.deleteMany({ where: { teacherId: { in: ids } } });
     await prisma.user.deleteMany({ where: { id: { in: ids } } });
   }
@@ -61,6 +70,7 @@ d("public-page cache + Prisma (real Postgres)", () => {
     delete process.env.PUBLIC_CACHE_TTL_SECONDS;
     await cleanup();
     resetPublicCacheForTests();
+    resetStoryViewsForTests();
   });
 
   afterEach(() => {
@@ -168,5 +178,119 @@ d("public-page cache + Prisma (real Postgres)", () => {
     await prisma.studentPost.update({ where: { id: post.id }, data: { status: "archived" } });
 
     expect(await getPublicStory(slug)).toBeNull();
+  });
+
+  async function makePost(slug: string, status: "published" | "draft") {
+    const author = await makeUser(`author-${slug}`, "STUDENT");
+    return prisma.studentPost.create({
+      data: {
+        authorId: author.id,
+        type: "article",
+        title: `${TAG} ${slug}`,
+        slug,
+        content: "hello",
+        status,
+        publishedAt: status === "published" ? new Date() : null,
+      },
+      select: { id: true },
+    });
+  }
+
+  // A like (or a flushed view) is not a content change. If it invalidated the
+  // whole "stories" scope, every like would make the next stranger wake Neon.
+  it("keeps cached stories through a like-count update, but not through an edit", async () => {
+    const slug = `${TAG}-liked`;
+    const post = await makePost(slug, "published");
+    settle();
+    expect((await getPublicStory(slug))?.post.title).toBe(`${TAG} ${slug}`);
+
+    // Changed behind the cache's back, to see whether the next read reloads.
+    await prisma.$executeRaw`UPDATE "StudentPost" SET "title" = 'renamed' WHERE "id" = ${post.id}`;
+    await prisma.studentPost.update({ where: { id: post.id }, data: { likeCount: { increment: 1 } } });
+
+    expect((await getPublicStory(slug))?.post.title).toBe(`${TAG} ${slug}`);
+
+    await prisma.studentPost.update({ where: { id: post.id }, data: { excerpt: "edited" } });
+    expect((await getPublicStory(slug))?.post.title).toBe("renamed");
+  });
+
+  it("caches a missing story, and shows it as soon as it is published", async () => {
+    const slug = `${TAG}-later`;
+    const post = await makePost(slug, "draft");
+    settle();
+
+    expect(await getPublicStory(slug)).toBeNull();
+
+    // Published behind the cache's back: the cached miss is still served,
+    // which is what proves the miss was cached at all.
+    await prisma.$executeRaw`UPDATE "StudentPost" SET "status" = 'published', "publishedAt" = now() WHERE "id" = ${post.id}`;
+    expect(await getPublicStory(slug)).toBeNull();
+
+    // Published through the app: a StudentPost write, so the scope is invalidated.
+    await prisma.studentPost.update({ where: { id: post.id }, data: { status: "published" } });
+    expect((await getPublicStory(slug))?.post.title).toBe(`${TAG} ${slug}`);
+  });
+
+  it("buffers story views in memory and writes them in one go, without evicting the page", async () => {
+    const slug = `${TAG}-viewed`;
+    const post = await makePost(slug, "published");
+    settle();
+    await getPublicStory(slug);
+
+    recordStoryView(slug);
+    recordStoryView(slug);
+    recordStoryView(slug);
+    recordStoryView(`${TAG}-no-such-story`);
+    expect(pendingStoryViewCount()).toBe(4);
+
+    const before = await prisma.studentPost.findUniqueOrThrow({ where: { id: post.id } });
+    expect(before.viewCount).toBe(0);
+
+    await prisma.$executeRaw`UPDATE "StudentPost" SET "title" = 'renamed' WHERE "id" = ${post.id}`;
+    expect(await flushStoryViews()).toEqual({ written: 4, failed: 0 });
+    expect(pendingStoryViewCount()).toBe(0);
+
+    const after = await prisma.studentPost.findUniqueOrThrow({ where: { id: post.id } });
+    expect(after.viewCount).toBe(3);
+    // The flush did not invalidate the cached page.
+    expect((await getPublicStory(slug))?.post.title).toBe(`${TAG} ${slug}`);
+  });
+
+  it("serves the join page from memory and keeps seatsLeft right when someone joins", async () => {
+    const teacher = await makeUser("join-teacher", "TEACHER");
+    const student = await makeUser("join-student", "STUDENT");
+    const klass = await prisma.class.create({
+      data: {
+        name: `${TAG} joinable`,
+        subjectCategory: "English",
+        description: "fixture",
+        teacherId: teacher.id,
+        maxStudents: 5,
+        status: "ACTIVE",
+        published: true,
+      },
+      select: { id: true },
+    });
+    settle();
+
+    expect(await getPublicJoinClass(klass.id)).toMatchObject({ name: `${TAG} joinable`, seatsLeft: 5 });
+
+    await prisma.$executeRaw`UPDATE "Class" SET "name" = 'renamed' WHERE "id" = ${klass.id}`;
+    expect((await getPublicJoinClass(klass.id))?.name).toBe(`${TAG} joinable`);
+
+    await prisma.enrollment.create({
+      data: { classId: klass.id, studentId: student.id, status: "ACTIVE" },
+    });
+    expect(await getPublicJoinClass(klass.id)).toMatchObject({ name: "renamed", seatsLeft: 4 });
+  });
+
+  it("answers an impossible class id without a cache entry, and a missing one with a cached null", async () => {
+    expect(await getPublicJoinClass("../../etc/passwd")).toBeNull();
+    expect(await getPublicJoinClass(`${TAG}missingclass`)).toBeNull();
+  });
+
+  it("treats an unknown opportunity filter as no filter instead of failing", async () => {
+    const all = await getPublicOpportunities(undefined);
+    expect(await getPublicOpportunities("NOT_A_TYPE")).toEqual(all);
   });
 });

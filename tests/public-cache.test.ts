@@ -17,6 +17,8 @@ import {
 } from "@/lib/platform/public-cache";
 
 const HOUR = 60 * 60 * 1000;
+/** The default TTL: longer than a day, because the cache is renewed by the DAILY tick. */
+const TTL = 26 * HOUR;
 
 describe("public-page cache", () => {
   beforeEach(() => {
@@ -95,7 +97,9 @@ describe("public-page cache", () => {
     const load = vi.fn(async () => "v");
     await readThroughPublicCache("webinars", "all", load);
 
-    vi.advanceTimersByTime(HOUR);
+    // A full day later it is still served from memory: there is no hourly
+    // refresh any more, and the daily one must find it alive.
+    vi.advanceTimersByTime(25 * HOUR);
     await readThroughPublicCache("webinars", "all", load);
     expect(load).toHaveBeenCalledTimes(1);
 
@@ -165,20 +169,80 @@ describe("public-page cache", () => {
     await expect(read()).rejects.toThrow("down");
   });
 
-  it("refresh re-runs every cached loader so entries never age out between pulses", async () => {
+  it("refresh re-runs every cached loader so entries never age out between daily ticks", async () => {
     let value = "old";
     const load = vi.fn(async () => value);
     await readThroughPublicCache("landing", "k", load);
 
     value = "new";
-    vi.advanceTimersByTime(HOUR);
+    vi.advanceTimersByTime(24 * HOUR);
     expect(await refreshPublicCache()).toEqual({ refreshed: 1, failed: 0 });
 
-    // 1h after the refresh is 2h after the first load: past the TTL of the
-    // original entry, but the refreshed one is still good.
-    vi.advanceTimersByTime(HOUR + 1);
+    // The next daily tick is 24h after this refresh and 48h after the first
+    // load: past the TTL of the original entry, but the refreshed one is good.
+    vi.advanceTimersByTime(24 * HOUR);
+    expect(TTL).toBeGreaterThan(24 * HOUR);
     expect(await readThroughPublicCache("landing", "k", load)).toBe("new");
     expect(load).toHaveBeenCalledTimes(2);
+  });
+
+  // The database is awake because of the write; rebuilding the entry then is
+  // free, while leaving it to the next visitor could mean waking it again.
+  it("re-loads an invalidated scope by itself a few seconds after the write", async () => {
+    let value = "before";
+    const load = vi.fn(async () => value);
+    await readThroughPublicCache("landing", "k", load);
+
+    value = "after";
+    invalidatePublicCache("landing");
+    expect(load).toHaveBeenCalledTimes(1);
+
+    await vi.advanceTimersByTimeAsync(6_000);
+    expect(load).toHaveBeenCalledTimes(2);
+
+    // The visitor who comes next is served from memory, with the new value.
+    expect(await readThroughPublicCache("landing", "k", load)).toBe("after");
+    expect(load).toHaveBeenCalledTimes(2);
+  });
+
+  it("runs one reload for a burst of writes, after the last one has settled", async () => {
+    const landing = vi.fn(async () => "landing");
+    const library = vi.fn(async () => "library");
+    await readThroughPublicCache("landing", "k", landing);
+    await readThroughPublicCache("library", "all", library);
+
+    invalidatePublicCache("landing");
+    await vi.advanceTimersByTimeAsync(4_000);
+    invalidatePublicCache("landing");
+    await vi.advanceTimersByTimeAsync(5_000);
+    expect(landing).toHaveBeenCalledTimes(1);
+
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(landing).toHaveBeenCalledTimes(2);
+    // Other scopes are not touched.
+    expect(library).toHaveBeenCalledTimes(1);
+  });
+
+  it("a failing post-write reload keeps the old value and does not throw", async () => {
+    const load = vi
+      .fn<() => Promise<string>>()
+      .mockResolvedValueOnce("kept")
+      .mockRejectedValue(new Error("down"));
+    await readThroughPublicCache("webinars", "all", load);
+
+    invalidatePublicCache("webinars");
+    await vi.advanceTimersByTimeAsync(6_000);
+
+    expect(load).toHaveBeenCalledTimes(2);
+    expect(await readThroughPublicCache("webinars", "all", load)).toBe("kept");
+  });
+
+  it("caches a null result (a missing story or class) unless told not to", async () => {
+    const load = vi.fn(async () => null);
+
+    expect(await readThroughPublicCache("stories", "post:nope", load)).toBeNull();
+    expect(await readThroughPublicCache("stories", "post:nope", load)).toBeNull();
+    expect(load).toHaveBeenCalledTimes(1);
   });
 
   it("refresh keeps the old value for a loader that fails, and carries on", async () => {
