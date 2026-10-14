@@ -4,17 +4,21 @@ import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
 import { ArchiveClassButton } from "@/components/admin/archive-class-button";
-import { AdminClassForm } from "@/components/forms/admin-class-form";
+import { ClassCreateForm } from "@/components/staff/staff-class-form";
 import { RunRemindersButton } from "@/components/forms/run-reminders-button";
 import { RunSchedulerButton } from "@/components/forms/run-scheduler-button";
 import { getAdminClassStats, listAdminClasses, listUsersByRole } from "@/lib/platform/store";
-import { getAccessControl, can } from "@/lib/security/permissions";
+import { getAccessControl, can, isSuper } from "@/lib/security/permissions";
 
 type AdminClassesPageProps = {
   params: { locale: string };
+  searchParams?: { page?: string; status?: string };
 };
 
-export default async function AdminClassesPage({ params }: AdminClassesPageProps) {
+const STATUS_FILTERS = ["all", "active", "archived"] as const;
+type StatusFilter = (typeof STATUS_FILTERS)[number];
+
+export default async function AdminClassesPage({ params, searchParams }: AdminClassesPageProps) {
   const access = await getAccessControl();
 
   if (!access) {
@@ -26,9 +30,31 @@ export default async function AdminClassesPage({ params }: AdminClassesPageProps
   }
 
   const t = await getTranslations({ locale: params.locale, namespace: "admin" });
+  const tl = await getTranslations({ locale: params.locale, namespace: "classLifecycle" });
   const teachers = await listUsersByRole("TEACHER");
-  const classes = await listAdminClasses({ page: 1, limit: 10 });
+  // Paged, with an Active/Archived filter: this used to show only the 10 newest
+  // classes with no way to reach the rest (or to find an archived one).
+  const statusFilter: StatusFilter = STATUS_FILTERS.includes(searchParams?.status as StatusFilter)
+    ? (searchParams?.status as StatusFilter)
+    : "all";
+  const requestedPage = Math.max(1, Number.parseInt(searchParams?.page ?? "1", 10) || 1);
+  const classes = await listAdminClasses({
+    page: requestedPage,
+    limit: 20,
+    ...(statusFilter === "active" ? { status: "ACTIVE" as const } : {}),
+    ...(statusFilter === "archived" ? { status: "ARCHIVED" as const } : {}),
+  });
   const classStats = await getAdminClassStats();
+  const listHref = (page: number, status: StatusFilter) =>
+    `/${params.locale}/admin/classes?${new URLSearchParams({
+      ...(status !== "all" ? { status } : {}),
+      ...(page > 1 ? { page: String(page) } : {}),
+    }).toString()}`;
+  const filterLabel: Record<StatusFilter, string> = {
+    all: tl("filterAll"),
+    active: tl("filterActive"),
+    archived: tl("filterArchived"),
+  };
 
   const totalClasses = classStats.total;
   const activeClasses = classStats.active;
@@ -97,15 +123,34 @@ export default async function AdminClassesPage({ params }: AdminClassesPageProps
 
       {/* Action Cards */}
       <div className="mb-8 grid gap-5 lg:grid-cols-3">
-        <AdminClassForm teachers={teachers} />
-        <RunSchedulerButton />
-        <RunRemindersButton />
+        <ClassCreateForm autosaveKey="admin-class-create" teachers={teachers} />
+        {/* Manual cron runs require a live super admin; anyone else got a 401. */}
+        {isSuper(access) ? (
+          <>
+            <RunSchedulerButton />
+            <RunRemindersButton />
+          </>
+        ) : null}
       </div>
 
       {/* Classes Table */}
       <section className="rounded-2xl border border-white/5 bg-dark-100">
-        <div className="border-b border-white/5 px-6 py-5">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/5 px-6 py-5">
           <h2 className="text-lg font-bold text-ink-main">{t("recentClasses")}</h2>
+          <nav className="flex gap-2">
+            {STATUS_FILTERS.map((status) => (
+              <Link
+                aria-current={status === statusFilter ? "page" : undefined}
+                className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                  status === statusFilter ? "bg-neon-500 text-black" : "bg-white/5 text-ink-soft hover:bg-white/10"
+                }`}
+                href={listHref(1, status)}
+                key={status}
+              >
+                {filterLabel[status]}
+              </Link>
+            ))}
+          </nav>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[700px] text-left text-sm">
@@ -183,6 +228,27 @@ export default async function AdminClassesPage({ params }: AdminClassesPageProps
             </div>
           )}
         </div>
+        {classes.pagination.totalPages > 1 ? (
+          <div className="flex items-center justify-between gap-3 border-t border-white/5 px-6 py-4 text-sm">
+            {classes.pagination.page > 1 ? (
+              <Link className="btn-secondary" href={listHref(classes.pagination.page - 1, statusFilter)}>
+                {tl("prevPage")}
+              </Link>
+            ) : (
+              <span />
+            )}
+            <span className="text-ink-soft">
+              {tl("pageOf", { page: classes.pagination.page, total: classes.pagination.totalPages })}
+            </span>
+            {classes.pagination.page < classes.pagination.totalPages ? (
+              <Link className="btn-secondary" href={listHref(classes.pagination.page + 1, statusFilter)}>
+                {tl("nextPage")}
+              </Link>
+            ) : (
+              <span />
+            )}
+          </div>
+        ) : null}
       </section>
     </section>
   );

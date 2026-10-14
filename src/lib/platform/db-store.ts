@@ -2,12 +2,13 @@ import type { UserRole } from "@prisma/client";
 import { ClassStatus, EnrollmentStatus, MeetLinkStatus, NotificationChannel, NotificationStatus, SchedulerJobStatus } from "@prisma/client";
 
 import { DEMO_USERS } from "@/lib/constants";
-import { generateMeetLink } from "@/lib/integrations/meet";
+import { cancelMeetEvent, generateMeetLink, type MeetGenerationResult } from "@/lib/integrations/meet";
 import { deliverWithFallback, type NotificationDelivery, type NotificationTarget } from "@/lib/integrations/notifications";
 import { classCatalog } from "@/lib/mock-data";
 import { notifyTeacherOfNewClass } from "@/lib/platform/class-notify";
 import { prisma } from "@/lib/prisma";
 import { runtime, warnIfInsecureProductionConfig } from "@/lib/runtime";
+import { classSpanMinutes, planAutoSlot, type SlotProblem } from "@/lib/scheduling/weekly-slot";
 
 type Role = UserRole;
 
@@ -282,7 +283,7 @@ function utcDateToMinute(date: Date) {
   return date.getUTCHours() * 60 + date.getUTCMinutes();
 }
 
-function formatDateTimeForUser(date: Date, timezone: string | null | undefined, language: "FA" | "EN") {
+export function formatDateTimeForUser(date: Date, timezone: string | null | undefined, language: "FA" | "EN") {
   const locale = language === "FA" ? "fa-AF" : "en-US";
   const timeZone = timezone && timezone.trim().length > 0 ? timezone : "Asia/Kabul";
 
@@ -330,7 +331,9 @@ function buildSessionReminderContent(input: {
     return `${base}\nبعد از ${SEGMENT_BREAK_MINUTES} دقیقه استراحت، بخش بعدی در ${nextWhen} شروع می‌شود.\nلینک بعدی: ${nextLink}`;
   }
 
-  const base = `Reminder: ${input.className} starts in 1 hour.\nTeacher: ${input.teacherName}\nTime: ${when}\nJoin: ${joinText}`;
+  // States the actual start time: the hourly pulse delivers this 25-95 minutes
+  // ahead (see REMINDER_WINDOW_MINUTES), so "in 1 hour" was often wrong.
+  const base = `Reminder: ${input.className} starts at ${when}.\nTeacher: ${input.teacherName}\nJoin: ${joinText}`;
   if (!input.continuation) {
     return base;
   }
@@ -359,7 +362,7 @@ function buildTeacherSessionReminderContent(input: {
     return `${base}\nبعد از ${SEGMENT_BREAK_MINUTES} دقیقه استراحت، بخش بعدی در ${nextWhen} شروع می‌شود.\nلینک بعدی: ${nextLink}`;
   }
 
-  const base = `Teacher reminder: Your class "${input.className}" starts in 1 hour.\nTime: ${when}\nJoin: ${joinText}`;
+  const base = `Teacher reminder: Your class "${input.className}" starts at ${when}.\nJoin: ${joinText}`;
   if (!input.continuation) return base;
   const nextWhen = formatDateTimeForUser(input.continuation.startTime, input.timezone, input.language);
   const nextLink = input.continuation.meetLink ?? "Meet link pending";
@@ -1332,7 +1335,7 @@ export async function getAdminClassStats() {
   return { total, active, archived };
 }
 
-export async function listAdminClasses(params: ClassListParams = {}) {
+export async function listAdminClasses(params: ClassListParams & { status?: ClassStatus } = {}) {
   await ensureSeededData();
 
   const page = Math.max(1, params.page ?? 1);
@@ -1340,6 +1343,8 @@ export async function listAdminClasses(params: ClassListParams = {}) {
   const search = normalizeSearch(params.search);
 
   const where = {
+    // Optional Active/Archived filter for the admin class list.
+    ...(params.status ? { status: params.status } : {}),
     ...(search
       ? {
         OR: [
@@ -1434,6 +1439,9 @@ export async function createClass(input: CreateClassInput) {
       className: klass.name,
       teacherId: klass.teacherId,
       schedulePreference: input.schedulePreference ?? null,
+      // MANUAL classes get "set your session dates" instead of "sessions are
+      // created automatically", which is false for them.
+      schedulingMode: input.schedulingMode ?? "AUTO",
     });
   } catch (error) {
     console.error("[classes] failed to notify teacher of new class", klass.id, error);
@@ -1513,6 +1521,7 @@ export async function createClassWithSession(input: CreateClassInput) {
         updatedAt: klass.updatedAt.toISOString(),
       },
       sessions: [],
+      scheduleIssue: null,
       registrationFormUrl: (klass as Record<string, unknown>).registrationFormUrl ?? null,
       whatsappGroupUrl: (klass as Record<string, unknown>).whatsappGroupUrl ?? null,
       registrationDeadline:
@@ -1520,70 +1529,21 @@ export async function createClassWithSession(input: CreateClassInput) {
     };
   }
 
-  // 2. Calculate session start time from schedule preference
-  const fallback = parseScheduleTime(input.schedulePreference ?? "5:00 PM");
-  const fallbackDay = parseScheduleDay(input.schedulePreference ?? "Sat");
-
-  // Check teacher availability first, fall back to schedule preference
-  const availability = await prisma.teacherAvailability.findFirst({
-    where: { teacherId: input.teacherId },
-    orderBy: [{ dayOfWeek: "asc" }, { startTimeUTC: "asc" }],
-  });
-
-  let startDate: Date;
-
-  if (availability) {
-    const hour = availability.startTimeUTC.getUTCHours();
-    const minute = availability.startTimeUTC.getUTCMinutes();
-    startDate = nextWeekdayDate(availability.dayOfWeek, hour, minute);
-  } else {
-    startDate = nextWeekdayDate(fallbackDay, fallback.hour, fallback.minute);
-  }
-
-  // 3. Build session windows (handles multi-segment classes)
-  const durationMinutes = normalizeDurationMinutes(input.durationMinutes);
-  let windows = buildSegmentWindows(startDate, durationMinutes);
-  let shiftAttempts = 0;
-
-  while (await hasTeacherConflictForWindows(input.teacherId, windows)) {
-    if (shiftAttempts >= 8) break;
-    startDate = new Date(startDate.getTime() + 60 * 60 * 1000);
-    windows = buildSegmentWindows(startDate, durationMinutes);
-    shiftAttempts += 1;
-  }
-
-  // 4. Create sessions with Meet links
-  const createdSessions = [];
-
-  for (const window of windows) {
-    const meet = await generateMeetLink(klass.name, window.startTime.toISOString(), {
-      endIso: window.endTime.toISOString(),
-      teacherId: input.teacherId,
-    });
-
-    const session = await prisma.session.create({
-      data: {
-        classId: klass.id,
-        startTime: window.startTime,
-        endTime: window.endTime,
-        meetLink: meet.link,
-        meetLinkStatus:
-          meet.status === "FAILED"
-            ? MeetLinkStatus.FAILED
-            : meet.status === "PENDING"
-              ? MeetLinkStatus.PENDING
-              : MeetLinkStatus.GENERATED,
-        cancelled: false,
-      },
-    });
-
-    createdSessions.push({
-      ...session,
-      startTime: session.startTime.toISOString(),
-      endTime: session.endTime.toISOString(),
-      createdAt: session.createdAt.toISOString(),
-    });
-  }
+  // 2-4. Book the first session with exactly the rule the scheduler uses
+  // (src/lib/scheduling/weekly-slot.ts): the day and time chosen in the form, only
+  // if it lies inside the teacher's availability and overlaps nothing. This used
+  // to take the teacher's FIRST availability slot (ignoring the chosen time) or,
+  // with no availability, guess from the free text -- and then shift the class an
+  // hour at a time and book an overlap anyway. No fit = no session yet; the
+  // reason is returned so the success screen can say what to fix, and the
+  // scheduler (daily run, availability saves) books it as soon as it fits.
+  const booking = await bookNextAutoOccurrence(klass);
+  const createdSessions = booking.sessions.map((session) => ({
+    ...session,
+    startTime: session.startTime.toISOString(),
+    endTime: session.endTime.toISOString(),
+    createdAt: session.createdAt.toISOString(),
+  }));
 
   // 5. Notify the teacher about the new class assignment
   try {
@@ -1629,6 +1589,7 @@ export async function createClassWithSession(input: CreateClassInput) {
       updatedAt: klass.updatedAt.toISOString(),
     },
     sessions: createdSessions,
+    scheduleIssue: booking.status === "booked" ? null : booking.reason,
     registrationFormUrl: (klass as Record<string, unknown>).registrationFormUrl ?? null,
     whatsappGroupUrl: (klass as Record<string, unknown>).whatsappGroupUrl ?? null,
     registrationDeadline:
@@ -1658,6 +1619,13 @@ export async function updateClass(classId: string, input: UpdateClassInput) {
   });
 }
 
+/**
+ * Archive = the class STOPS. Previously this only flipped the status, so the
+ * already-booked sessions kept their reminders, their Meet links and their place
+ * in students' schedules. The status flip and the cancellation of every future
+ * session happen in one transaction; the backing Google Calendar events are then
+ * deleted best-effort (a Google failure must never undo the archive).
+ */
 export async function archiveClass(classId: string) {
   await ensureSeededData();
 
@@ -1667,11 +1635,58 @@ export async function archiveClass(classId: string) {
     return null;
   }
 
+  const now = new Date();
+  const { archived, cancelledSessions } = await prisma.$transaction(async (tx) => {
+    const future = await tx.session.findMany({
+      where: { classId, cancelled: false, startTime: { gte: now } },
+      select: { id: true, googleEventId: true, googleCalendarId: true },
+    });
+    if (future.length > 0) {
+      await tx.session.updateMany({
+        where: { id: { in: future.map((session) => session.id) } },
+        data: { cancelled: true },
+      });
+    }
+    const updated = await tx.class.update({
+      where: { id: classId },
+      data: { status: ClassStatus.ARCHIVED },
+    });
+    return { archived: updated, cancelledSessions: future };
+  });
+
+  for (const session of cancelledSessions) {
+    if (!session.googleEventId) continue;
+    try {
+      await cancelMeetEvent({
+        eventId: session.googleEventId,
+        calendarId: session.googleCalendarId ?? undefined,
+        teacherId: existing.teacherId,
+      });
+    } catch (error) {
+      console.error("[classes] archive: calendar event delete failed", session.id, error);
+    }
+  }
+
+  return archived;
+}
+
+/**
+ * Undo an archive: the class is visible and schedulable again. Sessions that the
+ * archive cancelled stay cancelled (their Meet links were deleted); an AUTO class
+ * is booked again by the scheduler from its next free weekly slot, and a
+ * MANUAL class's teacher adds new dates on the schedule page.
+ */
+export async function restoreClass(classId: string) {
+  await ensureSeededData();
+
+  const existing = await prisma.class.findUnique({ where: { id: classId }, select: { id: true } });
+  if (!existing) {
+    return null;
+  }
+
   return prisma.class.update({
     where: { id: classId },
-    data: {
-      status: ClassStatus.ARCHIVED,
-    },
+    data: { status: ClassStatus.ACTIVE },
   });
 }
 
@@ -2208,6 +2223,9 @@ async function buildStudentSchedule(
         classId: { in: classIds },
         cancelled: false,
         startTime: { gte: window.from, lte: window.to },
+        // An archived class has stopped: its sessions must not appear in a
+        // student's schedule or join-now prompt.
+        class: { status: ClassStatus.ACTIVE },
       },
       include: {
         class: {
@@ -2367,23 +2385,380 @@ export async function hasTeacherConflict(
   return Boolean(conflict);
 }
 
-async function hasTeacherConflictForWindows(
-  teacherId: string,
-  windows: Array<{ startTime: Date; endTime: Date }>,
-) {
-  for (const window of windows) {
-    if (await hasTeacherConflict(teacherId, window.startTime, window.endTime)) {
-      return true;
-    }
-  }
+// ─── Auto-scheduling (AUTO classes) ──────────────────────────────────────────
+//
+// One booking path shared by the scheduler, the post-availability
+// scheduling and class creation, so they cannot drift apart again. The rule
+// itself (posted day/time, inside availability, never an overlap) lives in
+// src/lib/scheduling/weekly-slot.ts.
 
-  return false;
+const DAY_MS = 24 * 60 * 60 * 1000;
+// A session within this distance of the target slot belongs to the same weekly
+// occurrence (half a week either side, so neighbouring weeks never collide).
+const OCCURRENCE_HALF_WINDOW_MS = 3.5 * DAY_MS;
+
+export type AutoScheduleSkipReason = SlotProblem | "already-handled" | "clash";
+
+type AutoBookingClass = {
+  id: string;
+  name: string;
+  teacherId: string;
+  durationMinutes: number | null;
+  schedulePreference: string | null;
+};
+
+type BookedSession = Awaited<ReturnType<typeof prisma.session.create>>;
+
+type AutoBookingOutcome =
+  | { status: "booked"; sessions: BookedSession[] }
+  | { status: "skipped"; reason: AutoScheduleSkipReason; sessions: BookedSession[] };
+
+function toMeetLinkStatus(status: MeetGenerationResult["status"]) {
+  return status === "FAILED"
+    ? MeetLinkStatus.FAILED
+    : status === "PENDING"
+      ? MeetLinkStatus.PENDING
+      : MeetLinkStatus.GENERATED;
 }
 
+/** A teacher's availability as Kabul minutes-after-midnight windows. */
+export async function loadAvailabilityWindows(teacherId: string) {
+  const rows = await prisma.teacherAvailability.findMany({
+    where: { teacherId },
+    select: { dayOfWeek: true, startTimeUTC: true, endTimeUTC: true },
+  });
+  return rows.map((row) => ({
+    dayOfWeek: row.dayOfWeek,
+    startMinute: utcDateToMinute(row.startTimeUTC),
+    endMinute: utcDateToMinute(row.endTimeUTC),
+  }));
+}
+
+/**
+ * Has this weekly occurrence already been dealt with? Any session -- cancelled or
+ * not -- near the target slot counts: a cancelled session must STAY cancelled
+ * (the old check ignored cancelled rows, so a teacher's cancellation was undone
+ * by the next scheduler run, at the very same time). A session the scheduler booked
+ * for this cycle and the teacher then MOVED further out also counts (the old
+ * 7-day window made a fresh one appear this week). "Moved" = created this cycle
+ * and confirmed later than it was created; a session ADDED by hand is confirmed
+ * at creation and does not stop the regular weekly class (if it sits exactly on
+ * the slot, the overlap check skips the booking instead).
+ */
+async function isOccurrenceHandled(
+  db: Pick<typeof prisma, "session">,
+  classId: string,
+  target: Date,
+  now: Date,
+) {
+  const addedByHand = (session: { createdAt: Date; confirmedAt: Date | null }) =>
+    session.confirmedAt !== null && Math.abs(session.confirmedAt.getTime() - session.createdAt.getTime()) <= 60_000;
+
+  const nearSlot = await db.session.findMany({
+    where: {
+      classId,
+      startTime: {
+        gte: new Date(target.getTime() - OCCURRENCE_HALF_WINDOW_MS),
+        lt: new Date(target.getTime() + OCCURRENCE_HALF_WINDOW_MS),
+      },
+    },
+    select: { createdAt: true, confirmedAt: true },
+  });
+  if (nearSlot.some((session) => !addedByHand(session))) return true;
+
+  const cycleStart = new Date(target.getTime() - 7 * DAY_MS - 60 * 60 * 1000);
+  const movedOut = await db.session.findMany({
+    where: { classId, cancelled: false, startTime: { gte: now }, createdAt: { gte: cycleStart } },
+    select: { createdAt: true, confirmedAt: true },
+  });
+  return movedOut.some((session) => session.confirmedAt !== null && !addedByHand(session));
+}
+
+/** Generate (or re-generate) the Meet link for freshly booked rows, storing the event ids. */
+async function attachMeetLinks(className: string, teacherId: string, rows: BookedSession[]) {
+  const updated: BookedSession[] = [];
+  for (const row of rows) {
+    const meet = await generateMeetLink(className, row.startTime.toISOString(), {
+      endIso: row.endTime.toISOString(),
+      teacherId,
+    });
+    updated.push(
+      await prisma.session.update({
+        where: { id: row.id },
+        data: {
+          meetLink: meet.link,
+          meetLinkStatus: toMeetLinkStatus(meet.status),
+          // Persisted on EVERY create path so cancel can delete the event (and its
+          // joinable link) and reschedule can patch it instead of minting a second.
+          googleEventId: meet.eventId,
+          googleCalendarId: meet.calendarId,
+        },
+      }),
+    );
+  }
+  return updated;
+}
+
+/**
+ * Book the next weekly occurrence of an AUTO class, or say why not.
+ *
+ * The "already handled?" check, the overlap check and the row inserts run in one
+ * transaction under a per-teacher advisory lock, so the scheduler, the
+ * post-availability scheduling and class creation can never book the same slot
+ * twice or overlap each other. The slow Meet-link calls run after commit.
+ */
+async function bookNextAutoOccurrence(klass: AutoBookingClass): Promise<AutoBookingOutcome> {
+  const now = new Date();
+  const durationMinutes = normalizeDurationMinutes(klass.durationMinutes);
+  const plan = planAutoSlot({
+    schedulePreference: klass.schedulePreference,
+    spanMinutes: classSpanMinutes(durationMinutes, FREE_MEET_SEGMENT_MINUTES, SEGMENT_BREAK_MINUTES),
+    availability: await loadAvailabilityWindows(klass.teacherId),
+  });
+
+  if (!plan.ok) {
+    console.log(`[scheduler] not booking class ${klass.id} (${klass.name}): ${plan.reason}`);
+    return { status: "skipped", reason: plan.reason, sessions: [] };
+  }
+
+  const target = nextWeekdayDate(plan.slot.dayOfWeek, plan.slot.hour, plan.slot.minute);
+  const windows = buildSegmentWindows(target, durationMinutes);
+
+  const result = await prisma.$transaction(async (tx): Promise<
+    { kind: "skipped"; reason: "already-handled" | "clash" } | { kind: "rows"; rows: BookedSession[] }
+  > => {
+    await tx.$executeRawUnsafe(
+      `SELECT pg_advisory_xact_lock(${SCHEDULER_ADVISORY_LOCK_KEY}, hashtext($1))`,
+      klass.teacherId,
+    );
+
+    if (await isOccurrenceHandled(tx, klass.id, target, now)) {
+      return { kind: "skipped", reason: "already-handled" };
+    }
+
+    for (const window of windows) {
+      const clash = await tx.session.findFirst({
+        where: {
+          cancelled: false,
+          startTime: { lt: window.endTime },
+          endTime: { gt: window.startTime },
+          class: { teacherId: klass.teacherId },
+        },
+        select: { id: true },
+      });
+      if (clash) {
+        return { kind: "skipped", reason: "clash" };
+      }
+    }
+
+    const rows: BookedSession[] = [];
+    for (const window of windows) {
+      rows.push(
+        await tx.session.create({
+          data: {
+            classId: klass.id,
+            startTime: window.startTime,
+            endTime: window.endTime,
+            meetLinkStatus: MeetLinkStatus.PENDING,
+            cancelled: false,
+          },
+        }),
+      );
+    }
+    return { kind: "rows", rows };
+  });
+
+  if (result.kind === "skipped") {
+    if (result.reason === "clash") {
+      console.log(`[scheduler] not booking class ${klass.id} (${klass.name}): overlaps another session of the teacher`);
+    }
+    return { status: "skipped", reason: result.reason, sessions: [] };
+  }
+
+  return { status: "booked", sessions: await attachMeetLinks(klass.name, klass.teacherId, result.rows) };
+}
+
+/** Full delivery target (every channel + the user's channel preferences). */
+const deliveryUserSelect = {
+  id: true,
+  email: true,
+  phone: true,
+  timezone: true,
+  language: true,
+  telegramChatId: true,
+  pushSubscription: true,
+  notificationPrefs: true,
+} as const;
+
+type DeliveryUser = {
+  id: string;
+  email: string | null;
+  phone: string | null;
+  timezone: string | null;
+  language: "FA" | "EN";
+  telegramChatId: string | null;
+  pushSubscription: string | null;
+  notificationPrefs: string | null;
+};
+
+function toDeliveryTarget(user: DeliveryUser): NotificationTarget {
+  return {
+    userId: user.id,
+    email: user.email,
+    phone: user.phone,
+    telegramChatId: user.telegramChatId,
+    pushSubscription: user.pushSubscription,
+    notificationPrefs: user.notificationPrefs,
+  };
+}
+
+/** The ACTIVE students of a class, with everything needed to reach them. */
+export async function listClassDeliveryTargets(classId: string): Promise<DeliveryUser[]> {
+  const enrollments = await prisma.enrollment.findMany({
+    where: { classId, status: EnrollmentStatus.ACTIVE },
+    select: { student: { select: deliveryUserSelect } },
+  });
+  return enrollments.map((enrollment) => enrollment.student);
+}
+
+/**
+ * Send a per-recipient message to each user (bounded concurrency, awaited) and
+ * record what happened as Notification rows, so the message is in their
+ * in-app inbox and the team can see whether it reached anyone. A dedupeKey makes
+ * a retried call a no-op for recipients already handled.
+ */
+export async function deliverAndRecord(
+  recipients: DeliveryUser[],
+  contentFor: (user: DeliveryUser) => string,
+  dedupeKeyFor?: (user: DeliveryUser) => string,
+) {
+  let sent = 0;
+  await mapWithConcurrency(recipients, DELIVERY_CONCURRENCY, async (user) => {
+    const content = contentFor(user);
+    const deliveries = await deliverWithFallback(toDeliveryTarget(user), content);
+    if (deliveries.some((delivery) => delivery.status === "SENT")) sent += 1;
+    if (deliveries.length > 0) {
+      await prisma.notification.createMany({
+        data: deliveries.map((delivery) => ({
+          userId: user.id,
+          ...(dedupeKeyFor ? { dedupeKey: dedupeKeyFor(user) } : {}),
+          channel: delivery.channel,
+          content,
+          status: delivery.status,
+          sentAt: new Date(),
+        })),
+        skipDuplicates: true,
+      });
+    }
+  });
+  return { recipients: recipients.length, sent };
+}
+
+/** Tell a class's students about newly booked session(s), in their own time zone. */
+async function notifyStudentsOfNewSessions(klass: { id: string; name: string }, sessions: BookedSession[]) {
+  if (sessions.length === 0) return;
+  const first = sessions[0];
+  const second = sessions[1] ?? null;
+  const students = await listClassDeliveryTargets(klass.id);
+
+  await deliverAndRecord(students, (student) => {
+    const when = formatDateTimeForUser(first.startTime, student.timezone, student.language);
+    if (!second) {
+      return `New session scheduled: ${klass.name} on ${when}. Join: ${first.meetLink ?? "Meet link pending"}`;
+    }
+    const nextWhen = formatDateTimeForUser(second.startTime, student.timezone, student.language);
+    return (
+      `New session scheduled: ${klass.name} on ${when}. Segment 1 link: ${first.meetLink ?? "Meet link pending"}. ` +
+      `After a ${SEGMENT_BREAK_MINUTES}-minute break, segment 2 starts at ${nextWhen}. ` +
+      `Next link: ${second.meetLink ?? "Meet link pending"}.`
+    );
+  });
+}
+
+/**
+ * Retry missing Meet links for sessions in the next 7 days. Without this a link
+ * that was PENDING (Google not reachable) or FAILED at booking time stayed
+ * missing forever -- production has mock links off. Runs inside the
+ * scheduler (runSchedulerBatch: the daily cron run and on-demand runs). Each write is conditional on the row still being in the state we
+ * read, so two overlapping runs cannot both attach a link; the loser deletes the
+ * calendar event it just created.
+ */
+async function retryMissingMeetLinks(now: Date, limit = 20, onlySessionIds?: string[]) {
+  const due = await prisma.session.findMany({
+    where: {
+      ...(onlySessionIds ? { id: { in: onlySessionIds } } : {}),
+      cancelled: false,
+      startTime: { gte: now, lte: new Date(now.getTime() + 7 * DAY_MS) },
+      class: { status: ClassStatus.ACTIVE },
+      OR: [{ meetLink: null }, { meetLinkStatus: { in: [MeetLinkStatus.PENDING, MeetLinkStatus.FAILED] } }],
+    },
+    select: {
+      id: true,
+      startTime: true,
+      endTime: true,
+      meetLink: true,
+      meetLinkStatus: true,
+      googleEventId: true,
+      googleCalendarId: true,
+      class: { select: { name: true, teacherId: true } },
+    },
+    orderBy: { startTime: "asc" },
+    take: limit,
+  });
+
+  let repaired = 0;
+  for (const session of due) {
+    const meet = await generateMeetLink(session.class.name, session.startTime.toISOString(), {
+      endIso: session.endTime.toISOString(),
+      teacherId: session.class.teacherId,
+    });
+    if (meet.status !== "GENERATED" || !meet.link) continue;
+
+    const { count } = await prisma.session.updateMany({
+      where: {
+        id: session.id,
+        cancelled: false,
+        meetLink: session.meetLink,
+        meetLinkStatus: session.meetLinkStatus,
+      },
+      data: {
+        meetLink: meet.link,
+        meetLinkStatus: MeetLinkStatus.GENERATED,
+        googleEventId: meet.eventId,
+        googleCalendarId: meet.calendarId,
+      },
+    });
+
+    // Lost the race (or staff set a link meanwhile): drop the event we just made.
+    // Won it: drop the half-made event from the failed attempt, if any.
+    const orphan =
+      count === 0
+        ? { eventId: meet.eventId, calendarId: meet.calendarId }
+        : session.googleEventId && session.googleEventId !== meet.eventId
+          ? { eventId: session.googleEventId, calendarId: session.googleCalendarId }
+          : null;
+    if (orphan?.eventId) {
+      await cancelMeetEvent({
+        eventId: orphan.eventId,
+        calendarId: orphan.calendarId ?? undefined,
+        teacherId: session.class.teacherId,
+      }).catch(() => undefined);
+    }
+    if (count > 0) repaired += 1;
+  }
+  return repaired;
+}
+
+/**
+ * Book the next session of each of a teacher's AUTO classes right after they
+ * save availability, instead of waiting for the next scheduler run. Same rule and lock as
+ * the scheduler (bookNextAutoOccurrence): with no availability rows nothing is
+ * booked -- the old code fell back to the free-text schedule here and booked a
+ * teacher who had just unticked every day.
+ */
 export async function scheduleTeacherClasses(teacherId: string) {
   await ensureSeededData();
 
-  const now = new Date();
   // Only AUTO classes are auto-scheduled. MANUAL classes have instructor-set
   // session times and must never receive auto-created sessions.
   const teacherClasses = await prisma.class.findMany({
@@ -2393,112 +2768,68 @@ export async function scheduleTeacherClasses(teacherId: string) {
   let sessionsCreated = 0;
 
   for (const klass of teacherClasses) {
-    const hasUpcoming = await prisma.session.findFirst({
-      where: {
-        classId: klass.id,
-        cancelled: false,
-        startTime: {
-          gte: now,
-          lte: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000),
-        },
-      },
-      select: { id: true },
-    });
-
-    if (hasUpcoming) continue;
-
-    const availability = await prisma.teacherAvailability.findFirst({
-      where: { teacherId },
-      orderBy: [{ dayOfWeek: "asc" }, { startTimeUTC: "asc" }],
-    });
-
-    let startDate: Date;
-
-    if (availability) {
-      const hour = availability.startTimeUTC.getUTCHours();
-      const minute = availability.startTimeUTC.getUTCMinutes();
-      startDate = nextWeekdayDate(availability.dayOfWeek, hour, minute);
-    } else {
-      const fallback = parseScheduleTime(klass.schedulePreference ?? "5:00 PM");
-      const fallbackDay = parseScheduleDay(klass.schedulePreference ?? "Sat");
-      startDate = nextWeekdayDate(fallbackDay, fallback.hour, fallback.minute);
-    }
-
-    const durationMinutes = normalizeDurationMinutes(klass.durationMinutes);
-    let windows = buildSegmentWindows(startDate, durationMinutes);
-    let shiftAttempts = 0;
-
-    while (await hasTeacherConflictForWindows(teacherId, windows)) {
-      if (shiftAttempts >= 8) break;
-      startDate = new Date(startDate.getTime() + 60 * 60 * 1000);
-      windows = buildSegmentWindows(startDate, durationMinutes);
-      shiftAttempts += 1;
-    }
-
-    const createdSessions = [];
-
-    for (const window of windows) {
-      const meet = await generateMeetLink(klass.name, window.startTime.toISOString(), {
-        endIso: window.endTime.toISOString(),
-        teacherId,
-      });
-
-      const createdSession = await prisma.session.create({
-        data: {
-          classId: klass.id,
-          startTime: window.startTime,
-          endTime: window.endTime,
-          meetLink: meet.link,
-          meetLinkStatus:
-            meet.status === "FAILED"
-              ? MeetLinkStatus.FAILED
-              : meet.status === "PENDING"
-                ? MeetLinkStatus.PENDING
-                : MeetLinkStatus.GENERATED,
-          cancelled: false,
-        },
-      });
-
-      createdSessions.push(createdSession);
-    }
-
-    sessionsCreated += createdSessions.length;
-
-    if (createdSessions.length > 0) {
-      const firstSession = createdSessions[0];
-      const secondSession = createdSessions[1] ?? null;
-
-      const activeEnrollments = await prisma.enrollment.findMany({
-        where: { classId: klass.id, status: EnrollmentStatus.ACTIVE },
-        include: { student: true },
-      });
-
-      for (const enrollment of activeEnrollments) {
-        const content = secondSession
-          ? `New session scheduled: ${klass.name} on ${firstSession.startTime.toISOString()}. Segment 1 link: ${firstSession.meetLink ?? "Meet link pending"}. After a ${SEGMENT_BREAK_MINUTES}-minute break, segment 2 starts at ${secondSession.startTime.toISOString()}. Next link: ${secondSession.meetLink ?? "Meet link pending"}.`
-          : `New session scheduled: ${klass.name} on ${firstSession.startTime.toISOString()}. Join: ${firstSession.meetLink ?? "Meet link pending"}`;
-
-        const deliveries = await deliverWithFallback(
-          { userId: enrollment.student.id, email: enrollment.student.email, phone: enrollment.student.phone, telegramChatId: enrollment.student.telegramChatId, pushSubscription: enrollment.student.pushSubscription },
-          content,
-        );
-
-        if (deliveries.length > 0) {
-          await prisma.notification.createMany({
-            data: deliveries.map((delivery) => ({
-              userId: enrollment.student.id,
-              channel: delivery.channel,
-              content,
-              status: delivery.status,
-              sentAt: new Date(),
-            })),
-          });
-        }
-      }
-    }
+    const booking = await bookNextAutoOccurrence(klass);
+    sessionsCreated += booking.sessions.length;
+    await notifyStudentsOfNewSessions(klass, booking.sessions);
   }
 
   return { classesChecked: teacherClasses.length, sessionsCreated };
+}
+
+/**
+ * Upcoming sessions of a class for the staff class page: the NEXT ones (not the
+ * oldest), including upcoming cancelled ones so staff can see what was called
+ * off. A short lookback keeps an in-progress session visible.
+ */
+export async function listUpcomingClassSessions(classId: string, take = 10) {
+  const sessions = await prisma.session.findMany({
+    where: { classId, endTime: { gte: new Date(Date.now() - 60 * 60 * 1000) } },
+    orderBy: { startTime: "asc" },
+    take,
+    select: {
+      id: true,
+      startTime: true,
+      endTime: true,
+      meetLink: true,
+      meetLinkStatus: true,
+      cancelled: true,
+    },
+  });
+  return sessions.map((session) => ({
+    ...session,
+    startTime: session.startTime.toISOString(),
+    endTime: session.endTime.toISOString(),
+  }));
+}
+
+/** Class fields the lifecycle pages need that getClassById does not return. */
+export async function getClassLifecycleExtras(classId: string) {
+  return prisma.class.findUnique({
+    where: { id: classId },
+    select: {
+      status: true,
+      schedulingMode: true,
+      registrationFormUrl: true,
+      registrationDeadline: true,
+      teacherId: true,
+    },
+  });
+}
+
+/**
+ * Staff set a session's Meet link by hand (the fallback when Google is not
+ * connected or generation failed). Marked GENERATED so the scheduler's retry leaves
+ * it alone. Scoped by class id so a forged session id from another class
+ * matches nothing. An empty link clears it back to PENDING for the retry.
+ */
+export async function setSessionMeetLink(classId: string, sessionId: string, meetLink: string | null) {
+  const { count } = await prisma.session.updateMany({
+    where: { id: sessionId, classId, cancelled: false },
+    data: meetLink
+      ? { meetLink, meetLinkStatus: MeetLinkStatus.GENERATED }
+      : { meetLink: null, meetLinkStatus: MeetLinkStatus.PENDING },
+  });
+  return count > 0;
 }
 
 export async function runSchedulerBatch() {
@@ -2578,136 +2909,13 @@ export async function runSchedulerBatch() {
   const batch = activeClasses.slice(claim.start, claim.end);
 
   for (const klass of batch) {
-    const hasUpcoming = await prisma.session.findFirst({
-      where: {
-        classId: klass.id,
-        cancelled: false,
-        startTime: {
-          gte: now,
-          lte: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000),
-        },
-      },
-      select: {
-        id: true,
-      },
-    });
-
-    if (hasUpcoming) {
-      continue;
-    }
-
-    const availability = await prisma.teacherAvailability.findFirst({
-      where: {
-        teacherId: klass.teacherId,
-      },
-      orderBy: [{ dayOfWeek: "asc" }, { startTimeUTC: "asc" }],
-    });
-
-    // Gate: do NOT schedule sessions for a class whose teacher has not set
-    // their availability. Scheduling a fallback time silently creates sessions
-    // at hours the teacher may never attend (QA 2026-04-19). processedCount is
-    // incremented batch-wide after the loop, so simply continuing is correct.
-    if (!availability) {
-      console.log(
-        `[scheduler] skipping class ${klass.id} (${klass.name}): teacher ${klass.teacherId} has no availability set`,
-      );
-      continue;
-    }
-
-    const hour = availability.startTimeUTC.getUTCHours();
-    const minute = availability.startTimeUTC.getUTCMinutes();
-    let startDate: Date = nextWeekdayDate(availability.dayOfWeek, hour, minute);
-
-    const durationMinutes = normalizeDurationMinutes(klass.durationMinutes);
-    let windows = buildSegmentWindows(startDate, durationMinutes);
-    let shiftAttempts = 0;
-
-    while (await hasTeacherConflictForWindows(klass.teacherId, windows)) {
-      if (shiftAttempts >= 8) {
-        break;
-      }
-
-      startDate = new Date(startDate.getTime() + 60 * 60 * 1000);
-      windows = buildSegmentWindows(startDate, durationMinutes);
-      shiftAttempts += 1;
-    }
-
-    const createdSessions = [];
-
-    for (const window of windows) {
-      const meet = await generateMeetLink(klass.name, window.startTime.toISOString(), {
-        endIso: window.endTime.toISOString(),
-        teacherId: klass.teacherId,
-      });
-
-      const createdSession = await prisma.session.create({
-        data: {
-          classId: klass.id,
-          startTime: window.startTime,
-          endTime: window.endTime,
-          meetLink: meet.link,
-          meetLinkStatus:
-            meet.status === "FAILED"
-              ? MeetLinkStatus.FAILED
-              : meet.status === "PENDING"
-                ? MeetLinkStatus.PENDING
-                : MeetLinkStatus.GENERATED,
-          cancelled: false,
-        },
-      });
-
-      createdSessions.push(createdSession);
-    }
-
-    if (createdSessions.length === 0) {
-      continue;
-    }
-
-    const firstSession = createdSessions[0];
-    const secondSession = createdSessions[1] ?? null;
-
-    const activeEnrollments = await prisma.enrollment.findMany({
-      where: {
-        classId: klass.id,
-        status: EnrollmentStatus.ACTIVE,
-      },
-      include: {
-        student: true,
-      },
-    });
-
-    // Fan out deliveries with bounded concurrency rather than a fully sequential
-    // await-per-student loop (which took minutes for large classes).
-    await mapWithConcurrency(activeEnrollments, DELIVERY_CONCURRENCY, async (enrollment) => {
-      const content = secondSession
-        ? `New session scheduled: ${klass.name} on ${firstSession.startTime.toISOString()}. Segment 1 link: ${firstSession.meetLink ?? "Meet link pending"
-        }. After a ${SEGMENT_BREAK_MINUTES}-minute break, segment 2 starts at ${secondSession.startTime.toISOString()}. Next link: ${secondSession.meetLink ?? "Meet link pending"
-        }.`
-        : `New session scheduled: ${klass.name} on ${firstSession.startTime.toISOString()}. Join: ${firstSession.meetLink ?? "Meet link pending"}`;
-      const deliveries = await deliverWithFallback(
-        {
-          userId: enrollment.student.id,
-          email: enrollment.student.email,
-          phone: enrollment.student.phone,
-          telegramChatId: enrollment.student.telegramChatId,
-          pushSubscription: enrollment.student.pushSubscription,
-        },
-        content,
-      );
-
-      if (deliveries.length > 0) {
-        await prisma.notification.createMany({
-          data: deliveries.map((delivery) => ({
-            userId: enrollment.student.id,
-            channel: delivery.channel,
-            content,
-            status: delivery.status,
-            sentAt: new Date(),
-          })),
-        });
-      }
-    });
+    const booking = await bookNextAutoOccurrence(klass);
+    await notifyStudentsOfNewSessions(klass, booking.sessions);
   }
+
+  // Every run, not just once per batch cycle: links that were missing at booking
+  // time (Google down, token revoked, nothing configured yet) get another try.
+  const meetLinksRepaired = await retryMissingMeetLinks(now);
 
   const updatedJob = claim.job;
 
@@ -2719,6 +2927,7 @@ export async function runSchedulerBatch() {
       updatedAt: updatedJob.updatedAt.toISOString(),
     },
     batchProcessed: batch.length,
+    meetLinksRepaired,
     completed: claim.complete,
     remaining: Math.max(0, updatedJob.totalCount - updatedJob.processedCount),
   };
@@ -2738,13 +2947,15 @@ export async function runReminderBatch() {
   const windowStart = new Date(now.getTime() + (REMINDER_LEAD_MINUTES - REMINDER_WINDOW_MINUTES / 2) * 60 * 1000);
   const windowEnd = new Date(now.getTime() + (REMINDER_LEAD_MINUTES + REMINDER_WINDOW_MINUTES / 2) * 60 * 1000);
 
-  const sessions = await prisma.session.findMany({
+  const candidates = await prisma.session.findMany({
     where: {
       cancelled: false,
       startTime: {
         gte: windowStart,
         lt: windowEnd,
       },
+      // An archived class has stopped; its students must not be reminded.
+      class: { status: ClassStatus.ACTIVE },
     },
     include: {
       class: {
@@ -2767,6 +2978,57 @@ export async function runReminderBatch() {
     },
     orderBy: { startTime: "asc" },
   });
+
+  // Classes longer than 60 minutes are stored as back-to-back 60-minute segments.
+  // Segment 2 must not trigger its own "starts at" reminder in the middle of the
+  // class: skip any session that follows an earlier segment of the same class
+  // ending at most SEGMENT_TRANSITION_WINDOW_MINUTES before it (the first
+  // segment's reminder already carries the continuation link).
+  const transitionMs = SEGMENT_TRANSITION_WINDOW_MINUTES * 60 * 1000;
+  const precedingSegments = candidates.length
+    ? await prisma.session.findMany({
+      where: {
+        classId: { in: Array.from(new Set(candidates.map((session) => session.classId))) },
+        cancelled: false,
+        endTime: { gte: new Date(windowStart.getTime() - transitionMs), lt: windowEnd },
+      },
+      select: { id: true, classId: true, endTime: true },
+    })
+    : [];
+  const sessions = candidates.filter(
+    (session) =>
+      !precedingSegments.some(
+        (earlier) =>
+          earlier.classId === session.classId &&
+          earlier.id !== session.id &&
+          earlier.endTime.getTime() <= session.startTime.getTime() &&
+          session.startTime.getTime() - earlier.endTime.getTime() <= transitionMs,
+      ),
+  );
+
+  // Last chance for a missing Meet link before the reminder goes out: the full
+  // retry pass only runs with the (daily) scheduler, so try again here for just
+  // these sessions -- no extra query when every link is already there.
+  const linkless = sessions.filter((session) => !session.meetLink || session.meetLinkStatus !== MeetLinkStatus.GENERATED);
+  if (linkless.length > 0) {
+    try {
+      if ((await retryMissingMeetLinks(now, linkless.length, linkless.map((session) => session.id))) > 0) {
+        const fresh = await prisma.session.findMany({
+          where: { id: { in: linkless.map((session) => session.id) } },
+          select: { id: true, meetLink: true, meetLinkStatus: true },
+        });
+        for (const row of fresh) {
+          const session = sessions.find((item) => item.id === row.id);
+          if (session) {
+            session.meetLink = row.meetLink;
+            session.meetLinkStatus = row.meetLinkStatus;
+          }
+        }
+      }
+    } catch (error) {
+      console.error("[reminders] meet link retry failed", error);
+    }
+  }
 
   if (sessions.length === 0) {
     return {
@@ -2848,7 +3110,9 @@ export async function runReminderBatch() {
     for (const enrollment of enrollmentsByClass.get(session.classId) ?? []) {
       tasks.push({
         userId: enrollment.student.id,
-        dedupeKey: `session_reminder:${session.id}:${enrollment.student.id}`,
+        // The start time is part of the key: a session rescheduled after its
+        // reminder went out gets a fresh reminder for the new time.
+        dedupeKey: `session_reminder:${session.id}:${session.startTime.getTime()}:${enrollment.student.id}`,
         content: buildSessionReminderContent({
           language: enrollment.student.language,
           timezone: enrollment.student.timezone,
@@ -2864,6 +3128,7 @@ export async function runReminderBatch() {
           phone: enrollment.student.phone,
           telegramChatId: enrollment.student.telegramChatId,
           pushSubscription: enrollment.student.pushSubscription,
+          notificationPrefs: enrollment.student.notificationPrefs,
         },
       });
     }
@@ -2871,7 +3136,7 @@ export async function runReminderBatch() {
     const teacher = session.class.teacher;
     tasks.push({
       userId: teacher.id,
-      dedupeKey: `session_reminder:${session.id}:teacher:${teacher.id}`,
+      dedupeKey: `session_reminder:${session.id}:${session.startTime.getTime()}:teacher:${teacher.id}`,
       content: buildTeacherSessionReminderContent({
         language: teacher.language,
         timezone: teacher.timezone,
@@ -2886,6 +3151,7 @@ export async function runReminderBatch() {
         phone: teacher.phone,
         telegramChatId: teacher.telegramChatId,
         pushSubscription: teacher.pushSubscription,
+        notificationPrefs: teacher.notificationPrefs,
       },
     });
   }
@@ -3449,8 +3715,10 @@ export async function getClassAttendanceSummary(classId: string) {
   // in JS (which was O(students × sessions) and loaded the full attendance table
   // for the class). Attendance is unique per (sessionId, studentId), so counting
   // rows equals counting distinct sessions attended/verified.
+  // Only sessions that have started count: a future session nobody could have
+  // attended yet would drag every student's attendance rate down.
   const sessions = await prisma.session.findMany({
-    where: { classId, cancelled: false },
+    where: { classId, cancelled: false, startTime: { lte: new Date() } },
     select: { id: true },
   });
   const sessionIds = sessions.map((s) => s.id);

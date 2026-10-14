@@ -12,7 +12,9 @@ import { RemoveStudentButton } from "@/components/classes/remove-student-button"
 import { ShareLink } from "@/components/classes/share-link";
 import { DataCostBadge } from "@/components/data-cost-badge";
 import { SaveOfflineButton } from "@/components/save-offline-button";
+import { getClassLifecycleExtras } from "@/lib/platform/db-store";
 import { getClassById, isStudentEnrolledInClass, listClassAnnouncements, listClassEnrollments } from "@/lib/platform/store";
+import { isWithinLiveWindow } from "@/lib/scheduling/weekly-slot";
 import { getAccessControl, can, isSuper } from "@/lib/security/permissions";
 import { getSessionUser } from "@/lib/security/session";
 
@@ -21,26 +23,32 @@ type ClassDetailPageProps = {
 };
 
 export default async function ClassDetailPage({ params }: ClassDetailPageProps) {
-  const record = await getClassById(params.id);
-  const user = await getSessionUser();
   const locale = params.locale;
-  const t = await getTranslations({ locale, namespace: "classDetail" });
 
+  // Sign-in is checked BEFORE any class query: a signed-out visitor (or a crawler
+  // following a shared link) used to cost a database round-trip -- and wake the
+  // sleeping database -- just to be redirected. ?next brings them back here.
+  const user = await getSessionUser();
   if (!user) {
-    redirect(`/${locale}/login`);
+    redirect(`/${locale}/login?next=${encodeURIComponent(`/${locale}/classes/${params.id}`)}`);
   }
 
   if (!user.approved && user.role !== "ADMIN") {
     redirect(`/${locale}/pending-approval`);
   }
 
+  // Staff and enrolled students may see an unpublished class; everyone else gets
+  // a 404 below (getClassById contract: includeUnpublished opts in).
+  const record = await getClassById(params.id, { includeUnpublished: true } as Parameters<typeof getClassById>[1]);
+  const t = await getTranslations({ locale, namespace: "classDetail" });
+
   if (!record) {
     notFound();
   }
 
-  // Admin-only: resolves the live permission row so we can offer archive/delete
-  // right here (this is the class page the dashboard links to). Students and
-  // teachers never hold classes.delete, so the danger zone stays hidden for them.
+  // Resolves the live permission row (per-request cached): staff rights come from
+  // classes.view / classes.edit, not from role=ADMIN, and it also gates the
+  // archive/delete danger zone at the bottom of this page.
   const access = await getAccessControl();
 
   const studentEnrolled =
@@ -48,18 +56,34 @@ export default async function ClassDetailPage({ params }: ClassDetailPageProps) 
 
   const canAccessPrivateDetails = Boolean(
     user &&
-      (user.role === "ADMIN" ||
+      (can(access, "classes.view") ||
         (user.role === "TEACHER" && user.approved && user.id === record.teacherId) ||
         (user.role === "STUDENT" && user.approved && studentEnrolled)),
   );
 
-  const canUploadMaterials = user.role === "ADMIN" || (user.role === "TEACHER" && user.id === record.teacherId);
+  if ((record as { published?: boolean }).published === false && !canAccessPrivateDetails) {
+    notFound();
+  }
+
+  const canUploadMaterials = can(access, "classes.edit") || (user.role === "TEACHER" && user.id === record.teacherId);
   const enrolledStudents = canUploadMaterials ? await listClassEnrollments(record.id) : [];
   const announcements = canAccessPrivateDetails
     ? ((await listClassAnnouncements(record.id)) as Array<{ id: string; content: string; authorName: string; createdAt: string }>)
     : [];
   const tAnnounce = await getTranslations({ locale, namespace: "announcements" });
   const tSession = await getTranslations({ locale, namespace: "sessionActions" });
+  const tl = await getTranslations({ locale, namespace: "classLifecycle" });
+
+  // The NEXT sessions, soonest first. Filtered and sorted here as well, not only
+  // trusted from getClassById: this list used to show the class's OLDEST sessions.
+  // A session stays listed until it has ended (it is "live" until then).
+  const now = Date.now();
+  const upcomingSessions = [...record.sessions]
+    .filter((session) => new Date(session.endTime).getTime() >= now)
+    .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
+    .slice(0, 6);
+  // The teacher's own optional Google Form, shown only to people in the class.
+  const ownFormUrl = canAccessPrivateDetails ? (await getClassLifecycleExtras(record.id))?.registrationFormUrl ?? null : null;
 
   return (
     <section className="space-y-4 sm:space-y-5">
@@ -129,12 +153,21 @@ export default async function ClassDetailPage({ params }: ClassDetailPageProps) 
             </a>
           </div>
         ) : null}
+
+        {ownFormUrl ? (
+          <div className="mt-3">
+            <a className="btn-secondary" href={ownFormUrl} rel="noreferrer" target="_blank">
+              {tl("ownFormLink")}
+            </a>
+          </div>
+        ) : null}
       </header>
 
       <section className="panel panel-strong p-4 sm:p-5">
         <h2 className="text-lg font-black text-ink-main">{t("upcomingSessions")}</h2>
         <div className="timeline-line mt-3 space-y-2">
-          {record.sessions.slice(0, 6).map((session) => (
+          {upcomingSessions.length === 0 ? <p className="text-sm text-ink-soft">{tl("noUpcoming")}</p> : null}
+          {upcomingSessions.map((session) => (
             <article className={`stat-card p-3 ${session.cancelled ? "opacity-50" : ""}`} key={session.id}>
               <div className="flex items-center justify-between gap-2">
                 <p className="text-sm font-semibold text-ink-main">
@@ -162,14 +195,15 @@ export default async function ClassDetailPage({ params }: ClassDetailPageProps) 
                           : t("meetPending")}
                       </p>
                     )}
-                    {canAccessPrivateDetails && (
+                    {/* Only while the session is actually on (15 min either side). */}
+                    {canAccessPrivateDetails && isWithinLiveWindow(session, now) ? (
                       <Link
                         className="text-xs font-semibold text-neon-700 hover:text-neon-800"
                         href={`/${locale}/classes/${record.id}/live/${session.id}`}
                       >
-                        Live session →
+                        {tl("liveSession")}
                       </Link>
-                    )}
+                    ) : null}
                   </div>
                 </>
               ) : null}

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { listTeacherAvailability, replaceTeacherAvailability, scheduleTeacherClasses } from "@/lib/platform/store";
+import { can, getAccessControl } from "@/lib/security/permissions";
 import { getSessionUser, isApproved, pendingApproval, roleAllowed, unauthorized } from "@/lib/security/session";
 
 export async function GET(request: NextRequest) {
@@ -16,7 +17,8 @@ export async function GET(request: NextRequest) {
 
   const teacherId = request.nextUrl.searchParams.get("teacherId") ?? user.id;
 
-  if (user.role !== "ADMIN" && teacherId !== user.id) {
+  // Staff rights come from the live permission (classes.edit), not role=ADMIN.
+  if (teacherId !== user.id && !can(await getAccessControl(), "classes.edit")) {
     return NextResponse.json({ message: "Not allowed to view this teacher" }, { status: 403 });
   }
 
@@ -34,7 +36,8 @@ export async function PUT(request: NextRequest) {
     return pendingApproval();
   }
 
-  if (!roleAllowed(user.role, ["TEACHER", "ADMIN"])) {
+  const canEditOthers = can(await getAccessControl(), "classes.edit");
+  if (!roleAllowed(user.role, ["TEACHER"]) && !canEditOthers) {
     return NextResponse.json({ message: "Only teachers/admins can update availability" }, { status: 403 });
   }
 
@@ -43,7 +46,7 @@ export async function PUT(request: NextRequest) {
     slots?: Array<{ dayOfWeek: number; startMinute: number; endMinute: number }>;
   };
 
-  const teacherId = user.role === "ADMIN" ? body.teacherId ?? user.id : user.id;
+  const teacherId = canEditOthers ? body.teacherId ?? user.id : user.id;
 
   if (!body.slots || !Array.isArray(body.slots)) {
     return NextResponse.json({ message: "Invalid slots payload" }, { status: 400 });
@@ -63,7 +66,10 @@ export async function PUT(request: NextRequest) {
 
   const saved = await replaceTeacherAvailability(teacherId, body.slots);
 
-  // Fire-and-forget: immediately schedule sessions for this teacher's classes
+  // Fire-and-forget: immediately book this teacher's AUTO classes whose posted
+  // time now fits these hours. Same rule and per-teacher lock as the
+  // scheduler, so it cannot race it into duplicates; with every day unticked
+  // (no rows) nothing is booked.
   scheduleTeacherClasses(teacherId).catch((err) => {
     console.error("Post-availability scheduling failed:", err);
   });
