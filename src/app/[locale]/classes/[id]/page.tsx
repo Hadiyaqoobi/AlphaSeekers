@@ -12,6 +12,7 @@ import { RemoveStudentButton } from "@/components/classes/remove-student-button"
 import { ShareLink } from "@/components/classes/share-link";
 import { DataCostBadge } from "@/components/data-cost-badge";
 import { SaveOfflineButton } from "@/components/save-offline-button";
+import { isR2Configured } from "@/lib/integrations/r2";
 import { getClassLifecycleExtras } from "@/lib/platform/db-store";
 import { displayAnswer } from "@/lib/platform/join-answers";
 import { optionLabel, questionLabel, readJoinQuestions } from "@/lib/platform/join-questions";
@@ -261,7 +262,7 @@ export default async function ClassDetailPage({ params }: ClassDetailPageProps) 
             <p className="text-sm text-ink-soft">{t("materialsRestricted")}</p>
           ) : null}
 
-          {canUploadMaterials ? <MaterialUploadForm classId={record.id} /> : null}
+          {canUploadMaterials ? <MaterialUploadForm classId={record.id} uploadsEnabled={isR2Configured()} /> : null}
 
           {canAccessPrivateDetails && record.materials.length === 0 ? (
             <p className="text-sm text-ink-soft">{t("noMaterials")}</p>

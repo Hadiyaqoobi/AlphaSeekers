@@ -10,6 +10,12 @@ import { useAutosaveForm } from "@/components/forms/use-autosave-form";
 
 type MaterialUploadFormProps = {
   classId: string;
+  /**
+   * False when this server has no file storage (R2) configured: the file picker
+   * is hidden instead of letting a teacher choose a file and only then hear that
+   * uploads are not set up. Pasting a link works either way.
+   */
+  uploadsEnabled?: boolean;
 };
 
 type FormState = {
@@ -24,7 +30,7 @@ const DEFAULT_FORM: FormState = {
   fileSize: "",
 };
 
-export function MaterialUploadForm({ classId }: MaterialUploadFormProps) {
+export function MaterialUploadForm({ classId, uploadsEnabled = true }: MaterialUploadFormProps) {
   const router = useRouter();
   const t = useTranslations("materials");
   const tUpload = useTranslations("upload");
@@ -76,20 +82,22 @@ export function MaterialUploadForm({ classId }: MaterialUploadFormProps) {
         required
         value={form.title}
       />
-      <FileUpload
-        classId={classId}
-        onUploadComplete={(url, size) =>
-          setForm((current) => ({ ...current, fileUrl: url, fileSize: String(size) }))
-        }
-        purpose="material"
-      />
+      {uploadsEnabled ? (
+        <FileUpload
+          classId={classId}
+          onUploadComplete={(url, size) =>
+            setForm((current) => ({ ...current, fileUrl: url, fileSize: String(size) }))
+          }
+          purpose="material"
+        />
+      ) : null}
 
       {/* Uploading needs object storage, which is not configured on this server.
           A pasted link (Drive, OneDrive, a public PDF) works either way, so the
           teacher is never blocked waiting on infrastructure. */}
       <div className="space-y-1 border-t border-white/10 pt-2">
         <label className="text-xs font-semibold uppercase tracking-wider text-ink-faint" htmlFor="material-link">
-          {t("orPasteLink")}
+          {uploadsEnabled ? t("orPasteLink") : t("pasteLink")}
         </label>
         <input
           className="field"

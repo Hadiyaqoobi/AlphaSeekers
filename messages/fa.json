@@ -813,7 +813,8 @@
     "uploaded": "ماده آپلود شد",
     "uploadFailed": "آپلود ناموفق بود",
     "orPasteLink": "Or paste a link",
-    "linkHint": "Share a Google Drive, OneDrive or public PDF link. Make sure it is set so students can open it."
+    "linkHint": "Share a Google Drive, OneDrive or public PDF link. Make sure it is set so students can open it.",
+    "pasteLink": "Link to the material (Google Drive, OneDrive or a public PDF)"
   },
   "upload": {
     "selectFile": "انتخاب فایل",
