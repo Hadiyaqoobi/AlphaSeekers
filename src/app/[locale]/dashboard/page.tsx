@@ -144,7 +144,7 @@ export default async function DashboardPage({ params, searchParams }: DashboardP
             <h1 className="text-2xl font-bold" style={{ color: "#E8EEF2" }}>{greeting}, {firstName}</h1>
             <p className="mt-1 text-sm" style={{ color: "#8AA4B8" }}>
               {todayCount > 0
-                ? `${todayCount} ${t("cards.today").toLowerCase()} — ${dateStr}`
+                ? `${t("sessionsToday", { count: todayCount })} — ${dateStr}`
                 : dateStr}
             </p>
           </div>

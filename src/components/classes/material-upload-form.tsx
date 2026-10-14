@@ -107,11 +107,16 @@ export function MaterialUploadForm({ classId, uploadsEnabled = true }: MaterialU
           }
           placeholder="https://drive.google.com/..."
           type="url"
-          value={form.fileUrl.startsWith("http") ? form.fileUrl : ""}
+          // A typed link always carries fileSize "0" (see onChange); an uploaded
+          // file has its real size and is not shown here. This used to show the
+          // value only once it started with "http", so typing a link one letter
+          // at a time blanked the box after every key: only pasting worked.
+          value={form.fileSize === "0" ? form.fileUrl : ""}
         />
         <p className="text-xs text-ink-faint">{t("linkHint")}</p>
       </div>
-      {form.fileUrl ? (
+      {/* Only for an uploaded file; a typed link is visible in its own box. */}
+      {form.fileUrl && form.fileSize !== "0" ? (
         <div className="flex items-center gap-2 text-sm text-neon-700">
           <svg
             className="h-4 w-4 flex-shrink-0"
