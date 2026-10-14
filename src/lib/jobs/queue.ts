@@ -8,8 +8,12 @@
  *  - Retries use exponential backoff (runAt pushed into the future); after
  *    `maxAttempts` a job dead-letters (status=DEAD) for human inspection.
  *  - `dedupeKey` provides idempotency: enqueueing a logical job whose key is
- *    already live (PENDING/ACTIVE/FAILED) is a no-op. This lets schedulers run
- *    every minute without creating duplicate work.
+ *    already held is a no-op. This lets schedulers run every minute without
+ *    creating duplicate work. By default a finished job keeps holding its key
+ *    until it is pruned (that is what stops a daily digest going out twice in a
+ *    day). Jobs enqueued with `releaseKeyOnFinish` give the key up the moment
+ *    they finish, so the NEXT occurrence of the same thing — a resubmitted post,
+ *    a re-approved student — is not swallowed for 14 days. The event bus sets it.
  *
  * No external broker (Redis/SQS) — the app already depends on Postgres, and a
  * transactional queue that shares the DB gives exactly-once-ish semantics with
@@ -18,6 +22,7 @@
 
 import { Prisma } from "@prisma/client";
 
+import { scheduleBackgroundDrain } from "@/lib/jobs/background-drain";
 import { prisma } from "@/lib/prisma";
 
 export type EnqueueOptions = {
@@ -25,8 +30,14 @@ export type EnqueueOptions = {
   runAt?: Date;
   /** Higher runs first among due jobs. */
   priority?: number;
-  /** Idempotency key: skip if a live job already holds it. */
+  /** Idempotency key: skip if a job already holds it. */
   dedupeKey?: string;
+  /**
+   * Free `dedupeKey` once the job is COMPLETED or DEAD, so it only collapses
+   * duplicates while the job is live. Leave false for period keys
+   * (`kpi_digest:<day>`), which must keep blocking after the job has run.
+   */
+  releaseKeyOnFinish?: boolean;
   maxAttempts?: number;
 };
 
@@ -59,12 +70,14 @@ export async function enqueue(
     runAt: options.runAt ?? new Date(),
     priority: options.priority ?? 0,
     dedupeKey: options.dedupeKey ?? null,
+    releaseKeyOnFinish: Boolean(options.dedupeKey && options.releaseKeyOnFinish),
     maxAttempts: options.maxAttempts ?? 5,
   };
 
   // Fast path: no idempotency key ⇒ a plain insert (no conflict possible).
   if (!options.dedupeKey) {
     const job = await prisma.job.create({ data, select: { id: true } });
+    scheduleBackgroundDrain();
     return { id: job.id, deduped: false };
   }
 
@@ -78,7 +91,19 @@ export async function enqueue(
     where: { dedupeKey: options.dedupeKey },
     select: { id: true },
   });
+  if (inserted.count > 0) scheduleBackgroundDrain();
   return { id: row.id, deduped: inserted.count === 0 };
+}
+
+/**
+ * Give up a finished job's dedupeKey if it was enqueued with
+ * `releaseKeyOnFinish`. A no-op for every other job.
+ */
+async function releaseDedupeKey(jobId: string): Promise<void> {
+  await prisma.job.updateMany({
+    where: { id: jobId, releaseKeyOnFinish: true, dedupeKey: { not: null } },
+    data: { dedupeKey: null },
+  });
 }
 
 /**
@@ -122,6 +147,7 @@ export async function markCompleted(jobId: string): Promise<void> {
     where: { id: jobId },
     data: { status: "COMPLETED", lockedAt: null, lockedBy: null, lastError: null },
   });
+  await releaseDedupeKey(jobId);
 }
 
 /**
@@ -144,20 +170,39 @@ export async function markFailed(job: ClaimedJob, error: unknown): Promise<"retr
       lastError: message.slice(0, 2000),
     },
   });
+  if (!willRetry) await releaseDedupeKey(job.id);
   return willRetry ? "retry" : "dead";
 }
 
 /**
- * Reclaim jobs stuck in ACTIVE beyond `staleMs` (worker crashed mid-job): flip
- * them back to FAILED so they get retried. Run periodically.
+ * Reclaim jobs stuck in ACTIVE beyond `staleMs` (worker crashed mid-job). Each
+ * reap COUNTS as an attempt: a job that kills the process every time it runs
+ * used to be reset to FAILED with its counter untouched and so looped forever.
+ * Now it goes back to FAILED while attempts remain and dead-letters at the
+ * limit, exactly like a job that threw. Run periodically.
+ *
+ * Raw SQL because the transition depends on each row's own attempts and
+ * maxAttempts. The cutoff is computed in SQL as UTC-naive, for the same reason
+ * as in `claim`.
  */
 export async function reapStalled(staleMs: number = 5 * 60 * 1000): Promise<number> {
-  const cutoff = new Date(Date.now() - staleMs);
-  const res = await prisma.job.updateMany({
-    where: { status: "ACTIVE", lockedAt: { lt: cutoff } },
-    data: { status: "FAILED", lockedAt: null, lockedBy: null },
-  });
-  return res.count;
+  const staleSeconds = Math.max(0, Math.floor(staleMs / 1000));
+  const reaped = await prisma.$queryRaw<Array<{ id: string; status: string }>>`
+    UPDATE "Job"
+    SET "attempts" = "attempts" + 1,
+        "status" = CASE WHEN "attempts" + 1 >= "maxAttempts" THEN 'DEAD'::"JobStatus" ELSE 'FAILED'::"JobStatus" END,
+        "lockedAt" = NULL,
+        "lockedBy" = NULL,
+        "lastError" = 'Reaped: the worker stopped while this job was running',
+        "updatedAt" = (now() AT TIME ZONE 'UTC')
+    WHERE "status" = 'ACTIVE'
+      AND "lockedAt" < (now() AT TIME ZONE 'UTC') - (${staleSeconds} * interval '1 second')
+    RETURNING "id", "status"::text AS "status";
+  `;
+  for (const row of reaped) {
+    if (row.status === "DEAD") await releaseDedupeKey(row.id);
+  }
+  return reaped.length;
 }
 
 /**

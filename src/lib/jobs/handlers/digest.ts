@@ -10,6 +10,7 @@ import { queueHealth } from "@/lib/jobs/queue";
 import { collectClassIssues } from "@/lib/platform/class-health";
 import { prisma } from "@/lib/prisma";
 import { getSuperKpis, type SuperKpis } from "@/lib/platform/super-store";
+import { TEACHER_REQUEST_WHERE } from "@/lib/platform/teacher-requests";
 
 import { deliverToMany, notifiableSelect } from "./notifications";
 
@@ -145,6 +146,12 @@ export async function classHealthDigest(): Promise<void> {
  * opened, the platform queue emptied permanently, and the mail stopped going out
  * while students queued up somewhere it never looked.
  *
+ * The same happened to teacher applicants: auto-approved as STUDENT with their
+ * wish recorded in requestedRole, they never counted as "pending", so nobody
+ * saw them. Open teacher requests (see teacher-requests.ts) are reported too.
+ * Unapproved applicants are already counted above as "Applied as teacher", so
+ * that section only counts approved ones — nobody is counted twice.
+ *
  * Goes to all admins, not just super admins like the KPI digest — approving is
  * something any of the seven can do, and spreading it means it does not wait on
  * one person.
@@ -165,7 +172,13 @@ export async function pendingApprovalsDigest(): Promise<void> {
     orderBy: { enrolledAt: "asc" },
   });
 
-  if (pending.length === 0 && courseRequests.length === 0) return;
+  const teacherRequests = await prisma.user.findMany({
+    where: { ...TEACHER_REQUEST_WHERE, approvedAt: { not: null } },
+    select: { createdAt: true },
+    orderBy: { createdAt: "asc" },
+  });
+
+  if (pending.length === 0 && courseRequests.length === 0 && teacherRequests.length === 0) return;
 
   const teachers = pending.filter((p) => p.requestedRole === "TEACHER").length;
   const students = pending.length - teachers;
@@ -205,6 +218,19 @@ export async function pendingApprovalsDigest(): Promise<void> {
     );
   }
 
+  if (teacherRequests.length > 0) {
+    if (pending.length > 0) lines.push(``);
+    lines.push(
+      teacherRequests.length === 1
+        ? `1 person has applied to teach and is still a student.`
+        : `${teacherRequests.length} people have applied to teach and are still students.`,
+      ``,
+      `Longest wait: ${formatWaiting(teacherRequests[0].createdAt)}`,
+      ``,
+      `Grant or decline under "Teacher requests": ${base}/en/admin/users`,
+    );
+  }
+
   const content = lines.filter((line) => line !== null).join("\n");
 
   const admins = await prisma.user.findMany({
@@ -213,7 +239,7 @@ export async function pendingApprovalsDigest(): Promise<void> {
   });
   if (admins.length === 0) return;
 
-  const total = pending.length + courseRequests.length;
+  const total = pending.length + courseRequests.length + teacherRequests.length;
   const subject = `${total} waiting for approval on AlphaSeekers`;
   const failures = await deliverToMany(admins, content, 8, { subject });
   if (failures > 0) {

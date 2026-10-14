@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { deleteUserAccount, setUserApproval, setUserRole } from "@/lib/platform/store";
+import { dismissTeacherRequest } from "@/lib/platform/teacher-requests";
 import { recordAudit } from "@/lib/security/audit";
 import { AccessError, isSuper, requirePermission } from "@/lib/security/permissions";
 import { getClientIp } from "@/lib/security/rate-limit";
@@ -24,49 +25,61 @@ function accessErrorResponse(error: unknown) {
 }
 
 /**
- * PATCH accepts two independent mutations on one verb:
- *   { approved: boolean }  → approval queue        (users.approve)
- *   { role: "TEACHER" }    → change the auth role  (users.edit)
+ * PATCH accepts independent mutations on one verb:
+ *   { approved: boolean }     → approval queue                (users.approve)
+ *   { role: "TEACHER" }       → change the auth role          (users.edit)
+ *   { requestedRole: null }   → decline a teacher request     (users.edit)
  *
  * At least one must be present. Role changes are the fix for accounts that
  * signed up under the wrong role — the register form defaults to STUDENT, so a
  * teacher who submits without flipping the toggle is stored as a STUDENT and
  * never appears in the Create Class lecturer dropdown.
+ *
+ * EVERY permission and input check runs before ANY write. A request carrying
+ * both a role and an approval used to save the role and then 403 on the
+ * approval, reporting failure for a change that had in fact been made.
  */
 export async function PATCH(request: NextRequest, { params }: Params) {
   const body = (await request.json().catch(() => ({}))) as {
     approved?: unknown;
     role?: unknown;
+    requestedRole?: unknown;
   };
 
   const wantsApproval = typeof body.approved === "boolean";
   const wantsRole = body.role !== undefined;
+  const wantsDismiss = body.requestedRole === null;
 
-  if (!wantsApproval && !wantsRole) {
+  if (!wantsApproval && !wantsRole && !wantsDismiss) {
     return NextResponse.json(
       { message: "Provide an approved flag or a role to change." },
       { status: 400 },
     );
   }
 
-  // ── Role change ────────────────────────────────────────────────────────────
+  if (wantsRole && !isRole(body.role)) {
+    return NextResponse.json(
+      { message: "Role must be STUDENT, TEACHER or ADMIN." },
+      { status: 400 },
+    );
+  }
+
+  // ── Authorise everything up front ──────────────────────────────────────────
+  let access;
+  try {
+    if (wantsRole || wantsDismiss) access = await requirePermission("users.edit");
+    if (wantsApproval) access = await requirePermission("users.approve");
+  } catch (error) {
+    const response = accessErrorResponse(error);
+    if (response) return response;
+    throw error;
+  }
+  if (!access) {
+    // Unreachable (one of the branches above ran), but keeps the type honest.
+    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  }
+
   if (wantsRole) {
-    if (!isRole(body.role)) {
-      return NextResponse.json(
-        { message: "Role must be STUDENT, TEACHER or ADMIN." },
-        { status: 400 },
-      );
-    }
-
-    let access;
-    try {
-      access = await requirePermission("users.edit");
-    } catch (error) {
-      const response = accessErrorResponse(error);
-      if (response) return response;
-      throw error;
-    }
-
     // Minting an admin is a privilege escalation — super admins only. A regular
     // admin can move people between STUDENT and TEACHER, which is all the
     // reported problem needs.
@@ -84,12 +97,18 @@ export async function PATCH(request: NextRequest, { params }: Params) {
         { status: 400 },
       );
     }
+  }
 
+  let updated: Record<string, unknown> | null = null;
+
+  // ── Role change ────────────────────────────────────────────────────────────
+  if (wantsRole) {
+    const role = body.role as Role;
     // Changing an ADMIN's role is a super-admin action, mirroring DELETE below.
     // Passed IN so the check happens before the write: demoting a SUPER_ADMIN
     // would strip super powers (isSuper requires role=ADMIN) and bypass
     // super-store's "cannot demote the last super admin" guard entirely.
-    const result = await setUserRole(params.id, body.role, {
+    const result = await setUserRole(params.id, role, {
       allowChangingAdmin: isSuper(access),
     });
 
@@ -104,7 +123,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       );
     }
 
-    const updated = result.user;
+    updated = result.user;
 
     await recordAudit({
       actorId: access.userId,
@@ -112,28 +131,48 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       action: "user.role.change",
       targetType: "User",
       targetId: params.id,
-      details: `role → ${body.role} (${updated.email})`,
+      details: `role → ${role} (${result.user.email})`,
       ipAddress: getClientIp(request),
     });
+  }
 
-    if (!wantsApproval) {
-      return NextResponse.json(updated);
+  // ── Decline a teacher request ──────────────────────────────────────────────
+  if (wantsDismiss) {
+    const dismissed = await dismissTeacherRequest(params.id);
+    if (!dismissed) {
+      return NextResponse.json({ message: "User not found" }, { status: 404 });
     }
+    updated = { ...(updated ?? {}), ...dismissed };
+
+    await recordAudit({
+      actorId: access.userId,
+      actorEmail: access.email,
+      action: "user.teacher_request.dismiss",
+      targetType: "User",
+      targetId: params.id,
+      details: `teacher request declined (${dismissed.email})`,
+      ipAddress: getClientIp(request),
+    });
   }
 
   // ── Approval ───────────────────────────────────────────────────────────────
-  try {
-    await requirePermission("users.approve");
-  } catch (error) {
-    const response = accessErrorResponse(error);
-    if (response) return response;
-    throw error;
-  }
+  if (wantsApproval) {
+    const approved = await setUserApproval(params.id, body.approved as boolean);
 
-  const updated = await setUserApproval(params.id, body.approved as boolean);
+    if (!approved) {
+      return NextResponse.json({ message: "User not found" }, { status: 404 });
+    }
+    updated = { ...(updated ?? {}), ...approved };
 
-  if (!updated) {
-    return NextResponse.json({ message: "User not found" }, { status: 404 });
+    await recordAudit({
+      actorId: access.userId,
+      actorEmail: access.email,
+      action: body.approved ? "user.approve" : "user.unapprove",
+      targetType: "User",
+      targetId: params.id,
+      details: `${body.approved ? "approved" : "approval revoked"} (${approved.email})`,
+      ipAddress: getClientIp(request),
+    });
   }
 
   return NextResponse.json(updated);

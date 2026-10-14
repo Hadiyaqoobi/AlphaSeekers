@@ -1026,7 +1026,13 @@
     "blockerClasses": "Still teaching",
     "blockerMaterials": "Uploaded materials",
     "requestedRole": "Applied as {role}",
-    "grantRequested": "Grant"
+    "grantRequested": "Grant",
+    "statusTEACHER_REQUESTS": "Teacher requests",
+    "confirmRoleChange": "Change role to {role}?",
+    "confirmRoleYes": "Yes, change",
+    "declineRequest": "Decline",
+    "requestDeclined": "Teacher request declined.",
+    "pageInfoTotal": "Page {current} / {total} ({count} users)"
   },
   "contentForms": {
     "createWebinar": "ایجاد وبینار",

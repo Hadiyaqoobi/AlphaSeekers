@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { listAdminUsers, parseInteger } from "@/lib/platform/store";
+import { listTeacherRequests } from "@/lib/platform/teacher-requests";
 import { AccessError, requirePermission } from "@/lib/security/permissions";
 import { getSessionUser, unauthorized } from "@/lib/security/session";
 
 const ROLE_FILTERS = ["STUDENT", "TEACHER", "ADMIN", "ALL"] as const;
-const STATUS_FILTERS = ["PENDING", "APPROVED", "ALL"] as const;
+// TEACHER_REQUESTS is not an approval state: it is applicants who asked to
+// teach and are still STUDENT (registration auto-approves everyone, so the
+// PENDING view never shows them). See src/lib/platform/teacher-requests.ts.
+const STATUS_FILTERS = ["PENDING", "APPROVED", "ALL", "TEACHER_REQUESTS"] as const;
 
 type RoleFilter = (typeof ROLE_FILTERS)[number];
 type StatusFilter = (typeof STATUS_FILTERS)[number];
@@ -43,6 +47,10 @@ export async function GET(request: NextRequest) {
   const search = request.nextUrl.searchParams.get("search") ?? "";
   const role = parseRoleFilter(request.nextUrl.searchParams.get("role"));
   const status = parseStatusFilter(request.nextUrl.searchParams.get("status"));
+
+  if (status === "TEACHER_REQUESTS") {
+    return NextResponse.json(await listTeacherRequests({ page, limit, search }));
+  }
 
   return NextResponse.json(await listAdminUsers({ page, limit, search, role, status }));
 }

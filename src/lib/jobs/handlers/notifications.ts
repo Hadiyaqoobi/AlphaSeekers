@@ -7,14 +7,20 @@
  * because retrying can never make a deleted row reappear.
  *
  * All outbound delivery goes through `deliverWithFallback`, which walks the
- * channel chain Telegram → Web Push → Email → Platform and only rejects if every
- * channel — including the always-on platform fallback — fails. `deliverOrThrow`
- * turns that "nothing landed" case into a throw so the job retries.
+ * channel chain Telegram → Web Push → Email → Platform. The platform step always
+ * reports SENT, so `deliverOrThrow` judges by the REAL channels: if none landed
+ * and one failed transiently (an SMTP 535, a timeout), it throws so the job
+ * retries and, if the fault persists, dead-letters where a human will see it.
  */
 
 import { Prisma } from "@prisma/client";
 
-import { deliverWithFallback, type NotificationTarget, type DeliveryOptions } from "@/lib/integrations/notifications";
+import {
+  deliverWithFallback,
+  deliveryNeedsRetry,
+  type NotificationTarget,
+  type DeliveryOptions,
+} from "@/lib/integrations/notifications";
 import { prisma } from "@/lib/prisma";
 
 // ─── Shared helpers ─────────────────────────────────────────────────────────
@@ -53,20 +59,29 @@ export function toTarget(row: NotifiableRow): NotificationTarget {
 }
 
 /**
- * Deliver to a single target, throwing if delivery FULLY fails. `deliverWithFallback`
- * ends on the platform fallback (which cannot be disabled and always records a
- * SENT), so in practice this only throws if that last resort itself failed —
- * exactly the state where a retry is warranted.
+ * Deliver to a single target, throwing unless a real channel carried it.
+ *
+ * This used to accept the platform fallback's SENT as success, and that step
+ * always succeeds — so a revoked Gmail App Password (535 on every send) left
+ * every job COMPLETED while no email went out at all.
+ *
+ * Not every miss is a failure, though: a user who opted out of every channel,
+ * or has nothing usable linked, gets an in-app notice and the job completes.
+ * Retrying could never reach them, and a multi-recipient job retrying would
+ * re-send to everyone else each time.
  */
 export async function deliverOrThrow(
   target: NotificationTarget,
   content: string,
   options: DeliveryOptions = {},
 ): Promise<void> {
-  const deliveries = await deliverWithFallback(target, content, options);
-  const landed = deliveries.some((d) => d.status === "SENT");
-  if (!landed) {
-    throw new Error(`Notification delivery fully failed for user ${target.userId}`);
+  const deliveries = await deliverWithFallback(target, content, { ...options, recordPlatformNotice: true });
+  if (deliveryNeedsRetry(deliveries)) {
+    const reasons = deliveries
+      .filter((d) => d.status === "FAILED")
+      .map((d) => `${d.channel}: ${d.detail}`)
+      .join("; ");
+    throw new Error(`Notification delivery failed for user ${target.userId} (${reasons})`);
   }
 }
 

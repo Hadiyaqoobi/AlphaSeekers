@@ -67,6 +67,11 @@ export async function emit(
         runAt: options.runAt,
         priority: options.priority,
         dedupeKey: options.dedupeKey ? `${options.dedupeKey}:${handlerType}` : undefined,
+        // An event is one occurrence. Its key collapses a double-click or a
+        // retried request while the job is live, then lets go, so the NEXT
+        // occurrence (a resubmitted post, a re-approved student, a homework
+        // resubmission) is notified instead of silently deduped for 14 days.
+        releaseKeyOnFinish: true,
       },
     );
     ids.push(id);

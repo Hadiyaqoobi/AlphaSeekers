@@ -42,6 +42,11 @@ d("pending approvals digest", () => {
     deliverToMany.mockClear();
     // Approve every pre-existing account so only this test's fixtures are pending.
     await prisma.user.updateMany({ where: { approvedAt: null }, data: { approvedAt: new Date() } });
+    // Likewise close any open teacher request left by other fixtures.
+    await prisma.user.updateMany({
+      where: { role: "STUDENT", requestedRole: "TEACHER" },
+      data: { requestedRole: null },
+    });
   });
   afterAll(cleanup);
 
@@ -94,5 +99,43 @@ d("pending approvals digest", () => {
     await pendingApprovalsDigest();
 
     expect(deliverToMany).not.toHaveBeenCalled();
+  });
+
+  it("reports teacher applicants who were auto-approved as students", async () => {
+    // Registration approves everyone, so these never count as "pending" — the
+    // digest used to stay silent while they waited indefinitely.
+    await makeUser("applicant1", { approvedAt: new Date(), requestedRole: "TEACHER" });
+    await makeUser("applicant2", { approvedAt: new Date(), requestedRole: "TEACHER" });
+    // Already granted: no longer a request.
+    await makeUser("granted", { role: "TEACHER", approvedAt: new Date(), requestedRole: "TEACHER" });
+    // Deactivated: not waiting on anyone.
+    await makeUser("gone", { approvedAt: new Date(), requestedRole: "TEACHER", deactivatedAt: new Date() });
+    await makeUser("admin4", { role: "ADMIN", approvedAt: new Date() });
+
+    await pendingApprovalsDigest();
+
+    expect(deliverToMany).toHaveBeenCalledTimes(1);
+    const [, content, , options] = deliverToMany.mock.calls[0] as unknown as [
+      unknown,
+      string,
+      number,
+      { subject?: string },
+    ];
+    expect(content).toContain("2 people have applied to teach and are still students.");
+    expect(content).toContain("Teacher requests");
+    expect(content).not.toContain("waiting for platform approval");
+    expect(options.subject).toBe("2 waiting for approval on AlphaSeekers");
+  });
+
+  it("does not count an unapproved teacher applicant twice", async () => {
+    await makeUser("both", { approvedAt: null, requestedRole: "TEACHER" });
+    await makeUser("admin5", { role: "ADMIN", approvedAt: new Date() });
+
+    await pendingApprovalsDigest();
+
+    const [, content, , options] = deliverToMany.mock.calls[0] as unknown as [unknown, string, number, { subject?: string }];
+    expect(content).toContain("Applied as teacher: 1");
+    expect(content).not.toContain("applied to teach and");
+    expect(options.subject).toBe("1 waiting for approval on AlphaSeekers");
   });
 });

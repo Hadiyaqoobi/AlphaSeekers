@@ -7,7 +7,7 @@ import {
   saveAttachment,
   validateAttachment,
 } from "@/lib/platform/ticket-attachments";
-import { AccessError, requirePermission } from "@/lib/security/permissions";
+import { AccessError, can, requirePermission } from "@/lib/security/permissions";
 
 const REJECTION_MESSAGES: Record<string, string> = {
   TOO_LARGE: `Image must be between 1 byte and ${Math.floor(MAX_ATTACHMENT_BYTES / (1024 * 1024))} MB.`,
@@ -23,16 +23,23 @@ function accessErrorResponse(e: unknown) {
 }
 
 export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+  let access;
   try {
-    await requirePermission("support.create");
+    access = await requirePermission("support.create");
   } catch (e) {
     const res = accessErrorResponse(e);
     if (res) return res;
     throw e;
   }
 
-  const ticket = await prisma.ticket.findUnique({ where: { id: params.id }, select: { id: true } });
+  const ticket = await prisma.ticket.findUnique({ where: { id: params.id }, select: { id: true, reporterId: true } });
   if (!ticket) return NextResponse.json({ message: "Not found" }, { status: 404 });
+
+  // Saving replaces the existing screenshot, so filing tickets must not be
+  // enough to overwrite the evidence on somebody else's.
+  if (ticket.reporterId !== access.userId && !can(access, "support.manage")) {
+    return NextResponse.json({ message: "Only the reporter or a support manager can change this screenshot." }, { status: 403 });
+  }
 
   const form = await request.formData().catch(() => null);
   const file = form?.get("file");

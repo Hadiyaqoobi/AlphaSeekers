@@ -4,20 +4,38 @@
  * Policies:
  * - AI interactions: 90 days
  * - AI evaluations: 90 days
+ * - AI conversation memory: 90 days since last update
  * - Safety logs (blocked): 180 days
+ * - Cached responses: once past expiresAt (rows with no expiry are managed by
+ *   invalidation, not auto-deletion)
+ * - Notifications (in-app feed + delivery records): 90 days
+ * - Password-reset tokens: 7 days after they expired
+ * - Rate-limit buckets: 1 day after their window reset
+ * - Scheduler runs: 30 days after they finished (COMPLETED/FAILED)
  * - Audit trail: indefinite (compliance)
- * - Cached responses: managed by invalidation, not auto-deletion
+ *
+ * Several of these tables previously had nothing deleting from them at all, so
+ * they only ever grew — RateLimitBucket gains a row per IP per limiter.
  */
 
 import { prisma } from "@/lib/prisma";
+
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 export async function enforceRetentionPolicies(): Promise<{
   interactionsDeleted: number;
   evaluationsDeleted: number;
   safetyLogsDeleted: number;
+  conversationsDeleted: number;
+  cachedResponsesDeleted: number;
+  notificationsDeleted: number;
+  passwordResetsDeleted: number;
+  rateLimitBucketsDeleted: number;
+  schedulerJobsDeleted: number;
 }> {
-  const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
-  const oneEightyDaysAgo = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000);
+  const now = Date.now();
+  const ninetyDaysAgo = new Date(now - 90 * DAY_MS);
+  const oneEightyDaysAgo = new Date(now - 180 * DAY_MS);
 
   // Delete evaluations first (FK constraint to interactions)
   const evaluationsDeleted = await prisma.aIEvaluation.deleteMany({
@@ -32,14 +50,48 @@ export async function enforceRetentionPolicies(): Promise<{
     where: { createdAt: { lt: oneEightyDaysAgo } },
   });
 
+  // By last activity, not creation: a conversation still in use is kept.
+  const conversationsDeleted = await prisma.aIConversation.deleteMany({
+    where: { updatedAt: { lt: ninetyDaysAgo } },
+  });
+
+  const cachedResponsesDeleted = await prisma.cachedResponse.deleteMany({
+    where: { expiresAt: { lt: new Date(now) } },
+  });
+
+  const notificationsDeleted = await prisma.notification.deleteMany({
+    where: { createdAt: { lt: ninetyDaysAgo } },
+  });
+
+  const passwordResetsDeleted = await prisma.passwordReset.deleteMany({
+    where: { expiresAt: { lt: new Date(now - 7 * DAY_MS) } },
+  });
+
+  const rateLimitBucketsDeleted = await prisma.rateLimitBucket.deleteMany({
+    where: { resetAt: { lt: new Date(now - DAY_MS) } },
+  });
+
+  // Only finished runs; a PENDING/RUNNING claim is live scheduler state.
+  const schedulerJobsDeleted = await prisma.schedulerJob.deleteMany({
+    where: { status: { in: ["COMPLETED", "FAILED"] }, updatedAt: { lt: new Date(now - 30 * DAY_MS) } },
+  });
+
   console.log(
-    `[Retention] Deleted: ${interactionsDeleted.count} interactions, ${evaluationsDeleted.count} evaluations, ${safetyLogsDeleted.count} safety logs`,
+    `[Retention] Deleted: ${interactionsDeleted.count} interactions, ${evaluationsDeleted.count} evaluations, ${safetyLogsDeleted.count} safety logs, ` +
+      `${conversationsDeleted.count} conversations, ${cachedResponsesDeleted.count} expired cached responses, ${notificationsDeleted.count} notifications, ` +
+      `${passwordResetsDeleted.count} password resets, ${rateLimitBucketsDeleted.count} rate-limit buckets, ${schedulerJobsDeleted.count} scheduler runs`,
   );
 
   return {
     interactionsDeleted: interactionsDeleted.count,
     evaluationsDeleted: evaluationsDeleted.count,
     safetyLogsDeleted: safetyLogsDeleted.count,
+    conversationsDeleted: conversationsDeleted.count,
+    cachedResponsesDeleted: cachedResponsesDeleted.count,
+    notificationsDeleted: notificationsDeleted.count,
+    passwordResetsDeleted: passwordResetsDeleted.count,
+    rateLimitBucketsDeleted: rateLimitBucketsDeleted.count,
+    schedulerJobsDeleted: schedulerJobsDeleted.count,
   };
 }
 

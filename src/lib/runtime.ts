@@ -35,7 +35,11 @@ export const runtime = (() => {
   return {
     mode,
     allowDemoAuth: parseBooleanEnv("ALPHASEEKERS_ALLOW_DEMO_AUTH", mode !== "production"),
-    allowAutoSeed: parseBooleanEnv("ALPHASEEKERS_AUTO_SEED", mode !== "production"),
+    // Opt-in ONLY, in every mode. Dev and prod have shared one Neon database, and
+    // "on unless NODE_ENV=production" meant any `next dev` against it inserted a
+    // demo ADMIN, 150 fake students and published catalog classes into the real
+    // data. See ensureSeededData for the second (Neon-host) guard.
+    allowAutoSeed: parseBooleanEnv("ALPHASEEKERS_AUTO_SEED", false),
     allowMockMeetLinks: parseBooleanEnv("ALPHASEEKERS_ALLOW_MOCK_MEET_LINKS", mode !== "production"),
     allowDbFallback: parseBooleanEnv("ALPHASEEKERS_ALLOW_DB_FALLBACK", mode !== "production"),
     publicLandingStats:
