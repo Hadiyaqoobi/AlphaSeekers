@@ -1,3 +1,5 @@
+import { logger } from "@/lib/observability/logger";
+import { prisma } from "@/lib/prisma";
 import { NonRetryableError, retryWithBackoff } from "@/lib/retry";
 import { sendTelegram } from "./telegram";
 import { sendWebPush } from "./web-push";
@@ -22,6 +24,12 @@ export type NotificationDelivery = {
   channel: "TELEGRAM" | "WEB_PUSH" | "EMAIL" | "PLATFORM";
   status: "SENT" | "FAILED";
   detail: string;
+  /**
+   * Only set on a FAILED real channel. False when trying again cannot help (a
+   * dead push subscription, a chat Telegram refuses); true for transient faults
+   * such as an SMTP 535 or a timeout, where a later retry may well land.
+   */
+  retryable?: boolean;
 };
 
 type CircuitState = {
@@ -57,6 +65,13 @@ async function withCircuitBreaker<T>(service: string, operation: () => Promise<T
     state.blockedUntil = 0;
     return response;
   } catch (error) {
+    // A NonRetryableError is about THIS recipient (a dead subscription, a
+    // malformed target), not the provider. Counting it used to trip the breaker
+    // after five such students and block the channel for everyone for 5 min.
+    if (error instanceof NonRetryableError) {
+      throw error;
+    }
+
     state.failures += 1;
 
     if (state.failures >= CIRCUIT_LIMIT) {
@@ -263,15 +278,53 @@ function escapeHtml(value: string): string {
     .replace(/"/g, "&quot;");
 }
 
-async function sendPlatform(target: NotificationTarget, content: string) {
-  return `In-platform notice for ${target.userId}: ${content.slice(0, 80)}`;
+/**
+ * Record an in-app notice for a user — the platform fallback's actual effect.
+ * It used to only build a string, so "delivered via PLATFORM" meant nothing was
+ * stored anywhere. Best-effort: a failed insert is logged, never thrown, because
+ * the caller has already done everything else it can.
+ */
+export async function recordPlatformNotice(userId: string, content: string): Promise<boolean> {
+  try {
+    await prisma.notification.create({
+      data: { userId, channel: "PLATFORM", content, status: "SENT", sentAt: new Date() },
+    });
+    return true;
+  } catch (error) {
+    logger.warn("in-platform notice could not be stored", {
+      userId,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return false;
+  }
+}
+
+/** True when a real channel (Telegram, push, email) carried the message. */
+export function landedOnRealChannel(deliveries: NotificationDelivery[]): boolean {
+  return deliveries.some((d) => d.status === "SENT" && d.channel !== "PLATFORM");
+}
+
+/**
+ * True when nothing real landed AND at least one real channel failed in a way a
+ * later attempt could fix. That is the case a queued job must retry; a user who
+ * simply has no usable channel (opted out of all, nothing linked) is not.
+ */
+export function deliveryNeedsRetry(deliveries: NotificationDelivery[]): boolean {
+  if (landedOnRealChannel(deliveries)) return false;
+  return deliveries.some((d) => d.channel !== "PLATFORM" && d.status === "FAILED" && d.retryable !== false);
 }
 
 /**
  * Deliver a notification using the fallback chain:
  * Telegram → Web Push → Email → Platform
  *
- * Returns on first successful delivery. Platform always succeeds as last resort.
+ * Returns on first successful delivery. A channel the user has no target on (no
+ * chat linked, no push subscription, no address) is skipped outright: it never
+ * reaches the circuit breaker and is not reported as a failure. A provider that
+ * is not configured still shows up as a non-retryable FAILED delivery, so the
+ * misconfiguration stays visible without tripping the breaker. The Platform step is the last resort and is reported SENT for
+ * backward compatibility — callers that must know whether anything really went
+ * out use `landedOnRealChannel` / `deliveryNeedsRetry`.
  */
 function parsePrefs(raw?: string | null): NotificationPrefs {
   if (!raw) return { telegram: true, webPush: true, email: true };
@@ -285,7 +338,34 @@ function parsePrefs(raw?: string | null): NotificationPrefs {
 export type DeliveryOptions = {
   /** Email subject line. Ignored by Telegram/push, which have no subject. */
   subject?: string;
+  /**
+   * Store an in-app Notification row when the chain ends on the Platform step.
+   * Off by default because most direct callers already persist one row per
+   * delivery themselves and would otherwise get it twice. Not written when a
+   * real channel failed transiently: the caller is about to retry, and one row
+   * per attempt would stack duplicates in the user's feed.
+   */
+  recordPlatformNotice?: boolean;
 };
+
+async function attemptChannel(
+  service: string,
+  channel: NotificationDelivery["channel"],
+  send: () => Promise<string>,
+  fallbackMessage: string,
+): Promise<NotificationDelivery> {
+  try {
+    const detail = await withCircuitBreaker(service, () => retryWithBackoff(send));
+    return { channel, status: "SENT", detail };
+  } catch (error) {
+    return {
+      channel,
+      status: "FAILED",
+      detail: error instanceof Error ? error.message : fallbackMessage,
+      retryable: !(error instanceof NonRetryableError),
+    };
+  }
+}
 
 export async function deliverWithFallback(
   target: NotificationTarget,
@@ -295,53 +375,46 @@ export async function deliverWithFallback(
   const deliveries: NotificationDelivery[] = [];
   const prefs = parsePrefs(target.notificationPrefs);
 
-  // 1. Try Telegram (if user hasn't disabled it)
-  if (prefs.telegram !== false) {
-    try {
-      const detail = await withCircuitBreaker("telegram", () => retryWithBackoff(() => sendTelegram(target, content)));
-      deliveries.push({ channel: "TELEGRAM", status: "SENT", detail });
-      return deliveries;
-    } catch (error) {
-      deliveries.push({
-        channel: "TELEGRAM",
-        status: "FAILED",
-        detail: error instanceof Error ? error.message : "Telegram delivery failed",
-      });
-    }
+  // 1. Try Telegram (if user hasn't disabled it and has actually linked a chat)
+  if (prefs.telegram !== false && target.telegramChatId) {
+    const outcome = await attemptChannel("telegram", "TELEGRAM", () => sendTelegram(target, content), "Telegram delivery failed");
+    deliveries.push(outcome);
+    if (outcome.status === "SENT") return deliveries;
   }
 
-  // 2. Try Web Push (if user hasn't disabled it)
-  if (prefs.webPush !== false) {
-    try {
-      const detail = await withCircuitBreaker("webpush", () => retryWithBackoff(() => sendWebPush(target, content)));
-      deliveries.push({ channel: "WEB_PUSH", status: "SENT", detail });
-      return deliveries;
-    } catch (error) {
-      deliveries.push({
-        channel: "WEB_PUSH",
-        status: "FAILED",
-        detail: error instanceof Error ? error.message : "Web Push delivery failed",
-      });
-    }
+  // 2. Try Web Push (if user hasn't disabled it and has a subscription)
+  if (prefs.webPush !== false && target.pushSubscription) {
+    const outcome = await attemptChannel("webpush", "WEB_PUSH", () => sendWebPush(target, content), "Web Push delivery failed");
+    deliveries.push(outcome);
+    if (outcome.status === "SENT") return deliveries;
   }
 
-  // 3. Try Email (if user hasn't disabled it)
-  if (prefs.email !== false) {
-    try {
-      const detail = await withCircuitBreaker("email", () => retryWithBackoff(() => sendEmail(target, content, options.subject)));
-      deliveries.push({ channel: "EMAIL", status: "SENT", detail });
-      return deliveries;
-    } catch (error) {
-      deliveries.push({
-        channel: "EMAIL",
-        status: "FAILED",
-        detail: error instanceof Error ? error.message : "Email delivery failed",
-      });
-    }
+  // 3. Try Email (if user hasn't disabled it and has an address)
+  if (prefs.email !== false && target.email) {
+    const outcome = await attemptChannel("email", "EMAIL", () => sendEmail(target, content, options.subject), "Email delivery failed");
+    deliveries.push(outcome);
+    if (outcome.status === "SENT") return deliveries;
   }
 
-  // 4. Platform fallback (always succeeds, cannot be disabled)
-  const detail = await sendPlatform(target, content);
-  deliveries.push({ channel: "PLATFORM", status: "SENT", detail });
+  // 4. Platform fallback (cannot be disabled). Loud when a real channel was
+  //    tried and failed: that is how a revoked SMTP password used to go unseen.
+  const failed = deliveries.filter((d) => d.status === "FAILED");
+  if (failed.length > 0) {
+    logger.warn("notification fell back to in-platform only", {
+      userId: target.userId,
+      failures: failed.map((d) => `${d.channel}: ${d.detail}`),
+    });
+  }
+
+  let recorded = false;
+  if (options.recordPlatformNotice && !deliveryNeedsRetry(deliveries)) {
+    recorded = await recordPlatformNotice(target.userId, content);
+  }
+
+  deliveries.push({
+    channel: "PLATFORM",
+    status: "SENT",
+    detail: recorded ? `In-platform notice stored for ${target.userId}` : `In-platform fallback for ${target.userId}`,
+  });
   return deliveries;
 }

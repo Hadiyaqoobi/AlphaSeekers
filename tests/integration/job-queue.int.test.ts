@@ -196,6 +196,73 @@ d("job queue integration (real Postgres)", () => {
     expect((await prisma.job.findUniqueOrThrow({ where: { id: doneId } })).status).toBe("COMPLETED");
   });
 
+  // ── Finished jobs release event keys (N6) ────────────────────────────────
+  it("an event job gives up its dedupeKey once completed, so the next occurrence is queued", async () => {
+    registerHandler("notify_moderation_queued", async () => {});
+    const first = await emit("post.pending_review", { postId: "p1" }, { dedupeKey: "post:p1" });
+    // While live, a duplicate emit (double click, retried request) collapses.
+    expect(await emit("post.pending_review", { postId: "p1" }, { dedupeKey: "post:p1" })).toEqual(first);
+
+    await drainOnce({ workerId: "w", batchSize: 10 });
+    const done = await prisma.job.findUniqueOrThrow({ where: { id: first[0]! } });
+    expect(done.status).toBe("COMPLETED");
+    expect(done.dedupeKey).toBeNull();
+
+    // The post is resubmitted: moderators must hear about it again.
+    const second = await emit("post.pending_review", { postId: "p1" }, { dedupeKey: "post:p1" });
+    expect(second[0]).not.toBe(first[0]);
+    expect(await prisma.job.count({ where: { type: "notify_moderation_queued" } })).toBe(2);
+  });
+
+  it("an event job that dead-letters also releases its key", async () => {
+    const [id] = await emit("homework.submitted", { homeworkId: "h1" }, { dedupeKey: "hw:h1" });
+    const [claimed] = await claim("w", 10);
+    expect(claimed!.id).toBe(id);
+    // maxAttempts defaults to 5; force this one to be the last attempt.
+    await prisma.job.update({ where: { id: id! }, data: { attempts: 4 } });
+    expect(await markFailed({ ...claimed!, attempts: 4 }, new Error("boom"))).toBe("dead");
+    expect((await prisma.job.findUniqueOrThrow({ where: { id: id! } })).dedupeKey).toBeNull();
+  });
+
+  it("a period key (daily digest) still blocks after its job completed", async () => {
+    const first = await enqueue("test_noop", {}, { dedupeKey: "kpi_digest:2026-10-14" });
+    const [claimed] = await claim("w", 10);
+    await markCompleted(claimed!.id);
+    const again = await enqueue("test_noop", {}, { dedupeKey: "kpi_digest:2026-10-14" });
+    expect(again.deduped).toBe(true);
+    expect(again.id).toBe(first.id);
+  });
+
+  // ── Reaping counts the attempt (N9) ──────────────────────────────────────
+  it("reapStalled counts the attempt and dead-letters a job that keeps dying", async () => {
+    const { id } = await enqueue("test_noop", {}, { maxAttempts: 2 });
+    const stale = { status: "ACTIVE" as const, lockedAt: new Date(Date.now() - 10 * 60 * 1000) };
+
+    await claim("w", 10);
+    await prisma.job.update({ where: { id }, data: stale });
+    expect(await reapStalled(5 * 60 * 1000)).toBe(1);
+    let job = await prisma.job.findUniqueOrThrow({ where: { id } });
+    expect(job.status).toBe("FAILED");
+    expect(job.attempts).toBe(1);
+    expect(job.lastError).toContain("Reaped");
+
+    // It crashes the process again: that is attempt 2 of 2, so it stops here.
+    await claim("w", 10);
+    await prisma.job.update({ where: { id }, data: stale });
+    await reapStalled(5 * 60 * 1000);
+    job = await prisma.job.findUniqueOrThrow({ where: { id } });
+    expect(job.status).toBe("DEAD");
+    expect(job.attempts).toBe(2);
+    expect(await claim("w", 10)).toHaveLength(0);
+  });
+
+  it("reapStalled leaves a recently locked ACTIVE job alone", async () => {
+    const { id } = await enqueue("test_noop", {});
+    await claim("w", 10);
+    expect(await reapStalled(5 * 60 * 1000)).toBe(0);
+    expect((await prisma.job.findUniqueOrThrow({ where: { id } })).status).toBe("ACTIVE");
+  });
+
   it("markCompleted clears the lock and error", async () => {
     const { id } = await enqueue("test_noop", {});
     const claimed = await claim("w", 10);

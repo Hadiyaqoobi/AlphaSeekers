@@ -65,8 +65,6 @@ async function runJob(job: ClaimedJob): Promise<"ok" | "retry" | "dead"> {
   try {
     const payload = (job.payload && typeof job.payload === "object" ? job.payload : {}) as Record<string, unknown>;
     await handler(payload, { jobId: job.id, attempt: job.attempts + 1 });
-    await markCompleted(job.id);
-    return "ok";
   } catch (error) {
     await reportError(error, { jobId: job.id, type: job.type, attempt: job.attempts + 1 });
     const outcome = await markFailed(job, error);
@@ -75,6 +73,27 @@ async function runJob(job: ClaimedJob): Promise<"ok" | "retry" | "dead"> {
     }
     return outcome;
   }
+
+  // Outside the handler's try on purpose: the side effects have already
+  // happened, so a failure to RECORD that (a dropped connection, say) must not
+  // be treated as a failed job — retrying would send the whole fan-out again.
+  // One more try. If the database is failing even then, the row stays ACTIVE
+  // and the reaper retries it after 5 minutes, counting the attempt: a possible
+  // duplicate, but only while the database itself is down, and never a loop.
+  try {
+    await markCompleted(job.id);
+  } catch (error) {
+    try {
+      await markCompleted(job.id);
+    } catch {
+      logger.error("job ran but could not be marked completed", {
+        jobId: job.id,
+        type: job.type,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+  return "ok";
 }
 
 /**

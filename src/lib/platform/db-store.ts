@@ -685,6 +685,16 @@ async function ensureApprovalDefaults() {
   });
 }
 
+/** Lower-cased host of a postgres URL, or null when it cannot be parsed. */
+function databaseHost(url: string | undefined): string | null {
+  if (!url) return null;
+  try {
+    return new URL(url).hostname.toLowerCase() || null;
+  } catch {
+    return null;
+  }
+}
+
 export async function ensureSeededData() {
   warnIfInsecureProductionConfig();
 
@@ -698,6 +708,19 @@ export async function ensureSeededData() {
   // warnIfInsecureProductionConfig). Returning here BEFORE any write guarantees a
   // production DB is never touched by the seeder, even the approval backfill below.
   if (!runtime.allowAutoSeed) {
+    seeded = true;
+    return;
+  }
+
+  // Second gate, independent of mode: even with ALPHASEEKERS_AUTO_SEED=true, a
+  // hosted Neon database is never seeded. Dev and prod have historically shared
+  // one, so "it's only my dev server" is not a safe assumption. Seed a local
+  // Postgres instead.
+  const seedHost = databaseHost(process.env.DATABASE_URL);
+  if (seedHost && (seedHost === "neon.tech" || seedHost.endsWith(".neon.tech"))) {
+    console.error(
+      `[AlphaSeekers] REFUSING to auto-seed demo data into ${seedHost}: ALPHASEEKERS_AUTO_SEED is set but this is a hosted Neon database (possibly production). Unset ALPHASEEKERS_AUTO_SEED, or point DATABASE_URL at a local database.`,
+    );
     seeded = true;
     return;
   }
@@ -1224,7 +1247,27 @@ export async function deleteUserAccount(
     return { status: "BLOCKED" as const, user: existing, blockers };
   }
 
-  await prisma.user.delete({ where: { id: userId } });
+  // These tables hold a user id in a plain column with NO foreign key, so the
+  // cascade below never reaches them and they were left orphaned — and a deleted
+  // user's likes kept inflating likeCount. Clear them in the same transaction as
+  // the delete so a partial failure leaves nothing half-removed. Tickets and
+  // ticket comments are NOT deleted: their FKs are SET NULL so the reports survive.
+  await prisma.$transaction(async (tx) => {
+    const likes = await tx.postLike.findMany({ where: { userId }, select: { postId: true } });
+    if (likes.length > 0) {
+      // One like per (post, user), so each liked post loses exactly one.
+      await tx.studentPost.updateMany({
+        where: { id: { in: likes.map((like) => like.postId) }, likeCount: { gt: 0 } },
+        data: { likeCount: { decrement: 1 } },
+      });
+      await tx.postLike.deleteMany({ where: { userId } });
+    }
+    await tx.sessionNote.deleteMany({ where: { studentId: userId } });
+    await tx.homeworkSubmission.deleteMany({ where: { studentId: userId } });
+    await tx.spacedRepetitionItem.deleteMany({ where: { userId } });
+    await tx.aIConversation.deleteMany({ where: { userId } });
+    await tx.user.delete({ where: { id: userId } });
+  });
 
   return { status: "DELETED" as const, user: existing };
 }
@@ -3041,6 +3084,8 @@ export async function registerForWebinar(webinarId: string, userId: string) {
       phone: user.phone,
       telegramChatId: user.telegramChatId,
       pushSubscription: user.pushSubscription,
+      // Without this the confirmation ignored a user's opt-outs.
+      notificationPrefs: user.notificationPrefs,
     },
     content,
   );

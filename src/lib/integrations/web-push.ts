@@ -1,5 +1,6 @@
 import webpush from "web-push";
 
+import { prisma } from "@/lib/prisma";
 import { NonRetryableError } from "@/lib/retry";
 
 import type { NotificationTarget } from "./notifications";
@@ -60,6 +61,35 @@ export async function sendWebPush(target: NotificationTarget, content: string): 
     data: { url },
   });
 
-  const result = await webpush.sendNotification(subscription, payload);
+  let result: webpush.SendResult;
+  try {
+    result = await webpush.sendNotification(subscription, payload);
+  } catch (error) {
+    // 404/410 mean the browser dropped this subscription for good. Retrying it
+    // three times with backoff on every notification only delayed the email
+    // fallback, so forget it and let the chain move on.
+    const statusCode = (error as { statusCode?: number }).statusCode;
+    if (statusCode === 404 || statusCode === 410) {
+      await forgetSubscription(target.userId, target.pushSubscription);
+      throw new NonRetryableError(`Push subscription expired (${statusCode})`);
+    }
+    throw error;
+  }
   return `Web Push sent (${result.statusCode})`;
+}
+
+/**
+ * Clear a dead subscription. Matched on the exact stored value so a fresh
+ * subscription saved in the meantime is never wiped. Best-effort: failing to
+ * clean up must not change the delivery outcome.
+ */
+async function forgetSubscription(userId: string, subscription: string): Promise<void> {
+  try {
+    await prisma.user.updateMany({
+      where: { id: userId, pushSubscription: subscription },
+      data: { pushSubscription: null },
+    });
+  } catch (error) {
+    console.error("[web-push] could not clear expired subscription", userId, error);
+  }
 }

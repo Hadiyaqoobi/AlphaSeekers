@@ -47,7 +47,15 @@ export async function sendTelegram(target: NotificationTarget, content: string):
 
   if (!response.ok || !body?.ok) {
     // Telegram's `description` is safe (it never contains the token).
-    throw new Error(body?.description ?? `Telegram API error (${response.status})`);
+    const description = body?.description ?? `Telegram API error (${response.status})`;
+    // 400 "chat not found" / 403 "bot was blocked by the user" are about this
+    // one recipient and will never succeed on retry. Non-retryable also keeps
+    // them out of the circuit breaker, which they would otherwise trip for
+    // everyone. 429 and 5xx stay retryable.
+    if (response.status === 400 || response.status === 403) {
+      throw new NonRetryableError(description);
+    }
+    throw new Error(description);
   }
 
   return `Telegram sent (${body.result?.message_id ?? "ok"})`;

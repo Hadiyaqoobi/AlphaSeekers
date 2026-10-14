@@ -30,10 +30,12 @@ type AdminUsersResponse = {
   pagination: Pagination;
 };
 
-type StatusFilter = "PENDING" | "APPROVED" | "ALL";
+// TEACHER_REQUESTS: applied to teach, still a STUDENT. Registration approves
+// everyone automatically, so these never appear under PENDING.
+type StatusFilter = "ALL" | "PENDING" | "APPROVED" | "TEACHER_REQUESTS";
 type RoleFilter = UserRole | "ALL";
 
-const STATUS_FILTERS: StatusFilter[] = ["PENDING", "APPROVED", "ALL"];
+const STATUS_FILTERS: StatusFilter[] = ["ALL", "PENDING", "APPROVED", "TEACHER_REQUESTS"];
 const ROLE_FILTERS: RoleFilter[] = ["ALL", "STUDENT", "TEACHER", "ADMIN"];
 const ASSIGNABLE_ROLES: UserRole[] = ["STUDENT", "TEACHER", "ADMIN"];
 
@@ -42,11 +44,13 @@ export function UserApprovals() {
   const [items, setItems] = useState<AdminUserItem[]>([]);
   const [pagination, setPagination] = useState<Pagination | null>(null);
   const [page, setPage] = useState(1);
+  // What is typed vs. what was searched for. Searching only on submit: the list
+  // used to re-query on every keystroke AND again when Search was pressed.
+  const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
-  // Default stays PENDING so the approval queue opens exactly as before; the
-  // other two filters are what let an admin reach an already-approved account
-  // to fix its role — previously unreachable from any screen.
-  const [status, setStatus] = useState<StatusFilter>("PENDING");
+  // Default ALL: registration approves everyone, so a PENDING default opened on
+  // an empty list and hid teacher applicants entirely.
+  const [status, setStatus] = useState<StatusFilter>("ALL");
   const [roleFilter, setRoleFilter] = useState<RoleFilter>("ALL");
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
@@ -54,11 +58,14 @@ export function UserApprovals() {
   const [bulkApproving, setBulkApproving] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  // A role change waits here until confirmed: the dropdown used to apply the
+  // instant it changed, so a mis-click promoted or demoted someone.
+  const [pendingRole, setPendingRole] = useState<{ userId: string; role: UserRole } | null>(null);
 
   const queryString = useMemo(() => {
     const params = new URLSearchParams();
     params.set("status", status);
-    params.set("role", roleFilter);
+    params.set("role", status === "TEACHER_REQUESTS" ? "ALL" : roleFilter);
     params.set("page", String(page));
     params.set("limit", "10");
     if (search.trim()) {
@@ -124,6 +131,7 @@ export function UserApprovals() {
   async function changeRole(userId: string, role: UserRole) {
     setMessage(null);
     setBusyId(userId);
+    setPendingRole(null);
 
     const response = await fetch(`/api/admin/users/${userId}`, {
       method: "PATCH",
@@ -140,13 +148,44 @@ export function UserApprovals() {
 
     const updated = (await response.json()) as AdminUserItem;
 
-    if (roleFilter !== "ALL" && updated.role !== roleFilter) {
+    const leavesView =
+      (status === "TEACHER_REQUESTS" && updated.role !== "STUDENT") ||
+      (status !== "TEACHER_REQUESTS" && roleFilter !== "ALL" && updated.role !== roleFilter);
+    if (leavesView) {
       setItems((current) => current.filter((item) => item.id !== userId));
     } else {
       setItems((current) => current.map((item) => (item.id === userId ? { ...item, role: updated.role } : item)));
     }
 
     setMessage(t("roleChanged", { role: updated.role }));
+    setBusyId(null);
+  }
+
+  /** Decline a teacher request: they stay a student, and stop being flagged. */
+  async function declineRequest(userId: string) {
+    setMessage(null);
+    setBusyId(userId);
+
+    const response = await fetch(`/api/admin/users/${userId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ requestedRole: null }),
+    });
+
+    if (!response.ok) {
+      const body = (await response.json().catch(() => ({ message: t("roleChangeFailed") }))) as { message?: string };
+      setMessage(body.message ?? t("roleChangeFailed"));
+      setBusyId(null);
+      return;
+    }
+
+    if (status === "TEACHER_REQUESTS") {
+      setItems((current) => current.filter((item) => item.id !== userId));
+    } else {
+      setItems((current) => current.map((item) => (item.id === userId ? { ...item, requestedRole: null } : item)));
+    }
+
+    setMessage(t("requestDeclined"));
     setBusyId(null);
   }
 
@@ -244,15 +283,22 @@ export function UserApprovals() {
         className="flex flex-wrap gap-2"
         onSubmit={(event) => {
           event.preventDefault();
-          setPage(1);
-          load();
+          const next = searchInput.trim();
+          // Unchanged query + first page: the effect will not fire, so reload
+          // explicitly. Otherwise the state change triggers exactly one load.
+          if (next === search && page === 1) {
+            load();
+          } else {
+            setPage(1);
+            setSearch(next);
+          }
         }}
       >
         <input
           className="field min-w-[220px] flex-1"
-          onChange={(event) => setSearch(event.target.value)}
+          onChange={(event) => setSearchInput(event.target.value)}
           placeholder={t("searchPlaceholder")}
-          value={search}
+          value={searchInput}
         />
         <select
           aria-label={t("filterStatus")}
@@ -272,6 +318,7 @@ export function UserApprovals() {
         <select
           aria-label={t("filterRole")}
           className="field"
+          disabled={status === "TEACHER_REQUESTS"}
           onChange={(event) => {
             setPage(1);
             setRoleFilter(event.target.value as RoleFilter);
@@ -353,10 +400,18 @@ export function UserApprovals() {
                         <button
                           className="underline decoration-dotted underline-offset-2 hover:text-amber-200 disabled:opacity-50"
                           disabled={busyId === item.id}
-                          onClick={() => changeRole(item.id, "TEACHER")}
+                          onClick={() => setPendingRole({ userId: item.id, role: "TEACHER" })}
                           type="button"
                         >
                           {t("grantRequested")}
+                        </button>
+                        <button
+                          className="underline decoration-dotted underline-offset-2 hover:text-amber-200 disabled:opacity-50"
+                          disabled={busyId === item.id}
+                          onClick={() => declineRequest(item.id)}
+                          type="button"
+                        >
+                          {t("declineRequest")}
                         </button>
                       </span>
                     ) : null}
@@ -366,8 +421,11 @@ export function UserApprovals() {
                       aria-label={`${t("role")} — ${item.name}`}
                       className="field py-1 text-xs"
                       disabled={busyId === item.id}
-                      onChange={(event) => changeRole(item.id, event.target.value as UserRole)}
-                      value={item.role}
+                      onChange={(event) => {
+                        const role = event.target.value as UserRole;
+                        setPendingRole(role === item.role ? null : { userId: item.id, role });
+                      }}
+                      value={pendingRole?.userId === item.id ? pendingRole.role : item.role}
                     >
                       {ASSIGNABLE_ROLES.map((role) => (
                         <option key={role} value={role}>
@@ -375,6 +433,28 @@ export function UserApprovals() {
                         </option>
                       ))}
                     </select>
+                    {pendingRole?.userId === item.id ? (
+                      <span className="mt-1 flex flex-wrap items-center gap-2">
+                        <span className="text-xs text-amber-300">
+                          {t("confirmRoleChange", { role: t(`role${pendingRole.role}`) })}
+                        </span>
+                        <button
+                          className="btn-primary px-2.5 py-1 text-xs"
+                          disabled={busyId === item.id}
+                          onClick={() => changeRole(item.id, pendingRole.role)}
+                          type="button"
+                        >
+                          {busyId === item.id ? "..." : t("confirmRoleYes")}
+                        </button>
+                        <button
+                          className="btn-secondary px-2.5 py-1 text-xs"
+                          onClick={() => setPendingRole(null)}
+                          type="button"
+                        >
+                          {t("cancel")}
+                        </button>
+                      </span>
+                    ) : null}
                   </td>
                   <td className="py-2">{item.email}</td>
                   <td className="py-2">{item.phone ?? "-"}</td>
@@ -437,7 +517,10 @@ export function UserApprovals() {
             {t("prev")}
           </button>
           <p className="text-sm font-semibold text-ink-main">
-            {t("pageInfo", { current: pagination.page, total: pagination.totalPages, count: pagination.totalItems })}
+            {/* "pending" is only true of the PENDING view; the others count users. */}
+            {status === "PENDING"
+              ? t("pageInfo", { current: pagination.page, total: pagination.totalPages, count: pagination.totalItems })
+              : t("pageInfoTotal", { current: pagination.page, total: pagination.totalPages, count: pagination.totalItems })}
           </p>
           <button
             className="btn-secondary"

@@ -7,6 +7,19 @@ export type TicketListFilters = {
   type?: TicketType | "ALL";
 };
 
+/**
+ * Stand-in for a reporter/author whose account was deleted. Ticket and comment
+ * rows survive a user delete (FK SET NULL); the UI renders the name/email
+ * fallback ("—") for this, so its shape stays non-null for every caller.
+ */
+const DELETED_USER = { id: "", name: null, email: null } as const;
+
+type PersonRef = { id: string; name: string | null; email: string | null };
+
+function personOrDeleted(person: PersonRef | null): PersonRef {
+  return person ?? { ...DELETED_USER };
+}
+
 const listSelect = {
   id: true,
   title: true,
@@ -38,6 +51,7 @@ export async function listTickets(filters: TicketListFilters = {}, limit = 200) 
 
   return rows.map((t) => ({
     ...t,
+    reporter: personOrDeleted(t.reporter),
     createdAt: t.createdAt.toISOString(),
     resolvedAt: t.resolvedAt ? t.resolvedAt.toISOString() : null,
     commentCount: t._count.comments,
@@ -62,6 +76,7 @@ export async function getTicketById(ticketId: string) {
 
   return {
     ...t,
+    reporter: personOrDeleted(t.reporter),
     createdAt: t.createdAt.toISOString(),
     updatedAt: t.updatedAt.toISOString(),
     resolvedAt: t.resolvedAt ? t.resolvedAt.toISOString() : null,
@@ -69,7 +84,7 @@ export async function getTicketById(ticketId: string) {
       id: c.id,
       body: c.body,
       createdAt: c.createdAt.toISOString(),
-      author: c.author,
+      author: personOrDeleted(c.author),
     })),
   };
 }
@@ -135,7 +150,7 @@ export async function addTicketComment(ticketId: string, authorId: string, body:
     id: comment.id,
     body: comment.body,
     createdAt: comment.createdAt.toISOString(),
-    author: comment.author,
+    author: personOrDeleted(comment.author),
   };
 }
 
