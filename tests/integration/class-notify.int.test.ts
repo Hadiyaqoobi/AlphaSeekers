@@ -58,7 +58,7 @@ d("new class notifies its teacher", () => {
   beforeEach(cleanup);
   afterAll(cleanup);
 
-  it("messages the teacher with both setup steps when a class is created", async () => {
+  it("tells the teacher the class and time, and asks them to set up nothing", async () => {
     const teacher = await makeTeacher("assigned");
 
     const klass = await createClass(newClassInput(teacher.id));
@@ -68,15 +68,13 @@ d("new class notifies its teacher", () => {
 
     const body = notes[0].content;
     expect(body).toContain(klass.name);
-    // Both steps must be named, or the teacher does half the setup and the class
-    // still cannot run. They are reached through the setup checklist, which
-    // shows live status rather than repeating instructions.
-    expect(body).toMatch(/hours you can teach/i);
-    expect(body).toContain("/en/teacher/setup");
-    // Google must be described as optional: the Meet integration falls back to
-    // the shared platform account, so a teacher who declines is not blocked.
-    expect(body).toMatch(/optional/i);
     expect(body).toContain("7:00 AM to 8:00 AM, Saturdays to Thursdays");
+    // Staff own the schedule; the teacher only needs the link, which arrives
+    // before every session. No setup page, no "set your hours" task.
+    expect(body).toMatch(/nothing for you to set up/i);
+    expect(body).toMatch(/Meet link/i);
+    expect(body).not.toContain("/teacher/setup");
+    expect(body).not.toMatch(/hours you can teach/i);
   });
 
   it("does not invent a session at a guessed time", async () => {

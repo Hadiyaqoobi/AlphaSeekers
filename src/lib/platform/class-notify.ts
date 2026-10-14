@@ -60,19 +60,11 @@ export async function notifyTeacherOfNewClass(input: {
   // generic instructions — it ticks each step off as they complete it.
   const autoContent = [
     `You have been assigned a new class: "${input.className}".`,
-    input.schedulePreference ? `Planned schedule: ${input.schedulePreference}` : null,
+    input.schedulePreference ? `Schedule: ${input.schedulePreference} (Kabul time)` : null,
     "",
-    "One step before it can run: set the hours you can teach.",
-    "",
-    `Set them here: ${base}/en/teacher/setup`,
-    "",
-    "Your sessions are then created automatically at the class time above (Kabul time),",
-    "as long as that time is inside the hours you set.",
-    "Until then the class has no session times and students cannot join.",
-    "",
-    "You can also connect your Google account on that page if you want the Meet",
-    "invitation in your own calendar. That part is optional — sessions get a Meet",
-    "link either way.",
+    "Sessions are booked automatically at this time and each one gets a Google Meet link.",
+    "You will get the link by email before every session. There is nothing for you to set up:",
+    "the AlphaSeekers team manages the schedule.",
   ]
     .filter((line) => line !== null)
     .join("\n");
