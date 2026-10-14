@@ -3,7 +3,13 @@ import { ClassStatus, EnrollmentStatus, MeetLinkStatus, NotificationChannel, Not
 
 import { DEMO_USERS } from "@/lib/constants";
 import { cancelMeetEvent, generateMeetLink, type MeetGenerationResult } from "@/lib/integrations/meet";
-import { deliverWithFallback, type NotificationDelivery, type NotificationTarget } from "@/lib/integrations/notifications";
+import {
+  deliverWithFallback,
+  deliveryNeedsRetry,
+  landedOnRealChannel,
+  type NotificationDelivery,
+  type NotificationTarget,
+} from "@/lib/integrations/notifications";
 import { classCatalog } from "@/lib/mock-data";
 import { notifyTeacherOfNewClass } from "@/lib/platform/class-notify";
 import { prisma } from "@/lib/prisma";
@@ -2636,7 +2642,8 @@ export async function deliverAndRecord(
   await mapWithConcurrency(recipients, DELIVERY_CONCURRENCY, async (user) => {
     const content = contentFor(user);
     const deliveries = await deliverWithFallback(toDeliveryTarget(user), content);
-    if (deliveries.some((delivery) => delivery.status === "SENT")) sent += 1;
+    // Count only real deliveries; the PLATFORM fallback always reports SENT.
+    if (landedOnRealChannel(deliveries)) sent += 1;
     if (deliveries.length > 0) {
       await prisma.notification.createMany({
         data: deliveries.map((delivery) => ({
@@ -3196,7 +3203,11 @@ export async function runReminderBatch() {
 
     try {
       const deliveries = await deliverWithFallback(task.target, task.content);
-      const sent = deliveries.some((delivery) => delivery.status === "SENT");
+      // deliverWithFallback always ends with an in-app PLATFORM "SENT", so that
+      // alone says nothing about whether the student was reached. Retry only when
+      // a real channel failed in a way a later run could fix (e.g. SMTP 535); a
+      // student with no usable channel at all is done, not retried every tick.
+      const sent = landedOnRealChannel(deliveries) || !deliveryNeedsRetry(deliveries);
 
       if (sent) {
         await prisma.notification.updateMany({

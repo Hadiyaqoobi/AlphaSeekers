@@ -11,6 +11,7 @@ import { MustChangePasswordBanner } from "@/components/must-change-password-bann
 import { MobileNav } from "@/components/public/mobile-nav";
 import { InstallPrompt } from "@/components/pwa/install-prompt";
 import { ServiceWorkerRegister } from "@/components/pwa/sw-register";
+import { SessionKeepalive } from "@/components/session-keepalive";
 import { routing } from "@/i18n/routing";
 import { isRtlLocale, type Locale } from "@/lib/i18n";
 import { getAccessControl } from "@/lib/security/permissions";
@@ -121,6 +122,7 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
                 </div>
               </header>
               {access?.mustChangePassword ? <MustChangePasswordBanner locale={locale} /> : null}
+              <SessionKeepalive />
               <main id="main-content" className="flex-1 overflow-y-auto">{children}</main>
             </div>
           </div>
