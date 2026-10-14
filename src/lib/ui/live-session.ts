@@ -44,3 +44,19 @@ export function liveAccessReason(status: number, message: string | null | undefi
   if (m.includes("has ended")) return "ended";
   return "generic";
 }
+
+/**
+ * Pull summary text out of the summary API, whichever shape it arrives in:
+ * POST generate → `draft: string`; GET → `draft: { content }` and
+ * `published: { content }`; older/other shapes may use `summary` or `content`.
+ */
+export function readSummaryText(value: unknown): string | null {
+  if (typeof value === "string") return value.trim() ? value : null;
+  if (value && typeof value === "object") {
+    const v = value as Record<string, unknown>;
+    for (const key of ["content", "summary"]) {
+      if (typeof v[key] === "string" && (v[key] as string).trim()) return v[key] as string;
+    }
+  }
+  return null;
+}

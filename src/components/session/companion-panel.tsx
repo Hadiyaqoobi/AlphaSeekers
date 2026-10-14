@@ -6,7 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { DirArrow } from "@/components/ui/dir-arrow";
 import { formatKabulTime } from "@/lib/ui/kabul-time";
-import { shouldPollLive } from "@/lib/ui/live-session";
+import { readSummaryText, shouldPollLive } from "@/lib/ui/live-session";
 
 import { CheckinCodePanel } from "./checkin-code-panel";
 import { CheckinEntry } from "./checkin-entry";
@@ -65,6 +65,9 @@ type LiveData = {
   }> | null;
 };
 
+/** The summary route refuses a published summary shorter than this. */
+const SUMMARY_MIN_LENGTH = 20;
+
 interface CompanionPanelProps {
   initialData: LiveData;
   locale: "en" | "fa";
@@ -78,6 +81,12 @@ export function CompanionPanel({ initialData, locale }: CompanionPanelProps) {
   const [generatingSummary, setGeneratingSummary] = useState(false);
   const [generatingQuiz, setGeneratingQuiz] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  // AI summaries are drafts until the teacher publishes them. The draft is
+  // only ever held here (teacher/admin view); students see data.summary, which
+  // is the PUBLISHED summary only.
+  const [draft, setDraft] = useState<string | null>(null);
+  const [publishing, setPublishing] = useState(false);
+  const [publishedNotice, setPublishedNotice] = useState(false);
 
   const { session, role } = data;
 
@@ -132,25 +141,77 @@ export function CompanionPanel({ initialData, locale }: CompanionPanelProps) {
     }
   }, [role, session.classId, session.id]);
 
+  const summaryUrl = `/api/classes/${session.classId}/sessions/${session.id}/summary`;
+
+  // Teacher/admin after class: load an existing unpublished draft once, so a
+  // reload does not lose it. Students never request drafts.
+  const { endTime: sessionEndTime } = session;
+  useEffect(() => {
+    if (role !== "teacher" && role !== "admin") return;
+    if (Date.now() <= new Date(sessionEndTime).getTime()) return;
+    let cancelled = false;
+    fetch(summaryUrl)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((body: Record<string, unknown> | null) => {
+        if (cancelled || !body) return;
+        const text = readSummaryText(body.draft);
+        const publishedText = readSummaryText(body.published ?? body.summary);
+        // Only surface a draft that differs from what students already see.
+        if (text && text !== publishedText) setDraft((current) => current ?? text);
+      })
+      .catch(() => {
+        /* no draft shown; generating a new one still works */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [role, sessionEndTime, summaryUrl]);
+
   const handleGenerateSummary = useCallback(async () => {
     setGeneratingSummary(true);
     setActionError(null);
+    setPublishedNotice(false);
     try {
-      const res = await fetch(
-        `/api/classes/${session.classId}/sessions/${session.id}/summary`,
-        { method: "POST" },
-      );
+      const res = await fetch(summaryUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "generate" }),
+      });
       if (!res.ok) {
         throw new Error("summary");
       }
-      await refreshData();
+      const body = (await res.json().catch(() => null)) as Record<string, unknown> | null;
+      const text = readSummaryText(body?.draft);
+      if (!text) throw new Error("summary");
+      setDraft(text);
     } catch {
       // Translated message, never the server's English text.
       setActionError(t("summaryFailed"));
     } finally {
       setGeneratingSummary(false);
     }
-  }, [session.classId, session.id, refreshData, t]);
+  }, [summaryUrl, t]);
+
+  const handlePublishSummary = useCallback(async () => {
+    if (!draft || draft.trim().length < SUMMARY_MIN_LENGTH) return;
+    setPublishing(true);
+    setActionError(null);
+    try {
+      const res = await fetch(summaryUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "publish", content: draft.trim() }),
+      });
+      if (!res.ok) throw new Error("publish");
+      setDraft(null);
+      setPublishedNotice(true);
+      await refreshData();
+    } catch {
+      setActionError(t("publishFailed"));
+    } finally {
+      setPublishing(false);
+    }
+  }, [draft, summaryUrl, refreshData, t]);
 
   const handleGenerateQuiz = useCallback(async () => {
     setGeneratingQuiz(true);
@@ -315,7 +376,11 @@ export function CompanionPanel({ initialData, locale }: CompanionPanelProps) {
                 disabled={generatingSummary}
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-neon-600 text-white text-sm font-semibold hover:bg-neon-700 disabled:opacity-50"
               >
-                {generatingSummary ? t("generating") : data.summary ? `📝 ${t("regenerateSummary")}` : `📝 ${t("generateSummary")}`}
+                {generatingSummary
+                  ? t("generating")
+                  : data.summary || draft
+                    ? `📝 ${t("regenerateSummary")}`
+                    : `📝 ${t("generateSummary")}`}
               </button>
               {data.summary && (
                 <button
@@ -334,6 +399,36 @@ export function CompanionPanel({ initialData, locale }: CompanionPanelProps) {
                 {t("recordingSetup")} <DirArrow />
               </Link>
             </div>
+            {draft !== null && (
+              <div className="mt-4 space-y-2 rounded-xl border border-amber-500/30 bg-amber-500/5 p-4">
+                <label className="block text-sm font-semibold text-ink-main" htmlFor="summary-draft">
+                  {t("draftTitle")}
+                </label>
+                <p className="text-xs text-amber-300" dir="auto">{t("draftNote")}</p>
+                <textarea
+                  id="summary-draft"
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                  rows={10}
+                  dir="auto"
+                  className="w-full rounded-lg border border-line bg-dark-50 px-3 py-2 text-sm text-ink-main leading-relaxed focus:outline-none focus:ring-2 focus:ring-neon-500/30 focus:border-neon-400"
+                />
+                {draft.trim().length < SUMMARY_MIN_LENGTH ? (
+                  <p className="text-xs text-ink-faint" dir="auto">{t("draftTooShort")}</p>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={handlePublishSummary}
+                  disabled={publishing || draft.trim().length < SUMMARY_MIN_LENGTH}
+                  className="inline-flex min-h-10 items-center gap-2 px-4 py-2 rounded-lg bg-neon-600 text-white text-sm font-semibold hover:bg-neon-700 disabled:opacity-50"
+                >
+                  {publishing ? t("publishing") : t("publishSummary")}
+                </button>
+              </div>
+            )}
+            {publishedNotice && (
+              <p className="text-xs text-neon-400 mt-2" role="status">{t("summaryPublished")}</p>
+            )}
             {actionError && <p className="text-xs text-red-600 mt-2" role="alert">{actionError}</p>}
           </div>
         )}

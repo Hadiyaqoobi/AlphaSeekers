@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { DirArrow } from "@/components/ui/dir-arrow";
+import { AI_QUESTION_MAX, aiExcerpt } from "@/lib/ui/ai-excerpt";
 
 type PostType = "article" | "creative_writing" | "poetry" | "art" | "spotlight";
 
@@ -85,6 +86,8 @@ export function PostEditor({ locale, initialPost }: PostEditorProps) {
   const [uploadingCover, setUploadingCover] = useState(false);
   const [aiLoading, setAiLoading] = useState<"grammar" | "improve" | null>(null);
   const [aiResult, setAiResult] = useState<string | null>(null);
+  const [aiTrimmed, setAiTrimmed] = useState(false);
+  const contentRef = useRef<HTMLTextAreaElement>(null);
 
   const coverInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
@@ -293,12 +296,24 @@ export function PostEditor({ locale, initialPost }: PostEditorProps) {
 
       setAiLoading(mode);
       setAiResult(null);
+      setAiTrimmed(false);
       setError(null);
 
-      const instruction =
+      const prefix =
         mode === "grammar"
-          ? `Check the following text for grammar and spelling mistakes. List each issue briefly, then suggest the correction. Keep the student's voice.\n\n${content}`
-          : `Read this student's writing. Suggest 3 concrete ways to make it clearer and more engaging while keeping their voice. Be specific and kind.\n\n${content}`;
+          ? "Check the following text for grammar and spelling mistakes. List each issue briefly, then suggest the correction. Keep the student's voice.\n\n"
+          : "Read this student's writing. Suggest 3 concrete ways to make it clearer and more engaging while keeping their voice. Be specific and kind.\n\n";
+      // The AI route refuses questions over 1,000 characters (instruction
+      // included): send the selection if there is one, else the start of the
+      // text, and tell the student when only part of it was checked.
+      const el = contentRef.current;
+      const excerpt = aiExcerpt(
+        content,
+        AI_QUESTION_MAX - prefix.length,
+        el ? { start: el.selectionStart, end: el.selectionEnd } : null,
+      );
+      setAiTrimmed(excerpt.trimmed);
+      const instruction = `${prefix}${excerpt.text}`;
 
       try {
         const res = await fetch("/api/ai/ask", {
@@ -478,6 +493,7 @@ export function PostEditor({ locale, initialPost }: PostEditorProps) {
           {type === "poetry" ? (isDari ? "شعر خود را اینجا بنویسید" : "Write your poem") : type === "spotlight" ? (isDari ? "معرفی خود" : "About you and your dream") : isDari ? "داستان خود" : "Your story"}
         </label>
         <textarea
+          ref={contentRef}
           value={content}
           onChange={(e) => setContent(e.target.value)}
           placeholder={
@@ -609,6 +625,9 @@ export function PostEditor({ locale, initialPost }: PostEditorProps) {
             {aiLoading === "improve" ? "…" : "✨"} {isDari ? "بهبود نوشته" : "Improve my writing"}
           </button>
         </div>
+        {aiResult && aiTrimmed ? (
+          <p className="text-xs text-ink-faint" dir="auto">{tEditor("aiTrimmed")}</p>
+        ) : null}
         {aiResult && (
           <div className="rounded-lg bg-dark-100 border border-line p-4 text-sm text-ink-main whitespace-pre-wrap">
             {aiResult}

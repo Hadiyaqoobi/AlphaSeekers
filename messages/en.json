@@ -1636,7 +1636,14 @@
       "savedAt": "Saved {time}",
       "notSaved": "Not saved yet",
       "saveNow": "Save now"
-    }
+    },
+    "draftTitle": "Summary draft — check and edit it before publishing",
+    "draftNote": "Students do not see this summary until you publish it.",
+    "draftTooShort": "The summary must be at least 20 characters before it can be published.",
+    "publishSummary": "Publish to class",
+    "publishing": "Publishing...",
+    "publishFailed": "Could not publish the summary. Please try again.",
+    "summaryPublished": "Published. Students in this class can now see the summary."
   },
   "stories": {
     "anonymous": "Anonymous",
@@ -1648,7 +1655,8 @@
     "imageTooLarge": "The image must be smaller than 5 MB.",
     "writeFirst": "Write something first, then ask the AI for help.",
     "aiFailed": "The AI could not answer right now. Please try again.",
-    "noSuggestions": "No suggestions this time."
+    "noSuggestions": "No suggestions this time.",
+    "aiTrimmed": "Only the first part of your text was checked — the AI helper reads up to about 1,000 characters at a time. Select a part of your text to check that part instead."
   },
   "learn": {
     "chatNoAnswer": "I could not answer that — try asking a different way."

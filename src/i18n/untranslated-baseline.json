@@ -392,6 +392,14 @@
     "resetPassword.rateLimited",
     "resetPassword.failed",
     "contentForms.applyLink",
-    "learn.chatNoAnswer"
+    "learn.chatNoAnswer",
+    "liveSession.draftTitle",
+    "liveSession.draftNote",
+    "liveSession.draftTooShort",
+    "liveSession.publishSummary",
+    "liveSession.publishing",
+    "liveSession.publishFailed",
+    "liveSession.summaryPublished",
+    "storyEditor.aiTrimmed"
   ]
 }

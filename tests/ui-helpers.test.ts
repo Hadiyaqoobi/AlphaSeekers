@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
 
+import { AI_QUESTION_MAX, aiExcerpt } from "@/lib/ui/ai-excerpt";
 import { messageForCode, readErrorBody } from "@/lib/ui/api-error";
 import { digitsOnly, toLatinDigits } from "@/lib/ui/digits";
 import { formatKabulLongDate, formatKabulTime, kabulDayPart, kabulHour } from "@/lib/ui/kabul-time";
-import { liveAccessReason, shouldPollLive } from "@/lib/ui/live-session";
+import { liveAccessReason, readSummaryText, shouldPollLive } from "@/lib/ui/live-session";
 import { passwordProblem } from "@/lib/ui/password-policy";
 import { loginHref, pickReturnPath, safeNextPath } from "@/lib/ui/safe-next";
 
@@ -155,5 +156,40 @@ describe("live session roster polling gate", () => {
     expect(liveAccessReason(403, "This live session has ended. You can still view…")).toBe("ended");
     expect(liveAccessReason(403, "Something new")).toBe("generic");
     expect(liveAccessReason(403, undefined)).toBe("generic");
+  });
+});
+
+describe("session summary API shapes", () => {
+  it("reads draft/published text from any of the shapes the route returns", () => {
+    expect(readSummaryText("A draft")).toBe("A draft");
+    expect(readSummaryText({ content: "Published", generatedAt: "x" })).toBe("Published");
+    expect(readSummaryText({ summary: "Old shape" })).toBe("Old shape");
+    expect(readSummaryText(null)).toBeNull();
+    expect(readSummaryText("   ")).toBeNull();
+    expect(readSummaryText({ content: 42 })).toBeNull();
+  });
+});
+
+describe("AI helper text fits the 1,000-character question limit", () => {
+  const prefix = "x".repeat(150);
+  const budget = AI_QUESTION_MAX - prefix.length;
+
+  it("sends short text unchanged", () => {
+    expect(aiExcerpt("short", budget)).toEqual({ text: "short", trimmed: false });
+  });
+
+  it("trims long text so instruction + text stays within the limit", () => {
+    const out = aiExcerpt("a".repeat(5000), budget);
+    expect(out.trimmed).toBe(true);
+    expect(prefix.length + out.text.length).toBe(AI_QUESTION_MAX);
+  });
+
+  it("uses the selection when there is one", () => {
+    const text = "first part. SECOND PART. third";
+    expect(aiExcerpt(text, budget, { start: 12, end: 24 })).toEqual({ text: "SECOND PART.", trimmed: false });
+    // empty selection (just a cursor) → whole text
+    expect(aiExcerpt(text, budget, { start: 5, end: 5 }).text).toBe(text);
+    // a long selection is still trimmed
+    expect(aiExcerpt("b".repeat(3000), budget, { start: 0, end: 3000 }).trimmed).toBe(true);
   });
 });
