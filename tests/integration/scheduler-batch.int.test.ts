@@ -62,6 +62,9 @@ async function makeAutoClass(teacherId: string, name: string) {
       teacherId,
       maxStudents: 10,
       durationMinutes: 60,
+      // The scheduler books the POSTED time, and only inside availability
+      // (src/lib/scheduling/weekly-slot.ts): Wednesday 14:00-15:00 Kabul above.
+      schedulePreference: "Wed 2:00 PM",
       schedulingMode: "AUTO",
     },
     select: { id: true },

@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 
 import { getTranslations } from "next-intl/server";
 
-import { StaffClassForm } from "@/components/staff/staff-class-form";
+import { ClassCreateForm } from "@/components/staff/staff-class-form";
 import { listUsersByRole } from "@/lib/platform/store";
 import { getSessionUser } from "@/lib/security/session";
 
@@ -40,7 +40,7 @@ export default async function StaffCreateClassPage({ params }: CreateClassPagePr
                 </div>
             </header>
 
-            <StaffClassForm teachers={teachers} />
+            <ClassCreateForm autosaveKey="staff-class-create" teachers={teachers} />
         </section>
     );
 }

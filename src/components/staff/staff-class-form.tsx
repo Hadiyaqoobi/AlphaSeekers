@@ -2,9 +2,22 @@
 
 import { useState } from "react";
 
-import { useTranslations } from "next-intl";
+import Link from "next/link";
+import { useLocale, useTranslations } from "next-intl";
 
 import { useAutosaveForm } from "@/components/forms/use-autosave-form";
+import { formatDateTime } from "@/lib/format-date";
+
+/**
+ * THE "post a class" form, used on both /staff/classes/create and /admin/classes.
+ *
+ * There used to be two different forms: the admin one had a free-text schedule
+ * that silently became Saturday 5:00 PM when typed any other way, the staff one
+ * had "frequency" and "material link" fields that were never sent. Staff are
+ * volunteers who found posting a class confusing, so this one keeps to three
+ * questions — what, who, when — with everything optional folded away, and ends on
+ * a single "Copy link for WhatsApp" button.
+ */
 
 type Teacher = {
     id: string;
@@ -12,41 +25,40 @@ type Teacher = {
     email: string;
 };
 
-type StaffClassFormProps = {
+type ClassCreateFormProps = {
     teachers: Teacher[];
+    /** Separate drafts per page, so a half-filled form on one is not shown on the other. */
+    autosaveKey?: string;
 };
 
 type FormState = {
     name: string;
     subjectCategory: string;
     description: string;
+    language: string;
     teacherMode: "existing" | "invite";
     teacherId: string;
     newTeacherName: string;
     newTeacherEmail: string;
-    maxStudents: string;
-    durationMinutes: string;
     day: string;
     time: string;
-    frequency: string;
-    language: string;
-    materialUrl: string;
-    registrationFormUrl: string;
-    whatsappGroupUrl: string;
+    durationMinutes: string;
+    manualDates: boolean;
+    maxStudents: string;
     registrationDeadline: string;
-    schedulingMode: "AUTO" | "MANUAL";
+    whatsappGroupUrl: string;
+    registrationFormUrl: string;
 };
 
 type CreatedResult = {
     class: { id: string; name: string };
     sessions: Array<{ startTime: string; endTime: string; meetLink: string | null; meetLinkStatus: string }>;
     registrationUrl: string;
-    registrationFormUrl: string | null;
+    scheduleIssue?: string | null;
 };
 
 const DAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
 const DAY_VALUES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-const FREQUENCY_KEYS = ["weekly", "biweekly", "daily"] as const;
 const CATEGORY_KEYS = [
     "languages",
     "english",
@@ -68,29 +80,41 @@ const CATEGORY_VALUES = [
     "Other",
 ];
 
+const ISSUE_KEYS: Record<string, string> = {
+    "no-availability": "issueNoAvailability",
+    "outside-availability": "issueOutsideAvailability",
+    unparseable: "issueUnparseable",
+    clash: "issueClash",
+    "already-handled": "issueAlreadyHandled",
+};
+
 const DEFAULT_FORM: FormState = {
     name: "",
     subjectCategory: "Languages",
     description: "",
+    language: "Dari",
     teacherMode: "existing",
     teacherId: "",
     newTeacherName: "",
     newTeacherEmail: "",
-    maxStudents: "50",
-    durationMinutes: "60",
     day: "Tue",
     time: "18:00",
-    frequency: "weekly",
-    language: "Dari",
-    materialUrl: "",
-    registrationFormUrl: "",
-    whatsappGroupUrl: "",
+    durationMinutes: "60",
+    manualDates: false,
+    maxStudents: "50",
     registrationDeadline: "",
-    schedulingMode: "AUTO",
+    whatsappGroupUrl: "",
+    registrationFormUrl: "",
 };
 
-export function StaffClassForm({ teachers }: StaffClassFormProps) {
-    const t = useTranslations("staffForms");
+const LABEL = "text-xs font-semibold text-ink-soft";
+const LEGEND = "text-xs font-bold uppercase tracking-wide text-ink-faint";
+
+export function ClassCreateForm({ teachers, autosaveKey = "class-create" }: ClassCreateFormProps) {
+    const t = useTranslations("classLifecycle");
+    // Day names, subject names and the invite wording are already translated here.
+    const ts = useTranslations("staffForms");
+    const locale = useLocale();
     const [form, setForm] = useState<FormState>({
         ...DEFAULT_FORM,
         teacherId: teachers[0]?.id ?? "",
@@ -98,22 +122,15 @@ export function StaffClassForm({ teachers }: StaffClassFormProps) {
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [result, setResult] = useState<CreatedResult | null>(null);
-    const [copiedField, setCopiedField] = useState<string | null>(null);
+    const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
 
-    useAutosaveForm("staff-class-create", form, (payload) => {
-        setForm((current) => ({ ...current, ...(payload as FormState) }));
+    useAutosaveForm(autosaveKey, form, (payload) => {
+        setForm((current) => ({ ...current, ...(payload as Partial<FormState>) }));
     });
 
-    function formatTimeTo12h(time24: string) {
-        const [hourStr, minuteStr] = time24.split(":");
-        let hour = Number(hourStr);
-        const amPm = hour >= 12 ? "PM" : "AM";
-        if (hour > 12) hour -= 12;
-        if (hour === 0) hour = 12;
-        return `${hour}:${minuteStr} ${amPm}`;
+    function update<K extends keyof FormState>(key: K, value: FormState[K]) {
+        setForm((current) => ({ ...current, [key]: value }));
     }
-
-    const selectedTeacher = teachers.find((teacher) => teacher.id === form.teacherId);
 
     async function submit(event: React.FormEvent) {
         event.preventDefault();
@@ -121,22 +138,25 @@ export function StaffClassForm({ teachers }: StaffClassFormProps) {
         setError(null);
         setResult(null);
 
-        const schedulePreference = `${form.day} ${formatTimeTo12h(form.time)}`;
-
         const payload: Record<string, unknown> = {
             name: form.name,
             subjectCategory: form.subjectCategory,
             description: form.description,
-            maxStudents: Number(form.maxStudents),
-            durationMinutes: Number(form.durationMinutes),
-            schedulePreference,
             language: form.language,
-            registrationFormUrl: form.registrationFormUrl || undefined,
-            whatsappGroupUrl: form.whatsappGroupUrl || undefined,
-            registrationDeadline: form.registrationDeadline || undefined,
-            schedulingMode: form.schedulingMode,
+            // Sent as separate fields; the server builds the stored "Tue 6:00 PM"
+            // and rejects anything it cannot read instead of guessing.
+            day: form.day,
+            time: form.time,
+            durationMinutes: Number(form.durationMinutes),
+            schedulingMode: form.manualDates ? "MANUAL" : "AUTO",
+            maxStudents: Number(form.maxStudents),
+            ...(form.registrationDeadline ? { registrationDeadline: form.registrationDeadline } : {}),
+            ...(form.whatsappGroupUrl.trim() ? { whatsappGroupUrl: form.whatsappGroupUrl.trim() } : {}),
+            ...(form.registrationFormUrl.trim() ? { registrationFormUrl: form.registrationFormUrl.trim() } : {}),
         };
 
+        // Send ONLY the instructor fields for the chosen mode — empty invite fields
+        // would fail the server-side email/min-length checks.
         if (form.teacherMode === "invite") {
             payload.newTeacherName = form.newTeacherName;
             payload.newTeacherEmail = form.newTeacherEmail;
@@ -144,244 +164,196 @@ export function StaffClassForm({ teachers }: StaffClassFormProps) {
             payload.teacherId = form.teacherId;
         }
 
-        const response = await fetch("/api/staff/classes", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-        });
+        try {
+            const response = await fetch("/api/staff/classes", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+            });
 
-        if (!response.ok) {
-            const body = (await response.json().catch(() => ({ message: t("createFailed") }))) as {
-                message?: string;
-            };
-            setError(body.message ?? t("createFailed"));
+            if (!response.ok) {
+                const body = (await response.json().catch(() => ({}))) as { message?: string };
+                setError(body.message ?? t("createFailed"));
+                return;
+            }
+
+            setResult((await response.json()) as CreatedResult);
+            setCopyState("idle");
+            setForm({ ...DEFAULT_FORM, teacherId: teachers[0]?.id ?? "" });
+        } catch {
+            setError(t("createFailed"));
+        } finally {
             setSaving(false);
-            return;
+        }
+    }
+
+    // ── Success screen ────────────────────────────────────────────────────
+    if (result) {
+        const firstSession = result.sessions[0] ?? null;
+        const meetLink = firstSession?.meetLink ?? null;
+        const whatsappText = [
+            result.class.name,
+            `${t("whatsappJoinLine")} ${result.registrationUrl}`,
+            meetLink ? `${t("whatsappMeetLine")} ${meetLink}` : null,
+        ]
+            .filter(Boolean)
+            .join("\n");
+        const issueKey = result.scheduleIssue ? ISSUE_KEYS[result.scheduleIssue] : null;
+
+        async function copyForWhatsApp() {
+            try {
+                await navigator.clipboard.writeText(whatsappText);
+                setCopyState("copied");
+            } catch {
+                setCopyState("failed");
+            }
         }
 
-        const data = (await response.json()) as CreatedResult;
-        setResult(data);
-        setSaving(false);
-        setForm({ ...DEFAULT_FORM, teacherId: teachers[0]?.id ?? "" });
-    }
-
-    function copyToClipboard(text: string, fieldName: string) {
-        navigator.clipboard.writeText(text);
-        setCopiedField(fieldName);
-        setTimeout(() => setCopiedField(null), 2000);
-    }
-
-    function resetForm() {
-        setResult(null);
-        setError(null);
-    }
-
-    // Get the translated frequency label for the current selection
-    function getFrequencyLabel(value: string) {
-        const index = ["weekly", "biweekly", "daily"].indexOf(value);
-        if (index >= 0) return t(FREQUENCY_KEYS[index]);
-        return value;
-    }
-
-    // ── Success panel ─────────────────────────────────────────────────────
-    if (result) {
         return (
             <div className="panel panel-strong space-y-4 p-5">
                 <div className="flex items-center gap-2">
                     <span className="flex h-8 w-8 items-center justify-center rounded-full bg-neon-100 text-neon-600">
                         ✓
                     </span>
-                    <h2 className="text-xl font-black text-ink-main">{t("classCreated")}</h2>
+                    <h2 className="text-xl font-black text-ink-main">{t("createdTitle")}</h2>
                 </div>
 
-                <p className="text-sm text-ink-soft">
-                    {t("classLiveMessage", { name: result.class.name })}
-                </p>
+                <p className="text-sm text-ink-soft">{t("createdBody")}</p>
 
-                <div className="space-y-3">
-                    {/* Registration link */}
-                    <div className="rounded-lg border border-line bg-dark-100 p-3">
-                        <label className="text-xs font-semibold uppercase tracking-wide text-ink-soft">
-                            {t("registrationLinkLabel")}
-                        </label>
-                        <div className="mt-1 flex items-center gap-2">
-                            <code className="flex-1 truncate rounded bg-dark-50 px-2 py-1 text-sm text-ink-main">
-                                {result.registrationUrl}
-                            </code>
-                            <button
-                                className="btn-secondary shrink-0 text-xs"
-                                onClick={() => copyToClipboard(result.registrationUrl, "registration")}
-                                type="button"
-                            >
-                                {copiedField === "registration" ? t("copied") : t("copy")}
-                            </button>
-                        </div>
-                    </div>
+                <pre className="whitespace-pre-wrap break-all rounded-lg border border-line bg-dark-100 p-3 text-sm text-ink-main">
+                    {whatsappText}
+                </pre>
 
-                    {/* Meet link */}
-                    {result.sessions[0]?.meetLink ? (
-                        <div className="rounded-lg border border-line bg-dark-100 p-3">
-                            <label className="text-xs font-semibold uppercase tracking-wide text-ink-soft">
-                                {t("meetLinkLabel")}
-                            </label>
-                            <div className="mt-1 flex items-center gap-2">
-                                <code className="flex-1 truncate rounded bg-dark-50 px-2 py-1 text-sm text-ink-main">
-                                    {result.sessions[0].meetLink}
-                                </code>
-                                <button
-                                    className="btn-secondary shrink-0 text-xs"
-                                    onClick={() => copyToClipboard(result.sessions[0].meetLink!, "meet")}
-                                    type="button"
-                                >
-                                    {copiedField === "meet" ? t("copied") : t("copy")}
-                                </button>
-                            </div>
-                            <p className="mt-1 text-xs text-ink-soft">
-                                {t("firstSession", { time: new Date(result.sessions[0].startTime).toLocaleString() })}
-                            </p>
-                        </div>
-                    ) : null}
-
-                    {/* Session timeline */}
-                    {result.sessions.length > 0 ? (
-                        <div className="rounded-lg border border-line bg-dark-100 p-3">
-                            <label className="text-xs font-semibold uppercase tracking-wide text-ink-soft">
-                                {t("timelineLabel")}
-                            </label>
-                            <div className="mt-2 space-y-1">
-                                {result.sessions.map((session, index) => (
-                                    <div className="flex items-center gap-2 text-sm text-ink-main" key={index}>
-                                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-600">
-                                            {index + 1}
-                                        </span>
-                                        <span>{new Date(session.startTime).toLocaleString()}</span>
-                                        <span className="text-ink-faint">→</span>
-                                        <span>{new Date(session.endTime).toLocaleTimeString()}</span>
-                                        {session.meetLink ? (
-                                            <span className="ml-auto rounded bg-neon-50 px-1.5 py-0.5 text-xs font-semibold text-neon-600">
-                                                {t("meetReady")} ✓
-                                            </span>
-                                        ) : (
-                                            <span className="ml-auto rounded bg-amber-50 px-1.5 py-0.5 text-xs font-semibold text-amber-600">
-                                                {t("pending")}
-                                            </span>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    ) : null}
-
-                    {/* Google Form */}
-                    {result.registrationFormUrl ? (
-                        <div className="rounded-lg border border-line bg-dark-100 p-3">
-                            <label className="text-xs font-semibold uppercase tracking-wide text-ink-soft">
-                                {t("googleFormLabel")}
-                            </label>
-                            <div className="mt-1 flex items-center gap-2">
-                                <code className="flex-1 truncate rounded bg-dark-50 px-2 py-1 text-sm text-ink-main">
-                                    {result.registrationFormUrl}
-                                </code>
-                                <button
-                                    className="btn-secondary shrink-0 text-xs"
-                                    onClick={() => copyToClipboard(result.registrationFormUrl!, "form")}
-                                    type="button"
-                                >
-                                    {copiedField === "form" ? t("copied") : t("copy")}
-                                </button>
-                            </div>
-                        </div>
-                    ) : null}
-                </div>
-
-                <button className="btn-primary w-full" onClick={resetForm} type="button">
-                    {t("createAnother")}
+                <button
+                    className="btn-primary w-full py-3 text-base"
+                    id="class-copy-whatsapp"
+                    onClick={copyForWhatsApp}
+                    type="button"
+                >
+                    {copyState === "copied" ? t("copiedForWhatsApp") : t("copyForWhatsApp")}
                 </button>
+                {copyState === "failed" ? <p className="text-xs text-red-600">{t("copyFailed")}</p> : null}
+
+                {firstSession ? (
+                    <p className="text-sm text-ink-main">
+                        {t("firstSessionAt", { time: formatDateTime(firstSession.startTime, locale) })}
+                    </p>
+                ) : null}
+                {firstSession && !meetLink ? <p className="text-xs text-ink-soft">{t("meetPending")}</p> : null}
+                {issueKey ? (
+                    <p className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-900">
+                        {t(issueKey)}
+                    </p>
+                ) : null}
+                {!firstSession && !issueKey ? <p className="text-xs text-ink-soft">{t("manualCreated")}</p> : null}
+
+                <div className="flex flex-wrap gap-2">
+                    <Link className="btn-secondary" href={`/${locale}/admin/classes/${result.class.id}`}>
+                        {t("openClass")}
+                    </Link>
+                    <button className="btn-secondary" onClick={() => setResult(null)} type="button">
+                        {t("createAnother")}
+                    </button>
+                </div>
             </div>
         );
     }
 
-    // ── Class creation form ───────────────────────────────────────────────
+    // ── Form ──────────────────────────────────────────────────────────────
     return (
-        <form className="panel panel-strong space-y-4 p-4" onSubmit={submit}>
-            <h2 className="text-lg font-black text-ink-main">{t("createClass")}</h2>
-            <p className="text-xs text-ink-soft">
-                {t("formSubtitle")}
-            </p>
+        <form className="panel panel-strong space-y-5 p-4" onSubmit={submit}>
+            <div>
+                <h2 className="text-lg font-black text-ink-main">{t("formTitle")}</h2>
+                <p className="mt-1 text-xs text-ink-soft">{t("formSubtitle")}</p>
+            </div>
 
-            {/* ── Class details ──────── */}
+            {/* ── What ── */}
             <fieldset className="space-y-3">
-                <legend className="text-xs font-bold uppercase tracking-wide text-ink-faint">{t("classDetails")}</legend>
+                <legend className={LEGEND}>{t("sectionWhat")}</legend>
 
-                <input
-                    className="field"
-                    id="staff-class-name"
-                    onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
-                    placeholder={t("classNamePlaceholder")}
-                    required
-                    value={form.name}
-                />
+                <div className="space-y-1">
+                    <label className={LABEL} htmlFor="class-name">{t("nameLabel")}</label>
+                    <input
+                        className="field"
+                        id="class-name"
+                        onChange={(event) => update("name", event.target.value)}
+                        placeholder={ts("classNamePlaceholder")}
+                        required
+                        value={form.name}
+                    />
+                </div>
 
-                <select
-                    className="select-field"
-                    id="staff-class-category"
-                    onChange={(event) => setForm((current) => ({ ...current, subjectCategory: event.target.value }))}
-                    value={form.subjectCategory}
-                >
-                    {CATEGORY_KEYS.map((key, index) => (
-                        <option key={key} value={CATEGORY_VALUES[index]}>
-                            {t(key)}
-                        </option>
-                    ))}
-                </select>
+                <div className="space-y-1">
+                    <label className={LABEL} htmlFor="class-category">{t("categoryLabel")}</label>
+                    <select
+                        className="select-field"
+                        id="class-category"
+                        onChange={(event) => update("subjectCategory", event.target.value)}
+                        value={form.subjectCategory}
+                    >
+                        {CATEGORY_KEYS.map((key, index) => (
+                            <option key={key} value={CATEGORY_VALUES[index]}>
+                                {ts(key)}
+                            </option>
+                        ))}
+                    </select>
+                </div>
 
-                <textarea
-                    className="area-field"
-                    id="staff-class-description"
-                    onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
-                    placeholder={t("descriptionPlaceholder")}
-                    required
-                    rows={3}
-                    value={form.description}
-                />
+                <div className="space-y-1">
+                    <label className={LABEL} htmlFor="class-description">{t("descriptionLabel")}</label>
+                    <textarea
+                        className="area-field"
+                        id="class-description"
+                        onChange={(event) => update("description", event.target.value)}
+                        required
+                        rows={3}
+                        value={form.description}
+                    />
+                </div>
 
-                <input
-                    className="field"
-                    id="staff-class-language"
-                    onChange={(event) => setForm((current) => ({ ...current, language: event.target.value }))}
-                    placeholder={t("language")}
-                    required
-                    value={form.language}
-                />
+                <div className="space-y-1">
+                    <label className={LABEL} htmlFor="class-language">{t("languageLabel")}</label>
+                    <input
+                        className="field"
+                        id="class-language"
+                        onChange={(event) => update("language", event.target.value)}
+                        required
+                        value={form.language}
+                    />
+                </div>
             </fieldset>
 
-            {/* ── Lecturer ──────── */}
+            {/* ── Who teaches ── */}
             <fieldset className="space-y-3">
-                <legend className="text-xs font-bold uppercase tracking-wide text-ink-faint">{t("lecturer")}</legend>
+                <legend className={LEGEND}>{t("sectionWho")}</legend>
 
                 <div className="flex gap-2">
                     <button
                         className={`rounded-full px-3 py-1 text-xs font-semibold transition ${form.teacherMode === "existing" ? "bg-indigo-600 text-white" : "bg-dark-100 text-ink-soft"}`}
-                        onClick={() => setForm((current) => ({ ...current, teacherMode: "existing" }))}
+                        onClick={() => update("teacherMode", "existing")}
                         type="button"
                     >
-                        {t("existingTeacher")}
+                        {ts("existingTeacher")}
                     </button>
                     <button
                         className={`rounded-full px-3 py-1 text-xs font-semibold transition ${form.teacherMode === "invite" ? "bg-indigo-600 text-white" : "bg-dark-100 text-ink-soft"}`}
-                        onClick={() => setForm((current) => ({ ...current, teacherMode: "invite" }))}
+                        onClick={() => update("teacherMode", "invite")}
                         type="button"
                     >
-                        {t("inviteNew")}
+                        {ts("inviteNew")}
                     </button>
                 </div>
 
                 {form.teacherMode === "existing" ? (
-                    <>
+                    <div className="space-y-1">
+                        <label className={LABEL} htmlFor="class-teacher">{t("teacherLabel")}</label>
+                        {/* Name AND email: names are not unique in this roster, so a
+                            name-only list gets the wrong teacher assigned. */}
                         <select
                             className="select-field"
-                            id="staff-class-teacher"
-                            onChange={(event) => setForm((current) => ({ ...current, teacherId: event.target.value }))}
+                            id="class-teacher"
+                            onChange={(event) => update("teacherId", event.target.value)}
+                            required
                             value={form.teacherId}
                         >
                             {teachers.map((teacher) => (
@@ -390,199 +362,165 @@ export function StaffClassForm({ teachers }: StaffClassFormProps) {
                                 </option>
                             ))}
                         </select>
-                        {selectedTeacher ? (
-                            <p className="text-xs text-ink-soft">
-                                {selectedTeacher.email}
-                            </p>
-                        ) : null}
-                    </>
+                        {teachers.length === 0 ? <p className="text-xs text-ink-soft">{t("noTeachers")}</p> : null}
+                    </div>
                 ) : (
                     <>
                         <input
                             className="field"
-                            id="staff-class-new-teacher-name"
-                            onChange={(event) => setForm((current) => ({ ...current, newTeacherName: event.target.value }))}
-                            placeholder={t("newTeacherNamePlaceholder")}
+                            id="class-new-teacher-name"
+                            onChange={(event) => update("newTeacherName", event.target.value)}
+                            placeholder={ts("newTeacherNamePlaceholder")}
                             required
                             value={form.newTeacherName}
                         />
                         <input
                             className="field"
-                            id="staff-class-new-teacher-email"
-                            onChange={(event) => setForm((current) => ({ ...current, newTeacherEmail: event.target.value }))}
-                            placeholder={t("newTeacherEmailPlaceholder")}
+                            id="class-new-teacher-email"
+                            onChange={(event) => update("newTeacherEmail", event.target.value)}
+                            placeholder={ts("newTeacherEmailPlaceholder")}
                             required
                             type="email"
                             value={form.newTeacherEmail}
                         />
-                        <p className="text-xs text-ink-soft">{t("inviteHint")}</p>
+                        <p className="text-xs text-ink-soft">{ts("inviteHint")}</p>
                     </>
                 )}
             </fieldset>
 
-            {/* ── Schedule ──────── */}
+            {/* ── When ── */}
             <fieldset className="space-y-3">
-                <legend className="text-xs font-bold uppercase tracking-wide text-ink-faint">{t("schedule")}</legend>
+                <legend className={LEGEND}>{t("sectionWhen")}</legend>
 
-                <div className="space-y-1">
-                    <label
-                        className="text-xs font-semibold text-ink-soft"
-                        htmlFor="staff-class-scheduling-mode"
-                    >
-                        Scheduling
-                    </label>
-                    <select
-                        className="select-field"
-                        id="staff-class-scheduling-mode"
-                        onChange={(event) =>
-                            setForm((current) => ({
-                                ...current,
-                                schedulingMode: event.target.value as FormState["schedulingMode"],
-                            }))
-                        }
-                        value={form.schedulingMode}
-                    >
-                        <option value="AUTO">Automatic — sessions scheduled from teacher availability</option>
-                        <option value="MANUAL">Manual — the instructor sets each session&apos;s date &amp; time</option>
-                    </select>
-                    {form.schedulingMode === "MANUAL" ? (
-                        <p className="text-xs text-ink-soft">
-                            The class is created with no sessions until the instructor adds them on their schedule page.
-                        </p>
-                    ) : null}
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                    <div className="space-y-1">
+                        <label className={LABEL} htmlFor="class-day">{t("dayLabel")}</label>
+                        <select
+                            className="select-field"
+                            id="class-day"
+                            onChange={(event) => update("day", event.target.value)}
+                            value={form.day}
+                        >
+                            {DAY_KEYS.map((key, index) => (
+                                <option key={key} value={DAY_VALUES[index]}>
+                                    {ts(key)}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                    <div className="space-y-1">
+                        <label className={LABEL} htmlFor="class-time">{t("timeLabel")}</label>
+                        <input
+                            className="field"
+                            id="class-time"
+                            onChange={(event) => update("time", event.target.value)}
+                            required
+                            type="time"
+                            value={form.time}
+                        />
+                    </div>
+                    <div className="space-y-1">
+                        <label className={LABEL} htmlFor="class-duration">{t("durationLabel")}</label>
+                        <input
+                            className="field"
+                            id="class-duration"
+                            max={600}
+                            min={30}
+                            onChange={(event) => update("durationMinutes", event.target.value)}
+                            required
+                            step={5}
+                            type="number"
+                            value={form.durationMinutes}
+                        />
+                    </div>
                 </div>
+                <p className="text-xs text-ink-faint">{t("whenHint")}</p>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <select
-                        className="select-field"
-                        id="staff-class-day"
-                        onChange={(event) => setForm((current) => ({ ...current, day: event.target.value }))}
-                        value={form.day}
-                    >
-                        {DAY_KEYS.map((key, index) => (
-                            <option key={key} value={DAY_VALUES[index]}>
-                                {t(key)}
-                            </option>
-                        ))}
-                    </select>
-
+                <label className="flex items-start gap-2 text-sm text-ink-main" htmlFor="class-manual-dates">
                     <input
-                        className="field"
-                        id="staff-class-time"
-                        onChange={(event) => setForm((current) => ({ ...current, time: event.target.value }))}
-                        required
-                        type="time"
-                        value={form.time}
+                        checked={form.manualDates}
+                        className="mt-1"
+                        id="class-manual-dates"
+                        onChange={(event) => update("manualDates", event.target.checked)}
+                        type="checkbox"
                     />
-
-                    <select
-                        className="select-field"
-                        id="staff-class-frequency"
-                        onChange={(event) => setForm((current) => ({ ...current, frequency: event.target.value }))}
-                        value={form.frequency}
-                    >
-                        {FREQUENCY_KEYS.map((key) => (
-                            <option key={key} value={key}>
-                                {t(key)}
-                            </option>
-                        ))}
-                    </select>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                    <input
-                        className="field"
-                        id="staff-class-duration"
-                        min={30}
-                        onChange={(event) => setForm((current) => ({ ...current, durationMinutes: event.target.value }))}
-                        placeholder={t("durationPlaceholder")}
-                        required
-                        type="number"
-                        value={form.durationMinutes}
-                    />
-
-                    <input
-                        className="field"
-                        id="staff-class-max-students"
-                        min={1}
-                        onChange={(event) => setForm((current) => ({ ...current, maxStudents: event.target.value }))}
-                        placeholder={t("maxStudents")}
-                        required
-                        type="number"
-                        value={form.maxStudents}
-                    />
-                </div>
-
-                <p className="text-xs text-ink-faint">
-                    {t("preview", {
-                        day: t(DAY_KEYS[DAY_VALUES.indexOf(form.day)] ?? "sun"),
-                        time: formatTimeTo12h(form.time),
-                        frequency: getFrequencyLabel(form.frequency),
-                        duration: form.durationMinutes,
-                    })}
-                </p>
+                    <span>{t("manualLabel")}</span>
+                </label>
+                {form.manualDates ? <p className="text-xs text-ink-soft">{t("manualHint")}</p> : null}
             </fieldset>
 
-            {/* ── Optional extras ──────── */}
-            <fieldset className="space-y-3">
-                <legend className="text-xs font-bold uppercase tracking-wide text-ink-faint">
-                    {t("optionalExtras")}
-                </legend>
+            {/* ── More options (collapsed) ── */}
+            <details className="rounded-lg border border-line p-3">
+                <summary className="cursor-pointer text-sm font-semibold text-ink-main">{t("moreOptions")}</summary>
+                <div className="mt-3 space-y-3">
+                    <div className="space-y-1">
+                        <label className={LABEL} htmlFor="class-max-students">{t("maxStudentsLabel")}</label>
+                        <input
+                            className="field"
+                            id="class-max-students"
+                            max={1000}
+                            min={1}
+                            onChange={(event) => update("maxStudents", event.target.value)}
+                            required
+                            type="number"
+                            value={form.maxStudents}
+                        />
+                    </div>
 
-                <input
-                    className="field"
-                    id="staff-class-material-url"
-                    onChange={(event) => setForm((current) => ({ ...current, materialUrl: event.target.value }))}
-                    placeholder={t("materialUrlPlaceholder")}
-                    type="url"
-                    value={form.materialUrl}
-                />
+                    {/* Blank = the class stays open, which is how every class behaved
+                        before this field existed. */}
+                    <div className="space-y-1">
+                        <label className={LABEL} htmlFor="class-registration-deadline">
+                            {ts("registrationDeadlineLabel")}
+                        </label>
+                        <input
+                            className="field"
+                            id="class-registration-deadline"
+                            onChange={(event) => update("registrationDeadline", event.target.value)}
+                            type="date"
+                            value={form.registrationDeadline}
+                        />
+                        <p className="text-xs text-ink-faint">{ts("registrationDeadlineHint")}</p>
+                    </div>
 
-                <input
-                    className="field"
-                    id="staff-class-form-url"
-                    onChange={(event) => setForm((current) => ({ ...current, registrationFormUrl: event.target.value }))}
-                    placeholder={t("formUrlPlaceholder")}
-                    type="url"
-                    value={form.registrationFormUrl}
-                />
+                    <div className="space-y-1">
+                        <label className={LABEL} htmlFor="class-whatsapp-url">{t("whatsappLabel")}</label>
+                        <input
+                            className="field"
+                            id="class-whatsapp-url"
+                            onChange={(event) => update("whatsappGroupUrl", event.target.value)}
+                            placeholder="https://chat.whatsapp.com/…"
+                            type="url"
+                            value={form.whatsappGroupUrl}
+                        />
+                    </div>
 
-                <input
-                    className="field"
-                    id="staff-class-whatsapp-url"
-                    onChange={(event) => setForm((current) => ({ ...current, whatsappGroupUrl: event.target.value }))}
-                    placeholder="WhatsApp group link — https://chat.whatsapp.com/…"
-                    type="url"
-                    value={form.whatsappGroupUrl}
-                />
-
-                {/* Registration cutoff. Left blank the class stays open, which is
-                    how every class behaved before this field existed. */}
-                <div className="space-y-1">
-                    <label
-                        className="text-xs font-semibold uppercase tracking-wide text-ink-soft"
-                        htmlFor="staff-class-registration-deadline"
-                    >
-                        {t("registrationDeadlineLabel")}
-                    </label>
-                    <input
-                        className="field"
-                        id="staff-class-registration-deadline"
-                        onChange={(event) =>
-                            setForm((current) => ({ ...current, registrationDeadline: event.target.value }))
-                        }
-                        type="date"
-                        value={form.registrationDeadline}
-                    />
-                    <p className="text-xs text-ink-faint">{t("registrationDeadlineHint")}</p>
+                    <div className="space-y-1">
+                        <label className={LABEL} htmlFor="class-form-url">{t("ownFormLabel")}</label>
+                        <input
+                            className="field"
+                            id="class-form-url"
+                            onChange={(event) => update("registrationFormUrl", event.target.value)}
+                            placeholder="https://forms.gle/…"
+                            type="url"
+                            value={form.registrationFormUrl}
+                        />
+                    </div>
                 </div>
-            </fieldset>
+            </details>
 
-            <button className="btn-primary w-full" disabled={saving} id="staff-class-submit" type="submit">
-                {saving ? t("saving") : t("submitBtn")}
+            <button className="btn-primary w-full" disabled={saving} id="class-submit" type="submit">
+                {saving ? t("submitting") : t("submit")}
             </button>
 
-            {error ? <p className="text-sm font-medium text-red-600">{error}</p> : null}
+            {error ? (
+                <p className="text-sm font-medium text-red-600" role="alert">
+                    {error}
+                </p>
+            ) : null}
         </form>
     );
 }
+
+/** Same form; the old name is kept for the staff page import. */
+export const StaffClassForm = ClassCreateForm;

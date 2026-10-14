@@ -12,7 +12,7 @@
  * caller and operate on the class's own teacher for Meet-link generation.
  */
 
-import { MeetLinkStatus } from "@prisma/client";
+import { ClassStatus, MeetLinkStatus } from "@prisma/client";
 
 import { emit } from "@/lib/events/bus";
 import { generateMeetLink, updateMeetEvent } from "@/lib/integrations/meet";
@@ -20,6 +20,10 @@ import { hasTeacherConflict } from "@/lib/platform/db-store";
 import { prisma } from "@/lib/prisma";
 
 export type SchedulingResult = { ok: true; sessionId: string } | { ok: false; error: string };
+
+// An archived class has stopped: no new or moved sessions (they would bring back
+// reminders and Meet links for a class students can no longer see).
+const ARCHIVED_ERROR = "This class is archived. Restore it before scheduling sessions.";
 
 function toMeetStatus(status: "GENERATED" | "PENDING" | "FAILED"): MeetLinkStatus {
   if (status === "FAILED") return MeetLinkStatus.FAILED;
@@ -53,9 +57,10 @@ export async function createManualSession(input: {
 
   const klass = await prisma.class.findUnique({
     where: { id: input.classId },
-    select: { id: true, name: true, teacherId: true, durationMinutes: true },
+    select: { id: true, name: true, teacherId: true, durationMinutes: true, status: true },
   });
   if (!klass) return { ok: false, error: "Class not found" };
+  if (klass.status === ClassStatus.ARCHIVED) return { ok: false, error: ARCHIVED_ERROR };
 
   const duration = normalizeDuration(input.durationMinutes, klass.durationMinutes);
   const endTime = new Date(input.startTime.getTime() + duration * 60_000);
@@ -106,10 +111,11 @@ export async function rescheduleSession(input: {
       meetLink: true,
       googleEventId: true,
       googleCalendarId: true,
-      class: { select: { name: true, teacherId: true, durationMinutes: true } },
+      class: { select: { name: true, teacherId: true, durationMinutes: true, status: true } },
     },
   });
   if (!session) return { ok: false, error: "Session not found" };
+  if (session.class.status === ClassStatus.ARCHIVED) return { ok: false, error: ARCHIVED_ERROR };
   if (session.cancelled) return { ok: false, error: "Cannot reschedule a cancelled session" };
 
   const duration = normalizeDuration(input.durationMinutes, session.class.durationMinutes);
