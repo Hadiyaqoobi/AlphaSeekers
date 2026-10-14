@@ -76,49 +76,43 @@ function mockMeetLink(note: string): MeetGenerationResult {
  */
 /**
  * The shared "platform" Google account used to create Meet links when the class's
- * teacher hasn't connected their own calendar. This is what makes Meet-link creation
- * fully automatic: connect ONE account once and every class uses it — no per-teacher
- * step. Prefers the account named by GOOGLE_CALENDAR_OWNER_EMAIL; otherwise falls back
- * to whichever single account has been connected.
+ * teacher hasn't connected their own calendar (or their token was revoked).
+ *
+ * ONLY the account named by GOOGLE_CALENDAR_OWNER_EMAIL. There used to be a second
+ * fallback to "whichever account connected Google most recently", which silently
+ * put every unlinked teacher's class on some other teacher's (or a student's)
+ * calendar and made THEM the Meet host. With the variable unset, an unlinked
+ * teacher's session gets a PENDING link that staff can fill in by hand.
  */
 async function getPlatformCalendarLink(): Promise<GoogleAccountLink | null> {
   const email = process.env.GOOGLE_CALENDAR_OWNER_EMAIL?.trim().toLowerCase();
-  if (email) {
-    const owner = await prisma.user.findUnique({ where: { email } });
-    if (owner) {
-      const link = await prisma.googleAccountLink.findUnique({ where: { userId: owner.id } });
-      if (link?.refreshToken) return link;
-    }
-  }
-  return prisma.googleAccountLink.findFirst({
-    where: { NOT: { refreshToken: "" } },
-    orderBy: { createdAt: "desc" },
-  });
+  if (!email) return null;
+  const owner = await prisma.user.findUnique({ where: { email } });
+  if (!owner) return null;
+  const link = await prisma.googleAccountLink.findUnique({ where: { userId: owner.id } });
+  return link?.refreshToken ? link : null;
 }
 
-async function getCalendarClient(teacherId?: string): Promise<CalendarSetupResult> {
-  warnIfInsecureProductionConfig();
+/**
+ * The account that OWNS an existing event. Sessions store the concrete calendar id
+ * the event was created on (the account's address for a primary calendar — see
+ * concreteCalendarId), so a reschedule/cancel reaches the creator's calendar even
+ * after the class changed teacher or the platform account changed. Legacy rows
+ * that stored the alias "primary" cannot be resolved and return null.
+ */
+async function findLinkForCalendar(calendarId: string | undefined): Promise<GoogleAccountLink | null> {
+  const id = calendarId?.trim();
+  if (!id || id === "primary") return null;
+  const link = await prisma.googleAccountLink.findFirst({
+    where: {
+      NOT: { refreshToken: "" },
+      OR: [{ calendarId: id }, { googleEmail: { equals: id, mode: "insensitive" } }],
+    },
+  });
+  return link ?? null;
+}
 
-  const oauthClient = getGoogleOAuthClient();
-  if (!oauthClient) {
-    return { ok: false, reason: "no-oauth" };
-  }
-
-  // Prefer the teacher's own connected calendar; otherwise fall back to the shared
-  // platform Google account, so a real Meet link is created automatically even when
-  // the teacher has not connected Google.
-  let accountLink = teacherId
-    ? await prisma.googleAccountLink.findUnique({ where: { userId: teacherId } })
-    : null;
-
-  if (!accountLink?.refreshToken) {
-    accountLink = await getPlatformCalendarLink();
-  }
-
-  if (!accountLink?.refreshToken) {
-    return { ok: false, reason: "not-linked" };
-  }
-
+function buildCalendarSetup(oauthClient: GoogleOAuthClient, accountLink: GoogleAccountLink): CalendarSetupResult {
   // Tokens are stored ENCRYPTED at rest (crypto.ts) by the OAuth callback, so they
   // must be decrypted before handing them to Google — otherwise Google receives
   // ciphertext and every calendar call fails with invalid_grant.
@@ -140,6 +134,76 @@ async function getCalendarClient(teacherId?: string): Promise<CalendarSetupResul
     oauthClient,
     accountLink,
   };
+}
+
+/** Client for the platform account only (used when the teacher's own token is revoked). */
+async function getPlatformCalendarClient(): Promise<CalendarSetupResult> {
+  const oauthClient = getGoogleOAuthClient();
+  if (!oauthClient) return { ok: false, reason: "no-oauth" };
+  const link = await getPlatformCalendarLink();
+  if (!link) return { ok: false, reason: "not-linked" };
+  return buildCalendarSetup(oauthClient, link);
+}
+
+/**
+ * Client for an EXISTING event: the account that created it when we can tell,
+ * otherwise the old teacher-then-platform lookup.
+ */
+async function getCalendarClientForEvent(calendarId: string | undefined, teacherId?: string): Promise<CalendarSetupResult> {
+  const owner = await findLinkForCalendar(calendarId);
+  if (owner) {
+    const oauthClient = getGoogleOAuthClient();
+    if (!oauthClient) return { ok: false, reason: "no-oauth" };
+    return buildCalendarSetup(oauthClient, owner);
+  }
+  return getCalendarClient(teacherId);
+}
+
+/** True when Google says the stored refresh token is dead (revoked / expired). */
+function isInvalidGrant(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const err = error as { message?: unknown; response?: { data?: { error?: unknown } } };
+  return (
+    err.response?.data?.error === "invalid_grant" ||
+    (typeof err.message === "string" && err.message.includes("invalid_grant"))
+  );
+}
+
+/**
+ * The calendar id to store on the session. "primary" is an alias that means a
+ * different calendar for every account, so it cannot later tell us whose event
+ * this is; the organizer address (= the account's address for a primary
+ * calendar) can.
+ */
+function concreteCalendarId(event: calendar_v3.Schema$Event, setup: Extract<CalendarSetupResult, { ok: true }>): string {
+  if (setup.calendarId !== "primary") return setup.calendarId;
+  return event.organizer?.email ?? setup.accountLink.googleEmail ?? setup.calendarId;
+}
+
+async function getCalendarClient(teacherId?: string): Promise<CalendarSetupResult> {
+  warnIfInsecureProductionConfig();
+
+  const oauthClient = getGoogleOAuthClient();
+  if (!oauthClient) {
+    return { ok: false, reason: "no-oauth" };
+  }
+
+  // Prefer the teacher's own connected calendar; otherwise fall back to the shared
+  // platform Google account (GOOGLE_CALENDAR_OWNER_EMAIL only), so a real Meet link
+  // is created automatically even when the teacher has not connected Google.
+  let accountLink = teacherId
+    ? await prisma.googleAccountLink.findUnique({ where: { userId: teacherId } })
+    : null;
+
+  if (!accountLink?.refreshToken) {
+    accountLink = await getPlatformCalendarLink();
+  }
+
+  if (!accountLink?.refreshToken) {
+    return { ok: false, reason: "not-linked" };
+  }
+
+  return buildCalendarSetup(oauthClient, accountLink);
 }
 
 /** Persist any refreshed access token back to the teacher's account link. */
@@ -204,11 +268,32 @@ function isNotFoundError(error: unknown): boolean {
 }
 
 async function createMeetLink(input: GenerateMeetInput): Promise<MeetGenerationResult> {
-  const setup = await getCalendarClient(input.teacherId);
-  if (!setup.ok) {
-    return unconfiguredMeetResult(setup.reason);
+  const first = await getCalendarClient(input.teacherId);
+  if (!first.ok) {
+    return unconfiguredMeetResult(first.reason);
   }
 
+  try {
+    return await insertMeetEvent(first, input);
+  } catch (error) {
+    // The teacher's own token was revoked or expired (invalid_grant). Retrying
+    // with the same dead token can never succeed, so use the platform account the
+    // same way as for a teacher who never linked Google, instead of FAILED.
+    const isPlatformAlready =
+      first.accountLink.userId === (await getPlatformCalendarLink())?.userId;
+    if (!isInvalidGrant(error) || isPlatformAlready) throw error;
+    const platform = await getPlatformCalendarClient();
+    if (!platform.ok) {
+      throw new NonRetryableError("teacher Google token revoked and no platform calendar is configured");
+    }
+    return insertMeetEvent(platform, input);
+  }
+}
+
+async function insertMeetEvent(
+  setup: Extract<CalendarSetupResult, { ok: true }>,
+  input: GenerateMeetInput,
+): Promise<MeetGenerationResult> {
   const start = new Date(input.startIso);
   const end = input.endIso ? new Date(input.endIso) : new Date(start.getTime() + 55 * 60 * 1000);
 
@@ -238,6 +323,7 @@ async function createMeetLink(input: GenerateMeetInput): Promise<MeetGenerationR
   const event = response.data;
   const meetLink = extractMeetLink(event);
   const eventId = event.id ?? null;
+  const calendarId = concreteCalendarId(event, setup);
 
   await persistRefreshedCredentials(setup.oauthClient, setup.accountLink);
 
@@ -247,7 +333,7 @@ async function createMeetLink(input: GenerateMeetInput): Promise<MeetGenerationR
       status: "FAILED",
       note: `Calendar event created (${eventId ?? "unknown"}) but Meet link was not returned.`,
       eventId,
-      calendarId: setup.calendarId,
+      calendarId,
     };
   }
 
@@ -256,7 +342,7 @@ async function createMeetLink(input: GenerateMeetInput): Promise<MeetGenerationR
     status: "GENERATED",
     note: `Google Calendar event created (${eventId ?? "unknown"})`,
     eventId,
-    calendarId: setup.calendarId,
+    calendarId,
   };
 }
 
@@ -296,7 +382,10 @@ async function patchMeetEvent(input: {
   startIso: string;
   endIso?: string;
 }): Promise<MeetGenerationResult> {
-  const setup = await getCalendarClient(input.teacherId);
+  // Patch on the calendar of the account that CREATED the event, not whoever
+  // teaches the class now (the teacher may have changed, or the event may live on
+  // the platform account).
+  const setup = await getCalendarClientForEvent(input.calendarId, input.teacherId);
   if (!setup.ok) {
     // We can't reach the existing event (Google unconfigured or teacher unlinked).
     // Degrade the same way a first-time link would: a mock/pending result, never a
@@ -384,7 +473,8 @@ export async function cancelMeetEvent(input: {
   calendarId?: string;
   teacherId?: string;
 }): Promise<{ ok: boolean; note?: string }> {
-  const setup = await getCalendarClient(input.teacherId);
+  // Delete from the creator's calendar (see getCalendarClientForEvent).
+  const setup = await getCalendarClientForEvent(input.calendarId, input.teacherId);
   if (!setup.ok) {
     // Nothing we can delete (Google unconfigured or teacher unlinked). Treat as a
     // no-op success so cancellation is never blocked by integration state.

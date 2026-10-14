@@ -13,8 +13,8 @@
     "library": "Library",
     "dashboard": "Dashboard",
     "profile": "Profile",
-    "teacher": "Teacher",
-    "admin": "Admin",
+    "teacher": "My availability",
+    "admin": "Manage classes",
     "staff": "Staff",
     "users": "Users",
     "login": "Log in",
@@ -31,7 +31,11 @@
     "siteSettings": "Site Settings",
     "contact": "Contact us",
     "support": "Support",
-    "setup": "Class setup"
+    "setup": "Class setup",
+    "storyModeration": "Story moderation",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "skipToContent": "Skip to content"
   },
   "siteSettings": {
     "title": "Site Settings",
@@ -690,6 +694,75 @@
     "copied": "Copied",
     "copyFailed": "Could not copy automatically. Select the link above and copy it."
   },
+  "classLifecycle": {
+    "formTitle": "Post a class",
+    "formSubtitle": "Fill in what, who and when. At the end you get one link to send to students on WhatsApp.",
+    "sectionWhat": "What",
+    "sectionWho": "Who teaches",
+    "sectionWhen": "When",
+    "nameLabel": "Class name",
+    "categoryLabel": "Subject",
+    "descriptionLabel": "What will students learn?",
+    "languageLabel": "Language of teaching",
+    "teacherLabel": "Teacher",
+    "noTeachers": "No teachers yet. Invite one instead.",
+    "dayLabel": "Day",
+    "timeLabel": "Time (Kabul time)",
+    "durationLabel": "Length (minutes)",
+    "whenHint": "The class runs every week on this day at this time, Kabul time. Sessions are booked at exactly this time once it is inside the teacher's available hours.",
+    "manualLabel": "The teacher will set each date themselves",
+    "manualHint": "Nothing is booked automatically. The teacher adds each date on their schedule page.",
+    "moreOptions": "More options",
+    "maxStudentsLabel": "Maximum students",
+    "whatsappLabel": "WhatsApp group link (optional)",
+    "ownFormLabel": "Optional: link to your own Google Form — students see it after they join",
+    "submit": "Post class",
+    "submitting": "Posting…",
+    "createFailed": "Could not post the class. Please check the details and try again.",
+    "createdTitle": "Class posted",
+    "createdBody": "Send this to students on WhatsApp. The link opens a page where they make an account and join the class in one step.",
+    "copyForWhatsApp": "Copy link for WhatsApp",
+    "copiedForWhatsApp": "Copied. Paste it in WhatsApp.",
+    "copyFailed": "Could not copy automatically. Select the text above and copy it.",
+    "whatsappJoinLine": "Join here:",
+    "whatsappMeetLine": "Class video link:",
+    "firstSessionAt": "First session: {time} (Kabul time)",
+    "meetPending": "The Meet link is not ready yet. It is retried automatically, or you can paste one on the class page.",
+    "issueNoAvailability": "No session booked yet: the teacher has not set their available hours. They have been sent a message asking them to.",
+    "issueOutsideAvailability": "No session booked yet: this class time is outside the teacher's available hours. Change the class time, or ask the teacher to add these hours.",
+    "issueUnparseable": "No session booked yet: the class day and time could not be read.",
+    "issueClash": "No session booked yet: this time overlaps another class of the same teacher.",
+    "issueAlreadyHandled": "A session for this week already exists.",
+    "manualCreated": "The teacher sets the dates. Until they add one, students have nothing to join.",
+    "openClass": "Open the class page",
+    "createAnother": "Post another class",
+    "liveSession": "Live session →",
+    "ownFormLink": "Class questions (Google Form)",
+    "noUpcoming": "No upcoming sessions yet.",
+    "kabulTime": "Kabul time",
+    "filterAll": "All",
+    "filterActive": "Active",
+    "filterArchived": "Archived",
+    "pageOf": "Page {page} of {total}",
+    "prevPage": "← Previous",
+    "nextPage": "Next →",
+    "archivedBanner": "This class is archived. Students cannot see it and no sessions run.",
+    "restore": "Restore class",
+    "restoring": "Restoring…",
+    "restoreFailed": "Could not restore the class. Please try again.",
+    "sessionsHint": "The next sessions, Kabul time. If a Meet link is missing, paste one here.",
+    "meetLinkLabel": "Meet link",
+    "meetLinkSave": "Save link",
+    "meetLinkSaved": "Saved",
+    "meetLinkFailed": "Could not save the link.",
+    "editIntro": "Change any field and save. Fields you leave as they are stay the same.",
+    "nothingChanged": "Nothing was changed.",
+    "scheduleChangeHint": "Sessions already booked keep their time. New sessions use the new day and time.",
+    "manualClass": "You set the dates for this class yourself.",
+    "addSessions": "Add sessions",
+    "problemOutsideAvailability": "Not booked: the class time is outside the hours you set. Add these hours, or ask the team to change the class time.",
+    "problemUnparseable": "Not booked: the class time is unclear. Ask the team to set the class day and time."
+  },
   "sessionActions": {
     "cancel": "Cancel session",
     "confirmCancel": "Confirm cancel?",
@@ -711,7 +784,9 @@
     "limitReached": "You can join up to {limit} classes at a time. Drop one to add another.",
     "requestToJoin": "Join this class",
     "requestSent": "You have joined this class.",
-    "registrationClosed": "Registration for this class has closed."
+    "registrationClosed": "Registration for this class has closed.",
+    "classFull": "This class is full.",
+    "rejected": "Your request for this class was not approved."
   },
   "materials": {
     "title": "Upload material",
@@ -903,7 +978,22 @@
     "myAttendance": "My Attendance",
     "classAttendanceRate": "Attendance rate",
     "overallRate": "Overall attendance",
-    "noAttendanceData": "No attendance data yet."
+    "noAttendanceData": "No attendance data yet.",
+    "legend": {
+      "verified": "Verified (joined + code)",
+      "joinedOnly": "Joined only (no code)",
+      "absent": "Absent"
+    },
+    "saveFailed": "Could not save this attendance mark. It has been put back — please try again.",
+    "verifiedJoinedCount": "{verified} verified · {joined} / {total} joined",
+    "status": "Status",
+    "manual": "Manual",
+    "markAbsent": "Mark {name} as absent",
+    "markPresent": "Mark {name} as present",
+    "joinedColumn": "Joined",
+    "joinRate": "Join rate",
+    "verifiedColumn": "Verified",
+    "verifyRate": "Verify rate"
   },
   "profile": {
     "title": "Profile",
@@ -926,8 +1016,11 @@
         "wrongCurrent": "Current password is incorrect.",
         "sameAsCurrent": "New password must be different from your current password.",
         "generic": "Could not update password. Please try again.",
-        "network": "Network error. Please check your connection."
-      }
+        "network": "Network error. Please check your connection.",
+        "weak": "Your password needs at least 8 characters, with at least one letter and one number.",
+        "rateLimited": "Too many attempts. Please wait a few minutes and try again."
+      },
+      "rule": "At least 8 characters, with at least one letter and one number."
     },
     "actions": {
       "backToDashboard": "Back to dashboard",
@@ -968,6 +1061,11 @@
       "empty": "No open opportunities right now.",
       "deadline": "Deadline",
       "viewOpportunity": "View opportunity"
+    },
+    "integrations": "Integrations",
+    "changePassword": {
+      "title": "Set a new password",
+      "subtitle": "Choose a strong password you have not used elsewhere. Once saved, the temporary-password reminder disappears."
     }
   },
   "adminForms": {
@@ -1026,7 +1124,13 @@
     "blockerClasses": "Still teaching",
     "blockerMaterials": "Uploaded materials",
     "requestedRole": "Applied as {role}",
-    "grantRequested": "Grant"
+    "grantRequested": "Grant",
+    "statusTEACHER_REQUESTS": "Teacher requests",
+    "confirmRoleChange": "Change role to {role}?",
+    "confirmRoleYes": "Yes, change",
+    "declineRequest": "Decline",
+    "requestDeclined": "Teacher request declined.",
+    "pageInfoTotal": "Page {current} / {total} ({count} users)"
   },
   "contentForms": {
     "createWebinar": "Create Webinar",
@@ -1057,7 +1161,8 @@
     "scholarship": "Scholarship",
     "job": "Job",
     "internship": "Internship",
-    "grant": "Grant"
+    "grant": "Grant",
+    "applyLink": "Link to apply"
   },
   "teacherForms": {
     "scheduling": "Scheduling",
@@ -1158,7 +1263,8 @@
     "delete": "Delete",
     "deleteConfirm": "Confirm delete?",
     "manageUsersTitle": "Manage users",
-    "manageUsersSubtitle": "Approve new sign-ups, change someone's role, or remove an account."
+    "manageUsersSubtitle": "Approve new sign-ups, change someone's role, or remove an account.",
+    "deleteFailed": "Could not delete. Please try again."
   },
   "adminContent": {
     "kicker": "Content",
@@ -1177,7 +1283,7 @@
       "noAvailability": "Needs setup"
     },
     "needsSetup": "Teachers needing setup",
-    "needsSetupDesc": "These teachers have not set their availability yet. Classes cannot be scheduled until availability is configured.",
+    "needsSetupDesc": "These teachers have not set their availability yet. Their classes run at the time chosen when the class was posted.",
     "pendingSetup": "No availability",
     "allTeachers": "All teachers",
     "name": "Name",
@@ -1337,7 +1443,10 @@
     "modeQuiz": "Quiz mode",
     "modeExplain": "Explain mode",
     "modeVocab": "Vocabulary mode",
-    "modePrepare": "Prep mode"
+    "modePrepare": "Prep mode",
+    "errorBusy": "You're asking great questions! Give me a moment to catch up — try again in a few seconds.",
+    "errorUnavailable": "The study assistant isn't available right now. Please try again later or ask your teacher.",
+    "errorFailed": "I couldn't get an answer right now. Please try again."
   },
   "checkin": {
     "title": "Check-in code",
@@ -1387,7 +1496,9 @@
     "invalidToken": "This reset link is invalid or has expired. Please request a new one.",
     "requestNew": "Request a new link",
     "mismatch": "Passwords don't match.",
-    "weak": "Password must be at least 8 characters and include a letter and a number."
+    "weak": "Password must be at least 8 characters and include a letter and a number.",
+    "rateLimited": "Too many attempts. Please wait a few minutes and try again.",
+    "failed": "We could not reset your password. Check your internet connection and try again."
   },
   "contact": {
     "kicker": "Get in touch",
@@ -1459,7 +1570,7 @@
     "subtitle": "One step before your class can run. It takes about two minutes.",
     "subtitleDone": "You are all set. Your sessions are created automatically from the hours you set.",
     "step1Title": "Set the hours you can teach",
-    "step1Body": "Tick each day you teach, enter a start and end time, and save. Sessions are only ever created inside these hours — the platform never guesses a time for you.",
+    "step1Body": "Tick each day you teach, enter a start and end time, and save. Once you have saved hours, sessions are only created inside them. Until then, classes run at the time chosen when they were posted.",
     "step1Done": "Saved for {days} day(s) a week. Change it any time.",
     "step1Cta": "Set my hours",
     "step1Change": "Change my hours",
@@ -1505,6 +1616,127 @@
     "networkError": "We could not reach AlphaSeekers. Check your internet connection and try again.",
     "classFull": "This class is full. Please check the other classes that are open.",
     "alreadyHaveAccount": "Already have an account?",
-    "signInInstead": "Sign in"
+    "signInInstead": "Sign in",
+    "errors": {
+      "name": "Please enter your full name.",
+      "password": "Your password needs at least 8 characters, with at least one letter and one number.",
+      "rateLimited": "Too many attempts. Please wait a few minutes and try again.",
+      "notFound": "This class could not be found.",
+      "closed": "This class is not open for registration.",
+      "registrationClosed": "Registration for this class has closed.",
+      "wrongPassword": "An account already uses this email. Enter that account's password to join, or sign in first.",
+      "deactivated": "This account has been turned off. Please ask your teacher or the AlphaSeekers team.",
+      "notAStudent": "This email belongs to a teacher or admin account. Please sign in instead."
+    }
+  },
+  "liveSession": {
+    "metaTitle": "{className} live session",
+    "metaFallback": "Session",
+    "cancelledTitle": "Session cancelled",
+    "cannotOpenTitle": "Cannot open this session",
+    "reasons": {
+      "cancelled": "This session was cancelled.",
+      "notEnrolled": "You are not enrolled in this class.",
+      "notStarted": "This session has not started yet. Come back closer to the start time.",
+      "ended": "This live session has ended. You can still view the summary and recording.",
+      "generic": "You cannot open this session right now."
+    },
+    "languageClass": "Language class",
+    "liveSession": "Live session",
+    "withTeacher": "With {name}",
+    "startsIn": "Starts in {minutes} min",
+    "startedAgo": "Started {minutes} min ago",
+    "startingNow": "Starting now",
+    "ended": "Session ended",
+    "joinMeet": "Join Google Meet",
+    "connected": "Connected — Meet is open in another tab",
+    "switchBack": "Switch back to the Meet tab anytime. Your notes save here.",
+    "reopenMeet": "Re-open Meet",
+    "noMeetLink": "Meet link not available yet. Check back closer to start time.",
+    "materials": "Today's materials",
+    "teacherTools": "After class — teacher tools",
+    "generating": "Generating...",
+    "generateSummary": "Generate summary",
+    "regenerateSummary": "Regenerate summary",
+    "createQuiz": "Create quiz",
+    "regenerateQuiz": "Regenerate quiz",
+    "recordingSetup": "Recording & homework setup",
+    "summaryFailed": "Could not create the summary. Please try again.",
+    "quizFailed": "Could not create the quiz. Please try again.",
+    "attendance": "Attendance",
+    "rosterCounts": "{verified} verified · {joined} joined / {total}",
+    "summary": "Class summary",
+    "myNotes": "My notes",
+    "quickAi": "Quick AI",
+    "vocabulary": "Key vocabulary",
+    "attendanceMarkedAt": "Attendance marked at {time}",
+    "homework": {
+      "selectImage": "Please select an image.",
+      "imageTooLarge": "The image must be smaller than 5 MB.",
+      "uploadFailed": "Could not upload the photo. Please try again.",
+      "needContent": "Add some text or upload a photo.",
+      "submitFailed": "Could not submit your homework. Please try again.",
+      "submitted": "Submitted",
+      "submittedAt": "Submitted {time}",
+      "aiReview": "AI review",
+      "teacherFeedback": "Teacher feedback",
+      "teacherFeedbackWithGrade": "Teacher feedback ({grade})",
+      "reviewPending": "Teacher review pending",
+      "due": "Due: {date}",
+      "answerPlaceholder": "Type your answers here...",
+      "photoAlt": "Photo of your homework",
+      "removePhoto": "Remove photo",
+      "uploading": "Uploading...",
+      "uploadPhoto": "Upload a photo of your work",
+      "submitting": "Submitting...",
+      "submit": "Submit homework"
+    },
+    "quiz": {
+      "title": "Post-class quiz",
+      "intro": "{count} questions · Test your understanding of today's lesson.",
+      "start": "Start quiz",
+      "score": "{correct} / {total} correct",
+      "great": "Great work — you really understood today's lesson!",
+      "good": "Good progress. Review the topics you missed.",
+      "keepGoing": "Don't worry. Review the materials and try again.",
+      "progress": "Question {current} of {total}",
+      "answerPlaceholder": "Type your answer...",
+      "correctAnswerIs": "The correct answer is:",
+      "correct": "Correct!",
+      "check": "Check answer",
+      "next": "Next question",
+      "results": "See results"
+    },
+    "notes": {
+      "label": "My notes",
+      "placeholder": "Take notes during class. They save automatically and you can read them later...",
+      "saving": "Saving...",
+      "savedAt": "Saved {time}",
+      "notSaved": "Not saved yet",
+      "saveNow": "Save now"
+    },
+    "draftTitle": "Summary draft — check and edit it before publishing",
+    "draftNote": "Students do not see this summary until you publish it.",
+    "draftTooShort": "The summary must be at least 20 characters before it can be published.",
+    "publishSummary": "Publish to class",
+    "publishing": "Publishing...",
+    "publishFailed": "Could not publish the summary. Please try again.",
+    "summaryPublished": "Published. Students in this class can now see the summary."
+  },
+  "stories": {
+    "anonymous": "Anonymous",
+    "student": "Student"
+  },
+  "storyEditor": {
+    "titleTooShort": "The title must be at least 3 characters.",
+    "selectImage": "Please choose an image file.",
+    "imageTooLarge": "The image must be smaller than 5 MB.",
+    "writeFirst": "Write something first, then ask the AI for help.",
+    "aiFailed": "The AI could not answer right now. Please try again.",
+    "noSuggestions": "No suggestions this time.",
+    "aiTrimmed": "Only the first part of your text was checked — the AI helper reads up to about 1,000 characters at a time. Select a part of your text to check that part instead."
+  },
+  "learn": {
+    "chatNoAnswer": "I could not answer that — try asking a different way."
   }
 }

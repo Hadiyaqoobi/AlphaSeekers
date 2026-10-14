@@ -46,8 +46,8 @@ export function OpportunityForm() {
     });
 
     if (!response.ok) {
-      const body = (await response.json().catch(() => ({ message: t("failed") }))) as { message?: string };
-      setStatus(body.message ?? t("failed"));
+      // Translated fallback; the server's English `message` is not shown.
+      setStatus(t("failed"));
       return;
     }
 
@@ -59,45 +59,60 @@ export function OpportunityForm() {
   return (
     <form className="panel panel-strong space-y-3 p-4" onSubmit={submit}>
       <h2 className="text-lg font-black text-ink-main">{t("postOpportunity")}</h2>
-      <input
-        className="field"
-        onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))}
-        placeholder={t("title")}
-        required
-        value={form.title}
-      />
-      <select
-        className="field"
-        onChange={(event) => setForm((current) => ({ ...current, type: event.target.value as FormState["type"] }))}
-        value={form.type}
-      >
-        <option value="SCHOLARSHIP">{t("scholarship")}</option>
-        <option value="JOB">{t("job")}</option>
-        <option value="INTERNSHIP">{t("internship")}</option>
-        <option value="GRANT">{t("grant")}</option>
-      </select>
-      <textarea
-        className="area-field"
-        onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
-        placeholder={t("description")}
-        required
-        value={form.description}
-      />
-      <input
-        className="field"
-        onChange={(event) => setForm((current) => ({ ...current, deadline: event.target.value }))}
-        required
-        type="date"
-        value={form.deadline}
-      />
-      <input
-        className="field"
-        onChange={(event) => setForm((current) => ({ ...current, externalUrl: event.target.value }))}
-        placeholder="External URL"
-        required
-        type="url"
-        value={form.externalUrl}
-      />
+      <label className="block space-y-1">
+        <span className="text-xs font-semibold text-ink-soft">{t("title")}</span>
+        <input
+          className="field"
+          onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))}
+          placeholder={t("title")}
+          required
+          value={form.title}
+        />
+      </label>
+      <label className="block space-y-1">
+        <span className="text-xs font-semibold text-ink-soft">{t("type")}</span>
+        <select
+          className="field"
+          onChange={(event) => setForm((current) => ({ ...current, type: event.target.value as FormState["type"] }))}
+          value={form.type}
+        >
+          <option value="SCHOLARSHIP">{t("scholarship")}</option>
+          <option value="JOB">{t("job")}</option>
+          <option value="INTERNSHIP">{t("internship")}</option>
+          <option value="GRANT">{t("grant")}</option>
+        </select>
+      </label>
+      <label className="block space-y-1">
+        <span className="text-xs font-semibold text-ink-soft">{t("description")}</span>
+        <textarea
+          className="area-field"
+          onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
+          placeholder={t("description")}
+          required
+          value={form.description}
+        />
+      </label>
+      <label className="block space-y-1">
+        <span className="text-xs font-semibold text-ink-soft">{t("deadline")}</span>
+        <input
+          className="field"
+          onChange={(event) => setForm((current) => ({ ...current, deadline: event.target.value }))}
+          required
+          type="date"
+          value={form.deadline}
+        />
+      </label>
+      <label className="block space-y-1">
+        <span className="text-xs font-semibold text-ink-soft">{t("applyLink")}</span>
+        <input
+          className="field"
+          onChange={(event) => setForm((current) => ({ ...current, externalUrl: event.target.value }))}
+          placeholder={t("applyLink")}
+          required
+          type="url"
+          value={form.externalUrl}
+        />
+      </label>
       <button className="btn-primary" type="submit">
         {t("publish")}
       </button>

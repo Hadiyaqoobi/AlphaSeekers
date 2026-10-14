@@ -8,18 +8,24 @@
  * Gemini Flash has a generous free tier (1,500 RPD).
  *
  * Request: FormData with 'image' file, optional 'classId', optional 'instructions'.
+ *
+ * NOTE: the only UI for this route, src/components/ai/homework-upload.tsx, is
+ * not mounted on any page today.
  */
 
 import { NextRequest } from "next/server";
 
 import { prisma } from "@/lib/prisma";
 import { aiConfig } from "@/lib/ai/config";
+import { redactPII } from "@/lib/ai/privacy/pii-stripper";
 import { buildStudentContext } from "@/lib/ai/student-context";
 import { classifyContent } from "@/lib/ai/safety/content-classifier";
 import { checkRateLimitDistributed } from "@/lib/security/rate-limit";
 import { getSessionUser, unauthorized, forbidden, badRequest } from "@/lib/security/session";
 
-const VISION_MODEL = process.env.GEMINI_VISION_MODEL ?? "gemini-2.0-flash-exp";
+// gemini-2.0-flash-exp (the old default) is retired, so every review failed.
+// Override with GEMINI_VISION_MODEL when Google retires this one too.
+const VISION_MODEL = process.env.GEMINI_VISION_MODEL || "gemini-2.5-flash";
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
 
 export async function POST(request: NextRequest) {
@@ -57,9 +63,10 @@ export async function POST(request: NextRequest) {
 
   const image = formData.get("image") as File | null;
   const classId = (formData.get("classId") as string) || null;
-  const instructions =
-    (formData.get("instructions") as string) ||
-    "Review my homework and point out any mistakes.";
+  // PRIVACY: free text the student typed goes to Google — redact contacts.
+  const instructions = redactPII(
+    ((formData.get("instructions") as string) || "Review my homework and point out any mistakes.").slice(0, 1000),
+  );
 
   if (!image) return badRequest("No image provided");
   if (!image.type.startsWith("image/")) return badRequest("File must be an image");

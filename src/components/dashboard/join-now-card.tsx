@@ -2,7 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
+
+import { formatDateTime } from "@/lib/format-date";
+import { formatKabulTime } from "@/lib/ui/kabul-time";
 
 type JoinNowSession = {
   id: string;
@@ -24,6 +27,11 @@ type JoinNowCardProps = {
 export function JoinNowCard({ session }: JoinNowCardProps) {
   const timeoutRef = useRef<number | null>(null);
   const t = useTranslations("joinNow");
+  // Times are formatted with a FIXED zone (Asia/Kabul) and the page locale, so
+  // the server render and the browser render produce the same string. The old
+  // toLocaleString() used each side's own zone/language, which never matched
+  // and forced React to re-render the dashboard after hydration.
+  const locale = useLocale();
   const [transitionArmed, setTransitionArmed] = useState(false);
 
   useEffect(() => {
@@ -74,8 +82,8 @@ export function JoinNowCard({ session }: JoinNowCardProps) {
       <h2 className="mt-1 text-lg font-black text-ink-main">{session.className}</h2>
       <p className="text-sm text-ink-main">
         {isOngoing
-          ? t("inProgressAt", { time: new Date(session.startTime).toLocaleString() })
-          : t("startsAt", { time: new Date(session.startTime).toLocaleString() })}
+          ? t("inProgressAt", { time: formatDateTime(session.startTime, locale) })
+          : t("startsAt", { time: formatDateTime(session.startTime, locale) })}
       </p>
 
       {session.meetLink ? (
@@ -92,7 +100,7 @@ export function JoinNowCard({ session }: JoinNowCardProps) {
 
       {session.continuation?.meetLink ? (
         <p className="mt-2 text-xs text-ink-main">
-          {t("nextSegment", { time: new Date(session.continuation.startTime).toLocaleTimeString() })}
+          {t("nextSegment", { time: formatKabulTime(session.continuation.startTime, locale) })}
           {transitionArmed ? ` ${t("autoSwitchArmed")}` : ""}
         </p>
       ) : null}

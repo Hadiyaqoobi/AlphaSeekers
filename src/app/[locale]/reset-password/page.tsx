@@ -49,10 +49,19 @@ export default function ResetPasswordPage() {
         return;
       }
       const data = await res.json().catch(() => null);
-      setError(data?.code === "invalid_token" ? t("invalidToken") : data?.message ?? t("weak"));
+      // Translate by code; the server's English `message` is never shown.
+      setError(
+        data?.code === "invalid_token"
+          ? t("invalidToken")
+          : data?.code === "rate_limited"
+            ? t("rateLimited")
+            : data?.code === "weak_password"
+              ? t("weak")
+              : t("failed"),
+      );
     } catch {
       setSubmitting(false);
-      setError(t("weak"));
+      setError(t("failed"));
     }
   }
 
@@ -101,7 +110,7 @@ export default function ResetPasswordPage() {
 
             <form className="mt-7 flex flex-col gap-[18px]" onSubmit={handleSubmit}>
               <div>
-                <label className="mb-2 block text-[11px] font-bold uppercase tracking-[0.11em]" style={{ color: SOFT }}>
+                <label className="mb-2 block text-[11px] font-bold uppercase tracking-[0.11em]" htmlFor="reset-newPassword" style={{ color: SOFT }}>
                   {t("newPassword")}
                 </label>
                 <div className="auth-field">
@@ -112,6 +121,7 @@ export default function ResetPasswordPage() {
                     </svg>
                   </span>
                   <input
+                    id="reset-newPassword"
                     type={showPassword ? "text" : "password"}
                     required
                     autoComplete="new-password"
@@ -135,7 +145,7 @@ export default function ResetPasswordPage() {
               </div>
 
               <div>
-                <label className="mb-2 block text-[11px] font-bold uppercase tracking-[0.11em]" style={{ color: SOFT }}>
+                <label className="mb-2 block text-[11px] font-bold uppercase tracking-[0.11em]" htmlFor="reset-confirmPassword" style={{ color: SOFT }}>
                   {t("confirmPassword")}
                 </label>
                 <div className="auth-field">
@@ -146,6 +156,7 @@ export default function ResetPasswordPage() {
                     </svg>
                   </span>
                   <input
+                    id="reset-confirmPassword"
                     type={showPassword ? "text" : "password"}
                     required
                     autoComplete="new-password"

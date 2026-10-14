@@ -3,6 +3,21 @@
 
 const BASE_URL = process.env.BASE_URL ?? "http://localhost:3005";
 
+// These scripts create accounts, register, post and enroll as they go. Pointed
+// at production they would litter the real database (dev and prod have shared
+// one), so anything but a local server needs an explicit --allow-remote.
+{
+  const host = new URL(BASE_URL).hostname.replace(/^\[|\]$/g, "");
+  const local = ["localhost", "127.0.0.1", "::1", "0.0.0.0"].includes(host) || host.endsWith(".localhost");
+  if (!local && !process.argv.includes("--allow-remote")) {
+    console.error(
+      `Refusing to run against ${BASE_URL}: it is not a local server and this script writes data. ` +
+        "Re-run with --allow-remote if you really mean to.",
+    );
+    process.exit(2);
+  }
+}
+
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }

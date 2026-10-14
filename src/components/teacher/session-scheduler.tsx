@@ -3,6 +3,9 @@
 import { useState } from "react";
 
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
+
+import { dateToKabulLocalInput, kabulLocalInputToDate } from "@/lib/scheduling/weekly-slot";
 
 type SchedulerSession = {
   id: string;
@@ -35,15 +38,14 @@ const BTN_PRIMARY =
 const BTN_SECONDARY =
   "inline-flex items-center rounded-lg border border-white/10 px-3 py-1.5 text-sm font-medium text-ink-main hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-50";
 
-function pad(value: number): string {
-  return String(value).padStart(2, "0");
-}
-
-/** ISO/Date -> value for <input type="datetime-local"> in the browser's local time. */
+/**
+ * ISO/Date -> value for <input type="datetime-local">, in KABUL time. Everything
+ * else on the platform (class times, availability, reminders) is Kabul time; this
+ * form used the browser's own zone, so a teacher on a phone set to another zone
+ * booked sessions hours off without any sign of it.
+ */
 function toLocalInputValue(date: Date): string {
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(
-    date.getHours(),
-  )}:${pad(date.getMinutes())}`;
+  return dateToKabulLocalInput(date);
 }
 
 function durationMinutes(startIso: string, endIso: string): number {
@@ -109,6 +111,7 @@ export function SessionScheduler({
   sessions,
 }: SessionSchedulerProps) {
   const router = useRouter();
+  const tl = useTranslations("classLifecycle");
   const localeTag = locale === "fa" ? "fa-AF" : "en-US";
 
   const [busy, setBusy] = useState<string | null>(null);
@@ -127,6 +130,7 @@ export function SessionScheduler({
   function formatWhen(iso: string): string {
     try {
       return new Date(iso).toLocaleString(localeTag, {
+        timeZone: "Asia/Kabul",
         year: "numeric",
         month: "short",
         day: "numeric",
@@ -190,8 +194,9 @@ export function SessionScheduler({
       setError("Please choose a date and time.");
       return;
     }
-    const start = new Date(addStart);
-    if (Number.isNaN(start.getTime())) {
+    // The input is Kabul wall-clock time, whatever the device's own zone is.
+    const start = kabulLocalInputToDate(addStart);
+    if (!start) {
       setError("That date and time is not valid.");
       return;
     }
@@ -216,8 +221,8 @@ export function SessionScheduler({
       setError("Please choose a date and time.");
       return;
     }
-    const start = new Date(rescheduleStart);
-    if (Number.isNaN(start.getTime())) {
+    const start = kabulLocalInputToDate(rescheduleStart);
+    if (!start) {
       setError("That date and time is not valid.");
       return;
     }
@@ -279,7 +284,7 @@ export function SessionScheduler({
           <div className="flex flex-wrap items-end gap-4">
             <div className="flex flex-col gap-1">
               <label className="text-xs font-semibold text-ink-main" htmlFor="add-start">
-                Date &amp; time
+                Date &amp; time ({tl("kabulTime")})
               </label>
               <input
                 className={INPUT}
@@ -349,7 +354,7 @@ export function SessionScheduler({
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="font-semibold text-ink-main" suppressHydrationWarning>
-                      {formatWhen(session.startTime)}
+                      {formatWhen(session.startTime)} ({tl("kabulTime")})
                     </p>
                     <p className="mt-1 text-sm text-ink-soft">
                       {durationMinutes(session.startTime, session.endTime)} min
@@ -427,7 +432,7 @@ export function SessionScheduler({
                           className="text-xs font-semibold text-ink-main"
                           htmlFor={`reschedule-start-${session.id}`}
                         >
-                          New date &amp; time
+                          New date &amp; time ({tl("kabulTime")})
                         </label>
                         <input
                           className={INPUT}

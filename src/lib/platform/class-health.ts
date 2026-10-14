@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { classSpanMinutes, planAutoSlot } from "@/lib/scheduling/weekly-slot";
 
 /**
  * Class health checks.
@@ -14,7 +15,12 @@ import { prisma } from "@/lib/prisma";
 
 /** A request left this long without a decision is treated as forgotten. */
 const STALE_REQUEST_HOURS = 24;
-/** Below this many future sessions, an AUTO class is running out of runway. */
+/**
+ * Below this many future sessions, a MANUAL class is running out of runway.
+ * AUTO classes are exempt: the scheduler deliberately keeps exactly ONE upcoming
+ * session (it books the next week once this week's has passed), so a threshold
+ * of 2 raised a false alarm every day for every healthy AUTO class.
+ */
 const LOW_SESSION_THRESHOLD = 2;
 /** How far ahead to insist a session already has a usable joining link. */
 const LINK_WINDOW_HOURS = 48;
@@ -54,6 +60,8 @@ export async function collectClassIssues(): Promise<ClassIssue[]> {
       teacherId: true,
       maxStudents: true,
       schedulingMode: true,
+      schedulePreference: true,
+      durationMinutes: true,
       teacher: { select: { id: true, name: true } },
     },
   });
@@ -72,9 +80,17 @@ export async function collectClassIssues(): Promise<ClassIssue[]> {
         where: { classId: klass.id, startTime: { gte: new Date() }, cancelled: false },
       }),
       klass.teacherId
-        ? prisma.teacherAvailability.count({ where: { teacherId: klass.teacherId } })
-        : Promise.resolve(0),
+        ? prisma.teacherAvailability.findMany({
+            where: { teacherId: klass.teacherId },
+            select: { dayOfWeek: true, startTimeUTC: true, endTimeUTC: true },
+          })
+        : Promise.resolve([]),
     ]);
+    const availabilityWindows = availability.map((a) => ({
+      dayOfWeek: a.dayOfWeek,
+      startMinute: a.startTimeUTC.getUTCHours() * 60 + a.startTimeUTC.getUTCMinutes(),
+      endMinute: a.endTimeUTC.getUTCHours() * 60 + a.endTimeUTC.getUTCMinutes(),
+    }));
 
     // A class with no teacher cannot generate sessions and cannot be taught. It
     // is the loudest possible failure and the easiest one to leave unnoticed,
@@ -130,7 +146,7 @@ export async function collectClassIssues(): Promise<ClassIssue[]> {
         className: name,
         detail: "No upcoming sessions are scheduled. Students have nothing to join.",
       });
-    } else if (futureSessions < LOW_SESSION_THRESHOLD) {
+    } else if (klass.schedulingMode === "MANUAL" && futureSessions < LOW_SESSION_THRESHOLD) {
       issues.push({
         severity: "warning",
         kind: "low-future-sessions",
@@ -142,23 +158,43 @@ export async function collectClassIssues(): Promise<ClassIssue[]> {
       });
     }
 
-    // An AUTO class whose teacher has declared nothing can never generate a
-    // session, and will present as "no upcoming sessions" with no stated cause.
-    if (klass.schedulingMode === "AUTO" && klass.teacherId && availability === 0) {
-      issues.push({
-        severity: "urgent",
-        kind: "no-availability",
-        classId: klass.id,
-        className: name,
-        detail:
-          `${klass.teacher?.name ?? "The teacher"} has not set any availability, ` +
-          `so no sessions can be generated automatically.`,
+    // The scheduler books an AUTO class only at its posted day/time, and, when the
+    // teacher has saved availability, only inside it; it never moves the class.
+    // (No saved availability = the posted time is used, so that is not an issue.)
+    // When it cannot book, say exactly why instead of a bare "no upcoming sessions".
+    if (klass.schedulingMode === "AUTO") {
+      const plan = planAutoSlot({
+        schedulePreference: klass.schedulePreference,
+        spanMinutes: classSpanMinutes(klass.durationMinutes),
+        availability: availabilityWindows,
       });
+      if (!plan.ok && plan.reason === "unparseable") {
+        issues.push({
+          severity: "urgent",
+          kind: "schedule-unreadable",
+          classId: klass.id,
+          className: name,
+          detail:
+            `The class time "${klass.schedulePreference ?? ""}" is not a day and time the scheduler can read ` +
+            `(e.g. "Tue 6:00 PM"), so no sessions are booked. Set the day and time on the admin class page.`,
+        });
+      } else if (!plan.ok && plan.reason === "outside-availability") {
+        issues.push({
+          severity: "urgent",
+          kind: "schedule-outside-availability",
+          classId: klass.id,
+          className: name,
+          detail:
+            `The class time (${klass.schedulePreference ?? ""}, Kabul) is outside ${klass.teacher?.name ?? "the teacher"}'s ` +
+            `available hours, so no sessions are booked. Change the class time or the teacher's hours.`,
+        });
+      }
     }
   }
 
-  // Sessions about to run without a way in. Failed links are never retried, so
-  // without this the first person to find out is whoever opens the class page.
+  // Sessions about to run without a way in. The scheduler retries missing
+  // links, but if Google is not connected at all it never succeeds; staff can
+  // then paste a link by hand on the admin class page.
   const linkless = await prisma.session.findMany({
     where: {
       startTime: { gte: new Date(), lte: hoursAhead(LINK_WINDOW_HOURS) },

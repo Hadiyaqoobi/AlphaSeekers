@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { prisma } from "@/lib/prisma";
+import { DirArrow } from "@/components/ui/dir-arrow";
 import { getSessionUser } from "@/lib/security/session";
 
 export const dynamic = "force-dynamic";
@@ -43,7 +44,7 @@ export default async function LearningPathPage({ params }: PageProps) {
         className="inline-flex items-center gap-1.5 text-sm font-medium mb-6 transition-colors"
         style={{ color: "#8AA4B8" }}
       >
-        ← {isDari ? "همه مسیرها" : "All paths"}
+        <DirArrow back /> {isDari ? "همه مسیرها" : "All paths"}
       </Link>
 
       {/* Header */}
@@ -130,11 +131,11 @@ export default async function LearningPathPage({ params }: PageProps) {
                     </h3>
                   </div>
                   {lesson.description && (
-                    <p className="text-sm ml-9 mb-2" style={{ color: "#8AA4B8" }}>
+                    <p className="text-sm ms-9 mb-2" style={{ color: "#8AA4B8" }}>
                       {lesson.description}
                     </p>
                   )}
-                  <div className="flex items-center gap-3 ml-9 text-xs" style={{ color: "#5A7A94" }}>
+                  <div className="flex items-center gap-3 ms-9 text-xs" style={{ color: "#5A7A94" }}>
                     {isDone && progress?.quizScore !== null && progress?.quizScore !== undefined && (
                       <span>
                         {isDari ? "نمره" : "Score"}:{" "}
@@ -164,7 +165,7 @@ export default async function LearningPathPage({ params }: PageProps) {
                     >
                       {isDone
                         ? isDari ? "مرور" : "Review"
-                        : isDari ? "ادامه" : "Continue"} →
+                        : isDari ? "ادامه" : "Continue"} <DirArrow />
                     </span>
                   )}
                 </div>
@@ -213,7 +214,7 @@ export default async function LearningPathPage({ params }: PageProps) {
             className="inline-block px-5 py-2.5 rounded-xl font-semibold"
             style={{ background: "#00E676", color: "#070B0E" }}
           >
-            {isDari ? "موضوع جدید" : "Pick a new topic"} →
+            {isDari ? "موضوع جدید" : "Pick a new topic"} <DirArrow />
           </Link>
         </div>
       )}

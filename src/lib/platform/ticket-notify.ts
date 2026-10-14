@@ -8,7 +8,9 @@ import { sendUrgentTicketEmail } from "@/lib/integrations/notifications";
  */
 async function urgentRecipients(): Promise<string[]> {
   const supers = await prisma.user.findMany({
-    where: { role: "ADMIN", accessLevel: "SUPER_ADMIN", email: { not: "" } },
+    // A deactivated super admin has left: they must not keep receiving
+    // ticket contents by email.
+    where: { role: "ADMIN", accessLevel: "SUPER_ADMIN", deactivatedAt: null, email: { not: "" } },
     select: { email: true },
   });
   return supers.map((s) => s.email).filter((e): e is string => Boolean(e));

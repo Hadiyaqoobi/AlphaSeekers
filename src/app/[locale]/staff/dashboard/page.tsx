@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 
 import { getTranslations } from "next-intl/server";
 
-import { listAdminClasses } from "@/lib/platform/store";
+import { getAdminClassStats, listAdminClasses } from "@/lib/platform/store";
 import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/security/session";
 
@@ -26,15 +26,14 @@ export default async function StaffDashboardPage({ params }: StaffDashboardProps
 
     // The stat tiles only need counts, so query counts directly instead of
     // loading every teacher/student row into memory just to read `.length`.
-    const [teacherCount, studentCount, classes] = await Promise.all([
+    // "Active classes" comes from a real count: it used to be counted from the
+    // 10 most recent rows below, so it could never show more than 10.
+    const [teacherCount, studentCount, classes, classStats] = await Promise.all([
         prisma.user.count({ where: { role: "TEACHER" } }),
         prisma.user.count({ where: { role: "STUDENT" } }),
         listAdminClasses({ page: 1, limit: 10 }),
+        getAdminClassStats(),
     ]);
-
-    const activeClasses = classes.items.filter(
-        (item: { status: string }) => item.status === "ACTIVE",
-    );
 
     return (
         <section className="space-y-4 sm:space-y-5">
@@ -60,7 +59,7 @@ export default async function StaffDashboardPage({ params }: StaffDashboardProps
             {/* Quick stats */}
             <div className="grid gap-4 sm:grid-cols-3">
                 <div className="panel panel-strong p-4 text-center">
-                    <p className="text-3xl font-black text-indigo-600">{activeClasses.length}</p>
+                    <p className="text-3xl font-black text-indigo-600">{classStats.active}</p>
                     <p className="mt-1 text-sm font-semibold text-ink-soft">{t("activeClasses")}</p>
                 </div>
                 <div className="panel panel-strong p-4 text-center">
@@ -121,7 +120,8 @@ export default async function StaffDashboardPage({ params }: StaffDashboardProps
                                         </span>
                                     </td>
                                     <td className="py-2 text-right">
-                                        <Link className="btn-secondary text-xs" href={`/${params.locale}/classes/${item.id}`}>
+                                        {/* The staff page for the class (edit, sessions, Meet links), not the student view. */}
+                                        <Link className="btn-secondary text-xs" href={`/${params.locale}/admin/classes/${item.id}`}>
                                             {t("view")}
                                         </Link>
                                     </td>

@@ -28,6 +28,7 @@ export default async function TeacherSetupPage({ params }: SetupPageProps) {
 
   const locale = params.locale;
   const t = await getTranslations({ locale, namespace: "teacherSetup" });
+  const tl = await getTranslations({ locale, namespace: "classLifecycle" });
   const status = await getTeacherSetupStatus(user.id);
 
   return (
@@ -87,14 +88,29 @@ export default async function TeacherSetupPage({ params }: SetupPageProps) {
               <li className="rounded-2xl border border-white/5 bg-dark-100 p-5" key={c.id}>
                 <p className="font-semibold text-ink-main">{c.name}</p>
                 {c.schedulePreference ? (
-                  <p className="mt-1 text-sm text-ink-soft">{c.schedulePreference}</p>
+                  <p className="mt-1 text-sm text-ink-soft">
+                    {c.schedulePreference} ({tl("kabulTime")})
+                  </p>
                 ) : null}
                 <p className="mt-3 text-sm">
                   {c.upcomingSessions > 0 ? (
                     <span className="text-neon-400">
                       {t("sessionsScheduled", { count: c.upcomingSessions })}
                     </span>
-                  ) : status.complete ? (
+                  ) : c.schedulingMode === "MANUAL" ? (
+                    // MANUAL: nothing is ever created "within the hour"; the
+                    // teacher adds each date on the class's schedule page.
+                    <span className="text-amber-300">
+                      {tl("manualClass")}{" "}
+                      <Link className="text-neon-400 underline" href={`/${locale}/teacher/classes/${c.id}/schedule`}>
+                        {tl("addSessions")}
+                      </Link>
+                    </span>
+                  ) : c.scheduleProblem === "outside-availability" ? (
+                    <span className="text-amber-300">{tl("problemOutsideAvailability")}</span>
+                  ) : c.scheduleProblem === "unparseable" ? (
+                    <span className="text-amber-300">{tl("problemUnparseable")}</span>
+                  ) : status.complete && status.availabilitySet ? (
                     // Both steps done: the class is queued, not blocked. Telling
                     // them to "finish the steps above" here would be wrong.
                     <span className="text-ink-soft">{t("sessionsComing")}</span>

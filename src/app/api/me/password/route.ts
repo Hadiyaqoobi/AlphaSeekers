@@ -15,6 +15,7 @@ import { prisma } from "@/lib/prisma";
 import { hashPassword, verifyPassword } from "@/lib/security/passwords";
 import { checkRateLimitDistributed, getClientIp } from "@/lib/security/rate-limit";
 import { getSessionUser, unauthorized } from "@/lib/security/session";
+import { reissueSessionToken } from "@/lib/security/session-cookie";
 
 const schema = z.object({
   currentPassword: z.string().min(1).max(200),
@@ -69,12 +70,22 @@ export async function POST(request: NextRequest) {
   }
 
   const newHash = await hashPassword(parsed.data.newPassword);
+  const changedAt = new Date();
   await prisma.user.update({
     where: { id: account.id },
     // Clearing mustChangePassword lets an employee off the temp-password banner
-    // once they set a real password of their own.
-    data: { passwordHash: newHash, mustChangePassword: false },
+    // once they set a real password of their own. Stamping passwordChangedAt
+    // signs out every OTHER session at its next re-check (src/lib/auth.ts).
+    data: { passwordHash: newHash, mustChangePassword: false, passwordChangedAt: changedAt },
   });
 
-  return NextResponse.json({ ok: true });
+  // ...but not this one: re-issue the caller's own token under the new stamp,
+  // so changing your password does not throw you out of the page you are on.
+  const response = NextResponse.json({ ok: true });
+  await reissueSessionToken(request, response, {
+    pwdAt: changedAt.getTime(),
+    mustChangePassword: false,
+    lastValidatedAt: Date.now(),
+  });
+  return response;
 }

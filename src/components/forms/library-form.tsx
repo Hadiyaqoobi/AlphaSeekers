@@ -53,8 +53,8 @@ export function LibraryForm() {
     });
 
     if (!response.ok) {
-      const body = (await response.json().catch(() => ({ message: t("failed") }))) as { message?: string };
-      setStatus(body.message ?? t("failed"));
+      // Translated fallback; the server's English `message` is not shown.
+      setStatus(t("failed"));
       return;
     }
 
@@ -66,27 +66,36 @@ export function LibraryForm() {
   return (
     <form className="panel panel-strong space-y-3 p-4" onSubmit={submit}>
       <h2 className="text-lg font-black text-ink-main">{t("addLibrary")}</h2>
-      <input
-        className="field"
-        onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))}
-        placeholder={t("title")}
-        required
-        value={form.title}
-      />
-      <input
-        className="field"
-        onChange={(event) => setForm((current) => ({ ...current, author: event.target.value }))}
-        placeholder={t("author")}
-        required
-        value={form.author}
-      />
-      <input
-        className="field"
-        onChange={(event) => setForm((current) => ({ ...current, category: event.target.value }))}
-        placeholder={t("category")}
-        required
-        value={form.category}
-      />
+      <label className="block space-y-1">
+        <span className="text-xs font-semibold text-ink-soft">{t("title")}</span>
+        <input
+          className="field"
+          onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))}
+          placeholder={t("title")}
+          required
+          value={form.title}
+        />
+      </label>
+      <label className="block space-y-1">
+        <span className="text-xs font-semibold text-ink-soft">{t("author")}</span>
+        <input
+          className="field"
+          onChange={(event) => setForm((current) => ({ ...current, author: event.target.value }))}
+          placeholder={t("author")}
+          required
+          value={form.author}
+        />
+      </label>
+      <label className="block space-y-1">
+        <span className="text-xs font-semibold text-ink-soft">{t("category")}</span>
+        <input
+          className="field"
+          onChange={(event) => setForm((current) => ({ ...current, category: event.target.value }))}
+          placeholder={t("category")}
+          required
+          value={form.category}
+        />
+      </label>
       <FileUpload
         onUploadComplete={(url, size) =>
           setForm((current) => ({ ...current, fileUrl: url, fileSize: String(size) }))
@@ -96,21 +105,27 @@ export function LibraryForm() {
       {form.fileUrl ? (
         <p className="text-xs text-neon-600">{t("fileAttached")}</p>
       ) : (
+        <label className="block space-y-1">
+          <span className="text-xs font-semibold text-ink-soft">{t("fileUrl")}</span>
+          <input
+            className="field"
+            onChange={(event) => setForm((current) => ({ ...current, fileUrl: event.target.value }))}
+            placeholder={t("fileUrl")}
+            type="url"
+            value={form.fileUrl}
+          />
+        </label>
+      )}
+      <label className="block space-y-1">
+        <span className="text-xs font-semibold text-ink-soft">{t("externalUrl")}</span>
         <input
           className="field"
-          onChange={(event) => setForm((current) => ({ ...current, fileUrl: event.target.value }))}
-          placeholder={t("fileUrl")}
+          onChange={(event) => setForm((current) => ({ ...current, externalUrl: event.target.value }))}
+          placeholder={t("externalUrl")}
           type="url"
-          value={form.fileUrl}
+          value={form.externalUrl}
         />
-      )}
-      <input
-        className="field"
-        onChange={(event) => setForm((current) => ({ ...current, externalUrl: event.target.value }))}
-        placeholder={t("externalUrl")}
-        type="url"
-        value={form.externalUrl}
-      />
+      </label>
       <button className="btn-primary" type="submit">
         {t("addResource")}
       </button>

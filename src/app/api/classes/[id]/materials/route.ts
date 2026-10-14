@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { scheduleMaterialIngest } from "@/lib/ai/ingest";
 import { normaliseHttpUrl } from "@/lib/security/safe-url";
 
 import { createClassMaterial, getClassById, isStudentEnrolledInClass, listClassMaterials } from "@/lib/platform/store";
@@ -21,14 +22,17 @@ export async function GET(_: NextRequest, { params }: Params) {
     return pendingApproval();
   }
 
-  const klass = await getClassById(params.id);
+  // Unpublished is fine here: only staff, the teacher and enrolled students
+  // get past the check below, and those already belong to the class.
+  const klass = await getClassById(params.id, { includeUnpublished: true });
 
   if (!klass) {
     return NextResponse.json({ message: "Class not found" }, { status: 404 });
   }
 
+  // Staff by permission, not role=ADMIN (which every scoped employee has).
   const allowed =
-    user.role === "ADMIN" ||
+    (user.role === "ADMIN" && can(await getAccessControl(), "classes.view")) ||
     (user.role === "TEACHER" && user.id === klass.teacherId) ||
     (user.role === "STUDENT" && (await isStudentEnrolledInClass(user.id, klass.id)));
 
@@ -54,7 +58,7 @@ export async function POST(request: NextRequest, { params }: Params) {
     return NextResponse.json({ message: "Only teachers/admins can upload materials" }, { status: 403 });
   }
 
-  const klass = await getClassById(params.id);
+  const klass = await getClassById(params.id, { includeUnpublished: true });
 
   if (!klass) {
     return NextResponse.json({ message: "Class not found" }, { status: 404 });
@@ -106,6 +110,11 @@ export async function POST(request: NextRequest, { params }: Params) {
     fileSize,
     uploadedBy: user.id,
   });
+
+  // Index it for the study assistant in the background. Never awaited: an
+  // embedding call can take seconds, and the teacher's upload must not wait on
+  // it or fail because of it. Unsupported files are skipped with a logged reason.
+  scheduleMaterialIngest(material.id);
 
   return NextResponse.json(material, { status: 201 });
 }

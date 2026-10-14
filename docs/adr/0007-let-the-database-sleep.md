@@ -1,6 +1,7 @@
 # ADR-0007 — Let the database sleep
 
-- **Status:** Accepted (implemented)
+- **Status:** Accepted (implemented). The hourly pulse, its cache refresh and the
+  2h TTL are superseded by ADR-0008 (only wake the database when something is due).
 - **Date:** 2026-10-13
 - **Deciders:** Platform engineering
 - **Related:** `src/app/api/health/route.ts`, `src/lib/platform/public-cache.ts`,

@@ -18,6 +18,7 @@
 import type { UserRole } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
+import { requestCache } from "@/lib/security/request-cache";
 import { getSessionUser } from "@/lib/security/session";
 import { isSuperAdmin as isLegacySuperAdminEmail } from "@/lib/security/superadmin";
 
@@ -122,7 +123,9 @@ export function isSuper(access: AccessControl | null): boolean {
  * deactivation or permission change takes effect immediately (not on the next
  * JWT refresh). Returns null if unauthenticated.
  */
-export async function getAccessControl(): Promise<AccessControl | null> {
+export const getAccessControl = requestCache(async function getAccessControl(): Promise<AccessControl | null> {
+  // Memoised per request (see requestCache): the layout, the page and its
+  // guards each ask for this, and it is the same live row every time.
   const sessionUser = await getSessionUser();
   if (!sessionUser) return null;
 
@@ -142,7 +145,7 @@ export async function getAccessControl(): Promise<AccessControl | null> {
 
   if (!row) return null;
   return buildAccessControl(row);
-}
+});
 
 export class AccessError extends Error {
   status: 401 | 403;

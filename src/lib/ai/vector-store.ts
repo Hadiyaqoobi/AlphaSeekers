@@ -17,6 +17,8 @@ export type StoredChunk = {
   sourceId: string;
   sourceType: string;
   chunkIndex: number;
+  /** Class the chunk belongs to; null = general/library material. */
+  classId: string | null;
   similarity: number;
 };
 
@@ -198,7 +200,7 @@ export async function similaritySearch(
   params.push(k);
 
   const results = await prisma.$queryRawUnsafe<StoredChunk[]>(
-    `SELECT id, content, "sourceTitle", "sourceId", "sourceType", "chunkIndex",
+    `SELECT id, content, "sourceTitle", "sourceId", "sourceType", "chunkIndex", "classId",
             1 - (embedding <=> $1::vector) as similarity
      FROM "DocumentChunk"
      WHERE embedding IS NOT NULL AND ${scopeClause}
@@ -239,7 +241,7 @@ export async function enrollmentAwareSearch(
   if (enrolledClassIds.length > 0) {
     const placeholders = enrolledClassIds.map((_, i) => `$${i + 2}`).join(", ");
     const enrolledResults = await prisma.$queryRawUnsafe<StoredChunk[]>(
-      `SELECT id, content, "sourceTitle", "sourceId", "sourceType", "chunkIndex",
+      `SELECT id, content, "sourceTitle", "sourceId", "sourceType", "chunkIndex", "classId",
               1 - (embedding <=> $1::vector) as similarity
        FROM "DocumentChunk"
        WHERE "classId" IN (${placeholders})
@@ -260,7 +262,7 @@ export async function enrollmentAwareSearch(
     const existingIds = new Set(results.map((r) => r.id));
 
     const generalResults = await prisma.$queryRawUnsafe<StoredChunk[]>(
-      `SELECT id, content, "sourceTitle", "sourceId", "sourceType", "chunkIndex",
+      `SELECT id, content, "sourceTitle", "sourceId", "sourceType", "chunkIndex", "classId",
               1 - (embedding <=> $1::vector) as similarity
        FROM "DocumentChunk"
        WHERE embedding IS NOT NULL AND "classId" IS NULL
@@ -279,6 +281,59 @@ export async function enrollmentAwareSearch(
   }
 
   return results.sort((a, b) => b.similarity - a.similarity);
+}
+
+/**
+ * What is currently indexed for one source, in chunk order — lets re-ingestion
+ * skip the (rate-limited) embedding calls when nothing changed.
+ */
+export async function getSourceChunks(
+  sourceType: string,
+  sourceId: string,
+): Promise<Array<{ content: string; sourceTitle: string; classId: string | null }>> {
+  return prisma.documentChunk.findMany({
+    where: { sourceType, sourceId },
+    orderBy: { chunkIndex: "asc" },
+    select: { content: true, sourceTitle: true, classId: true },
+  });
+}
+
+/**
+ * Re-embed every stored chunk in place with the CURRENT embedding model,
+ * keeping its text, ids and class. Needed once after switching
+ * HF_EMBEDDING_MODEL: vectors from two different models are not comparable,
+ * so until this finishes retrieval quality is poor. Walks the table in id
+ * order in small pages; safe to re-run (it just overwrites vectors).
+ */
+export async function reembedAllChunks(
+  embed: (texts: string[]) => Promise<number[][]>,
+  pageSize = 32,
+): Promise<{ updated: number }> {
+  let updated = 0;
+  let cursor: string | undefined;
+
+  for (;;) {
+    const page = await prisma.documentChunk.findMany({
+      where: cursor ? { id: { gt: cursor } } : undefined,
+      orderBy: { id: "asc" },
+      take: pageSize,
+      select: { id: true, content: true },
+    });
+    if (page.length === 0) break;
+
+    const vectors = await embed(page.map((c) => c.content));
+    for (let i = 0; i < page.length; i += 1) {
+      await prisma.$executeRawUnsafe(
+        `UPDATE "DocumentChunk" SET embedding = $1::vector WHERE id = $2`,
+        `[${vectors[i].join(",")}]`,
+        page[i].id,
+      );
+      updated += 1;
+    }
+    cursor = page[page.length - 1].id;
+  }
+
+  return { updated };
 }
 
 /**

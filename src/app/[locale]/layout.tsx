@@ -11,11 +11,11 @@ import { MustChangePasswordBanner } from "@/components/must-change-password-bann
 import { MobileNav } from "@/components/public/mobile-nav";
 import { InstallPrompt } from "@/components/pwa/install-prompt";
 import { ServiceWorkerRegister } from "@/components/pwa/sw-register";
+import { SessionKeepalive } from "@/components/session-keepalive";
 import { routing } from "@/i18n/routing";
 import { isRtlLocale, type Locale } from "@/lib/i18n";
 import { getAccessControl } from "@/lib/security/permissions";
 import { getSessionUser } from "@/lib/security/session";
-import { Analytics } from "@vercel/analytics/react";
 
 type LocaleLayoutProps = {
   children: ReactNode;
@@ -88,10 +88,10 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
         lang={locale}
       >
         <a
-          className="sr-only focus:not-sr-only focus:fixed focus:left-2 focus:top-2 focus:z-[100] focus:rounded-lg focus:bg-neon-700 focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white"
+          className="sr-only focus:not-sr-only focus:fixed focus:start-2 focus:top-2 focus:z-[100] focus:rounded-lg focus:bg-neon-700 focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white"
           href="#main-content"
         >
-          Skip to content
+          {t("skipToContent")}
         </a>
 
         {user ? (
@@ -107,8 +107,12 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
               unrestricted={access?.unrestricted ?? false}
             />
             <div className="flex-1 min-w-0 flex flex-col">
+              {/* The mobile menu button is fixed at the inline-START edge (see
+                  Sidebar), so the start side of this bar is left empty and the
+                  language switcher sits at the END — in Dari (RTL) that keeps
+                  the two from stacking on top of each other on phones. */}
               <header
-                className="h-14 flex items-center justify-between px-6 flex-shrink-0"
+                className="h-14 flex items-center justify-between ps-16 pe-6 lg:px-6 flex-shrink-0"
                 style={{ background: '#0A1118', borderBottom: '1px solid #1A2D3D' }}
               >
                 <div />
@@ -118,6 +122,7 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
                 </div>
               </header>
               {access?.mustChangePassword ? <MustChangePasswordBanner locale={locale} /> : null}
+              <SessionKeepalive />
               <main id="main-content" className="flex-1 overflow-y-auto">{children}</main>
             </div>
           </div>
@@ -186,7 +191,9 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
         )}
         <ServiceWorkerRegister />
         <InstallPrompt />
-        <Analytics />
+        {/* <Analytics /> from @vercel/analytics was removed: the site runs on
+            Render, where /_vercel/insights/script.js does not exist, so it was a
+            failed request on every page load. */}
       </div>
     </NextIntlClientProvider>
   );

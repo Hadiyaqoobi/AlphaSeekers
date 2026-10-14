@@ -9,6 +9,7 @@
  */
 
 import { prisma } from "@/lib/prisma";
+import { can, getAccessControl } from "@/lib/security/permissions";
 import { getSessionUser, unauthorized, forbidden, badRequest } from "@/lib/security/session";
 
 export async function GET(request: Request) {
@@ -20,12 +21,16 @@ export async function GET(request: Request) {
 
   if (!classId) return badRequest("classId query parameter is required");
 
-  // Verify teacher owns this class (or is admin)
+  // Verify teacher owns this class, or is staff holding classes.view (role=ADMIN
+  // alone is every scoped employee — moderators, finance, support).
   const classRecord = await prisma.class.findUnique({ where: { id: classId } });
   if (!classRecord) {
     return Response.json({ message: "Class not found" }, { status: 404 });
   }
-  if (classRecord.teacherId !== user.id && user.role !== "ADMIN") {
+  if (
+    classRecord.teacherId !== user.id &&
+    !(user.role === "ADMIN" && can(await getAccessControl(), "classes.view"))
+  ) {
     return forbidden("You can only view insights for your own classes");
   }
 

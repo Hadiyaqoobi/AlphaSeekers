@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 
 // ── Types ──────────────────────────────────────────────────────
 
@@ -28,6 +28,8 @@ type ChatMessage = {
   feedback?: "up" | "down" | null;
   mode?: AiMode;
   confidence?: ConfidenceInfo;
+  /** Server-side AIInteraction id (from the "done" event) — what feedback rates. */
+  interactionId?: string;
 };
 
 type EnrolledClass = {
@@ -181,8 +183,16 @@ function generateSuggestions(
 
 // ── Main Component ───────────────────────────────────────────
 
+/** Thrown for an HTTP failure so the catch branch can pick the right message. */
+class AskError extends Error {
+  constructor(readonly status: number) {
+    super(`API error: ${status}`);
+  }
+}
+
 export function StudyAssistant() {
   const t = useTranslations("ai");
+  const locale = useLocale();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
@@ -268,11 +278,12 @@ export function StudyAssistant() {
       const response = await fetch("/api/ai/ask", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query }),
+        // The page locale decides the prompt language and the disclaimers.
+        body: JSON.stringify({ query, locale: locale === "en" ? "en" : "fa" }),
       });
 
       if (!response.ok) {
-        throw new Error(`API error: ${response.status}`);
+        throw new AskError(response.status);
       }
 
       const reader = response.body?.getReader();
@@ -280,8 +291,11 @@ export function StudyAssistant() {
 
       const decoder = new TextDecoder();
       let buffer = "";
+      // The server reports failures as a `type: "error"` event inside a 200
+      // stream; without this the answer bubble just stayed empty.
+      let streamFailed = false;
 
-      while (true) {
+      while (!streamFailed) {
         const { done, value } = await reader.read();
         if (done) break;
 
@@ -298,7 +312,16 @@ export function StudyAssistant() {
 
           try {
             const parsed = JSON.parse(data);
-            if (parsed.type === "text" && parsed.content) {
+            if (parsed.type === "error") {
+              streamFailed = true;
+              break;
+            } else if (parsed.type === "done" && typeof parsed.interactionId === "string") {
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === assistantId ? { ...m, interactionId: parsed.interactionId } : m
+                )
+              );
+            } else if (parsed.type === "text" && parsed.content) {
               setMessages((prev) =>
                 prev.map((m) =>
                   m.id === assistantId
@@ -332,10 +355,15 @@ export function StudyAssistant() {
           }
         }
       }
+
+      if (streamFailed) {
+        reader.cancel().catch(() => {});
+        throw new Error("stream error");
+      }
     } catch (error) {
-      const errorContent = (error instanceof Error && error.message.includes("429"))
-        ? "You're asking great questions! Give me a moment to catch up — try again in a few seconds."
-        : "I wasn't able to find an answer right now. This usually means the connection is slow.";
+      const status = error instanceof AskError ? error.status : 0;
+      const errorContent =
+        status === 429 ? t("errorBusy") : status === 503 ? t("errorUnavailable") : t("errorFailed");
       setMessages((prev) =>
         prev.map((m) =>
           m.id === assistantId
@@ -346,21 +374,23 @@ export function StudyAssistant() {
     } finally {
       setIsStreaming(false);
     }
-  }, [input, isStreaming]);
+  }, [input, isStreaming, locale, t]);
 
   const handleFeedback = useCallback(
-    async (messageId: string, rating: "up" | "down") => {
+    async (messageId: string, rating: "up" | "down", interactionId?: string) => {
       setMessages((prev) =>
         prev.map((m) =>
           m.id === messageId ? { ...m, feedback: rating } : m
         )
       );
 
+      // Only answers the server logged can be rated (not error bubbles).
+      if (!interactionId) return;
       try {
         await fetch("/api/ai/feedback", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ messageId, rating }),
+          body: JSON.stringify({ messageId: interactionId, rating }),
         });
       } catch {
         // Non-critical
@@ -583,7 +613,7 @@ export function StudyAssistant() {
                           ) : (
                             <>
                               <button
-                                onClick={() => handleFeedback(message.id, "up")}
+                                onClick={() => handleFeedback(message.id, "up", message.interactionId)}
                                 className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs text-ink-faint hover:text-neon-600 hover:bg-neon-50 transition-colors"
                                 title={t("helpful")}
                               >
@@ -593,7 +623,7 @@ export function StudyAssistant() {
                                 {t("helpful")}
                               </button>
                               <button
-                                onClick={() => handleFeedback(message.id, "down")}
+                                onClick={() => handleFeedback(message.id, "down", message.interactionId)}
                                 className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs text-ink-faint hover:text-red-500 hover:bg-red-50 transition-colors"
                                 title={t("notHelpful")}
                               >

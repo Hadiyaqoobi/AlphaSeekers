@@ -8,12 +8,17 @@
  *
  * Shows only public facts about the class — never the meeting link, the roster
  * or the materials. Those appear on the real class page once they are in.
+ *
+ * The class summary is read through the public-page cache: crawlers follow
+ * this page from the landing page and WhatsApp's link previewer fetches it,
+ * and neither should wake the database. A signed-out visit does no database
+ * work when the entry is cached (the session check below reads only the cookie).
  */
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
 import { ClassJoinForm } from "@/components/classes/class-join-form";
-import { getPublicClassForJoin } from "@/lib/platform/class-join";
+import { getPublicJoinClass } from "@/lib/platform/public-data";
 import { getSessionUser } from "@/lib/security/session";
 import { redirect } from "next/navigation";
 
@@ -25,7 +30,7 @@ export default async function JoinClassPage({ params }: JoinPageProps) {
   const { locale, classId } = params;
   const t = await getTranslations({ locale, namespace: "classJoin" });
 
-  const klass = await getPublicClassForJoin(classId);
+  const klass = await getPublicJoinClass(classId);
   if (!klass) notFound();
 
   // Already signed in? They do not need an account — send them to the class

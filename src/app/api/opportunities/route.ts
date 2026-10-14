@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createOpportunity, listOpportunities } from "@/lib/platform/store";
 import { guardPermission } from "@/lib/security/api-guard";
 import { withCors, corsPreflight } from "@/lib/security/cors";
+import { normaliseHttpUrl } from "@/lib/security/safe-url";
 import { getSessionUser, isApproved, pendingApproval, unauthorized } from "@/lib/security/session";
 
 export async function OPTIONS(request: NextRequest) {
@@ -40,12 +41,18 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ message: "Missing required fields" }, { status: 400 });
   }
 
+  // Rendered as an "Apply" link: http(s) only, never javascript:.
+  const externalUrl = normaliseHttpUrl(body.externalUrl);
+  if (!externalUrl) {
+    return NextResponse.json({ message: "The link must be an http(s) URL" }, { status: 400 });
+  }
+
   const opportunity = await createOpportunity({
     title: body.title,
     type: body.type,
     description: body.description,
     deadline: body.deadline,
-    externalUrl: body.externalUrl,
+    externalUrl,
   });
 
   return NextResponse.json(opportunity, { status: 201 });

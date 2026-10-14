@@ -11,6 +11,7 @@ import { TelegramLink } from "@/components/telegram-link";
 import { formatDate, formatDateTime } from "@/lib/format-date";
 import { getStudentProfileSummary, getUser } from "@/lib/platform/store";
 import { getSessionUser } from "@/lib/security/session";
+import { loginHref } from "@/lib/ui/safe-next";
 
 type ProfilePageProps = {
   params: { locale: string };
@@ -29,7 +30,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   const t = await getTranslations({ locale, namespace: "profile" });
 
   if (!user) {
-    redirect(`/${locale}/login`);
+    redirect(loginHref(locale, `/${locale}/profile`));
   }
 
   /* ------------------------------------------------------------------ */
@@ -37,6 +38,10 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   /* ------------------------------------------------------------------ */
   if (user.role !== "STUDENT") {
     const account = await getUser(user.id);
+    // Translated role name (the raw enum, e.g. "TEACHER", used to be shown).
+    const tAll = await getTranslations({ locale });
+    const roleLabel =
+      user.role === "TEACHER" ? tAll("register.teacher") : user.role === "ADMIN" ? tAll("admin.title") : user.role;
 
     return (
       <section className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-8 space-y-6">
@@ -54,7 +59,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                     {account?.name ?? user.name}
                   </h1>
                   <span className="mt-1 inline-flex items-center rounded-full bg-teal-50 px-3 py-0.5 text-xs font-bold uppercase tracking-wider text-teal-700 ring-1 ring-teal-200/60">
-                    {user.role}
+                    {roleLabel}
                   </span>
                 </div>
               </div>
@@ -72,14 +77,14 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
             </div>
 
             <p className="mt-3 text-sm text-ink-soft">
-              {t("notStudentBlurb", { role: user.role })}
+              {t("notStudentBlurb", { role: roleLabel })}
             </p>
           </div>
         </div>
 
         {/* Integrations */}
         <div className="rounded-2xl border border-line bg-dark-100 p-5 shadow-sm">
-          <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-ink-faint">Integrations</h2>
+          <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-ink-faint">{t("integrations")}</h2>
           <div className="flex flex-wrap items-center gap-3">
             <TelegramLink />
             <PushSubscribe />
@@ -106,6 +111,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   /*  STUDENT LAYOUT                                                    */
   /* ------------------------------------------------------------------ */
   const profile = await getStudentProfileSummary(user.id);
+  const tOpportunities = await getTranslations({ locale, namespace: "opportunities" });
 
   if (!profile) {
     redirect(`/${locale}/dashboard`);
@@ -192,7 +198,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {/* Active Classes */}
         <div className="relative overflow-hidden rounded-2xl border border-line bg-dark-100 p-5 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5">
-          <div className="absolute -right-3 -top-3 h-16 w-16 rounded-full bg-neon-50" />
+          <div className="absolute -end-3 -top-3 h-16 w-16 rounded-full bg-neon-50" />
           <div className="relative">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-neon-100 text-neon-600">
               <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
@@ -206,7 +212,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
 
         {/* Upcoming Sessions */}
         <div className="relative overflow-hidden rounded-2xl border border-line bg-dark-100 p-5 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5">
-          <div className="absolute -right-3 -top-3 h-16 w-16 rounded-full bg-sky-50" />
+          <div className="absolute -end-3 -top-3 h-16 w-16 rounded-full bg-sky-50" />
           <div className="relative">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-100 text-sky-600">
               <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
@@ -221,7 +227,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
 
         {/* Materials */}
         <div className="relative overflow-hidden rounded-2xl border border-line bg-dark-100 p-5 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5">
-          <div className="absolute -right-3 -top-3 h-16 w-16 rounded-full bg-violet-50" />
+          <div className="absolute -end-3 -top-3 h-16 w-16 rounded-full bg-violet-50" />
           <div className="relative">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-100 text-violet-600">
               <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
@@ -236,7 +242,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
 
         {/* Alerts */}
         <div className="relative overflow-hidden rounded-2xl border border-line bg-dark-100 p-5 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5">
-          <div className="absolute -right-3 -top-3 h-16 w-16 rounded-full bg-amber-50" />
+          <div className="absolute -end-3 -top-3 h-16 w-16 rounded-full bg-amber-50" />
           <div className="relative">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-amber-600">
               <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
@@ -327,12 +333,12 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
             ) : (
               <div className="relative space-y-0">
                 {/* Vertical line */}
-                <div className="absolute bottom-0 left-[7px] top-2 w-0.5 bg-dark-200" />
+                <div className="absolute bottom-0 start-[7px] top-2 w-0.5 bg-dark-200" />
 
                 {profile.upcoming.map((item, idx) => (
-                  <article className="relative pl-7 pb-6 last:pb-0" key={item.id}>
+                  <article className="relative ps-7 pb-6 last:pb-0" key={item.id}>
                     {/* Timeline dot */}
-                    <div className={`absolute left-0 top-1.5 h-[15px] w-[15px] rounded-full border-[3px] border-white shadow-sm ${idx === 0 ? "bg-teal-500" : "bg-dark-300"}`} />
+                    <div className={`absolute start-0 top-1.5 h-[15px] w-[15px] rounded-full border-[3px] border-white shadow-sm ${idx === 0 ? "bg-teal-500" : "bg-dark-300"}`} />
 
                     <p className="text-sm font-semibold text-ink-main">{item.className}</p>
                     <p className="mt-0.5 text-xs text-ink-soft">
@@ -409,7 +415,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                     <h3 className="font-semibold text-ink-main group-hover:text-teal-700 transition-colors">
                       {item.title}
                     </h3>
-                    <span className="badge-pill">{item.type}</span>
+                    <span className="badge-pill">{tOpportunities(`types.${item.type}`)}</span>
                   </div>
                   <p className="mt-1.5 text-xs leading-relaxed text-ink-soft">{item.description}</p>
 

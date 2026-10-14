@@ -12,6 +12,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { aiConfig } from "@/lib/ai/config";
 import { generateCompletion } from "@/lib/ai/llm";
+import { redactPII } from "@/lib/ai/privacy/pii-stripper";
 import { checkRateLimit } from "@/lib/security/rate-limit";
 import { getSessionUser, unauthorized, badRequest } from "@/lib/security/session";
 
@@ -25,7 +26,8 @@ export async function POST(request: Request) {
   const user = await getSessionUser();
   if (!user) return unauthorized();
 
-  if (!aiConfig.enabled) {
+  // Scoped to the lesson text; no retrieval, so an LLM key is enough.
+  if (!aiConfig.llmEnabled) {
     return Response.json({ message: "AI not configured" }, { status: 503 });
   }
 
@@ -82,7 +84,7 @@ RULES (strict):
   try {
     const answer = await generateCompletion([
       { role: "system", content: systemPrompt },
-      { role: "user", content: query },
+      { role: "user", content: redactPII(query) },
     ]);
     return Response.json({ answer });
   } catch (err) {

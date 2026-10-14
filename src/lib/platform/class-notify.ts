@@ -10,11 +10,10 @@ import { deliverWithFallback } from "@/lib/integrations/notifications";
  * the scheduler therefore skipped the class forever. Two English classes were
  * advertised publicly in August 2026 with zero sessions for exactly this reason.
  *
- * Deliberately does NOT create sessions. createClassWithSession() guesses a time
- * from the free-text schedulePreference when a teacher has no availability, which
- * is the behaviour the scheduler explicitly refuses (QA 2026-04-19: never book a
- * teacher into an hour they never agreed to). Sessions are the scheduler's job,
- * once real availability exists.
+ * Deliberately does NOT create sessions. Booking follows one rule everywhere
+ * (src/lib/scheduling/weekly-slot.ts): the posted class time, and only once it is
+ * inside the teacher's availability (QA 2026-04-19: never book a teacher into an
+ * hour they never agreed to).
  *
  * English only. Dari is never machine-written here -- see the translation debt
  * note in the project docs; a Dari version needs a human translator.
@@ -24,6 +23,8 @@ export async function notifyTeacherOfNewClass(input: {
   className: string;
   teacherId: string;
   schedulePreference?: string | null;
+  /** MANUAL classes get no automatic sessions, so the message must not promise them. */
+  schedulingMode?: "AUTO" | "MANUAL";
 }): Promise<void> {
   const teacher = await prisma.user.findUnique({
     where: { id: input.teacherId },
@@ -40,9 +41,24 @@ export async function notifyTeacherOfNewClass(input: {
 
   const base = (process.env.APP_BASE_URL ?? "https://alphaseekers.org").replace(/\/$/, "");
 
+  // MANUAL: the teacher sets every date. Pointing them at availability (and
+  // promising automatic sessions) left manual classes with no sessions at all.
+  const manualContent = [
+    `You have been assigned a new class: "${input.className}".`,
+    input.schedulePreference ? `Planned schedule: ${input.schedulePreference} (Kabul time)` : null,
+    "",
+    "You set the date and time of each session yourself — nothing is created automatically.",
+    "",
+    `Add your sessions here: ${base}/en/teacher/classes/${input.classId}/schedule`,
+    "",
+    "Until you add a session, students have nothing to join. Each session you add gets a Meet link.",
+  ]
+    .filter((line) => line !== null)
+    .join("\n");
+
   // One link, to a page that shows the teacher their own live status rather than
   // generic instructions — it ticks each step off as they complete it.
-  const content = [
+  const autoContent = [
     `You have been assigned a new class: "${input.className}".`,
     input.schedulePreference ? `Planned schedule: ${input.schedulePreference}` : null,
     "",
@@ -50,7 +66,8 @@ export async function notifyTeacherOfNewClass(input: {
     "",
     `Set them here: ${base}/en/teacher/setup`,
     "",
-    "Your sessions are created automatically once that is saved.",
+    "Your sessions are then created automatically at the class time above (Kabul time),",
+    "as long as that time is inside the hours you set.",
     "Until then the class has no session times and students cannot join.",
     "",
     "You can also connect your Google account on that page if you want the Meet",
@@ -59,6 +76,8 @@ export async function notifyTeacherOfNewClass(input: {
   ]
     .filter((line) => line !== null)
     .join("\n");
+
+  const content = input.schedulingMode === "MANUAL" ? manualContent : autoContent;
 
   const deliveries = await deliverWithFallback(
     {

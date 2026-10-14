@@ -3,6 +3,9 @@
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 
+import { messageForCode, readErrorBody } from "@/lib/ui/api-error";
+import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH, passwordProblem } from "@/lib/ui/password-policy";
+
 export function PasswordChangeForm() {
   const t = useTranslations("profile.password");
   const [currentPassword, setCurrentPassword] = useState("");
@@ -17,8 +20,11 @@ export function PasswordChangeForm() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (newPassword.length < 6) {
-      setStatus({ kind: "error", message: t("errors.tooShort") });
+    // Mirrors the server rule (8+ characters, a letter and a number). The old
+    // client check accepted 6, so a 6-7 character password passed here and was
+    // then refused by the server with an untranslated message.
+    if (passwordProblem(newPassword)) {
+      setStatus({ kind: "error", message: t("errors.weak") });
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -33,17 +39,23 @@ export function PasswordChangeForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ currentPassword, newPassword }),
       });
-      const body = await r.json().catch(() => null);
       if (!r.ok) {
-        const codeMap: Record<string, string> = {
-          wrong_current: t("errors.wrongCurrent"),
-          same_as_current: t("errors.sameAsCurrent"),
-          too_short: t("errors.tooShort"),
-        };
-        const translated = body?.code && codeMap[body.code as string];
+        const body = await readErrorBody(r);
         setStatus({
           kind: "error",
-          message: translated ?? body?.message ?? t("errors.generic"),
+          message:
+            r.status === 429
+              ? t("errors.rateLimited")
+              : messageForCode(
+                  body,
+                  {
+                    wrong_current: t("errors.wrongCurrent"),
+                    same_as_current: t("errors.sameAsCurrent"),
+                    too_short: t("errors.weak"),
+                    weak_password: t("errors.weak"),
+                  },
+                  t("errors.generic"),
+                ),
         });
         return;
       }
@@ -98,11 +110,13 @@ export function PasswordChangeForm() {
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               required
-              minLength={6}
-              maxLength={72}
+              minLength={PASSWORD_MIN_LENGTH}
+              maxLength={PASSWORD_MAX_LENGTH}
+              aria-describedby="newPasswordRule"
               className="w-full rounded-lg border border-line bg-dark-50 px-3 py-2.5 text-sm text-ink-main outline-none transition focus:border-neon-500 focus:ring-2 focus:ring-neon-500/20"
             />
-            <p className="mt-1 text-[11px] text-ink-faint">{t("hint")}</p>
+            {/* The rule is stated before typing, not only as an error after. */}
+            <p className="mt-1 text-[11px] text-ink-faint" dir="auto" id="newPasswordRule">{t("rule")}</p>
           </div>
 
           <div>

@@ -7,6 +7,7 @@ import { formatDate, formatDateTime } from "@/lib/format-date";
 import { isRegistrationClosed } from "@/lib/platform/registration-deadline";
 import { listClasses, listStudentClasses } from "@/lib/platform/store";
 import { getSessionUser } from "@/lib/security/session";
+import { loginHref } from "@/lib/ui/safe-next";
 
 type ClassesPageProps = {
   params: { locale: string };
@@ -34,7 +35,7 @@ export default async function ClassesPage({ params, searchParams }: ClassesPageP
   const user = await getSessionUser();
 
   if (!user) {
-    redirect(`/${locale}/login`);
+    redirect(loginHref(locale, `/${locale}/classes`));
   }
 
   if (!user.approved && user.role !== "ADMIN") {
@@ -80,7 +81,7 @@ export default async function ClassesPage({ params, searchParams }: ClassesPageP
           <div className="relative flex-1">
             {/* Search icon */}
             <svg
-              className="pointer-events-none absolute inset-y-0 left-3 h-full w-4 text-ink-faint"
+              className="pointer-events-none absolute inset-y-0 start-3 h-full w-4 text-ink-faint"
               fill="none"
               stroke="currentColor"
               strokeWidth={2}
@@ -90,7 +91,7 @@ export default async function ClassesPage({ params, searchParams }: ClassesPageP
               <path d="m21 21-4.35-4.35" strokeLinecap="round" />
             </svg>
             <input
-              className="field !pl-9"
+              className="field !ps-9"
               defaultValue={search}
               name="search"
               placeholder={t("searchPlaceholder")}
@@ -222,7 +223,7 @@ export default async function ClassesPage({ params, searchParams }: ClassesPageP
                         : t("sessionPending")}
                     </span>
                     {enrolledSet.has(item.id) ? (
-                      <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-neon-50 px-2 py-0.5 text-[10px] font-semibold text-neon-700">
+                      <span className="ms-auto inline-flex items-center gap-1 rounded-full bg-neon-50 px-2 py-0.5 text-[10px] font-semibold text-neon-700">
                         <svg className="h-2.5 w-2.5" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" />
                         </svg>

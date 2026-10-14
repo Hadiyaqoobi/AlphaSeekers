@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter, useParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 
 import type { SelfLearningTopic } from "@/lib/learn/topics";
@@ -11,6 +12,7 @@ interface TopicCardProps {
 }
 
 export function TopicCard({ topic, isDari }: TopicCardProps) {
+  const tError = useTranslations("error");
   const router = useRouter();
   const params = useParams<{ locale: string }>();
   const locale = params.locale || "en";
@@ -27,13 +29,13 @@ export function TopicCard({ topic, isDari }: TopicCardProps) {
         body: JSON.stringify({ topic: isDari ? topic.nameDari : topic.name }),
       });
       if (!res.ok) {
-        const data = await res.json().catch(() => null);
-        throw new Error(data?.message || `Generation failed (${res.status})`);
+        throw new Error(String(res.status));
       }
       const data = await res.json();
       router.push(`/${locale}/learn/${data.id}`);
-    } catch (err) {
-      setError((err as Error).message);
+    } catch {
+      // Translated generic message; the server's English text is not shown.
+      setError(tError("body"));
       setLoading(false);
     }
   }
@@ -43,7 +45,7 @@ export function TopicCard({ topic, isDari }: TopicCardProps) {
       type="button"
       onClick={startTopic}
       disabled={loading}
-      className="group relative text-left p-5 rounded-2xl transition-all duration-300 disabled:opacity-60 disabled:cursor-wait"
+      className="group relative text-start p-5 rounded-2xl transition-all duration-300 disabled:opacity-60 disabled:cursor-wait"
       style={{
         background: "#0D1419",
         border: "1px solid #1A2D3D",

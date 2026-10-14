@@ -1,33 +1,60 @@
 import { z } from "zod";
 
-import { chunkDocument } from "@/lib/ai/chunker";
 import { aiConfig } from "@/lib/ai/config";
 import { generateEmbeddings } from "@/lib/ai/embeddings";
+import { ingestDocument, ingestMaterial } from "@/lib/ai/ingest";
 import { invalidateCache } from "@/lib/ai/response-cache";
-import { ensureVectorExtension, replaceChunksForSource } from "@/lib/ai/vector-store";
+import { reembedAllChunks } from "@/lib/ai/vector-store";
+import { prisma } from "@/lib/prisma";
 import { guardPermission } from "@/lib/security/api-guard";
+import { checkRateLimitDistributed } from "@/lib/security/rate-limit";
 import { badRequest } from "@/lib/security/session";
 
-const ingestSchema = z.object({
+const documentSchema = z.object({
   sourceType: z.enum(["LIBRARY", "MATERIAL"]),
   sourceId: z.string().min(1),
   sourceTitle: z.string().min(1),
   content: z.string().min(10),
   classId: z.string().optional(), // Links document chunks to a specific class
+  force: z.boolean().optional(),
 });
 
-function generateChunkId(sourceId: string, chunkIndex: number): string {
-  return `chunk_${sourceId}_${chunkIndex}`;
+const materialSchema = z.object({
+  materialId: z.string().min(1),
+  force: z.boolean().optional(),
+});
+
+const actionSchema = z.object({
+  // reembed: recompute every stored vector with the current embedding model
+  //          (run once after changing HF_EMBEDDING_MODEL).
+  // reindex-materials: (re)index every uploaded material file.
+  action: z.enum(["reembed", "reindex-materials"]),
+});
+
+// One maintenance job at a time per server process; a second click while one
+// runs is refused instead of doubling the embedding traffic.
+let maintenanceRunning: string | null = null;
+
+function runMaintenance(name: string, job: () => Promise<unknown>): void {
+  maintenanceRunning = name;
+  void job()
+    .then((result) => console.log(`[AI ingest] ${name} finished:`, JSON.stringify(result)))
+    .catch((err) => console.error(`[AI ingest] ${name} failed:`, (err as Error).message))
+    .finally(() => {
+      maintenanceRunning = null;
+    });
 }
 
 /**
- * POST /api/ai/ingest
+ * POST /api/ai/ingest  (ai.manage)
  *
- * Admin-only endpoint to ingest a document into the RAG vector store.
- * Chunks the text, generates embeddings, and stores in pgvector.
+ * Body, one of:
+ *   { sourceType, sourceId, sourceTitle, content, classId?, force? }  index raw text
+ *   { materialId, force? }                                           index one uploaded material
+ *   { action: "reembed" | "reindex-materials" }                      background maintenance (202)
  *
- * Supports re-ingestion: existing chunks for the same source are
- * replaced (upserted) to keep content fresh.
+ * Re-ingesting a source replaces its chunks; unchanged text is skipped unless
+ * `force` is set. Material uploads index themselves via scheduleMaterialIngest.
  */
 export async function POST(request: Request) {
   const g = await guardPermission("ai.manage");
@@ -35,71 +62,81 @@ export async function POST(request: Request) {
 
   if (!aiConfig.enabled) {
     return Response.json(
-      { message: "AI features are not configured. Set GROQ_API_KEY and HF_API_TOKEN." },
+      { message: "AI features are not configured. Set an LLM key and HF_API_TOKEN." },
       { status: 503 },
     );
   }
 
-  const body = await request.json().catch(() => null);
-  const parsed = ingestSchema.safeParse(body);
+  const rl = await checkRateLimitDistributed(`ai-ingest:${g.access.userId}`, aiConfig.rateLimits.ingest);
+  if (!rl.allowed) {
+    return Response.json({ message: "Too many ingest requests. Please wait a minute." }, { status: 429 });
+  }
 
-  if (!parsed.success) {
-    return badRequest("Invalid input. Required: sourceType, sourceId, sourceTitle, content (min 10 chars).");
+  const body = await request.json().catch(() => null);
+
+  const action = actionSchema.safeParse(body);
+  if (action.success) {
+    if (maintenanceRunning) {
+      return Response.json({ message: `Already running: ${maintenanceRunning}` }, { status: 409 });
+    }
+    if (action.data.action === "reembed") {
+      runMaintenance("reembed", async () => {
+        const result = await reembedAllChunks(generateEmbeddings);
+        await invalidateCache().catch(() => {});
+        return result;
+      });
+    } else {
+      runMaintenance("reindex-materials", async () => {
+        const materials = await prisma.material.findMany({ select: { id: true }, orderBy: { createdAt: "asc" } });
+        const counts: Record<string, number> = {};
+        for (const m of materials) {
+          const r = await ingestMaterial(m.id, { force: true }).catch(() => null);
+          const status = r?.status ?? "failed";
+          counts[status] = (counts[status] ?? 0) + 1;
+        }
+        return counts;
+      });
+    }
+    return Response.json({ message: `Started ${action.data.action}. Progress is in the server log.` }, { status: 202 });
   }
 
   try {
-    // Ensure pgvector extension exists
-    await ensureVectorExtension();
-
-    const { sourceType, sourceId, sourceTitle, content, classId } = parsed.data;
-
-    // Chunk the document
-    const chunks = chunkDocument({ content, sourceType, sourceId, sourceTitle });
-
-    if (chunks.length === 0) {
-      return Response.json({ message: "No chunks generated from content.", chunksCreated: 0 });
+    const material = materialSchema.safeParse(body);
+    if (material.success) {
+      const result = await ingestMaterial(material.data.materialId, { force: material.data.force });
+      return Response.json({ materialId: material.data.materialId, ...result });
     }
 
-    // ORDERING FIX: generate embeddings BEFORE touching existing data. If
-    // embedding fails, the previously-ingested chunks are left untouched (the
-    // source stays retrievable) instead of being deleted up-front.
-    const embeddings = await generateEmbeddings(chunks.map((c) => c.content));
+    const parsed = documentSchema.safeParse(body);
+    if (!parsed.success) {
+      return badRequest(
+        "Invalid input. Send { sourceType, sourceId, sourceTitle, content }, { materialId }, or { action }.",
+      );
+    }
 
-    const chunksWithEmbeddings = chunks.map((chunk, i) => ({
-      id: generateChunkId(sourceId, chunk.chunkIndex),
-      sourceType: chunk.sourceType,
-      sourceId: chunk.sourceId,
-      sourceTitle: chunk.sourceTitle,
-      content: chunk.content,
-      chunkIndex: chunk.chunkIndex,
-      tokenCount: chunk.tokenCount,
-      embedding: embeddings[i],
-      classId: classId || null,
-    }));
-
-    // Atomically swap old chunks for new ones (delete + insert in one
-    // transaction) so re-ingestion never leaves the source empty on failure.
-    const inserted = await replaceChunksForSource(sourceType, sourceId, chunksWithEmbeddings);
-
-    // Materials changed → expire cached answers so stale responses don't
-    // outlive the content they were derived from.
-    await invalidateCache().catch(() => {});
-
-    return Response.json({
-      message: "Document ingested successfully.",
+    const { sourceType, sourceId, sourceTitle, content, classId, force } = parsed.data;
+    const result = await ingestDocument({
+      content,
+      sourceType,
       sourceId,
       sourceTitle,
-      chunksCreated: inserted,
-      totalTokens: chunks.reduce((sum, c) => sum + c.tokenCount, 0),
+      classId: classId || null,
+      force,
+    });
+
+    return Response.json({
+      message:
+        result.status === "unchanged"
+          ? "Content unchanged; nothing re-embedded."
+          : result.status === "empty"
+            ? "No chunks generated from content."
+            : "Document ingested successfully.",
+      sourceId,
+      sourceTitle,
+      ...result,
     });
   } catch (error) {
     console.error("[AI] Ingestion failed:", error);
-    return Response.json(
-      {
-        message: "Failed to ingest document.",
-        error: error instanceof Error ? error.message : "Unknown error",
-      },
-      { status: 500 },
-    );
+    return Response.json({ message: "Failed to ingest document." }, { status: 500 });
   }
 }

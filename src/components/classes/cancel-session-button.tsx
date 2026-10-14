@@ -38,7 +38,7 @@ export function CancelSessionButton({ sessionId, classId }: CancelSessionButtonP
 
   return (
     <button
-      className="text-xs font-medium text-red-600 hover:text-red-800"
+      className="inline-flex min-h-10 items-center px-2 text-xs font-medium text-red-600 hover:text-red-800"
       disabled={submitting}
       onClick={handleCancel}
       type="button"

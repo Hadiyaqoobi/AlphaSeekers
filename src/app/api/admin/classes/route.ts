@@ -1,51 +1,10 @@
 import { Prisma } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
 
-import { createClass, listAdminClasses, parseInteger } from "@/lib/platform/store";
-import { parseRegistrationDeadline } from "@/lib/platform/registration-deadline";
-import { resolveTeacherId } from "@/lib/platform/teacher-invite";
+import { createClassFromBody, parseCreateClassBody } from "@/lib/platform/class-create";
+import { listAdminClasses, parseInteger } from "@/lib/platform/store";
 import { AccessError, requirePermission } from "@/lib/security/permissions";
 import { getSessionUser, unauthorized } from "@/lib/security/session";
-
-const createClassSchema = z
-  .object({
-    name: z.string().trim().min(1).max(200),
-    subjectCategory: z.string().trim().min(1).max(100),
-    description: z.string().trim().min(1).max(5000),
-    // Either an existing teacherId OR a new teacher's name+email (invite). Enforced by .refine below.
-    teacherId: z.string().trim().min(1).max(100).optional(),
-    newTeacherName: z.string().trim().min(2).max(120).optional(),
-    newTeacherEmail: z.string().trim().email().max(200).optional(),
-    newTeacherPhone: z.string().trim().max(40).optional(),
-    maxStudents: z.number().int().min(1).max(1000),
-    durationMinutes: z.number().int().min(30).max(600).optional(),
-    schedulePreference: z.string().trim().min(1).max(200),
-    language: z.string().trim().min(1).max(50).optional(),
-    whatsappGroupUrl: z.string().trim().url().max(300).optional(),
-    schedulingMode: z.enum(["AUTO", "MANUAL"]).optional(),
-    /**
-     * Registration cutoff. A date-only "YYYY-MM-DD" keeps the whole named day
-     * open (see parseRegistrationDeadline). Omitted = leave unchanged; null or
-     * "" = clear it and reopen registration.
-     */
-    registrationDeadline: z
-      .union([z.string().trim().max(40), z.null()])
-      .optional()
-      .transform((value, ctx) => {
-        if (value === undefined) return undefined;
-        const result = parseRegistrationDeadline(value);
-        if (!result.ok) {
-          ctx.addIssue({ code: z.ZodIssueCode.custom, message: result.message });
-          return z.NEVER;
-        }
-        return result.value;
-      }),
-  })
-  .refine((d) => Boolean(d.teacherId) || Boolean(d.newTeacherName && d.newTeacherEmail), {
-    message: "Provide an existing teacher or a new teacher's name and email.",
-    path: ["teacherId"],
-  });
 
 export async function GET(request: NextRequest) {
   try {
@@ -90,53 +49,23 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ message: "Admin access only" }, { status: 403 });
   }
 
-  const raw = await request.json().catch(() => null);
-  const parsed = createClassSchema.safeParse(raw);
+  // Same validation and creation path as POST /api/staff/classes
+  // (src/lib/platform/class-create.ts): one form, one rule for the class time.
+  const parsed = parseCreateClassBody(await request.json().catch(() => null));
 
-  if (!parsed.success) {
-    return NextResponse.json(
-      {
-        message: "Invalid class payload",
-        errors: parsed.error.issues.map((issue) => ({
-          field: issue.path.join("."),
-          message: issue.message,
-        })),
-      },
-      { status: 400 },
-    );
-  }
-
-  const input = parsed.data;
-
-  // Resolve the instructor: existing teacher, or invite a new one (creates the
-  // account + emails onboarding). Same helper the staff create route uses.
-  const resolved = await resolveTeacherId({
-    teacherId: input.teacherId,
-    newTeacherName: input.newTeacherName,
-    newTeacherEmail: input.newTeacherEmail,
-    newTeacherPhone: input.newTeacherPhone,
-  });
-
-  if (!resolved.ok) {
-    return NextResponse.json({ message: resolved.message }, { status: resolved.status });
+  if (!parsed.ok) {
+    return NextResponse.json(parsed.body, { status: 400 });
   }
 
   try {
-    const created = await createClass({
-      name: input.name,
-      subjectCategory: input.subjectCategory,
-      description: input.description,
-      teacherId: resolved.teacherId,
-      maxStudents: input.maxStudents,
-      durationMinutes: input.durationMinutes ?? 60,
-      schedulePreference: input.schedulePreference,
-      language: input.language ?? "Dari",
-      whatsappGroupUrl: input.whatsappGroupUrl,
-      registrationDeadline: input.registrationDeadline ?? null,
-      schedulingMode: input.schedulingMode ?? "AUTO",
-    });
+    const created = await createClassFromBody(parsed.data);
+    if (!created.ok) {
+      return NextResponse.json({ message: created.message }, { status: created.status });
+    }
 
-    return NextResponse.json({ ...created, invitedTeacher: resolved.invited }, { status: 201 });
+    // Class fields stay at the top level (scripts read `id`), plus the shared
+    // result: sessions, registrationUrl, scheduleIssue, invitedTeacher.
+    return NextResponse.json({ ...created.result.class, ...created.result }, { status: 201 });
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
       // Foreign key violation — most likely an invalid teacherId.

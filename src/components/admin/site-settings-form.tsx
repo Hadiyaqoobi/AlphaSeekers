@@ -48,9 +48,8 @@ export function SiteSettingsForm({ initial }: { initial: SiteSettings }) {
     });
 
     if (!res.ok) {
-      const body = (await res.json().catch(() => ({}))) as { message?: string };
       setStatus("error");
-      setError(body.message ?? t("failed"));
+      setError(t("failed"));
       return;
     }
 

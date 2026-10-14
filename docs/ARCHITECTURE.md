@@ -523,8 +523,11 @@ HTTP hardening headers. The following are all present in code.
   missing; (b) compares with a **constant-time** SHA-256 digest compare
   (`timingSafeEqualStrings`, `cron-auth.ts:35-39`) instead of `===`, avoiding
   both timing and length leaks; and (c) standardizes on a single
-  `Authorization: Bearer <CRON_SECRET>` scheme, while still letting an
-  authenticated `ADMIN` trigger a batch from the dashboard.
+  `Authorization: Bearer <CRON_SECRET>` scheme, while still letting a signed-in
+  **super admin** trigger a batch from the dashboard. That check is live
+  (`requireSuperAdmin`, reading the user row), so a scoped employee, a demoted or
+  deactivated admin, or one on a temporary password is refused. All cron handlers
+  are POST-only, so a cross-site GET cannot trigger one with an admin's cookies.
 
 ### 6.5 HTTP hardening
 
@@ -650,18 +653,41 @@ deliberate compatibility choice. See
   Neon's compute awake around the clock. `GET /api/health?deep=1` adds a cheap
   `SELECT 1` and returns `503` when the database is required (production) but
   unreachable; it is for manual checks and low-frequency monitors only.
-- **Scheduled work.** One Render cron service (`render.yaml`, `alphaseekers-pulse`)
-  runs hourly and calls, in order: reminders, the session scheduler, AI prep, the
-  once-a-day jobs when it is their hour (data retention at 03 UTC, the digests at
-  06 UTC), then the queue worker. Each call is authenticated with `CRON_SECRET`
-  and hits the app's own endpoints, so scheduling logic and app logic never
-  diverge. It is the only scheduled database wake.
+- **Scheduled work: a gated tick.** One Render cron service (`render.yaml`,
+  `alphaseekers-pulse`) calls `POST /api/cron/tick` hourly. The web process keeps
+  an in-memory **agenda** (`src/lib/platform/agenda.ts`: session starts for the
+  next 48 h, the earliest due job, whether the scheduler is mid-pass, whether the
+  daily work ran today) and `planTick`, a pure function, decides from it alone. If
+  nothing is due the tick returns `{skipped:true}` **with no database query**, so
+  Neon stays suspended. Otherwise (`src/lib/platform/cron-tick.ts`) it runs only
+  what is due, in order: reminders and AI prep when a session starts within 95
+  minutes; the scheduler, data retention, the digests and the public-cache refresh
+  once a day from 02 UTC; and always a queue drain, a flush of buffered story views
+  and an agenda reload. The agenda is refreshed, debounced, by the same Prisma
+  extension as the cache after every `Session` or `Job` write, i.e. only while the
+  database is already awake. Anything uncertain (fresh process, failed refresh)
+  means "run". The old per-job routes remain for manual runs (POST, cron secret or
+  super admin). See
+  [ADR-0008](./adr/0008-only-wake-the-database-when-something-is-due.md).
 - **Public-page cache.** Pages a signed-out visitor can open (landing, contact,
-  library, webinars, opportunities, Student Voices) read through an in-process
-  cache (`src/lib/platform/public-cache.ts`), so crawlers and first-time visitors
-  do not wake the database. A Prisma extension invalidates it on every relevant
-  write and the hourly pulse refreshes it. See
-  [ADR-0007](./adr/0007-let-the-database-sleep.md).
+  library, webinars, opportunities, Student Voices, the class join page) read
+  through an in-process cache (`src/lib/platform/public-cache.ts`), so crawlers,
+  link previewers and first-time visitors do not wake the database. A Prisma
+  extension invalidates a scope on every relevant write (but not on a
+  like/view-count-only story update) and re-loads it ~6 s later while the database
+  is still awake; the daily tick renews everything; the TTL is 26 h. Misses ("no
+  such story/class") are cached too. Story view counts are buffered in memory
+  (`src/lib/platform/story-views.ts`) and written when the database is awake
+  anyway. `robots.txt` (`src/app/robots.ts`) keeps crawlers off the join, class
+  and story-editor pages and `/api/`. See
+  [ADR-0007](./adr/0007-let-the-database-sleep.md) and ADR-0008.
+- **Database cost model.** Neon free plan: 100 CU-h a month (~400 awake hours at
+  0.25 CU), billed by time awake, suspended after 5 idle minutes. The hourly pulse
+  alone used ~61–73 awake hours a month; the gated tick brings the scheduled part
+  to roughly 8–10 at today's class load (ADR-0008 has the arithmetic). The web
+  service must stay a **single instance**: the agenda, the cache and the view
+  buffer are per process. One Prisma client per process, kept on `globalThis` in
+  production too (`src/lib/prisma.ts`).
 - **Migrations in the deploy pipeline.** The Render build command is
   `npm install && npx prisma generate && npx prisma migrate deploy && npm run build`
   (`render.yaml:23`), so schema changes ship atomically with the code that needs

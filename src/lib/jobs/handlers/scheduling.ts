@@ -5,6 +5,7 @@
  */
 
 import { deliverWithFallback } from "@/lib/integrations/notifications";
+import { formatDateTimeForUser } from "@/lib/platform/db-store";
 import { prisma } from "@/lib/prisma";
 
 type Recipient = {
@@ -13,25 +14,45 @@ type Recipient = {
   phone: string | null;
   telegramChatId: string | null;
   pushSubscription: string | null;
+  notificationPrefs: string | null;
+  timezone: string | null;
+  language: "FA" | "EN";
 };
 
+// notificationPrefs is included so a student who switched a channel off is not
+// sent to on it anyway; timezone/language so the time reads in their own clock
+// (it used to be a raw UTC ISO string).
 const studentSelect = {
   id: true,
   email: true,
   phone: true,
   telegramChatId: true,
   pushSubscription: true,
+  notificationPrefs: true,
+  timezone: true,
+  language: true,
 } as const;
 
-async function fanOut(recipients: Recipient[], content: string, concurrency = 8): Promise<number> {
+async function fanOut(
+  recipients: Recipient[],
+  contentFor: (recipient: Recipient) => string,
+  concurrency = 8,
+): Promise<number> {
   let failures = 0;
   for (let i = 0; i < recipients.length; i += concurrency) {
     const batch = recipients.slice(i, i + concurrency);
     const results = await Promise.allSettled(
       batch.map((r) =>
         deliverWithFallback(
-          { userId: r.id, email: r.email, phone: r.phone, telegramChatId: r.telegramChatId, pushSubscription: r.pushSubscription },
-          content,
+          {
+            userId: r.id,
+            email: r.email,
+            phone: r.phone,
+            telegramChatId: r.telegramChatId,
+            pushSubscription: r.pushSubscription,
+            notificationPrefs: r.notificationPrefs,
+          },
+          contentFor(r),
         ),
       ),
     );
@@ -72,12 +93,12 @@ export async function notifySessionScheduled(payload: Record<string, unknown>): 
   const recipients = session.class.enrollments.map((e) => e.student);
   if (recipients.length === 0) return;
 
-  const when = session.startTime.toISOString();
   const link = session.meetLink ?? "Meet link pending";
   const verb = kind === "rescheduled" ? "has been rescheduled to" : "is scheduled for";
-  const content = `Your class "${session.class.name}" ${verb} ${when}. Join: ${link}`;
+  const contentFor = (r: Recipient) =>
+    `Your class "${session.class.name}" ${verb} ${formatDateTimeForUser(session.startTime, r.timezone, r.language)}. Join: ${link}`;
 
-  const failures = await fanOut(recipients, content);
+  const failures = await fanOut(recipients, contentFor);
   if (failures > 0) {
     throw new Error(`session ${kind} notification failed for ${failures}/${recipients.length} student(s)`);
   }

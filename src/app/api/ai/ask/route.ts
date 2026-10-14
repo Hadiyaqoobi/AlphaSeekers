@@ -1,16 +1,24 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
 
-import { aiConfig } from "@/lib/ai/config";
+import { prisma } from "@/lib/prisma";
+import { AI_NOT_CONFIGURED_MESSAGE, aiConfig } from "@/lib/ai/config";
 import { createRagStream, ragQuery } from "@/lib/ai/rag-pipeline";
-import { checkRateLimit } from "@/lib/security/rate-limit";
+import { checkRateLimitDistributed } from "@/lib/security/rate-limit";
 import { getSessionUser, unauthorized, forbidden, badRequest } from "@/lib/security/session";
 
 const askSchema = z.object({
   query: z.string().min(3).max(1000),
-  locale: z.enum(["en", "fa"]).default("en"),
+  // The page locale. When a client omits it we use the student's saved
+  // language (the platform default is Dari) — never silently English.
+  locale: z.enum(["en", "fa"]).optional(),
   stream: z.boolean().default(true),
 });
+
+async function savedLocale(userId: string): Promise<"en" | "fa"> {
+  const row = await prisma.user.findUnique({ where: { id: userId }, select: { language: true } });
+  return row?.language === "EN" ? "en" : "fa";
+}
 
 /**
  * POST /api/ai/ask
@@ -26,18 +34,17 @@ export async function POST(request: NextRequest) {
   if (!user.approved) return forbidden("Account pending approval");
 
   if (!aiConfig.enabled) {
-    return Response.json(
-      { message: "AI features are not configured on this instance." },
-      { status: 503 },
-    );
+    return Response.json({ message: AI_NOT_CONFIGURED_MESSAGE, code: "AI_NOT_CONFIGURED" }, { status: 503 });
   }
 
-  // Rate limit: 20 AI queries per 15 minutes per user
-  const rl = checkRateLimit(`ai:${user.id}`, { limit: 20, windowMs: 15 * 60 * 1000 });
+  // Per-user limit, shared across server instances and with the Telegram
+  // tutor (same key), so one student cannot drain the shared Groq quota.
+  const rl = await checkRateLimitDistributed(`ai-ask:${user.id}`, aiConfig.rateLimits.ask);
   if (!rl.allowed) {
+    const retryAfter = Math.ceil(rl.retryAfterMs / 1000);
     return Response.json(
-      { message: "Too many AI queries. Please wait a few minutes." },
-      { status: 429 },
+      { message: "Too many AI queries. Please wait a few minutes.", retryAfter },
+      { status: 429, headers: { "Retry-After": String(retryAfter) } },
     );
   }
 
@@ -48,7 +55,8 @@ export async function POST(request: NextRequest) {
     return badRequest("Invalid query. Must be 3–1000 characters.");
   }
 
-  const { query, locale, stream } = parsed.data;
+  const { query, stream } = parsed.data;
+  const locale = parsed.data.locale ?? (await savedLocale(user.id));
 
   if (stream) {
     const readableStream = createRagStream({ query, locale, userId: user.id });

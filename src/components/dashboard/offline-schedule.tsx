@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
+
+import { formatDateTime } from "@/lib/format-date";
 
 type ScheduleItem = {
   id: string;
@@ -21,6 +23,7 @@ const STALE_AFTER_DAYS = 7;
 
 export function OfflineSchedule() {
   const t = useTranslations("offlineSchedule");
+  const locale = useLocale();
   const [data, setData] = useState<SchedulePayload | null>(null);
   const [offline, setOffline] = useState(false);
 
@@ -88,11 +91,11 @@ export function OfflineSchedule() {
         {offline ? (
           <p className="text-xs font-semibold text-amber-300">
             {generatedAt
-              ? t("offlineModeWithTime", { time: generatedAt.toLocaleString() })
+              ? t("offlineModeWithTime", { time: formatDateTime(generatedAt, locale) })
               : t("offlineMode")}
           </p>
         ) : (
-          <p className="text-xs text-ink-soft">{t("updated", { time: new Date(data!.generatedAt).toLocaleString() })}</p>
+          <p className="text-xs text-ink-soft">{t("updated", { time: formatDateTime(data!.generatedAt, locale) })}</p>
         )}
       </header>
 
@@ -106,7 +109,7 @@ export function OfflineSchedule() {
         {data!.items.slice(0, 6).map((item) => (
           <article className="stat-card p-3" key={item.id}>
             <p className="text-sm font-semibold text-ink-main">{item.className}</p>
-            <p className="text-xs text-ink-soft">{new Date(item.startTime).toLocaleString()}</p>
+            <p className="text-xs text-ink-soft">{formatDateTime(item.startTime, locale)}</p>
             {item.meetLink ? (
               <a className="text-xs font-semibold text-sky-400 underline-offset-2 hover:underline" href={item.meetLink} rel="noreferrer" target="_blank">
                 {t("joinLink")}

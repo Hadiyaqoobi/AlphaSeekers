@@ -12,13 +12,18 @@
  * straight afterwards. The password they choose here is their platform
  * password — there is no second sign-up moment anywhere.
  *
- * Deliberately NOT reusing enrollStudentInClass(): that creates a PENDING
- * request for an admin to approve, which is the bottleneck this replaces.
- * Joining here is immediate (ACTIVE) and a teacher can remove someone after.
+ * Not calling enrollStudentInClass() because this path also creates or
+ * authenticates the account, but it must apply EXACTLY the same seat rules:
+ * the same per-class advisory lock (READ COMMITTED alone lets two people take
+ * the last seat), the same cap on simultaneous classes, the same refusal of
+ * someone a teacher removed, and the same `student.enrolled` event — so the
+ * teacher hears about the new student and the student gets the welcome with
+ * the WhatsApp link, exactly as when joining from inside the platform.
  */
 
 import { EnrollmentStatus, ClassStatus } from "@prisma/client";
 
+import { emit } from "@/lib/events/bus";
 import { prisma } from "@/lib/prisma";
 import { isRegistrationClosed } from "@/lib/platform/registration-deadline";
 import { hashPassword, verifyPassword } from "@/lib/security/passwords";
@@ -34,8 +39,24 @@ export type JoinFailure =
   | "REGISTRATION_CLOSED"
   | "CLASS_FULL"
   | "WRONG_PASSWORD"
-  | "ACCOUNT_DEACTIVATED"
-  | "NOT_A_STUDENT";
+  // One answer for every "the password was right but this account cannot join
+  // from here" case — deactivated, or a teacher/admin account. Distinct codes
+  // used to be returned BEFORE the password check, which told anyone typing an
+  // address whether it belonged to staff.
+  | "USE_SIGN_IN"
+  // A teacher removed this student; only staff can let them back in.
+  | "NOT_ALLOWED"
+  | "ENROLLMENT_LIMIT";
+
+/**
+ * How many classes a student may be ACTIVE in at once. Shared with the in-app
+ * enroll route so the two doors cannot disagree. Override via env if a partner
+ * program needs more (UAT 2026-04-26 MED-A).
+ */
+export const MAX_ACTIVE_ENROLLMENTS = (() => {
+  const raw = Number(process.env.MAX_ACTIVE_ENROLLMENTS);
+  return Number.isFinite(raw) && raw > 0 ? raw : 3;
+})();
 
 export type JoinInput = {
   classId: string;
@@ -98,19 +119,21 @@ export async function joinClassWithNewAccount(input: JoinInput): Promise<JoinOut
   let created = false;
 
   if (existing) {
-    if (existing.deactivatedAt) return { ok: false, code: "ACCOUNT_DEACTIVATED" };
-
-    // A teacher or admin typing their own address into a student join form is
-    // almost certainly a mistake; enrolling them as a student would scramble
-    // their dashboard. Send them to sign in instead.
-    if (existing.role !== "STUDENT") return { ok: false, code: "NOT_A_STUDENT" };
-
-    // Google-only accounts have no password to check against. Treat as a
-    // mismatch — they should use the Google button, not invent a password here.
-    if (!existing.passwordHash) return { ok: false, code: "WRONG_PASSWORD" };
-
+    // Password FIRST, before anything about the account is revealed. Google-
+    // only accounts have no password to check against: verifyPassword treats
+    // that as a mismatch — they should use the Google button, not invent a
+    // password here.
     if (!(await verifyPassword(input.password, existing.passwordHash))) {
       return { ok: false, code: "WRONG_PASSWORD" };
+    }
+
+    // Only the account's owner gets this far. A deactivated account must not
+    // be revived through a public form, and a teacher or admin typing their own
+    // address into a student join form is almost certainly a mistake (enrolling
+    // them would scramble their dashboard). Both go to sign-in, which explains
+    // a deactivation itself.
+    if (existing.deactivatedAt || existing.role !== "STUDENT") {
+      return { ok: false, code: "USE_SIGN_IN" };
     }
 
     userId = existing.id;
@@ -135,17 +158,44 @@ export async function joinClassWithNewAccount(input: JoinInput): Promise<JoinOut
     created = true;
   }
 
-  // Capacity is re-read inside the transaction so two students submitting at
-  // the same moment cannot both take the last seat.
+  // Capacity is counted under the SAME per-class advisory lock that
+  // enrollStudentInClass takes. Under READ COMMITTED two concurrent
+  // transactions can both count N-1 and both insert; the lock serialises
+  // every seat-taking path for this class, in-app and public alike. It is
+  // released on commit (safe under PgBouncer transaction pooling).
+  let result: { alreadyEnrolled: boolean; enrollmentId: string | null };
   try {
-    const result = await prisma.$transaction(async (tx) => {
+    result = await prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`enroll:${klass.id}`}))`;
+
       const current = await tx.enrollment.findUnique({
         where: { studentId_classId: { studentId: userId, classId: klass.id } },
         select: { id: true, status: true },
       });
 
       if (current?.status === EnrollmentStatus.ACTIVE) {
-        return { alreadyEnrolled: true };
+        return { alreadyEnrolled: true, enrollmentId: null };
+      }
+
+      // A teacher took this student out of the class. Clicking a link again
+      // must not undo a person's decision; staff can re-admit them.
+      if (current?.status === EnrollmentStatus.REJECTED) {
+        throw new Error("NOT_ALLOWED");
+      }
+
+      // Same cap as the in-app enroll route. A brand-new account has no
+      // enrolments, so this only ever bites a returning student.
+      if (!created) {
+        const elsewhere = await tx.enrollment.count({
+          where: {
+            studentId: userId,
+            status: EnrollmentStatus.ACTIVE,
+            classId: { not: klass.id },
+          },
+        });
+        if (elsewhere >= MAX_ACTIVE_ENROLLMENTS) {
+          throw new Error("ENROLLMENT_LIMIT");
+        }
       }
 
       const activeCount = await tx.enrollment.count({
@@ -155,27 +205,48 @@ export async function joinClassWithNewAccount(input: JoinInput): Promise<JoinOut
         throw new Error("CLASS_FULL");
       }
 
-      if (current) {
-        await tx.enrollment.update({
+      const enrollment = current
+        ? await tx.enrollment.update({
           where: { studentId_classId: { studentId: userId, classId: klass.id } },
           data: { status: EnrollmentStatus.ACTIVE, enrolledAt: new Date() },
-        });
-      } else {
-        await tx.enrollment.create({
+          select: { id: true },
+        })
+        : await tx.enrollment.create({
           data: { studentId: userId, classId: klass.id, status: EnrollmentStatus.ACTIVE },
+          select: { id: true },
         });
-      }
 
-      return { alreadyEnrolled: false };
+      return { alreadyEnrolled: false, enrollmentId: enrollment.id };
     });
-
-    return { ok: true, userId, created, alreadyEnrolled: result.alreadyEnrolled };
   } catch (error) {
-    if (error instanceof Error && error.message === "CLASS_FULL") {
-      return { ok: false, code: "CLASS_FULL" };
+    if (
+      error instanceof Error &&
+      (error.message === "CLASS_FULL" ||
+        error.message === "NOT_ALLOWED" ||
+        error.message === "ENROLLMENT_LIMIT")
+    ) {
+      return { ok: false, code: error.message };
     }
     throw error;
   }
+
+  // Committed. Fan out the same welcome/teacher notices the in-app enroll
+  // route sends (same event, same dedupe key). Failing to notify must never
+  // fail the join: she IS in the class, and telling her otherwise would make
+  // her try again.
+  if (result.enrollmentId) {
+    try {
+      await emit(
+        "student.enrolled",
+        { classId: klass.id, studentId: userId },
+        { dedupeKey: `student.enrolled:${result.enrollmentId}` },
+      );
+    } catch (error) {
+      console.error("[class-join] failed to emit student.enrolled", klass.id, error);
+    }
+  }
+
+  return { ok: true, userId, created, alreadyEnrolled: result.alreadyEnrolled };
 }
 
 /** What the public join page may show. Nothing private: no meeting link, no

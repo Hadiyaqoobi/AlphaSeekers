@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
+import { notifyTeacherOfNewClass } from "@/lib/platform/class-notify";
 import { parseRegistrationDeadline } from "@/lib/platform/registration-deadline";
 import { archiveClass, deleteClassPermanently, updateClass } from "@/lib/platform/store";
+import { prisma } from "@/lib/prisma";
+import { formatWeeklySlot, parseWeeklySlotStrict } from "@/lib/scheduling/weekly-slot";
 import { recordAudit } from "@/lib/security/audit";
 import { AccessError, requirePermission, requireSuperAdmin } from "@/lib/security/permissions";
 import { getClientIp } from "@/lib/security/rate-limit";
@@ -13,8 +16,10 @@ type Params = {
 };
 
 // Strict allowlist — only editable scalar fields. Prevents mass-assignment: a
-// classes.edit holder cannot smuggle nested relation ops (e.g. sessions.deleteMany),
-// reassign teacherId, or inject non-URL text through the raw PATCH body.
+// classes.edit holder cannot smuggle nested relation ops (e.g. sessions.deleteMany)
+// or inject non-URL text through the raw PATCH body. teacherId IS editable (a
+// class's teacher could not be changed at all before), but only to an existing
+// TEACHER account, and every change is written to the audit log.
 const updateClassSchema = z
   .object({
     name: z.string().trim().min(1).max(200).optional(),
@@ -22,7 +27,27 @@ const updateClassSchema = z
     description: z.string().trim().min(1).max(5000).optional(),
     maxStudents: z.number().int().min(1).max(1000).optional(),
     durationMinutes: z.number().int().min(30).max(600).optional(),
-    schedulePreference: z.string().trim().min(1).max(200).optional(),
+    // Same strict rule as class creation: an unreadable day/time is a 400, and the
+    // stored value is the canonical "Tue 6:00 PM" (Kabul) the scheduler reads.
+    schedulePreference: z
+      .string()
+      .trim()
+      .min(1)
+      .max(200)
+      .optional()
+      .transform((value, ctx) => {
+        if (value === undefined) return undefined;
+        const slot = parseWeeklySlotStrict(value);
+        if (!slot) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'Choose a day and a time (Kabul), e.g. "Tue 6:00 PM".',
+          });
+          return z.NEVER;
+        }
+        return formatWeeklySlot(slot);
+      }),
+    teacherId: z.string().trim().min(1).max(100).optional(),
     language: z.string().trim().min(1).max(50).optional(),
     registrationFormUrl: z.string().trim().max(300).regex(/^(https?:\/\/.+)?$/, "must be a URL or blank").optional(),
     whatsappGroupUrl: z.string().trim().max(300).regex(/^(https?:\/\/.+)?$/, "must be a URL or blank").optional(),
@@ -72,10 +97,52 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       { status: 400 },
     );
   }
+  const before = await prisma.class.findUnique({
+    where: { id: params.id },
+    select: { teacherId: true, name: true, schedulePreference: true, schedulingMode: true },
+  });
+  if (!before) {
+    return NextResponse.json({ message: "Class not found" }, { status: 404 });
+  }
+
+  const teacherChanged = parsed.data.teacherId !== undefined && parsed.data.teacherId !== before.teacherId;
+  if (teacherChanged) {
+    const teacher = await prisma.user.findUnique({ where: { id: parsed.data.teacherId }, select: { role: true } });
+    if (!teacher || teacher.role !== "TEACHER") {
+      return NextResponse.json({ message: "teacherId: choose a teacher from the list." }, { status: 400 });
+    }
+  }
+
   const updated = await updateClass(params.id, parsed.data);
 
   if (!updated) {
     return NextResponse.json({ message: "Class not found" }, { status: 404 });
+  }
+
+  if (teacherChanged) {
+    await recordAudit({
+      actorId: user.id,
+      actorEmail: user.email ?? null,
+      action: "class.teacher_change",
+      targetType: "Class",
+      targetId: params.id,
+      details: JSON.stringify({ from: before.teacherId, to: updated.teacherId }),
+      ipAddress: getClientIp(request),
+    });
+
+    // The new teacher has to know, or the class waits on someone who never heard
+    // of it. Best-effort: the change itself has already been saved.
+    try {
+      await notifyTeacherOfNewClass({
+        classId: updated.id,
+        className: updated.name,
+        teacherId: updated.teacherId,
+        schedulePreference: updated.schedulePreference,
+        schedulingMode: updated.schedulingMode,
+      });
+    } catch (error) {
+      console.error("[admin/classes] failed to notify the new teacher", params.id, error);
+    }
   }
 
   return NextResponse.json(updated);

@@ -10,7 +10,11 @@ import { prisma } from "@/lib/prisma";
 import { runtime, warnIfInsecureProductionConfig } from "@/lib/runtime";
 import { evaluateGoogleProfile, GOOGLE_ERROR_PARAM } from "@/lib/security/google-signin";
 import { verifyPassword } from "@/lib/security/passwords";
-import { checkRateLimitDistributed } from "@/lib/security/rate-limit";
+import {
+  checkRateLimit,
+  checkRateLimitDistributed,
+  clientIpFromHeaders,
+} from "@/lib/security/rate-limit";
 
 /**
  * Errors from authorize() that are MEANT to reach the user, rather than being
@@ -30,6 +34,14 @@ const credentialsSchema = z.object({
   password: z.string().min(6),
 });
 
+// Login limits. Per address+network is the tight one (five honest typos);
+// per address alone is the backstop a rotating-IP attacker cannot dodge, and
+// it is kept in Postgres so a restart does not hand out a fresh budget. Kept
+// well above anything a real person types, because hitting it locks that
+// account's password login for the rest of the hour.
+const LOGIN_PER_IP_EMAIL = { limit: 5, windowMs: 15 * 60 * 1000 };
+const LOGIN_PER_EMAIL = { limit: 20, windowMs: 60 * 60 * 1000 };
+
 // Re-check the user's DB status (role/approval/existence) at most this often.
 // Between checks the JWT is trusted; a deactivated/demoted/deleted user loses
 // access within this window instead of riding a 7-day token to expiry.
@@ -48,20 +60,25 @@ function revokeToken(token: JWT): JWT {
   return token;
 }
 
-/** Best-effort client IP from the NextAuth credentials request headers. */
+/**
+ * Best-effort client IP from the NextAuth credentials request headers. Same
+ * right-most-hop rule as every other limiter (see clientIpFromHeaders): the
+ * left-most X-Forwarded-For entry is client-written and was a free reset.
+ */
 function ipFromAuthRequest(req: unknown): string {
   const headers = (req as { headers?: Record<string, string | string[] | undefined> } | undefined)
     ?.headers;
   if (!headers) return "unknown";
 
-  const rawForwarded = headers["x-forwarded-for"];
-  const forwarded = Array.isArray(rawForwarded) ? rawForwarded[0] : rawForwarded;
-  const firstForwarded = forwarded?.split(",")[0]?.trim();
-  if (firstForwarded) return firstForwarded;
+  return clientIpFromHeaders((name) => {
+    const raw = headers[name];
+    return Array.isArray(raw) ? raw.join(",") : raw;
+  });
+}
 
-  const rawReal = headers["x-real-ip"];
-  const real = Array.isArray(rawReal) ? rawReal[0] : rawReal;
-  return real?.trim() || "unknown";
+/** Milliseconds of a password-change stamp, 0 when it was never changed. */
+function passwordStamp(value: Date | null | undefined): number {
+  return value ? value.getTime() : 0;
 }
 
 export const authOptions: NextAuthOptions = {
@@ -113,18 +130,25 @@ export const authOptions: NextAuthOptions = {
         // Rate limit login attempts per IP + email (BRD §4.2). Keying by email
         // alone lets an attacker exhaust a victim's budget (lockout DoS) and
         // ignores distributed brute force from one IP across many emails.
+        //
+        // The ip+email window is in memory (one instance; it only has to stop
+        // rapid retries), so a wrong-password storm no longer writes a database
+        // row per attempt. The per-email ceiling is the durable one.
         const ip = ipFromAuthRequest(req);
-        const rl = await checkRateLimitDistributed(`login:${ip}:${email}`);
-        if (!rl.allowed) {
+        const rl = checkRateLimit(`login:${ip}:${email}`, LOGIN_PER_IP_EMAIL);
+        const rlEmail = rl.allowed
+          ? await checkRateLimitDistributed(`login:email:${email}`, LOGIN_PER_EMAIL)
+          : rl;
+        if (!rl.allowed || !rlEmail.allowed) {
           // Was `return null`, which NextAuth renders as the SAME message a
           // wrong password gets. Five mistyped attempts therefore looked
           // identical to "your password is wrong", and a student who tried
           // again carefully still failed — so they concluded the account was
           // broken. Say what actually happened instead.
           //
-          // This leaks nothing: the limiter is keyed on ip+email and answers
-          // "you have tried too often", which is true whether or not that
-          // account exists, so it is not a user-enumeration oracle.
+          // This leaks nothing: both limiters are keyed on the typed address
+          // and answer "you have tried too often", which is true whether or not
+          // that account exists, so it is not a user-enumeration oracle.
           throw new Error("TOO_MANY_ATTEMPTS");
         }
 
@@ -160,6 +184,7 @@ export const authOptions: NextAuthOptions = {
               passwordHash: true,
               approvedAt: true,
               deactivatedAt: true,
+              passwordChangedAt: true,
             },
           });
 
@@ -194,6 +219,8 @@ export const authOptions: NextAuthOptions = {
             email: dbUser.email,
             role: dbUser.role,
             approved: true,
+            // Seeds the token's password stamp (see the jwt callback).
+            passwordChangedAt: passwordStamp(dbUser.passwordChangedAt),
           };
         } catch (error) {
           // These are deliberate signals, not faults: re-throw so NextAuth
@@ -241,6 +268,7 @@ export const authOptions: NextAuthOptions = {
             role: true,
             approvedAt: true,
             deactivatedAt: true,
+            passwordChangedAt: true,
           },
         });
 
@@ -259,6 +287,9 @@ export const authOptions: NextAuthOptions = {
           (user as { role?: string }).role = existing.role;
           (user as { approved?: boolean }).approved =
             existing.role === "ADMIN" || existing.approvedAt != null;
+          (user as { passwordChangedAt?: number }).passwordChangedAt = passwordStamp(
+            existing.passwordChangedAt,
+          );
           return true;
         }
 
@@ -303,6 +334,10 @@ export const authOptions: NextAuthOptions = {
         if (typeof user.approved === "boolean") {
           token.approved = user.approved;
         }
+        // The password stamp this token was issued under. A later change or
+        // reset moves the DB stamp past it, and the re-check below revokes it.
+        const stamp = (user as { passwordChangedAt?: unknown }).passwordChangedAt;
+        token.pwdAt = typeof stamp === "number" ? stamp : 0;
         token.lastValidatedAt = Date.now();
         return token;
       }
@@ -328,6 +363,7 @@ export const authOptions: NextAuthOptions = {
               approvedAt: true,
               deactivatedAt: true,
               mustChangePassword: true,
+              passwordChangedAt: true,
             },
           });
 
@@ -335,6 +371,17 @@ export const authOptions: NextAuthOptions = {
             // User was deleted OR deactivated → drop all authorization via the
             // same revocation path. A deactivation now takes effect within
             // REVALIDATE_INTERVAL_MS instead of persisting for the JWT lifetime.
+            return revokeToken(token);
+          }
+
+          // Password changed or reset after this token was issued → whoever
+          // held the old password (a shared phone, a thief) is signed out. A
+          // token from before this claim existed counts as stamp 0, so it is
+          // revoked by any later change but untouched while the column is null.
+          // The person who changed it keeps their session: /api/me/password
+          // re-issues their cookie with the new stamp.
+          const tokenStamp = typeof token.pwdAt === "number" ? token.pwdAt : 0;
+          if (passwordStamp(dbUser.passwordChangedAt) > tokenStamp) {
             return revokeToken(token);
           }
 

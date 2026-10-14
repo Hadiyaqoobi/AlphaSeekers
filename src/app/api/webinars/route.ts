@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createWebinar, listRegisteredWebinarIds, listWebinars } from "@/lib/platform/store";
 import { guardPermission } from "@/lib/security/api-guard";
 import { withCors, corsPreflight } from "@/lib/security/cors";
+import { can, getAccessControl } from "@/lib/security/permissions";
+import { normaliseHttpUrl } from "@/lib/security/safe-url";
 import { getSessionUser, isApproved, pendingApproval, unauthorized } from "@/lib/security/session";
 
 export async function OPTIONS(request: Request) {
@@ -22,7 +24,9 @@ export async function GET(request: Request) {
 
   const items = await listWebinars();
 
-  if (user.role === "ADMIN") {
+  // Every Meet link only for staff who manage webinars — role=ADMIN alone is
+  // every scoped employee (moderators, finance, support).
+  if (user.role === "ADMIN" && can(await getAccessControl(), "opportunities.view")) {
     return withCors(NextResponse.json({ items }), request);
   }
 
@@ -52,11 +56,17 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ message: "Missing required fields" }, { status: 400 });
   }
 
+  // Rendered as a link students click: http(s) only, never javascript:.
+  const meetLink = normaliseHttpUrl(body.meetLink);
+  if (!meetLink) {
+    return NextResponse.json({ message: "The meeting link must be an http(s) URL" }, { status: 400 });
+  }
+
   const webinar = await createWebinar({
     title: body.title,
     description: body.description,
     startsAt: body.startsAt,
-    meetLink: body.meetLink,
+    meetLink,
     language: body.language ?? "Dari",
   });
 

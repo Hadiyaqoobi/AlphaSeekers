@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { createClassAnnouncement, getClassById, isStudentEnrolledInClass, listClassAnnouncements, listClassEnrollments } from "@/lib/platform/store";
-import { deliverWithFallback } from "@/lib/integrations/notifications";
+import { createClassAnnouncement, getClassById, isStudentEnrolledInClass, listClassAnnouncements } from "@/lib/platform/store";
+import { deliverAndRecord, listClassDeliveryTargets } from "@/lib/platform/db-store";
 import { getSessionUser } from "@/lib/security/session";
 import { getAccessControl, can } from "@/lib/security/permissions";
 
@@ -13,14 +13,15 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // IDOR guard: only admin, the owning teacher, or an enrolled student may
+  // IDOR guard: only staff holding classes.view (not merely role=ADMIN, which
+  // every scoped employee has), the owning teacher, or an enrolled student may
   // read a class's announcements (matches the materials route).
-  const klass = await getClassById(params.id);
+  const klass = await getClassById(params.id, { includeUnpublished: true });
   if (!klass) {
     return NextResponse.json({ error: "Class not found" }, { status: 404 });
   }
   const canRead =
-    user.role === "ADMIN" ||
+    (user.role === "ADMIN" && can(await getAccessControl(), "classes.view")) ||
     (user.role === "TEACHER" && user.id === klass.teacherId) ||
     (user.role === "STUDENT" && (await isStudentEnrolledInClass(user.id, params.id)));
   if (!canRead) {
@@ -41,7 +42,8 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     return NextResponse.json({ error: "Account not approved" }, { status: 403 });
   }
 
-  const klass = await getClassById(params.id);
+  // Staff and the teacher may post to an unpublished class (it still has students).
+  const klass = await getClassById(params.id, { includeUnpublished: true } as Parameters<typeof getClassById>[1]);
   if (!klass) {
     return NextResponse.json({ error: "Class not found" }, { status: 404 });
   }
@@ -62,7 +64,19 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     return NextResponse.json({ error: "content is required" }, { status: 400 });
   }
 
-  const content = body.content.trim().slice(0, 500);
+  // Rejected, not silently cut: a teacher whose message lost its second half
+  // without being told would assume students read all of it.
+  const MAX_ANNOUNCEMENT_LENGTH = 500;
+  const content = body.content.trim();
+  if (content.length > MAX_ANNOUNCEMENT_LENGTH) {
+    return NextResponse.json(
+      {
+        error: `Announcement is too long (${content.length} characters). The limit is ${MAX_ANNOUNCEMENT_LENGTH}.`,
+        message: `Announcement is too long (${content.length} characters). The limit is ${MAX_ANNOUNCEMENT_LENGTH}.`,
+      },
+      { status: 400 },
+    );
+  }
   const announcement = await createClassAnnouncement({
     classId: params.id,
     authorId: user.id,
@@ -70,21 +84,21 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     content,
   });
 
-  // Notify all enrolled students
+  // Notify all enrolled students on every channel they have enabled (this used
+  // to pass only an email, so Telegram/push were skipped), awaited and recorded as
+  // Notification rows -- un-awaited sends could be dropped when the request ended.
+  let notified = { recipients: 0, sent: 0 };
   try {
-    const enrollments = await listClassEnrollments(params.id);
-    const message = `${klass.name}: ${content}`;
-    for (const enrollment of enrollments) {
-      deliverWithFallback(
-        { userId: enrollment.studentId, email: enrollment.email },
-        message,
-      ).catch(() => {
-        // Best-effort notification
-      });
-    }
-  } catch {
-    // Notification delivery is best-effort
+    const students = await listClassDeliveryTargets(params.id);
+    notified = await deliverAndRecord(
+      students,
+      () => `${klass.name}: ${content}`,
+      (student) => `class_announcement:${announcement.id}:${student.id}`,
+    );
+  } catch (error) {
+    // The announcement is saved either way; delivery failures are logged.
+    console.error("[announcements] delivery failed", params.id, error);
   }
 
-  return NextResponse.json(announcement, { status: 201 });
+  return NextResponse.json({ ...announcement, notified }, { status: 201 });
 }

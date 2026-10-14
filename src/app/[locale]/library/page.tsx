@@ -45,7 +45,7 @@ export default async function LibraryPage({ params, searchParams }: LibraryPageP
           <form className="mt-6 flex gap-3" method="GET">
             <div className="relative flex-1">
               <svg
-                className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-ink-faint"
+                className="pointer-events-none absolute start-4 top-1/2 h-5 w-5 -translate-y-1/2 text-ink-faint"
                 fill="none"
                 stroke="currentColor"
                 strokeWidth={2}
@@ -58,7 +58,7 @@ export default async function LibraryPage({ params, searchParams }: LibraryPageP
                 />
               </svg>
               <input
-                className="min-h-12 w-full rounded-xl border border-white/10 bg-dark-200 py-3 pl-12 pr-4 text-sm text-ink-main placeholder:text-ink-faint focus:border-neon-500 focus:outline-none focus:ring-2 focus:ring-neon-500/20"
+                className="min-h-12 w-full rounded-xl border border-white/10 bg-dark-200 py-3 ps-12 pe-4 text-sm text-ink-main placeholder:text-ink-faint focus:border-neon-500 focus:outline-none focus:ring-2 focus:ring-neon-500/20"
                 defaultValue={query}
                 name="q"
                 placeholder={t("searchPlaceholder")}

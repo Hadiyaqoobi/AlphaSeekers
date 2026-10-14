@@ -11,10 +11,11 @@ interface VocabItem {
 interface VocabularyTrackerProps {
   initialWords: VocabItem[];
   locale: "en" | "fa";
+  /** Kept for the caller's API; starring no longer calls the AI. */
   classId: string;
 }
 
-export function VocabularyTracker({ initialWords, locale, classId }: VocabularyTrackerProps) {
+export function VocabularyTracker({ initialWords, locale }: VocabularyTrackerProps) {
   const [words, setWords] = useState<VocabItem[]>(initialWords);
   const [starred, setStarred] = useState<Set<string>>(new Set());
   const [newWord, setNewWord] = useState("");
@@ -31,35 +32,21 @@ export function VocabularyTracker({ initialWords, locale, classId }: VocabularyT
     [locale],
   );
 
+  // Starring is a local, visual marker only. It used to fire an /api/ai/quick
+  // "Define X" call per star whose answer was thrown away — burning the shared
+  // AI quota and planting a fake question in the class's question log (which
+  // the session summary reads as "what students asked").
   const handleStar = useCallback(
-    async (item: VocabItem) => {
+    (item: VocabItem) => {
       const next = new Set(starred);
       if (next.has(item.word)) {
         next.delete(item.word);
       } else {
         next.add(item.word);
-        // Add to spaced repetition queue (fire-and-forget)
-        // Reuse the shape SpacedRepetitionItem expects
-        try {
-          // No dedicated endpoint exists for adding individual SRS items from the client,
-          // so we fall back to logging. The vocab is also auto-extracted by the AI pipeline
-          // via extractAndQueueVocabulary, so starring acts as a manual signal.
-          await fetch(`/api/ai/quick`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              query: `Define "${item.word}" briefly in ${locale === "fa" ? "Dari" : "English"}.`,
-              classId,
-              locale,
-            }),
-          });
-        } catch {
-          // silent
-        }
       }
       setStarred(next);
     },
-    [starred, locale, classId],
+    [starred],
   );
 
   const addWord = useCallback(() => {

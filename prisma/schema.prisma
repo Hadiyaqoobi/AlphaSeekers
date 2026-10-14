@@ -96,6 +96,10 @@ model User {
   deactivatedAt      DateTime?
   // Force a password reset on next login (temp-password onboarding flow).
   mustChangePassword Boolean         @default(false)
+  // Stamped whenever the password is changed or reset. A session token issued
+  // before this moment is revoked at its next re-check (src/lib/auth.ts), so a
+  // reset actually locks out whoever had the old password. Null = never changed.
+  passwordChangedAt  DateTime?
   passwordResets     PasswordReset[]
   // Which super-admin created this employee account (audit trail).
   createdById        String?
@@ -531,8 +535,10 @@ model Ticket {
   // Screenshots today go to TicketAttachment instead; see the note there.
   attachmentUrl String?
 
-  reporterId String
-  reporter   User   @relation("TicketReporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  // Nullable + SetNull: deleting a user must not destroy the tickets they
+  // filed (Cascade did). The ticket stays; the UI shows "—" as the reporter.
+  reporterId String?
+  reporter   User?  @relation("TicketReporter", fields: [reporterId], references: [id], onDelete: SetNull)
 
   comments   TicketComment[]
   attachment TicketAttachment?
@@ -569,8 +575,10 @@ model TicketComment {
   id        String   @id @default(cuid())
   ticketId  String
   ticket    Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
-  authorId  String
-  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  // Nullable + SetNull for the same reason as Ticket.reporter: a deleted
+  // user's replies stay in the thread instead of vanishing from it.
+  authorId  String?
+  author    User?    @relation(fields: [authorId], references: [id], onDelete: SetNull)
   body      String   @db.Text
   createdAt DateTime @default(now())
 
@@ -847,7 +855,10 @@ model Job {
   runAt       DateTime  @default(now()) // earliest time the job may run
   attempts    Int       @default(0)
   maxAttempts Int       @default(5)
-  dedupeKey   String?   @unique // idempotency: skip if a live job already has it
+  dedupeKey   String?   @unique // idempotency: skip if a job already holds it
+  // Give the key up when the job reaches COMPLETED/DEAD (event-bus jobs), so it
+  // only dedupes while live. False keeps it until pruned (daily digest keys).
+  releaseKeyOnFinish Boolean @default(false)
   lockedAt    DateTime?
   lockedBy    String? // worker id holding the claim
   lastError   String?   @db.Text

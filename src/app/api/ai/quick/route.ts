@@ -13,6 +13,7 @@ import { prisma } from "@/lib/prisma";
 import { aiConfig } from "@/lib/ai/config";
 import { generateEmbedding } from "@/lib/ai/embeddings";
 import { generateCompletion, isLlmUnavailable } from "@/lib/ai/llm";
+import { redactPII } from "@/lib/ai/privacy/pii-stripper";
 import { checkRateLimitDistributed } from "@/lib/security/rate-limit";
 import { getSessionUser, unauthorized, forbidden, badRequest } from "@/lib/security/session";
 import { enrollmentAwareSearch, similaritySearch } from "@/lib/ai/vector-store";
@@ -48,6 +49,8 @@ export async function POST(request: Request) {
   if (!parsed.success) return badRequest("Invalid query");
 
   const { query, classId, locale } = parsed.data;
+  // PRIVACY: what goes to the embedding + LLM providers has emails/phones removed.
+  const llmQuery = redactPII(query);
 
   try {
     // SCOPING (SECURITY): only scope to a classId the student is actually
@@ -65,7 +68,7 @@ export async function POST(request: Request) {
     }
 
     // 1. Embed and search within the authorized scope only
-    const embedding = await generateEmbedding(query);
+    const embedding = await generateEmbedding(llmQuery);
     const chunks = scopedClassId
       ? await enrollmentAwareSearch(embedding, [scopedClassId], 3)
       : await similaritySearch(embedding, 3);
@@ -102,7 +105,7 @@ ${context}`;
 
     const answer = await generateCompletion([
       { role: "system", content: systemPrompt },
-      { role: "user", content: query },
+      { role: "user", content: llmQuery },
     ]);
 
     // Log the interaction (mode = "quick", scoped to classId)

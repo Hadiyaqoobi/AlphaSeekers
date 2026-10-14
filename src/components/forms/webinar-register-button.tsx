@@ -26,8 +26,8 @@ export function WebinarRegisterButton({ webinarId }: WebinarRegisterButtonProps)
     });
 
     if (!response.ok) {
-      const body = (await response.json().catch(() => ({ message: t("registrationFailed") }))) as { message?: string };
-      setStatus(body.message ?? t("registrationFailed"));
+      // Translated fallback; the server's English `message` is not shown.
+      setStatus(t("registrationFailed"));
       setLoading(false);
       return;
     }

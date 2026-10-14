@@ -132,7 +132,7 @@ export function NowOpen({ locale, signedIn, highlights }: NowOpenProps) {
                   target="_blank"
                 >
                   {t('nowOpen.register')}
-                  <span aria-hidden="true">→</span>
+                  <span aria-hidden="true" className="inline-block rtl:-scale-x-100">→</span>
                 </a>
               ) : (
                 <Link
@@ -140,7 +140,7 @@ export function NowOpen({ locale, signedIn, highlights }: NowOpenProps) {
                   href={joinHref}
                 >
                   {t('nowOpen.enrol')}
-                  <span aria-hidden="true">→</span>
+                  <span aria-hidden="true" className="inline-block rtl:-scale-x-100">→</span>
                 </Link>
               )}
             </article>
@@ -164,7 +164,7 @@ export function NowOpen({ locale, signedIn, highlights }: NowOpenProps) {
                 href={signedIn ? `/${locale}/webinars` : `/${locale}/register`}
               >
                 {t('nowOpen.reserve')}
-                <span aria-hidden="true">→</span>
+                <span aria-hidden="true" className="inline-block rtl:-scale-x-100">→</span>
               </Link>
             </article>
           ))}
@@ -188,7 +188,7 @@ export function NowOpen({ locale, signedIn, highlights }: NowOpenProps) {
                 href={signedIn ? `/${locale}/opportunities` : `/${locale}/register`}
               >
                 {t('nowOpen.readMore')}
-                <span aria-hidden="true">→</span>
+                <span aria-hidden="true" className="inline-block rtl:-scale-x-100">→</span>
               </Link>
             </article>
           ))}

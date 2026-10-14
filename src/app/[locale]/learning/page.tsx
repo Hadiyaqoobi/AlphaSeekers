@@ -1,6 +1,17 @@
-import { LearningDashboard } from "@/components/ai/learning-dashboard";
+import { redirect } from "next/navigation";
 
-export default function LearningPage() {
+import { LearningDashboard } from "@/components/ai/learning-dashboard";
+import { getSessionUser } from "@/lib/security/session";
+import { loginHref } from "@/lib/ui/safe-next";
+
+type LearningPageProps = { params: { locale: string } };
+
+export default async function LearningPage({ params }: LearningPageProps) {
+  // The dashboard's data is per-user; a signed-out visitor used to get an error
+  // panel here instead of the sign-in page.
+  const user = await getSessionUser();
+  if (!user) redirect(loginHref(params.locale, `/${params.locale}/learning`));
+
   return (
     <main className="mx-auto max-w-6xl px-6 lg:px-8 py-10">
       <div className="mb-8">

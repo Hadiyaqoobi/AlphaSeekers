@@ -1,6 +1,7 @@
-import { ClassStatus } from "@prisma/client";
+import { ClassStatus, EnrollmentStatus } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
+import { classSpanMinutes, planAutoSlot, type SlotProblem } from "@/lib/scheduling/weekly-slot";
 
 /**
  * The two things a teacher must do before their class can run, plus what the
@@ -20,7 +21,15 @@ export type TeacherSetupStatus = {
     id: string;
     name: string;
     schedulePreference: string | null;
+    /** MANUAL = the teacher adds every session on the schedule page. */
+    schedulingMode: "AUTO" | "MANUAL";
+    /**
+     * AUTO only: why the scheduler cannot book this class's posted time, or null
+     * when it can (see src/lib/scheduling/weekly-slot.ts).
+     */
+    scheduleProblem: SlotProblem | null;
     upcomingSessions: number;
+    /** Students actually in the class (ACTIVE), not pending or declined requests. */
     enrolledCount: number;
   }>;
   /**
@@ -38,7 +47,7 @@ export async function getTeacherSetupStatus(teacherId: string): Promise<TeacherS
   const [availability, googleLink, classes] = await Promise.all([
     prisma.teacherAvailability.findMany({
       where: { teacherId },
-      select: { dayOfWeek: true },
+      select: { dayOfWeek: true, startTimeUTC: true, endTimeUTC: true },
     }),
     prisma.googleAccountLink.findUnique({
       where: { userId: teacherId },
@@ -51,7 +60,9 @@ export async function getTeacherSetupStatus(teacherId: string): Promise<TeacherS
         id: true,
         name: true,
         schedulePreference: true,
-        _count: { select: { enrollments: true } },
+        schedulingMode: true,
+        durationMinutes: true,
+        _count: { select: { enrollments: { where: { status: EnrollmentStatus.ACTIVE } } } },
         sessions: {
           where: { cancelled: false, startTime: { gte: now } },
           select: { id: true },
@@ -61,6 +72,11 @@ export async function getTeacherSetupStatus(teacherId: string): Promise<TeacherS
   ]);
 
   const availabilityDays = new Set(availability.map((a) => a.dayOfWeek)).size;
+  const windows = availability.map((a) => ({
+    dayOfWeek: a.dayOfWeek,
+    startMinute: a.startTimeUTC.getUTCHours() * 60 + a.startTimeUTC.getUTCMinutes(),
+    endMinute: a.endTimeUTC.getUTCHours() * 60 + a.endTimeUTC.getUTCMinutes(),
+  }));
 
   return {
     availabilitySet: availability.length > 0,
@@ -71,9 +87,24 @@ export async function getTeacherSetupStatus(teacherId: string): Promise<TeacherS
       id: c.id,
       name: c.name,
       schedulePreference: c.schedulePreference,
+      schedulingMode: c.schedulingMode,
+      scheduleProblem:
+        c.schedulingMode === "AUTO"
+          ? (() => {
+              const plan = planAutoSlot({
+                schedulePreference: c.schedulePreference,
+                spanMinutes: classSpanMinutes(c.durationMinutes),
+                availability: windows,
+              });
+              return plan.ok ? null : plan.reason;
+            })()
+          : null,
       upcomingSessions: c.sessions.length,
       enrolledCount: c._count.enrollments,
     })),
-    complete: availability.length > 0,
+    // A teacher whose classes are all MANUAL never needs availability: they add
+    // each session themselves on the class's schedule page.
+    complete:
+      availability.length > 0 || (classes.length > 0 && classes.every((c) => c.schedulingMode === "MANUAL")),
   };
 }

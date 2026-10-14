@@ -27,7 +27,9 @@ export async function GET(request: NextRequest) {
   const oauthError = request.nextUrl.searchParams.get("error");
 
   const verifiedState = state ? verifyGoogleState(state, user.id) : null;
-  const locale = verifiedState?.locale ?? "fa";
+  // Allowlisted, never echoed: `/${locale}/...` with locale "/evil.com" is the
+  // protocol-relative "//evil.com/...", which new URL() resolves off-site.
+  const locale = verifiedState?.locale === "en" ? "en" : "fa";
   const failRedirect = (reason: string) => {
     console.error(`[google-callback] failed: ${reason}`);
     return NextResponse.redirect(new URL(`/${locale}/dashboard?google=failed`, base));

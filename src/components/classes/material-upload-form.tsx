@@ -54,8 +54,8 @@ export function MaterialUploadForm({ classId }: MaterialUploadFormProps) {
     });
 
     if (!response.ok) {
-      const body = (await response.json().catch(() => ({ message: t("uploadFailed") }))) as { message?: string };
-      setMessage(body.message ?? t("uploadFailed"));
+      // Translated fallback; the server's English `message` is not shown.
+      setMessage(t("uploadFailed"));
       setSaving(false);
       return;
     }

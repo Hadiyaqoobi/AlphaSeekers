@@ -1,11 +1,34 @@
 /**
- * Educational guardrails — modeled after Anthropic's Constitutional AI.
+ * Educational guardrails.
  *
  * Each principle has:
  * - A rule the AI must follow (injected into the system prompt)
- * - A post-hoc check function (validates the response after generation)
- * - A severity level (warn = log only, block = substitute safe response)
+ * - A post-hoc check function over the finished answer
+ * - A severity level
+ *
+ * HONEST SCOPE: the post-hoc checks are simple keyword patterns and they run
+ * AFTER generation. On the streaming study-assistant path the student has
+ * already seen the answer by then, so a "block" here is recorded in
+ * AISafetyLog for staff review — it cannot retract text. The only checks that
+ * stop an answer before the student sees it are the question pre-screen
+ * (prescreenQuery in content-classifier.ts) and, on the non-streaming path,
+ * classifyContent before the answer is returned.
  */
+
+// Boundaries: JavaScript's \b only knows ASCII word characters, so it NEVER
+// matches between two Persian letters — a \b-wrapped Dari pattern can only
+// match at the start/end of the whole string. Unicode-aware lookarounds over
+// \p{L} (with the `u` flag) work for both scripts.
+const DISTRESS_PATTERNS: RegExp[] = [
+  /(?<!\p{L})(suicid\p{L}*|self.harm|hurt myself|kill myself|want to die)(?!\p{L})/iu,
+  // TODO(team): only two Dari phrases exist; a native speaker should extend this list.
+  /(?<!\p{L})(خودکشی|کسی مرا نمی‌خواهد)(?!\p{L})/u,
+];
+
+/** Does the text contain a self-harm / distress signal? */
+export function detectDistress(text: string): boolean {
+  return DISTRESS_PATTERNS.some((p) => p.test(text));
+}
 
 export interface GuardrailResult {
   passed: boolean;
@@ -49,7 +72,7 @@ export const EDUCATIONAL_PRINCIPLES: EducationalPrinciple[] = [
     rule: "All content must be appropriate for students aged 14-25. Never include graphic violence, sexual content, profanity, or content that could be psychologically harmful.",
     check: (response) => {
       const flagged = [
-        /\b(porn|explicit sexual|graphic violence)\b/i,
+        /(?<!\p{L})(porn|explicit sexual|graphic violence)(?!\p{L})/iu,
       ].some((p) => p.test(response));
       return { passed: !flagged, severity: "block" as const };
     },
@@ -79,11 +102,7 @@ export const EDUCATIONAL_PRINCIPLES: EducationalPrinciple[] = [
     id: "student_wellbeing",
     rule: "If a student expresses distress or mentions self-harm, respond with empathy and immediately suggest they speak with a trusted adult or teacher. Do NOT attempt to provide therapy.",
     check: (response, _chunks, query) => {
-      const distressPatterns = [
-        /\b(suicid|self.harm|hurt myself|want to die)\b/i,
-        /\b(خودکشی|کسی مرا نمی‌خواهد)\b/i,
-      ];
-      const studentDistressed = distressPatterns.some((p) => p.test(query));
+      const studentDistressed = detectDistress(query);
       const aiWroteLongCounseling = response.length > 500 && studentDistressed;
       return { passed: !aiWroteLongCounseling, severity: "warn" as const };
     },

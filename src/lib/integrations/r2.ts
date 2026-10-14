@@ -21,6 +21,9 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 const PRESIGN_EXPIRES_SECONDS = 3600; // 1 hour
+// An upload URL is used seconds after it is issued; a long-lived one is only
+// useful to someone collecting them.
+const PRESIGN_UPLOAD_EXPIRES_SECONDS = 15 * 60;
 
 type R2Config = {
     endpoint: string;
@@ -85,6 +88,13 @@ function getClient(config: R2Config): S3Client {
  * Returns null when R2 is not configured (callers surface a "not configured"
  * message). Throws for invalid requests (e.g. oversized file).
  *
+ * Content-Type AND Content-Length are part of the signature: the upload must
+ * send exactly the type and byte count the server approved. Previously neither
+ * was (the presigner leaves Content-Type unsigned by default, and the size was
+ * never in the request), so a URL issued for a 1 MB PNG could store a 500 MB
+ * text/html phishing page in the public bucket. Callers must allowlist
+ * `contentType` — this function signs whatever it is given.
+ *
  * NOTE: this is async — SigV4 presigning via the AWS SDK resolves credentials
  * asynchronously. Callers must `await` the result.
  */
@@ -102,14 +112,23 @@ export async function createPresignedUploadUrl(
 
     const client = getClient(config);
 
+    if (!Number.isInteger(fileSizeBytes) || fileSizeBytes <= 0) {
+        throw new Error("File size is required.");
+    }
+
     const command = new PutObjectCommand({
         Bucket: config.bucket,
         Key: key,
         ContentType: contentType,
+        ContentLength: fileSizeBytes,
     });
 
     const uploadUrl = await getSignedUrl(client, command, {
-        expiresIn: PRESIGN_EXPIRES_SECONDS,
+        expiresIn: PRESIGN_UPLOAD_EXPIRES_SECONDS,
+        // Without this the S3 presigner deliberately leaves content-type out
+        // of the signature; content-length is listed for clarity (it is signed
+        // whenever present).
+        signableHeaders: new Set(["content-type", "content-length"]),
     });
 
     const publicUrl = `${config.publicBaseUrl}/${key}`;

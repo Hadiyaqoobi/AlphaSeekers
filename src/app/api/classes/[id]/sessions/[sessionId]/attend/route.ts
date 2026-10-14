@@ -15,7 +15,11 @@ export async function POST(
   const user = await getSessionUser();
   if (!user) return unauthorized();
 
-  const access = await checkSessionAccess(user, params.id, params.sessionId);
+  // Live window only: "I attended" is a claim about NOW. Without it a student
+  // could mark themselves present for any past or future session.
+  const access = await checkSessionAccess(user, params.id, params.sessionId, {
+    liveWindowOnly: true,
+  });
   if (!access.ok) {
     return Response.json({ message: access.message }, { status: access.status });
   }

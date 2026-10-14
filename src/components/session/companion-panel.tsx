@@ -1,7 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useState } from "react";
+
+import { DirArrow } from "@/components/ui/dir-arrow";
+import { formatKabulTime } from "@/lib/ui/kabul-time";
+import { readSummaryText, shouldPollLive } from "@/lib/ui/live-session";
 
 import { CheckinCodePanel } from "./checkin-code-panel";
 import { CheckinEntry } from "./checkin-entry";
@@ -60,17 +65,28 @@ type LiveData = {
   }> | null;
 };
 
+/** The summary route refuses a published summary shorter than this. */
+const SUMMARY_MIN_LENGTH = 20;
+
 interface CompanionPanelProps {
   initialData: LiveData;
   locale: "en" | "fa";
 }
 
 export function CompanionPanel({ initialData, locale }: CompanionPanelProps) {
+  const t = useTranslations("liveSession");
+  const tAttendance = useTranslations("attendance");
   const [data, setData] = useState<LiveData>(initialData);
   const [joinedMeet, setJoinedMeet] = useState(Boolean(initialData.attendance?.joinedAt));
   const [generatingSummary, setGeneratingSummary] = useState(false);
   const [generatingQuiz, setGeneratingQuiz] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  // AI summaries are drafts until the teacher publishes them. The draft is
+  // only ever held here (teacher/admin view); students see data.summary, which
+  // is the PUBLISHED summary only.
+  const [draft, setDraft] = useState<string | null>(null);
+  const [publishing, setPublishing] = useState(false);
+  const [publishedNotice, setPublishedNotice] = useState(false);
 
   const { session, role } = data;
 
@@ -88,12 +104,29 @@ export function CompanionPanel({ initialData, locale }: CompanionPanelProps) {
     }
   }, [session.classId, session.id]);
 
-  // Auto-refresh roster (teacher view) every 20s
+  // Auto-refresh roster (teacher view) every 20s — but only while the tab is
+  // visible and the session is near (15 min before start → 15 min after end).
+  // Each refresh is a database query; an unattended tab used to poll all night
+  // and keep the database awake. Coming back to the tab refreshes once.
+  const { startTime: pollStart, endTime: pollEnd } = session;
   useEffect(() => {
     if (role !== "teacher" && role !== "admin") return;
-    const interval = setInterval(refreshData, 20_000);
-    return () => clearInterval(interval);
-  }, [role, refreshData]);
+    const canPoll = () =>
+      shouldPollLive(Date.now(), pollStart, pollEnd, document.visibilityState === "visible");
+
+    // The timer itself costs nothing; only a tick that passes the gate fetches.
+    const interval = setInterval(() => {
+      if (canPoll()) void refreshData();
+    }, 20_000);
+    const onVisibility = () => {
+      if (canPoll()) void refreshData();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [role, refreshData, pollStart, pollEnd]);
 
   const handleJoinMeet = useCallback(async () => {
     setJoinedMeet(true);
@@ -108,25 +141,77 @@ export function CompanionPanel({ initialData, locale }: CompanionPanelProps) {
     }
   }, [role, session.classId, session.id]);
 
+  const summaryUrl = `/api/classes/${session.classId}/sessions/${session.id}/summary`;
+
+  // Teacher/admin after class: load an existing unpublished draft once, so a
+  // reload does not lose it. Students never request drafts.
+  const { endTime: sessionEndTime } = session;
+  useEffect(() => {
+    if (role !== "teacher" && role !== "admin") return;
+    if (Date.now() <= new Date(sessionEndTime).getTime()) return;
+    let cancelled = false;
+    fetch(summaryUrl)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((body: Record<string, unknown> | null) => {
+        if (cancelled || !body) return;
+        const text = readSummaryText(body.draft);
+        const publishedText = readSummaryText(body.published ?? body.summary);
+        // Only surface a draft that differs from what students already see.
+        if (text && text !== publishedText) setDraft((current) => current ?? text);
+      })
+      .catch(() => {
+        /* no draft shown; generating a new one still works */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [role, sessionEndTime, summaryUrl]);
+
   const handleGenerateSummary = useCallback(async () => {
     setGeneratingSummary(true);
     setActionError(null);
+    setPublishedNotice(false);
     try {
-      const res = await fetch(
-        `/api/classes/${session.classId}/sessions/${session.id}/summary`,
-        { method: "POST" },
-      );
+      const res = await fetch(summaryUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "generate" }),
+      });
       if (!res.ok) {
-        const body = await res.json().catch(() => null);
-        throw new Error(body?.message || "Summary generation failed");
+        throw new Error("summary");
       }
-      await refreshData();
-    } catch (err) {
-      setActionError((err as Error).message);
+      const body = (await res.json().catch(() => null)) as Record<string, unknown> | null;
+      const text = readSummaryText(body?.draft);
+      if (!text) throw new Error("summary");
+      setDraft(text);
+    } catch {
+      // Translated message, never the server's English text.
+      setActionError(t("summaryFailed"));
     } finally {
       setGeneratingSummary(false);
     }
-  }, [session.classId, session.id, refreshData]);
+  }, [summaryUrl, t]);
+
+  const handlePublishSummary = useCallback(async () => {
+    if (!draft || draft.trim().length < SUMMARY_MIN_LENGTH) return;
+    setPublishing(true);
+    setActionError(null);
+    try {
+      const res = await fetch(summaryUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "publish", content: draft.trim() }),
+      });
+      if (!res.ok) throw new Error("publish");
+      setDraft(null);
+      setPublishedNotice(true);
+      await refreshData();
+    } catch {
+      setActionError(t("publishFailed"));
+    } finally {
+      setPublishing(false);
+    }
+  }, [draft, summaryUrl, refreshData, t]);
 
   const handleGenerateQuiz = useCallback(async () => {
     setGeneratingQuiz(true);
@@ -136,16 +221,15 @@ export function CompanionPanel({ initialData, locale }: CompanionPanelProps) {
         method: "POST",
       });
       if (!res.ok) {
-        const body = await res.json().catch(() => null);
-        throw new Error(body?.message || "Quiz generation failed");
+        throw new Error("quiz");
       }
       await refreshData();
-    } catch (err) {
-      setActionError((err as Error).message);
+    } catch {
+      setActionError(t("quizFailed"));
     } finally {
       setGeneratingQuiz(false);
     }
-  }, [session.classId, session.id, refreshData]);
+  }, [session.classId, session.id, refreshData, t]);
 
   const sessionStart = new Date(session.startTime);
   const sessionEnd = new Date(session.endTime);
@@ -157,11 +241,11 @@ export function CompanionPanel({ initialData, locale }: CompanionPanelProps) {
 
   let liveStatus: string;
   if (now < sessionStart) {
-    liveStatus = `Starts in ${minsUntil} min`;
+    liveStatus = t("startsIn", { minutes: minsUntil });
   } else if (isLive) {
-    liveStatus = minsAgo > 0 ? `Started ${minsAgo} min ago` : "Starting now";
+    liveStatus = minsAgo > 0 ? t("startedAgo", { minutes: minsAgo }) : t("startingNow");
   } else {
-    liveStatus = "Session ended";
+    liveStatus = t("ended");
   }
 
   let parsedQuiz: { questions: never[] } | null = null;
@@ -180,10 +264,10 @@ export function CompanionPanel({ initialData, locale }: CompanionPanelProps) {
         {/* Header */}
         <div className="rounded-2xl bg-gradient-to-br from-neon-600 to-teal-700 text-white p-6">
           <p className="text-neon-100 text-xs font-semibold uppercase tracking-wide">
-            {data.session.isLanguageClass ? "Language Class" : "Live Session"}
+            {data.session.isLanguageClass ? t("languageClass") : t("liveSession")}
           </p>
           <h1 className="text-2xl font-bold mt-1">{session.className}</h1>
-          <p className="text-neon-100 text-sm mt-1">With {session.teacherName}</p>
+          <p className="text-neon-100 text-sm mt-1">{t("withTeacher", { name: session.teacherName })}</p>
           <p className="text-neon-200 text-xs mt-3">⏰ {liveStatus}</p>
         </div>
 
@@ -199,8 +283,8 @@ export function CompanionPanel({ initialData, locale }: CompanionPanelProps) {
                   onClick={handleJoinMeet}
                   className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-neon-600 text-white text-lg font-bold hover:bg-neon-700 transition-colors shadow-lg shadow-emerald-500/20"
                 >
-                  Join Google Meet
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                  {t("joinMeet")}
+                  <svg className="w-5 h-5 rtl:-scale-x-100" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
                   </svg>
                 </a>
@@ -208,10 +292,10 @@ export function CompanionPanel({ initialData, locale }: CompanionPanelProps) {
                 <div>
                   <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-neon-50 text-neon-700 font-semibold mb-3">
                     <span className="w-2 h-2 rounded-full bg-neon-500 animate-pulse" />
-                    Connected — Meet is open in another tab
+                    {t("connected")}
                   </div>
                   <p className="text-sm text-ink-soft">
-                    Switch back to the Meet tab anytime. Your notes save here.
+                    {t("switchBack")}
                   </p>
                   <a
                     href={session.meetLink}
@@ -219,14 +303,14 @@ export function CompanionPanel({ initialData, locale }: CompanionPanelProps) {
                     rel="noopener noreferrer"
                     className="inline-block mt-4 text-sm text-neon-600 hover:text-neon-700 font-medium"
                   >
-                    Re-open Meet ↗
+                    {t("reopenMeet")} <span aria-hidden="true" className="inline-block rtl:-scale-x-100">↗</span>
                   </a>
                 </div>
               )}
             </>
           ) : (
             <p className="text-ink-soft">
-              Meet link not available yet. Check back closer to start time.
+              {t("noMeetLink")}
             </p>
           )}
         </div>
@@ -260,7 +344,7 @@ export function CompanionPanel({ initialData, locale }: CompanionPanelProps) {
         {/* Materials */}
         {data.materials.length > 0 && (
           <div className="rounded-2xl bg-dark-100 border border-line p-5">
-            <h3 className="text-sm font-bold text-ink-main mb-3">📚 Today&apos;s materials</h3>
+            <h3 className="text-sm font-bold text-ink-main mb-3">📚 {t("materials")}</h3>
             <ul className="space-y-2">
               {data.materials.map((m) => (
                 <li key={m.id}>
@@ -284,7 +368,7 @@ export function CompanionPanel({ initialData, locale }: CompanionPanelProps) {
         {/* Teacher tools */}
         {(role === "teacher" || role === "admin") && isAfter && (
           <div className="rounded-2xl bg-dark-100 border border-line p-5">
-            <h3 className="text-sm font-bold text-ink-main mb-3">After class — teacher tools</h3>
+            <h3 className="text-sm font-bold text-ink-main mb-3">{t("teacherTools")}</h3>
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"
@@ -292,7 +376,11 @@ export function CompanionPanel({ initialData, locale }: CompanionPanelProps) {
                 disabled={generatingSummary}
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-neon-600 text-white text-sm font-semibold hover:bg-neon-700 disabled:opacity-50"
               >
-                {generatingSummary ? "Generating..." : data.summary ? "📝 Regenerate summary" : "📝 Generate summary"}
+                {generatingSummary
+                  ? t("generating")
+                  : data.summary || draft
+                    ? `📝 ${t("regenerateSummary")}`
+                    : `📝 ${t("generateSummary")}`}
               </button>
               {data.summary && (
                 <button
@@ -301,17 +389,47 @@ export function CompanionPanel({ initialData, locale }: CompanionPanelProps) {
                   disabled={generatingQuiz}
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-600 text-white text-sm font-semibold hover:bg-amber-700 disabled:opacity-50"
                 >
-                  {generatingQuiz ? "Generating..." : parsedQuiz ? "📋 Regenerate quiz" : "📋 Create quiz"}
+                  {generatingQuiz ? t("generating") : parsedQuiz ? `📋 ${t("regenerateQuiz")}` : `📋 ${t("createQuiz")}`}
                 </button>
               )}
               <Link
                 href={`/${locale}/classes/${session.classId}`}
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-line text-sm font-medium text-ink-main hover:bg-dark-50"
               >
-                Recording & homework setup →
+                {t("recordingSetup")} <DirArrow />
               </Link>
             </div>
-            {actionError && <p className="text-xs text-red-600 mt-2">{actionError}</p>}
+            {draft !== null && (
+              <div className="mt-4 space-y-2 rounded-xl border border-amber-500/30 bg-amber-500/5 p-4">
+                <label className="block text-sm font-semibold text-ink-main" htmlFor="summary-draft">
+                  {t("draftTitle")}
+                </label>
+                <p className="text-xs text-amber-300" dir="auto">{t("draftNote")}</p>
+                <textarea
+                  id="summary-draft"
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                  rows={10}
+                  dir="auto"
+                  className="w-full rounded-lg border border-line bg-dark-50 px-3 py-2 text-sm text-ink-main leading-relaxed focus:outline-none focus:ring-2 focus:ring-neon-500/30 focus:border-neon-400"
+                />
+                {draft.trim().length < SUMMARY_MIN_LENGTH ? (
+                  <p className="text-xs text-ink-faint" dir="auto">{t("draftTooShort")}</p>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={handlePublishSummary}
+                  disabled={publishing || draft.trim().length < SUMMARY_MIN_LENGTH}
+                  className="inline-flex min-h-10 items-center gap-2 px-4 py-2 rounded-lg bg-neon-600 text-white text-sm font-semibold hover:bg-neon-700 disabled:opacity-50"
+                >
+                  {publishing ? t("publishing") : t("publishSummary")}
+                </button>
+              </div>
+            )}
+            {publishedNotice && (
+              <p className="text-xs text-neon-400 mt-2" role="status">{t("summaryPublished")}</p>
+            )}
+            {actionError && <p className="text-xs text-red-600 mt-2" role="alert">{actionError}</p>}
           </div>
         )}
 
@@ -319,13 +437,17 @@ export function CompanionPanel({ initialData, locale }: CompanionPanelProps) {
         {data.attendanceRoster && (
           <div className="rounded-2xl bg-dark-100 border border-line p-5">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-bold text-ink-main">Attendance</h3>
+              <h3 className="text-sm font-bold text-ink-main">{t("attendance")}</h3>
               <span className="text-xs text-ink-soft">
-                {data.attendanceRoster.filter((a) => a.checkinVerified).length} verified · {data.attendanceRoster.filter((a) => a.attended).length} joined / {data.attendanceRoster.length}
+                {t("rosterCounts", {
+                  verified: data.attendanceRoster.filter((a) => a.checkinVerified).length,
+                  joined: data.attendanceRoster.filter((a) => a.attended).length,
+                  total: data.attendanceRoster.length,
+                })}
               </span>
             </div>
             <p className="text-[11px] text-ink-faint mb-3">
-              ✓✓ Verified (joined + code) · ✓ Joined only (no code) · ✗ Absent
+              ✓✓ {tAttendance("legend.verified")} · ✓ {tAttendance("legend.joinedOnly")} · ✗ {tAttendance("legend.absent")}
             </p>
             <div className="space-y-1 max-h-64 overflow-y-auto">
               {data.attendanceRoster.map((a) => {
@@ -358,10 +480,7 @@ export function CompanionPanel({ initialData, locale }: CompanionPanelProps) {
                     </span>
                     {timestamp && (
                       <span className="text-xs text-ink-faint">
-                        {new Date(timestamp).toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
+                        {formatKabulTime(timestamp, locale)}
                       </span>
                     )}
                   </div>
@@ -374,7 +493,7 @@ export function CompanionPanel({ initialData, locale }: CompanionPanelProps) {
         {/* AI summary (visible to all after generation) */}
         {data.summary && (
           <div className="rounded-2xl bg-dark-100 border border-line p-5">
-            <h3 className="text-sm font-bold text-ink-main mb-3">📝 Class summary</h3>
+            <h3 className="text-sm font-bold text-ink-main mb-3">📝 {t("summary")}</h3>
             <div
               className="text-sm text-ink-main whitespace-pre-wrap leading-relaxed"
               dir={locale === "fa" ? "rtl" : "ltr"}
@@ -407,7 +526,7 @@ export function CompanionPanel({ initialData, locale }: CompanionPanelProps) {
           <>
             {/* Notes */}
             <div className="rounded-2xl bg-dark-100 border border-line p-5">
-              <h3 className="text-sm font-bold text-ink-main mb-3">📝 My notes</h3>
+              <h3 className="text-sm font-bold text-ink-main mb-3">📝 {t("myNotes")}</h3>
               <NoteEditor
                 classId={session.classId}
                 sessionId={session.id}
@@ -419,7 +538,7 @@ export function CompanionPanel({ initialData, locale }: CompanionPanelProps) {
             {/* Quick AI */}
             {(isLive || isAfter) && (
               <div className="rounded-2xl bg-gradient-to-br from-neon-50 via-white to-sky-50 border border-neon-100 p-5">
-                <h3 className="text-sm font-bold text-ink-main mb-3">💬 Quick AI</h3>
+                <h3 className="text-sm font-bold text-ink-main mb-3">💬 {t("quickAi")}</h3>
                 <QuickAi classId={session.classId} locale={locale} />
               </div>
             )}
@@ -427,7 +546,7 @@ export function CompanionPanel({ initialData, locale }: CompanionPanelProps) {
             {/* Vocabulary (language classes) */}
             {data.session.isLanguageClass && (
               <div className="rounded-2xl bg-dark-100 border border-line p-5">
-                <h3 className="text-sm font-bold text-ink-main mb-3">📖 Key vocabulary</h3>
+                <h3 className="text-sm font-bold text-ink-main mb-3">📖 {t("vocabulary")}</h3>
                 <VocabularyTracker
                   initialWords={extractVocabFromMaterials(data.materials, data.summary?.content)}
                   locale={locale}
@@ -442,11 +561,7 @@ export function CompanionPanel({ initialData, locale }: CompanionPanelProps) {
         {role === "student" && joinedMeet && data.attendance?.joinedAt && (
           <div className="rounded-2xl bg-neon-50 border border-neon-200 p-4">
             <p className="text-xs font-semibold text-neon-700">
-              ✓ Attendance marked at{" "}
-              {new Date(data.attendance.joinedAt).toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
+              ✓ {t("attendanceMarkedAt", { time: formatKabulTime(data.attendance.joinedAt, locale) })}
             </p>
           </div>
         )}

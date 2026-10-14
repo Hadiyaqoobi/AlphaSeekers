@@ -35,8 +35,8 @@ export function RemoveStudentButton({ classId, studentId, studentName }: RemoveS
         method: "DELETE",
       });
       if (!response.ok) {
-        const body = (await response.json().catch(() => ({}))) as { message?: string };
-        setError(body.message ?? t("removeFailed"));
+        // Translated message only; the server's English text is not shown.
+        setError(t("removeFailed"));
         setBusy(false);
         return;
       }
@@ -51,7 +51,7 @@ export function RemoveStudentButton({ classId, studentId, studentName }: RemoveS
     return (
       <button
         aria-label={t("removeStudentAria", { name: studentName })}
-        className="text-xs font-semibold text-ink-faint hover:text-red-500"
+        className="inline-flex min-h-10 items-center px-2 text-xs font-semibold text-ink-faint hover:text-red-500"
         onClick={() => setConfirming(true)}
         type="button"
       >
@@ -64,7 +64,7 @@ export function RemoveStudentButton({ classId, studentId, studentName }: RemoveS
     <span className="flex items-center gap-2">
       {error ? <span className="text-xs text-red-500" dir="auto">{error}</span> : null}
       <button
-        className="text-xs font-bold text-red-500 disabled:opacity-60"
+        className="inline-flex min-h-10 items-center px-2 text-xs font-bold text-red-500 disabled:opacity-60"
         disabled={busy}
         onClick={remove}
         type="button"
@@ -72,7 +72,7 @@ export function RemoveStudentButton({ classId, studentId, studentName }: RemoveS
         {busy ? t("removing") : t("confirmRemove")}
       </button>
       <button
-        className="text-xs text-ink-faint"
+        className="inline-flex min-h-10 items-center px-2 text-xs text-ink-faint"
         disabled={busy}
         onClick={() => setConfirming(false)}
         type="button"

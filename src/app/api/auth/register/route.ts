@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { validateEmailStrict } from "@/lib/security/email";
 import { hashPassword } from "@/lib/security/passwords";
 import { encryptPhone } from "@/lib/security/phone-crypto";
-import { checkRateLimitDistributed, getClientIp } from "@/lib/security/rate-limit";
+import { checkRateLimit, getClientIp } from "@/lib/security/rate-limit";
 import { stripHtml } from "@/lib/security/sanitize";
 
 const registerSchema = z.object({
@@ -61,6 +61,18 @@ const registerSchema = z.object({
  * Keyed per email instead, which identifies a person rather than a network, with
  * a much looser per-IP ceiling kept behind it so a genuine flood is still
  * stopped.
+ *
+ * Both are in memory: this runs on ONE instance, and the database-backed
+ * limiter cost a write (waking Neon) for every POST, junk included. A restart
+ * resetting the window only lets a spammer create a few more student
+ * accounts, which is not worth a database round-trip per request.
+ *
+ * Enumeration: an existing address still gets a 409. Hiding it would need an
+ * email-verification step this platform does not have — the student would be
+ * told "done", then be unable to sign in, with no idea why. The join form must
+ * say "this email already has an account" for the same reason, so the 409 hides
+ * nothing that is not already visible there; the per-network limit is what
+ * keeps it from being a bulk lookup (30 addresses per 15 minutes).
  */
 const REGISTER_PER_EMAIL = { limit: 3, windowMs: 15 * 60 * 1000 };
 const REGISTER_PER_IP = { limit: 30, windowMs: 15 * 60 * 1000 };
@@ -73,13 +85,6 @@ function tooManyAttempts(retryAfterMs: number) {
 }
 
 export async function POST(request: NextRequest) {
-  // Flood guard first: cheap, and it runs before we parse anything.
-  const ip = getClientIp(request);
-  const byIp = await checkRateLimitDistributed(`register:ip:${ip}`, REGISTER_PER_IP);
-  if (!byIp.allowed) {
-    return tooManyAttempts(byIp.retryAfterMs);
-  }
-
   const body = await request.json().catch(() => null);
   const parsed = registerSchema.safeParse(body);
 
@@ -100,11 +105,19 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // Flood guard on well-formed requests only: a malformed one was already
+  // refused above at no cost.
+  const ip = getClientIp(request);
+  const byIp = checkRateLimit(`register:ip:${ip}`, REGISTER_PER_IP);
+  if (!byIp.allowed) {
+    return tooManyAttempts(byIp.retryAfterMs);
+  }
+
   // Now that we know who is signing up, limit the person rather than the
   // network. Someone hammering one address is stopped; the next student on the
   // same carrier is not.
   const emailKey = parsed.data.email.trim().toLowerCase();
-  const byEmail = await checkRateLimitDistributed(`register:email:${emailKey}`, REGISTER_PER_EMAIL);
+  const byEmail = checkRateLimit(`register:email:${emailKey}`, REGISTER_PER_EMAIL);
   if (!byEmail.allowed) {
     return tooManyAttempts(byEmail.retryAfterMs);
   }

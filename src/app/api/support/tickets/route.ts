@@ -85,8 +85,8 @@ export async function POST(request: NextRequest) {
       description: ticket.description,
       type: ticket.type,
       area: ticket.area,
-      reporterName: ticket.reporter.name,
-      reporterEmail: ticket.reporter.email,
+      reporterName: ticket.reporter?.name ?? null,
+      reporterEmail: ticket.reporter?.email ?? null,
     });
   }
 
