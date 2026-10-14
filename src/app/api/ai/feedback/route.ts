@@ -1,24 +1,30 @@
 /**
  * AI Feedback API Route
  *
- * Collects user feedback on AI study assistant responses.
- * This demonstrates AI evaluation thinking — critical for
- * an AI Solution Architect portfolio.
+ * Thumbs up/down on a study-assistant answer.
  *
- * In production, this would write to a database table for
- * analysis and model improvement. For now, we log to stdout
- * with structured JSON for observability.
+ * Body: { messageId, rating: "up" | "down", comment? }
+ *   messageId = the interactionId the answer stream sent in its "done" event
+ *   (= AIInteraction.id).
+ *
+ * Effects:
+ *   - AIInteraction.rating = "positive" | "negative" (only the asker's own row).
+ *     Negative ratings are what the pre-class prep message and the student
+ *     context read as "struggled with this topic".
+ *   - The per-user cached copy of that answer has its quality adjusted (and is
+ *     dropped once it is consistently rated down).
  */
 
 import { NextResponse } from "next/server";
 
+import { prisma } from "@/lib/prisma";
 import { updateCacheQuality } from "@/lib/ai/response-cache";
 import { getSessionUser } from "@/lib/security/session";
 
 type FeedbackPayload = {
-  messageId: string;
-  rating: "up" | "down";
-  comment?: string;
+  messageId?: unknown;
+  rating?: unknown;
+  comment?: unknown;
 };
 
 export async function POST(request: Request) {
@@ -35,12 +41,20 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  if (!body.messageId || !["up", "down"].includes(body.rating)) {
+  const messageId = typeof body.messageId === "string" ? body.messageId.slice(0, 64) : "";
+  const rating = body.rating === "up" || body.rating === "down" ? body.rating : null;
+  if (!messageId || !rating) {
     return NextResponse.json(
       { error: "messageId and rating (up|down) are required" },
       { status: 400 },
     );
   }
+
+  // Scoped to the caller's own interaction: nobody can rate someone else's.
+  const updated = await prisma.aIInteraction.updateMany({
+    where: { id: messageId, userId: user.id },
+    data: { rating: rating === "up" ? "positive" : "negative" },
+  });
 
   // Structured log for observability pipeline
   console.log(
@@ -48,17 +62,30 @@ export async function POST(request: Request) {
       event: "ai_feedback",
       timestamp: new Date().toISOString(),
       userId: user.id,
-      userRole: user.role,
-      messageId: body.messageId,
-      rating: body.rating,
-      comment: body.comment ?? null,
+      messageId,
+      rating,
+      recorded: updated.count > 0,
     }),
   );
 
-  // Update cache quality based on feedback (fire-and-forget)
-  if (body.comment) {
-    updateCacheQuality(body.comment, body.rating).catch(() => {});
+  if (updated.count > 0) {
+    // Re-derive the cache scope the answer was stored under (user + enrolled
+    // classes) so the quality signal reaches the right entry. Fire-and-forget.
+    void (async () => {
+      const [interaction, enrollments] = await Promise.all([
+        prisma.aIInteraction.findUnique({ where: { id: messageId }, select: { query: true } }),
+        prisma.enrollment.findMany({
+          where: { studentId: user.id, status: "ACTIVE" },
+          select: { classId: true },
+        }),
+      ]);
+      if (!interaction) return;
+      await updateCacheQuality(interaction.query, rating, {
+        userId: user.id,
+        classScope: enrollments.map((e) => e.classId),
+      });
+    })().catch(() => {});
   }
 
-  return NextResponse.json({ success: true });
+  return NextResponse.json({ success: true, recorded: updated.count > 0 });
 }

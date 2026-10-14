@@ -1343,7 +1343,10 @@
     "modeQuiz": "Quiz mode",
     "modeExplain": "Explain mode",
     "modeVocab": "Vocabulary mode",
-    "modePrepare": "Prep mode"
+    "modePrepare": "Prep mode",
+    "errorBusy": "You're asking great questions! Give me a moment to catch up — try again in a few seconds.",
+    "errorUnavailable": "The study assistant isn't available right now. Please try again later or ask your teacher.",
+    "errorFailed": "I couldn't get an answer right now. Please try again."
   },
   "checkin": {
     "title": "Check-in code",

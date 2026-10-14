@@ -1,17 +1,27 @@
 /**
  * Embedding generation via HuggingFace Inference API.
  *
- * Uses sentence-transformers/all-MiniLM-L6-v2 (384 dimensions).
- * Free tier: rate-limited but sufficient for educational platform usage.
+ * Model: aiConfig.embeddings.model (default the multilingual
+ * paraphrase-multilingual-MiniLM-L12-v2, 384 dimensions — must stay 384 to
+ * match the vector column). Free tier: rate-limited.
+ *
+ * Every request is bounded by aiConfig.timeouts.embeddingMs. A 4xx other than
+ * 408/429 (bad token, unknown model, bad input) will fail the same way on every
+ * retry, so it is not retried.
  *
  * No SDK dependency — uses fetch directly for provider portability.
  */
 
-import { retryWithBackoff } from "@/lib/retry";
+import { NonRetryableError, retryWithBackoff } from "@/lib/retry";
 
 import { aiConfig } from "./config";
 
 const HF_INFERENCE_URL = "https://router.huggingface.co/hf-inference/models";
+
+/** Status codes worth retrying: timeouts, rate limits, and server errors. */
+export function isRetryableStatus(status: number): boolean {
+  return status === 408 || status === 429 || status >= 500;
+}
 
 /**
  * Generate an embedding vector for a single text input.
@@ -34,11 +44,15 @@ export async function generateEmbedding(text: string): Promise<number[]> {
         inputs: text,
         options: { wait_for_model: true },
       }),
+      // Fresh signal per attempt, so a retry gets its own full time budget.
+      signal: AbortSignal.timeout(aiConfig.timeouts.embeddingMs),
     });
 
     if (!res.ok) {
-      const errorText = await res.text();
-      throw new Error(`HuggingFace API error (${res.status}): ${errorText}`);
+      const errorText = (await res.text().catch(() => "")).slice(0, 300);
+      const message = `HuggingFace API error (${res.status}): ${errorText}`;
+      if (!isRetryableStatus(res.status)) throw new NonRetryableError(message);
+      throw new Error(message);
     }
 
     return res.json();

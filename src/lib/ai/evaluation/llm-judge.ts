@@ -4,9 +4,27 @@
  * Uses a separate LLM call (Gemma) to evaluate AI tutor response quality.
  * Scores 4 dimensions: accuracy, pedagogy, safety, completeness.
  * Runs asynchronously AFTER the response is sent — does not block the student.
+ *
+ * COST: each grade is an extra model call, so only a SAMPLE of answers is graded
+ * (aiConfig.evaluation.sampleRate, env AI_EVAL_SAMPLE_RATE, default 5%). Callers
+ * decide with shouldEvaluate() before calling evaluateResponse().
  */
 
 import { aiConfig } from "../config";
+import { toGoogleFormat } from "../llm";
+
+/**
+ * Sampling decision for one answer. `rate` 0 = never, 1 = always.
+ * `random` is injectable for tests.
+ */
+export function shouldEvaluate(
+  rate: number = aiConfig.evaluation.sampleRate,
+  random: () => number = Math.random,
+): boolean {
+  if (!(rate > 0)) return false;
+  if (rate >= 1) return true;
+  return random() < rate;
+}
 
 export interface EvaluationResult {
   accuracy: number;
@@ -89,6 +107,15 @@ COMPLETENESS: Did it answer fully? (1.0=comprehensive, 0.0=missed the question)`
   }
 }
 
+/**
+ * A human reviewer's score: a finite number clamped to [0, 1], or null when
+ * the input is not a number at all (reject the request rather than guess).
+ */
+export function clampScore(value: unknown): number | null {
+  if (typeof value !== "number" || !Number.isFinite(value)) return null;
+  return Math.min(1, Math.max(0, value));
+}
+
 function clamp(n: unknown): number {
   const num = Number(n);
   if (isNaN(num)) return 0;
@@ -103,21 +130,31 @@ async function callGemmaForEval(prompt: string): Promise<string> {
   const { apiKey, model } = aiConfig.gemma;
   if (!apiKey) throw new Error("GEMMA_API_KEY required for evaluation");
 
+  // Gemma rejects systemInstruction ("Developer instruction is not enabled"),
+  // which is why no score was ever stored — toGoogleFormat folds the system
+  // text into the user turn for Gemma models.
+  const { systemInstruction, contents } = toGoogleFormat(
+    [
+      { role: "system", content: "You are a strict educational AI evaluator. Respond only with JSON." },
+      { role: "user", content: prompt },
+    ],
+    model,
+  );
+
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
-        systemInstruction: {
-          parts: [{ text: "You are a strict educational AI evaluator. Respond only with JSON." }],
-        },
+        contents,
+        ...(systemInstruction && { systemInstruction }),
         generationConfig: {
           temperature: 0.1,
           maxOutputTokens: 500,
         },
       }),
+      signal: AbortSignal.timeout(aiConfig.timeouts.completionMs),
     },
   );
 

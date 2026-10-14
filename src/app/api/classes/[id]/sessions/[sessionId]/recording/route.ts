@@ -11,7 +11,7 @@
  */
 
 import { prisma } from "@/lib/prisma";
-import { ingestRecording } from "@/lib/ai/session/recording-processor";
+import { MAX_AUDIO_BYTES, ingestRecording } from "@/lib/ai/session/recording-processor";
 import { aiConfig } from "@/lib/ai/config";
 import { getSessionUser, unauthorized, forbidden, badRequest } from "@/lib/security/session";
 import { checkSessionAccess } from "@/lib/session-access";
@@ -49,7 +49,8 @@ export async function POST(
       const language = (formData.get("language") as "en" | "fa") || "en";
 
       if (!file) return badRequest("No audio file provided");
-      if (file.size > 50 * 1024 * 1024) return badRequest("Audio file must be under 50MB");
+      // Groq's free tier refuses audio over 25 MB, so a bigger upload could only fail later.
+      if (file.size > MAX_AUDIO_BYTES) return badRequest("Audio file must be under 25MB");
 
       const result = await ingestRecording({
         sessionId: params.sessionId,
@@ -58,6 +59,7 @@ export async function POST(
         sessionDate: session.startTime,
         audioFile: file,
         audioMimeType: file.type,
+        audioFileName: file.name,
         language,
       });
 
@@ -82,9 +84,7 @@ export async function POST(
     return Response.json({ ok: true, ...result });
   } catch (err) {
     console.error("[Recording] Ingestion failed:", err);
-    return Response.json(
-      { message: (err as Error).message || "Failed to process recording" },
-      { status: 500 },
-    );
+    // Provider error text stays in the server log.
+    return Response.json({ message: "Failed to process recording" }, { status: 500 });
   }
 }

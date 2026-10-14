@@ -12,6 +12,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { aiConfig } from "@/lib/ai/config";
 import { generateCompletion } from "@/lib/ai/llm";
+import { redactPII } from "@/lib/ai/privacy/pii-stripper";
 import { getSessionUser, unauthorized, forbidden, badRequest } from "@/lib/security/session";
 import { checkRateLimit } from "@/lib/security/rate-limit";
 
@@ -25,7 +26,8 @@ export async function POST(request: Request) {
   if (!user) return unauthorized();
   if (!user.approved) return forbidden("Account pending approval");
 
-  if (!aiConfig.enabled) {
+  // No retrieval involved, so an LLM key is enough.
+  if (!aiConfig.llmEnabled) {
     return Response.json({ message: "AI not configured" }, { status: 503 });
   }
 
@@ -42,7 +44,8 @@ export async function POST(request: Request) {
   const parsed = schema.safeParse(body);
   if (!parsed.success) return badRequest("Topic must be 2-200 characters");
 
-  const { topic, level } = parsed.data;
+  const { level } = parsed.data;
+  const topic = redactPII(parsed.data.topic);
 
   const pathPrompt = `You are an expert curriculum designer creating a self-paced learning path for an Afghan student.
 

@@ -274,6 +274,9 @@
     "classJoin.networkError",
     "classJoin.classFull",
     "classJoin.alreadyHaveAccount",
-    "classJoin.signInInstead"
+    "classJoin.signInInstead",
+    "ai.errorBusy",
+    "ai.errorUnavailable",
+    "ai.errorFailed"
   ]
 }

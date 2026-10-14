@@ -1,8 +1,9 @@
 /**
  * Multi-provider LLM client.
  *
- * Primary: Groq (Llama 3.1 8B) — free tier: 14,400 req/day
+ * Primary: Groq (Llama 3.1 8B) — free tier: 14,400 req/day, ~6,000 tokens/min
  * Fallback: Google AI Studio (Gemma 3 27B) — free tier: 10 RPM
+ *   (Gemma takes no system instruction; see toGoogleFormat.)
  *
  * Automatic failover: if the primary returns a non-OK HTTP status (429/5xx —
  * the exact scale failure mode), times out, or throws a network error, the
@@ -50,6 +51,21 @@ export function isLlmUnavailable(err: unknown): err is LlmUnavailableError {
   return err instanceof LlmUnavailableError;
 }
 
+/**
+ * Pull the first JSON object out of a model reply (tolerates ``` fences and
+ * stray prose around it). Returns null when there is no parseable object.
+ */
+export function parseJsonObject<T = unknown>(raw: string): T | null {
+  const cleaned = raw.replace(/```json|```/g, "").trim();
+  const match = cleaned.match(/\{[\s\S]*\}/);
+  if (!match) return null;
+  try {
+    return JSON.parse(match[0]) as T;
+  } catch {
+    return null;
+  }
+}
+
 function cleanMsg(err: unknown): string {
   if (err instanceof Error) {
     return err.name === "AbortError" ? "timeout" : err.message;
@@ -75,34 +91,75 @@ async function fetchWithTimeout(
   }
 }
 
+/** Per-call generation options (defaults come from aiConfig.limits). */
+export type CompletionOptions = {
+  /** Output token ceiling for this call. */
+  maxTokens?: number;
+  /**
+   * Ask for a JSON object. Groq enforces it (response_format json_object — the
+   * prompt must mention JSON); Gemma has no JSON mode, so there it relies on
+   * the prompt alone.
+   */
+  json?: boolean;
+};
+
+type GoogleContent = { role: string; parts: { text: string }[] };
+
+/**
+ * Gemma models on Google AI Studio reject `systemInstruction` with
+ * "Developer instruction is not enabled", which made the Gemma fallback fail on
+ * EVERY call (every caller sends a system message). Gemini models accept it.
+ */
+export function supportsSystemInstruction(model: string): boolean {
+  return !/^(models\/)?gemma/i.test(model.trim());
+}
+
 /**
  * Convert OpenAI-style messages to Google's generateContent format.
- * The last (or only) system message becomes systemInstruction.
+ *
+ * Gemini: system messages become `systemInstruction`.
+ * Gemma:  system text is prepended to the first user turn instead (the
+ *         documented way to give Gemma instructions), because the API refuses
+ *         `systemInstruction` for it.
  */
-function toGoogleFormat(messages: ChatMessage[]): {
+export function toGoogleFormat(
+  messages: ChatMessage[],
+  model: string,
+): {
   systemInstruction?: { parts: { text: string }[] };
-  contents: { role: string; parts: { text: string }[] }[];
+  contents: GoogleContent[];
 } {
-  let systemInstruction: { parts: { text: string }[] } | undefined;
-  const contents: { role: string; parts: { text: string }[] }[] = [];
+  const systemText = messages
+    .filter((m) => m.role === "system")
+    .map((m) => m.content)
+    .join("\n\n");
+  const contents: GoogleContent[] = messages
+    .filter((m) => m.role !== "system")
+    .map((m) => ({
+      role: m.role === "assistant" ? "model" : "user",
+      parts: [{ text: m.content }],
+    }));
 
-  for (const msg of messages) {
-    if (msg.role === "system") {
-      systemInstruction = { parts: [{ text: msg.content }] };
-    } else {
-      contents.push({
-        role: msg.role === "assistant" ? "model" : "user",
-        parts: [{ text: msg.content }],
-      });
-    }
+  if (!systemText) return { contents };
+
+  if (supportsSystemInstruction(model)) {
+    return { systemInstruction: { parts: [{ text: systemText }] }, contents };
   }
 
-  return { systemInstruction, contents };
+  // Only fold into the opening turn; if the conversation opens with a model
+  // turn, the instructions become a new opening user turn instead.
+  const firstUser = contents[0]?.role === "user" ? contents[0] : undefined;
+  if (firstUser) {
+    firstUser.parts = [{ text: `${systemText}\n\n${firstUser.parts[0]?.text ?? ""}` }];
+  } else {
+    contents.unshift({ role: "user", parts: [{ text: systemText }] });
+  }
+  return { contents };
 }
 
 // ── Non-streaming providers ────────────────────────────────────────────────
 
-async function generateGroq(messages: ChatMessage[]): Promise<string> {
+async function generateGroq(messages: ChatMessage[], options: CompletionOptions): Promise<string> {
   const { apiKey, baseUrl, model } = aiConfig.groq;
 
   const response = await fetchWithTimeout(
@@ -117,8 +174,9 @@ async function generateGroq(messages: ChatMessage[]): Promise<string> {
         model,
         messages,
         temperature: 0.3,
-        max_tokens: aiConfig.limits.maxOutputTokens,
+        max_tokens: options.maxTokens ?? aiConfig.limits.maxOutputTokens,
         stream: false,
+        ...(options.json && { response_format: { type: "json_object" } }),
       }),
     },
     aiConfig.timeouts.completionMs,
@@ -134,9 +192,9 @@ async function generateGroq(messages: ChatMessage[]): Promise<string> {
   return data.choices?.[0]?.message?.content ?? "";
 }
 
-async function generateGemma(messages: ChatMessage[]): Promise<string> {
+async function generateGemma(messages: ChatMessage[], options: CompletionOptions): Promise<string> {
   const { apiKey, model } = aiConfig.gemma;
-  const { systemInstruction, contents } = toGoogleFormat(messages);
+  const { systemInstruction, contents } = toGoogleFormat(messages, model);
 
   const response = await fetchWithTimeout(
     `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
@@ -148,7 +206,7 @@ async function generateGemma(messages: ChatMessage[]): Promise<string> {
         ...(systemInstruction && { systemInstruction }),
         generationConfig: {
           temperature: 0.3,
-          maxOutputTokens: aiConfig.limits.maxOutputTokens,
+          maxOutputTokens: options.maxTokens ?? aiConfig.limits.maxOutputTokens,
         },
       }),
     },
@@ -171,16 +229,19 @@ async function generateGemma(messages: ChatMessage[]): Promise<string> {
  * Throws LlmUnavailableError (generic, safe message) if every configured
  * provider fails. Never throws raw upstream error text.
  */
-export async function generateCompletion(messages: ChatMessage[]): Promise<string> {
+export async function generateCompletion(
+  messages: ChatMessage[],
+  options: CompletionOptions = {},
+): Promise<string> {
   if (!aiConfig.groq.configured && !aiConfig.gemma.configured) {
-    throw new Error("GROQ_API_KEY is required for LLM inference");
+    throw new LlmUnavailableError();
   }
 
   const failures: string[] = [];
 
   if (aiConfig.groq.configured) {
     try {
-      return await generateGroq(messages);
+      return await generateGroq(messages, options);
     } catch (err) {
       failures.push(`groq: ${cleanMsg(err)}`);
       console.warn("[AI] Groq completion failed, trying fallback:", cleanMsg(err));
@@ -189,7 +250,7 @@ export async function generateCompletion(messages: ChatMessage[]): Promise<strin
 
   if (aiConfig.gemma.configured) {
     try {
-      return await generateGemma(messages);
+      return await generateGemma(messages, options);
     } catch (err) {
       failures.push(`gemma: ${cleanMsg(err)}`);
       console.error("[AI] Gemma completion failed:", cleanMsg(err));
@@ -289,7 +350,7 @@ async function streamGemmaInternal(
   onToken: (token: string) => void,
 ): Promise<void> {
   const { apiKey, model } = aiConfig.gemma;
-  const { systemInstruction, contents } = toGoogleFormat(messages);
+  const { systemInstruction, contents } = toGoogleFormat(messages, model);
 
   const controller = new AbortController();
   let timer = setTimeout(() => controller.abort(), aiConfig.timeouts.streamMs);

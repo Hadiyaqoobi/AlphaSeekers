@@ -6,9 +6,25 @@
  * have information about that in your course materials").
  *
  * A "gap" = a topic asked about 3+ times where >50% of responses signaled no info.
+ *
+ * Scope: pass `classIds` to look only at questions tagged with those classes
+ * (a teacher's own classes); omit it for platform-wide staff use. Sample
+ * questions are raw student text, so emails/phone numbers are redacted.
  */
 
 import { prisma } from "@/lib/prisma";
+
+import { redactPII } from "../privacy/pii-stripper";
+
+/** Hard ceiling on the look-back window (and on how many rows one call scans). */
+export const MAX_GAP_DAYS = 30;
+
+/** `days` from a query string → an integer in [1, MAX_GAP_DAYS], default 7. */
+export function clampGapDays(raw: unknown): number {
+  const n = typeof raw === "number" ? raw : parseInt(String(raw ?? ""), 10);
+  if (!Number.isFinite(n)) return 7;
+  return Math.min(MAX_GAP_DAYS, Math.max(1, Math.floor(n)));
+}
 
 export interface CurriculumGap {
   topic: string;
@@ -24,14 +40,20 @@ export interface CurriculumGap {
 export async function detectCurriculumGaps(params: {
   days?: number;
   minQuestions?: number;
+  /** Restrict to questions tagged with these classes. [] → no results. */
+  classIds?: string[];
 } = {}): Promise<CurriculumGap[]> {
-  const { days = 7, minQuestions = 3 } = params;
+  const { minQuestions = 3 } = params;
+  const days = clampGapDays(params.days ?? 7);
   const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+  const scope = params.classIds;
+  if (scope && scope.length === 0) return [];
 
-  const interactions = await prisma.aIInteraction.findMany({
+  const rows = await prisma.aIInteraction.findMany({
     where: {
       createdAt: { gte: since },
       mode: { in: ["study", "explain", "quiz"] },
+      ...(scope && { OR: scope.map((id) => ({ classIds: { contains: id } })) }),
     },
     select: {
       userId: true,
@@ -40,7 +62,22 @@ export async function detectCurriculumGaps(params: {
       classIds: true,
       answer: true,
     },
+    take: 5000,
   });
+
+  // `contains` is a substring match — keep only exact class tags, and count
+  // only the in-scope classes for each question.
+  const interactions = scope
+    ? rows
+        .map((r) => ({
+          ...r,
+          classIds: (r.classIds ?? "")
+            .split(",")
+            .filter((id) => scope.includes(id))
+            .join(","),
+        }))
+        .filter((r) => r.classIds.length > 0)
+    : rows;
 
   // Group by topic
   const topicMap = new Map<
@@ -123,7 +160,7 @@ export async function detectCurriculumGaps(params: {
       questionCount: data.questions.length,
       uniqueStudents: data.userIds.size,
       badAnswerRatio: Math.round(badRatio * 100) / 100,
-      sampleQuestions: data.questions.slice(0, 5),
+      sampleQuestions: data.questions.slice(0, 5).map((q) => redactPII(q)),
       classId,
       className,
       detectedAt: new Date(),

@@ -11,7 +11,7 @@ import { z } from "zod";
 
 import { prisma } from "@/lib/prisma";
 import { aiConfig } from "@/lib/ai/config";
-import { generateCompletion } from "@/lib/ai/llm";
+import { generateCompletion, parseJsonObject } from "@/lib/ai/llm";
 import { getSessionUser, unauthorized, forbidden, badRequest } from "@/lib/security/session";
 import { checkRateLimitDistributed } from "@/lib/security/rate-limit";
 
@@ -48,7 +48,8 @@ export async function POST(request: Request) {
     );
   }
 
-  if (!aiConfig.enabled) {
+  // Lessons never search course material, so only an LLM key is needed.
+  if (!aiConfig.llmEnabled) {
     return Response.json({ message: "AI not configured" }, { status: 503 });
   }
 
@@ -123,17 +124,23 @@ RULES:
 
   let lessonContent: { sections: unknown[] };
   try {
-    const response = await generateCompletion([
-      { role: "system", content: "You are a strict JSON-only lesson generator." },
-      { role: "user", content: lessonPrompt },
-    ]);
-    const cleaned = response.replace(/```json|```/g, "").trim();
-    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error("No JSON in response");
-    lessonContent = JSON.parse(jsonMatch[0]);
-    if (!Array.isArray(lessonContent.sections)) {
+    // Seven sections of JSON do not fit the default 1,024-token output cap —
+    // the reply was cut mid-object, JSON.parse failed (500) and the tokens were
+    // still billed. Give this call room, and ask Groq for JSON mode so the
+    // reply is a JSON object rather than prose around one.
+    const response = await generateCompletion(
+      [
+        { role: "system", content: "You are a strict JSON-only lesson generator." },
+        { role: "user", content: lessonPrompt },
+      ],
+      { maxTokens: aiConfig.limits.lessonMaxOutputTokens, json: true },
+    );
+    const parsedLesson = parseJsonObject<{ sections?: unknown }>(response);
+    if (!parsedLesson) throw new Error("No JSON in response");
+    if (!Array.isArray(parsedLesson.sections)) {
       throw new Error("Sections is not an array");
     }
+    lessonContent = { sections: parsedLesson.sections };
   } catch (err) {
     console.error("[Learn] Lesson generation failed:", err);
     return Response.json(
