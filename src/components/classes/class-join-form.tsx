@@ -49,6 +49,8 @@ type ClassJoinFormProps = {
   memberName?: string | null;
   /** member mode: they just came back from Google; finish the join without another tap. */
   autoSubmit?: boolean;
+  /** member mode: answers from an earlier time in this class, shown filled in. */
+  initialAnswers?: JoinAnswers;
 };
 
 /** Answers typed before going to Google, so the student does not type them twice. */
@@ -81,6 +83,7 @@ export function ClassJoinForm({
   mode = "guest",
   memberName = null,
   autoSubmit = false,
+  initialAnswers,
 }: ClassJoinFormProps) {
   const t = useTranslations("classJoin");
   const tRegister = useTranslations("register");
@@ -120,7 +123,8 @@ export function ClassJoinForm({
   // finish joining straight away. One tap on "Join with Google" is the whole join.
   useEffect(() => {
     if (mode !== "member") return;
-    const restored = loadDraft(classId);
+    // What they typed before Google wins over what they answered last time.
+    const restored = { ...(initialAnswers ?? {}), ...loadDraft(classId) };
     setAnswers(restored);
     if (autoSubmit && !autoSubmitted.current && checkAnswers(questions, restored).ok) {
       autoSubmitted.current = true;

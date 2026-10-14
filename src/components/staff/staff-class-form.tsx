@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 
 import { JoinQuestionsEditor, toPayload, type DraftQuestion } from "@/components/classes/join-questions-editor";
@@ -119,6 +120,7 @@ export function ClassCreateForm({ teachers, autosaveKey = "class-create" }: Clas
     const ts = useTranslations("staffForms");
     const tq = useTranslations("joinQuestions");
     const locale = useLocale();
+    const router = useRouter();
     const [form, setForm] = useState<FormState>({
         ...DEFAULT_FORM,
         teacherId: teachers[0]?.id ?? "",
@@ -183,6 +185,9 @@ export function ClassCreateForm({ teachers, autosaveKey = "class-create" }: Clas
             }
 
             setResult((await response.json()) as CreatedResult);
+            // The page around the form (class counts, the class list) is server
+            // rendered; refresh it so the new class shows without a reload.
+            router.refresh();
             setCopyState("idle");
             setForm({ ...DEFAULT_FORM, teacherId: teachers[0]?.id ?? "" });
         } catch {

@@ -109,6 +109,32 @@ d("landing highlights", () => {
     expect(classes.find((c) => c.id === klass.id)?.seatsLeft).toBe(2);
   });
 
+  it("only students still in the class take a seat, and a full class is not advertised", async () => {
+    const teacher = await makeTeacher("full");
+    const klass = await makeClass(teacher.id, "Two Seats", { maxStudents: 2 });
+    const student = (slug: string) =>
+      prisma.user.create({
+        data: { name: `${TAG} ${slug}`, email: email(slug), role: "STUDENT", approvedAt: new Date() },
+        select: { id: true },
+      });
+    const [left, removed, active] = await Promise.all([student("left"), student("removed"), student("active")]);
+    await prisma.enrollment.createMany({
+      data: [
+        { classId: klass.id, studentId: left.id, status: "DROPPED" },
+        { classId: klass.id, studentId: removed.id, status: "REJECTED" },
+        { classId: klass.id, studentId: active.id, status: "ACTIVE" },
+      ],
+    });
+
+    let { classes } = await getLandingHighlights();
+    expect(classes.find((c) => c.id === klass.id)?.seatsLeft).toBe(1);
+
+    const last = await student("last");
+    await prisma.enrollment.create({ data: { classId: klass.id, studentId: last.id, status: "ACTIVE" } });
+    ({ classes } = await getLandingHighlights());
+    expect(classes.find((c) => c.id === klass.id)).toBeUndefined();
+  });
+
   it("links to a course's own registration form, and refuses an unsafe one", async () => {
     const teacher = await makeTeacher("forms");
     const withForm = await makeClass(teacher.id, "With form");

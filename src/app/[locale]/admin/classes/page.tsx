@@ -122,14 +122,18 @@ export default async function AdminClassesPage({ params, searchParams }: AdminCl
       </div>
 
       {/* Action Cards */}
+      {/* The class form gets two of the three columns: squeezed into one, its
+          day / time / length row clipped the time to "06:C". */}
       <div className="mb-8 grid gap-5 lg:grid-cols-3">
-        <ClassCreateForm autosaveKey="admin-class-create" teachers={teachers} />
+        <div className={isSuper(access) ? "lg:col-span-2" : "lg:col-span-3"}>
+          <ClassCreateForm autosaveKey="admin-class-create" teachers={teachers} />
+        </div>
         {/* Manual cron runs require a live super admin; anyone else got a 401. */}
         {isSuper(access) ? (
-          <>
+          <div className="flex flex-col gap-5">
             <RunSchedulerButton />
             <RunRemindersButton />
-          </>
+          </div>
         ) : null}
       </div>
 

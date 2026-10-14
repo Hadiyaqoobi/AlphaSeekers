@@ -1,4 +1,4 @@
-import { ClassStatus } from "@prisma/client";
+import { ClassStatus, EnrollmentStatus } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
 import { normaliseHttpUrl } from "@/lib/security/safe-url";
@@ -77,7 +77,8 @@ export async function loadLandingHighlights(): Promise<LandingHighlights> {
         OR: [{ registrationDeadline: null }, { registrationDeadline: { gte: now } }],
       },
       orderBy: { createdAt: "desc" },
-      take: 6,
+      // Full classes are dropped below, so read a few extra to still fill six.
+      take: 12,
       select: {
         id: true,
         name: true,
@@ -88,7 +89,9 @@ export async function loadLandingHighlights(): Promise<LandingHighlights> {
         registrationFormUrl: true,
         registrationDeadline: true,
         teacher: { select: { name: true } },
-        _count: { select: { enrollments: true } },
+        // Seats are taken by ACTIVE enrolments only: students who left or were
+        // removed used to keep counting, so "seats left" ran low and then hit 0.
+        _count: { select: { enrollments: { where: { status: EnrollmentStatus.ACTIVE } } } },
       },
     }),
     prisma.webinar.findMany({
@@ -106,7 +109,8 @@ export async function loadLandingHighlights(): Promise<LandingHighlights> {
   ]);
 
   return {
-    classes: classes.map((c) => ({
+    classes: classes
+      .map((c) => ({
       id: c.id,
       name: c.name,
       subjectCategory: c.subjectCategory,
@@ -121,7 +125,10 @@ export async function loadLandingHighlights(): Promise<LandingHighlights> {
         typeof c.maxStudents === "number"
           ? Math.max(0, c.maxStudents - c._count.enrollments)
           : null,
-    })),
+    }))
+      // A full class is not "open now": its card led to a page saying it is full.
+      .filter((c) => c.seatsLeft !== 0)
+      .slice(0, 6),
     webinars: webinars.map((w) => ({
       id: w.id,
       title: w.title,

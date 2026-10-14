@@ -25,8 +25,8 @@ import { EnrollmentStatus, ClassStatus } from "@prisma/client";
 
 import { emit } from "@/lib/events/bus";
 import { prisma } from "@/lib/prisma";
-import { sealAnswers } from "@/lib/platform/join-answers";
-import { checkAnswers, readJoinQuestions, type JoinQuestion } from "@/lib/platform/join-questions";
+import { openAnswers, sealAnswers } from "@/lib/platform/join-answers";
+import { checkAnswers, readJoinQuestions, type JoinAnswers, type JoinQuestion } from "@/lib/platform/join-questions";
 import { isRegistrationClosed } from "@/lib/platform/registration-deadline";
 import { hashPassword, verifyPassword } from "@/lib/security/passwords";
 import { encryptPhone } from "@/lib/security/phone-crypto";
@@ -331,4 +331,17 @@ export async function getPublicClassForJoin(classId: string): Promise<PublicClas
     registrationDeadline: klass.registrationDeadline?.toISOString() ?? null,
     questions: readJoinQuestions(klass.joinQuestions),
   };
+}
+
+/**
+ * What this student answered last time they were in this class, if anything:
+ * someone who left and comes back sees their answers filled in instead of a blank
+ * form (and does not lose an answer by leaving it empty the second time).
+ */
+export async function getPreviousAnswers(studentId: string, classId: string): Promise<JoinAnswers> {
+  const row = await prisma.enrollment.findUnique({
+    where: { studentId_classId: { studentId, classId } },
+    select: { answers: true },
+  });
+  return openAnswers(row?.answers);
 }
