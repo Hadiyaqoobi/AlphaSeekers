@@ -7,7 +7,7 @@
  */
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 
-const tg = vi.hoisted(() => ({ sendTelegram: vi.fn(async () => "ok") }));
+const tg = vi.hoisted(() => ({ sendTelegram: vi.fn(async (_target: unknown, _content?: unknown) => "ok") }));
 vi.mock("@/lib/integrations/telegram", () => ({ sendTelegram: tg.sendTelegram }));
 
 import { prisma } from "@/lib/prisma";

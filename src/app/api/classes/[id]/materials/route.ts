@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { scheduleMaterialIngest } from "@/lib/ai/ingest";
 import { normaliseHttpUrl } from "@/lib/security/safe-url";
 
 import { createClassMaterial, getClassById, isStudentEnrolledInClass, listClassMaterials } from "@/lib/platform/store";
@@ -57,7 +58,7 @@ export async function POST(request: NextRequest, { params }: Params) {
     return NextResponse.json({ message: "Only teachers/admins can upload materials" }, { status: 403 });
   }
 
-  const klass = await getClassById(params.id);
+  const klass = await getClassById(params.id, { includeUnpublished: true });
 
   if (!klass) {
     return NextResponse.json({ message: "Class not found" }, { status: 404 });
@@ -109,6 +110,11 @@ export async function POST(request: NextRequest, { params }: Params) {
     fileSize,
     uploadedBy: user.id,
   });
+
+  // Index it for the study assistant in the background. Never awaited: an
+  // embedding call can take seconds, and the teacher's upload must not wait on
+  // it or fail because of it. Unsupported files are skipped with a logged reason.
+  scheduleMaterialIngest(material.id);
 
   return NextResponse.json(material, { status: 201 });
 }

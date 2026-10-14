@@ -4,6 +4,7 @@ import { z } from "zod";
 import { listDeadJobs, queueHealth, requeueJob } from "@/lib/jobs/queue";
 import { recordAudit } from "@/lib/security/audit";
 import { AccessError, requireSuperAdmin } from "@/lib/security/permissions";
+import { getClientIp } from "@/lib/security/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -16,12 +17,10 @@ function handleError(error: unknown): NextResponse {
   return NextResponse.json({ message: "Internal server error" }, { status: 500 });
 }
 
-/** First IP from the x-forwarded-for header, if any. */
+/** Client IP for the audit row, read the same spoof-resistant way as the rate limiters. */
 function clientIp(request: NextRequest): string | null {
-  const header = request.headers.get("x-forwarded-for");
-  if (!header) return null;
-  const first = header.split(",")[0]?.trim();
-  return first ? first : null;
+  const ip = getClientIp(request);
+  return ip === "unknown" ? null : ip;
 }
 
 const actionSchema = z.object({

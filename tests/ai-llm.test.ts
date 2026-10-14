@@ -105,7 +105,7 @@ describe("generateCompletion → Gemma fallback request", () => {
   });
 
   it("falls over to Gemma without systemInstruction and returns its text", async () => {
-    const fetchMock = vi.fn(async (url: string) => {
+    const fetchMock = vi.fn(async (url: string, _init?: RequestInit) => {
       if (url.includes("groq")) return new Response("rate limited", { status: 429 });
       return new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: "4" }] } }] }), {
         status: 200,
