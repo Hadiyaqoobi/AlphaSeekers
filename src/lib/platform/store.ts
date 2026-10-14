@@ -150,8 +150,8 @@ export async function deleteClassPermanently(classId: string) {
   return viaDatabase(() => dbStore.deleteClassPermanently(classId));
 }
 
-export async function enrollStudentInClass(studentId: string, classId: string) {
-  return viaDatabase(() => dbStore.enrollStudentInClass(studentId, classId));
+export async function enrollStudentInClass(...args: Parameters<typeof dbStore.enrollStudentInClass>) {
+  return viaDatabase(() => dbStore.enrollStudentInClass(...args));
 }
 
 export async function dropStudentFromClass(...args: Parameters<typeof dbStore.dropStudentFromClass>) {

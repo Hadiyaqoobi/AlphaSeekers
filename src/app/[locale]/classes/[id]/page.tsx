@@ -13,6 +13,8 @@ import { ShareLink } from "@/components/classes/share-link";
 import { DataCostBadge } from "@/components/data-cost-badge";
 import { SaveOfflineButton } from "@/components/save-offline-button";
 import { getClassLifecycleExtras } from "@/lib/platform/db-store";
+import { displayAnswer } from "@/lib/platform/join-answers";
+import { optionLabel, questionLabel, readJoinQuestions } from "@/lib/platform/join-questions";
 import { getClassById, isStudentEnrolledInClass, listClassAnnouncements, listClassEnrollments } from "@/lib/platform/store";
 import { isWithinLiveWindow } from "@/lib/scheduling/weekly-slot";
 import { getAccessControl, can, isSuper } from "@/lib/security/permissions";
@@ -82,8 +84,14 @@ export default async function ClassDetailPage({ params }: ClassDetailPageProps) 
     .filter((session) => new Date(session.endTime).getTime() >= now)
     .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
     .slice(0, 6);
+  const extras = await getClassLifecycleExtras(record.id);
   // The teacher's own optional Google Form, shown only to people in the class.
-  const ownFormUrl = canAccessPrivateDetails ? (await getClassLifecycleExtras(record.id))?.registrationFormUrl ?? null : null;
+  const ownFormUrl = canAccessPrivateDetails ? extras?.registrationFormUrl ?? null : null;
+  // The class's own sign-up questions (ADR-0009). A student who has not joined
+  // yet is sent to the join page to answer them; staff see the answers below.
+  const joinQuestions = readJoinQuestions(extras?.joinQuestions);
+  const tq = await getTranslations({ locale, namespace: "joinQuestions" });
+  const tqKey = (key: string) => tq(key);
 
   return (
     <section className="space-y-4 sm:space-y-5">
@@ -132,6 +140,7 @@ export default async function ClassDetailPage({ params }: ClassDetailPageProps) 
             <EnrollButton
               classId={record.id}
               initiallyEnrolled={studentEnrolled}
+              joinHref={joinQuestions.length > 0 ? `/${locale}/join/${record.id}` : undefined}
               registrationDeadline={record.registrationDeadline}
             />
           </div>
@@ -273,13 +282,32 @@ export default async function ClassDetailPage({ params }: ClassDetailPageProps) 
 
       {canUploadMaterials && enrolledStudents.length > 0 ? (
         <section className="panel panel-strong p-4 sm:p-5">
-          <h2 className="text-lg font-black text-ink-main">{t("studentsTitle")}</h2>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-lg font-black text-ink-main">{t("studentsTitle")}</h2>
+            <a className="btn-secondary text-xs" download href={`/api/classes/${record.id}/responses?locale=${locale}`}>
+              {tq("download")}
+            </a>
+          </div>
           <div className="mt-3 space-y-1">
             {enrolledStudents.map((student) => (
-              <div className="flex items-center justify-between rounded-lg border border-line-soft px-3 py-2" key={student.studentId}>
-                <div>
+              <div className="flex items-center justify-between gap-3 rounded-lg border border-line-soft px-3 py-2" key={student.studentId}>
+                <div className="min-w-0">
                   <p className="text-sm font-medium text-ink-main">{student.name}</p>
                   <p className="text-xs text-ink-soft">{student.email}</p>
+                  {joinQuestions.some((question) => student.answers[question.id]) ? (
+                    <dl className="mt-1 space-y-0.5 text-xs">
+                      {joinQuestions.map((question) =>
+                        student.answers[question.id] ? (
+                          <div className="flex flex-wrap gap-1" key={question.id}>
+                            <dt className="text-ink-faint" dir="auto">{questionLabel(question, tqKey)}:</dt>
+                            <dd className="break-words text-ink-soft" dir="auto">
+                              {displayAnswer(question, student.answers[question.id], (q, option) => optionLabel(q, option, tqKey))}
+                            </dd>
+                          </div>
+                        ) : null,
+                      )}
+                    </dl>
+                  ) : null}
                 </div>
                 <div className="flex items-center gap-3">
                   <p className="text-xs text-ink-faint">{formatDateTime(student.enrolledAt, locale)}</p>

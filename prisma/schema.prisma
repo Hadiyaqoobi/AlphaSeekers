@@ -156,6 +156,10 @@ model Class {
   /// is how every class behaved before this field existed. Enforced server-side
   /// in enrollStudent(); already-enrolled students are never affected by it.
   registrationDeadline DateTime?
+  /// The class's own sign-up questions (ADR-0009): a JSON list the join page
+  /// shows under name and email. Null = no extra questions. Shape and rules in
+  /// src/lib/platform/join-questions.ts.
+  joinQuestions        Json?
   published            Boolean        @default(true)
   status               ClassStatus    @default(ACTIVE)
   schedulingMode       SchedulingMode @default(AUTO)
@@ -218,6 +222,10 @@ model Enrollment {
   classId    String
   enrolledAt DateTime         @default(now())
   status     EnrollmentStatus @default(ACTIVE)
+  /// The student's answers to the class's joinQuestions, keyed by question id
+  /// (ADR-0009). Written in the same transaction that takes the seat. Visible
+  /// only to the class's teacher and staff; cleared when the account is deleted.
+  answers    Json?
 
   student User  @relation(fields: [studentId], references: [id], onDelete: Cascade)
   class   Class @relation(fields: [classId], references: [id], onDelete: Cascade)

@@ -1,10 +1,12 @@
 # ADR-0009 — The class sign-up form stays on the platform
 
-- **Status:** Proposed (not yet built; needs the team's go-ahead and Dari text)
+- **Status:** Accepted, implemented 2026-10-15 (Dari for the new labels still owed by the team)
 - **Date:** 2026-10-14
 - **Deciders:** Platform engineering, AlphaSeekers team
-- **Related:** `src/lib/platform/class-join.ts`, `src/components/classes/class-join-form.tsx`,
-  `src/app/[locale]/join/[classId]/page.tsx`, `src/lib/platform/class-create.ts`,
+- **Related:** `src/lib/platform/join-questions.ts`, `src/lib/platform/join-answers.ts`,
+  `src/lib/platform/class-join.ts`, `src/components/classes/class-join-form.tsx`,
+  `src/components/classes/join-questions-editor.tsx`, `src/app/[locale]/join/[classId]/page.tsx`,
+  `src/app/api/classes/[id]/responses/route.ts`, `src/lib/platform/class-create.ts`,
   ADR-0007 and ADR-0008 (database cost)
 
 ## Context
@@ -39,7 +41,7 @@ page after they join. Fine as a stop-gap, but answers live outside the platform.
 
 **C. Questions on the platform's own join page (chosen).**
 
-## Decision (proposed)
+## Decision
 
 1. **Per-class questions.** When posting a class, staff tick ready-made questions
    (phone / WhatsApp, age, province, English level, reason for joining) and may add
@@ -69,3 +71,36 @@ page after they join. Fine as a stop-gap, but answers live outside the platform.
   is deleted, and never sent to an AI provider.
 - Google sign-in on `/join` must keep the existing rules: verified Google email
   only, never raises a role, refuses deactivated accounts.
+
+## As built (2026-10-15)
+
+- **Where staff set it:** "Questions for students" in the class form (create and
+  edit). Five ready-made questions are one tick each, with a "Must answer" box;
+  up to five of the class's own (short answer, paragraph, or choose one).
+- **Ready-made questions are translated, not typed.** Their wording comes from
+  `messages/*.json` (`joinQuestions.*`), so they show in Dari once the team
+  supplies it. A class's own questions are shown exactly as staff typed them.
+- **Validated in one place** (`join-questions.ts`) by the form, the public join
+  route and the in-app join, so a signed-in student cannot skip the questions with
+  the one-click Join button: when a class has questions, that button opens the
+  join page. A missing answer is refused before any account is created.
+- **Phone answers are encrypted at rest** with the same key as `User.phone`.
+  Dari digits are converted to 0-9 for phone and age.
+- **Join with Google:** answers typed before the Google step are kept in the
+  tab's session storage; the student returns signed in to `/join/<id>?via=google`
+  and the join finishes without another tap. A signed-in student who is not in
+  the class sees only the questions and a Join button.
+- **Closed registration is shown up front** on `/join` instead of after the form
+  is filled in (the class summary carries the deadline, compared on each render,
+  so it holds while the page is cached).
+- **Responses:** answers appear in the class's student list (admin page and the
+  teacher's class page) and download as CSV (`/api/classes/<id>/responses`): UTF-8
+  with BOM, and any answer starting with `= + - @` is prefixed with `'` so it
+  cannot run as a spreadsheet formula. Only staff with `classes.view` and the
+  class's own teacher can download.
+- **Editing questions never deletes answers.** Answers to a removed question stay
+  on the enrolment but are no longer shown or exported.
+- **Account deletion** clears `Enrollment.answers` on every enrolment.
+- **Not built:** pushing answers into a Google Sheet the team owns. The CSV opens
+  in Google Sheets via File → Import.
+

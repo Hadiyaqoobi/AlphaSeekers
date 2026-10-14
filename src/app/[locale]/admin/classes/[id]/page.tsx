@@ -8,6 +8,8 @@ import { ClassDangerZone } from "@/components/admin/class-danger-zone";
 import { RestoreClassButton } from "@/components/admin/restore-class-button";
 import { SessionMeetLinkEditor } from "@/components/admin/session-meet-link-editor";
 import { formatDateTime } from "@/lib/format-date";
+import { displayAnswer } from "@/lib/platform/join-answers";
+import { optionLabel, questionLabel, readJoinQuestions } from "@/lib/platform/join-questions";
 import { getClassLifecycleExtras, listUpcomingClassSessions, loadAvailabilityWindows } from "@/lib/platform/db-store";
 import { getClassById, listClassEnrollments, listPendingEnrollments, getClassAttendanceSummary, listUsersByRole } from "@/lib/platform/store";
 import { classSpanMinutes, planAutoSlot } from "@/lib/scheduling/weekly-slot";
@@ -48,6 +50,10 @@ export default async function AdminClassDetailPage({ params }: AdminClassDetailP
     canEdit ? listUsersByRole("TEACHER") : Promise.resolve([]),
   ]);
   const archived = (extras?.status ?? record.status) === "ARCHIVED";
+  // The class's own sign-up questions and, in the roster below, each student's answers.
+  const joinQuestions = readJoinQuestions(extras?.joinQuestions);
+  const tq = await getTranslations({ locale, namespace: "joinQuestions" });
+  const tqKey = (key: string) => tq(key);
   // Why an AUTO class has no booked session, in the same words as the setup page.
   const schedulePlan =
     extras?.schedulingMode === "AUTO" && !archived
@@ -137,7 +143,9 @@ export default async function AdminClassDetailPage({ params }: AdminClassDetailP
           registrationDeadline: extras?.registrationDeadline?.toISOString() ?? null,
           whatsappGroupUrl: (record as { whatsappGroupUrl?: string | null }).whatsappGroupUrl ?? null,
           registrationFormUrl: extras?.registrationFormUrl ?? null,
+          joinQuestions,
         }}
+        locale={locale}
         teachers={teachers.map((teacher) => ({ id: teacher.id, name: teacher.name, email: teacher.email }))}
       />
 
@@ -195,10 +203,15 @@ export default async function AdminClassDetailPage({ params }: AdminClassDetailP
                   <th className="py-2 font-semibold" scope="col">{t("studentEmail")}</th>
                   <th className="py-2 font-semibold" scope="col">{t("enrolledAt")}</th>
                   <th className="py-2 font-semibold" scope="col">{t("attendanceLabel")}</th>
+                  {joinQuestions.map((question) => (
+                    <th className="py-2 ps-3 font-semibold" dir="auto" key={question.id} scope="col">
+                      {questionLabel(question, tqKey)}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
-                {enrolledStudents.map((student: { studentId: string; name: string; email: string; enrolledAt: Date | string }) => {
+                {enrolledStudents.map((student) => {
                   const stats = attendanceSummary.students.find((s) => s.studentId === student.studentId);
                   return (
                     <tr className="border-b border-line-soft text-ink-main" key={student.studentId}>
@@ -214,6 +227,13 @@ export default async function AdminClassDetailPage({ params }: AdminClassDetailP
                           <span className="text-ink-faint">-</span>
                         )}
                       </td>
+                      {joinQuestions.map((question) => (
+                        <td className="max-w-[16rem] py-2 ps-3 align-top" dir="auto" key={question.id}>
+                          {displayAnswer(question, student.answers[question.id], (q, option) => optionLabel(q, option, tqKey)) || (
+                            <span className="text-ink-faint">-</span>
+                          )}
+                        </td>
+                      ))}
                     </tr>
                   );
                 })}

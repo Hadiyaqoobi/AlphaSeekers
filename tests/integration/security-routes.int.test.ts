@@ -8,6 +8,7 @@
  *      who are in the class
  *  S15 deleting your account really switches it off
  *  S4  forgot-password does not re-issue within two minutes
+ *  Q1  sign-up answers download only for the class's teacher and staff
  *
  * Run: DATABASE_URL=postgresql://... RUN_DB_TESTS=1 npx vitest run tests/integration
  */
@@ -28,7 +29,11 @@ vi.mock("@/lib/integrations/notifications", async (importOriginal) => {
   return { ...actual, sendPasswordResetEmail: vi.fn(async () => undefined) };
 });
 
+// The CSV route labels its columns via next-intl; outside Next, keys are enough.
+vi.mock("next-intl/server", () => ({ getTranslations: vi.fn(async () => (key: string) => key) }));
+
 import { DELETE as deleteAccount } from "@/app/api/me/account/route";
+import { GET as getResponses } from "@/app/api/classes/[id]/responses/route";
 import { POST as forgotPassword } from "@/app/api/auth/forgot-password/route";
 import { GET as getClass } from "@/app/api/classes/[id]/route";
 import { POST as attend } from "@/app/api/classes/[id]/sessions/[sessionId]/attend/route";
@@ -238,7 +243,9 @@ d("S15: deleting your account", () => {
   it("deactivates it and frees its seats", async () => {
     const { klass } = await classWithSession("leaver", HOUR);
     const student = await user("leaver", "STUDENT");
-    await prisma.enrollment.create({ data: { studentId: student.id, classId: klass.id, status: "ACTIVE" } });
+    await prisma.enrollment.create({
+      data: { studentId: student.id, classId: klass.id, status: "ACTIVE", answers: { phone: "plain:0700123456", q1: "Herat" } },
+    });
     as(student);
 
     const res = await deleteAccount();
@@ -251,9 +258,11 @@ d("S15: deleting your account", () => {
     expect(row.deactivatedAt).not.toBeNull();
     const enrollment = await prisma.enrollment.findFirstOrThrow({
       where: { studentId: student.id },
-      select: { status: true },
+      select: { status: true, answers: true },
     });
     expect(enrollment.status).toBe("DROPPED");
+    // Sign-up answers are personal data and go with the account (ADR-0009).
+    expect(enrollment.answers).toBeNull();
   });
 
   it("strips admin powers, and refuses the last super admin", async () => {
@@ -283,6 +292,38 @@ d("S15: deleting your account", () => {
       });
       expect(still.deactivatedAt).toBeNull();
     }
+  });
+});
+
+d("Q1: sign-up answers spreadsheet", () => {
+  beforeEach(cleanup);
+  afterAll(cleanup);
+
+  it("downloads for the class's own teacher, and for nobody else outside staff", async () => {
+    const { klass, teacher } = await classWithSession("answers", HOUR);
+    await prisma.class.update({
+      where: { id: klass.id },
+      data: { joinQuestions: [{ id: "q1", kind: "custom", type: "short", label: "City?", required: false }] },
+    });
+    const student = await user("answerer", "STUDENT");
+    await prisma.enrollment.create({
+      data: { studentId: student.id, classId: klass.id, status: "ACTIVE", answers: { q1: "=cmd()" } },
+    });
+    const get = () => getResponses(req(`/api/classes/${klass.id}/responses?locale=en`, undefined, "GET"), { params: { id: klass.id } });
+
+    as(student);
+    expect((await get()).status).toBe(403);
+    as(await user("not-their-teacher", "TEACHER"));
+    expect((await get()).status).toBe(403);
+
+    as(teacher);
+    const res = await get();
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toContain("text/csv");
+    const text = await res.text();
+    expect(text.split("\r\n")[0]).toContain('"City?"');
+    // Typed by the public, so it must not run as a formula.
+    expect(text).toContain(`"'=cmd()"`);
   });
 });
 

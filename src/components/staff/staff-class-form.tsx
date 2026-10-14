@@ -5,6 +5,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 
+import { JoinQuestionsEditor, toPayload, type DraftQuestion } from "@/components/classes/join-questions-editor";
 import { useAutosaveForm } from "@/components/forms/use-autosave-form";
 import { formatDateTime } from "@/lib/format-date";
 
@@ -48,6 +49,7 @@ type FormState = {
     registrationDeadline: string;
     whatsappGroupUrl: string;
     registrationFormUrl: string;
+    joinQuestions: DraftQuestion[];
 };
 
 type CreatedResult = {
@@ -105,6 +107,7 @@ const DEFAULT_FORM: FormState = {
     registrationDeadline: "",
     whatsappGroupUrl: "",
     registrationFormUrl: "",
+    joinQuestions: [],
 };
 
 const LABEL = "text-xs font-semibold text-ink-soft";
@@ -114,6 +117,7 @@ export function ClassCreateForm({ teachers, autosaveKey = "class-create" }: Clas
     const t = useTranslations("classLifecycle");
     // Day names, subject names and the invite wording are already translated here.
     const ts = useTranslations("staffForms");
+    const tq = useTranslations("joinQuestions");
     const locale = useLocale();
     const [form, setForm] = useState<FormState>({
         ...DEFAULT_FORM,
@@ -153,6 +157,7 @@ export function ClassCreateForm({ teachers, autosaveKey = "class-create" }: Clas
             ...(form.registrationDeadline ? { registrationDeadline: form.registrationDeadline } : {}),
             ...(form.whatsappGroupUrl.trim() ? { whatsappGroupUrl: form.whatsappGroupUrl.trim() } : {}),
             ...(form.registrationFormUrl.trim() ? { registrationFormUrl: form.registrationFormUrl.trim() } : {}),
+            ...(form.joinQuestions.length ? { joinQuestions: toPayload(form.joinQuestions) } : {}),
         };
 
         // Send ONLY the instructor fields for the chosen mode — empty invite fields
@@ -448,6 +453,22 @@ export function ClassCreateForm({ teachers, autosaveKey = "class-create" }: Clas
                 </label>
                 {form.manualDates ? <p className="text-xs text-ink-soft">{t("manualHint")}</p> : null}
             </fieldset>
+
+            {/* ── Questions for students: what the team used a Google Form for.
+                 Open by default once any are chosen, so they are not forgotten. ── */}
+            <details className="rounded-lg border border-line p-3" open={form.joinQuestions.length > 0}>
+                <summary className="cursor-pointer text-sm font-semibold text-ink-main">
+                    {tq("editor.title")}
+                    {form.joinQuestions.length > 0 ? ` (${form.joinQuestions.length})` : ""}
+                </summary>
+                <div className="mt-3">
+                    <JoinQuestionsEditor
+                        idPrefix="class-create-q"
+                        onChange={(next) => update("joinQuestions", next)}
+                        value={form.joinQuestions}
+                    />
+                </div>
+            </details>
 
             {/* ── More options (collapsed) ── */}
             <details className="rounded-lg border border-line p-3">

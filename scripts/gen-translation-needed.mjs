@@ -14,7 +14,7 @@ for (const key of baseline) {
   groups.get(ns).push(key);
 }
 // What students see first, then teachers, then staff screens.
-const priority = ["classJoin", "enroll", "liveSession", "login", "register", "forgotPassword", "resetPassword", "classDetail", "classes", "dashboard", "nav", "profile", "ai", "landing", "contact", "attendance", "classLifecycle", "teacherSetup"];
+const priority = ["classJoin", "joinQuestions", "enroll", "liveSession", "login", "register", "forgotPassword", "resetPassword", "classDetail", "classes", "dashboard", "nav", "profile", "ai", "landing", "contact", "attendance", "classLifecycle", "teacherSetup"];
 const order = [...groups.keys()].sort((a, b) => {
   const pa = priority.indexOf(a), pb = priority.indexOf(b);
   if (pa !== -1 || pb !== -1) return (pa === -1 ? 999 : pa) - (pb === -1 ? 999 : pb);

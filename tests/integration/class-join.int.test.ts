@@ -35,7 +35,10 @@ async function cleanup() {
   }
 }
 
-async function makeClass(slug: string, opts: { published?: boolean; maxStudents?: number; archived?: boolean } = {}) {
+async function makeClass(
+  slug: string,
+  opts: { published?: boolean; maxStudents?: number; archived?: boolean; joinQuestions?: object[] } = {},
+) {
   const teacher = await prisma.user.create({
     data: { name: `${TAG} t-${slug}`, email: email(`t-${slug}`), role: "TEACHER", approvedAt: new Date() },
     select: { id: true },
@@ -49,6 +52,7 @@ async function makeClass(slug: string, opts: { published?: boolean; maxStudents?
       maxStudents: opts.maxStudents ?? 10,
       published: opts.published ?? true,
       status: opts.archived ? "ARCHIVED" : "ACTIVE",
+      ...(opts.joinQuestions ? { joinQuestions: opts.joinQuestions } : {}),
     },
     select: { id: true },
   });
@@ -261,5 +265,114 @@ d("legacy pending students", () => {
     });
 
     await expect(enrollStudentInClass(student.id, klass.id)).rejects.toThrow("Enrollment rejected");
+  });
+
+  describe("the class's own sign-up questions (ADR-0009)", () => {
+    const QUESTIONS = [
+      { id: "phone", kind: "phone", type: "short", required: true },
+      { id: "englishLevel", kind: "englishLevel", type: "choice", options: ["beginner", "intermediate", "advanced"], required: false },
+      { id: "q1", kind: "custom", type: "short", label: "Which city?", required: false },
+    ];
+
+    it("saves the answers with the enrolment, phone encrypted at rest, readable by staff", async () => {
+      const { listClassEnrollments } = await import("@/lib/platform/db-store");
+      const klass = await makeClass("answers", { joinQuestions: QUESTIONS });
+
+      const result = await joinClassWithNewAccount({
+        classId: klass.id,
+        name: "Answering Student",
+        email: email("answers"),
+        password: GOOD,
+        answers: { phone: "۰۷۰۰ ۱۲۳ ۴۵۶", englishLevel: "beginner", q1: "Herat", notAsked: "x" },
+      });
+      expect(result).toMatchObject({ ok: true, created: true });
+
+      const stored = await prisma.enrollment.findFirst({ where: { classId: klass.id }, select: { answers: true } });
+      const raw = stored?.answers as Record<string, string>;
+      expect(raw.englishLevel).toBe("beginner");
+      expect(raw.notAsked).toBeUndefined();
+      // Not the plain number: encrypted (or the dev "plain:" marker without a key).
+      expect(raw.phone).not.toBe("0700 123 456");
+
+      const [row] = await listClassEnrollments(klass.id);
+      expect(row.answers).toEqual({ phone: "0700 123 456", englishLevel: "beginner", q1: "Herat" });
+    });
+
+    it("refuses a missing required answer BEFORE creating any account", async () => {
+      const klass = await makeClass("missing", { joinQuestions: QUESTIONS });
+
+      const result = await joinClassWithNewAccount({
+        classId: klass.id,
+        name: "No Phone",
+        email: email("nophone"),
+        password: GOOD,
+        answers: { englishLevel: "beginner" },
+      });
+
+      expect(result).toEqual({ ok: false, code: "INVALID_ANSWERS", questionId: "phone" });
+      expect(await prisma.user.count({ where: { email: email("nophone") } })).toBe(0);
+    });
+
+    it("a signed-in student cannot skip the questions with the in-app join", async () => {
+      const { enrollStudentInClass, InvalidAnswersError } = await import("@/lib/platform/db-store");
+      const klass = await makeClass("inapp", { joinQuestions: QUESTIONS });
+      const student = await prisma.user.create({
+        data: { name: "In App", email: email("inapp"), role: "STUDENT", approvedAt: new Date() },
+        select: { id: true },
+      });
+
+      await expect(enrollStudentInClass(student.id, klass.id)).rejects.toBeInstanceOf(InvalidAnswersError);
+      expect(await prisma.enrollment.count({ where: { classId: klass.id } })).toBe(0);
+
+      const joined = await enrollStudentInClass(student.id, klass.id, { phone: "+93 700 123 456" });
+      expect(joined.state).toBe("JOINED");
+      // The stored (encrypted) answers are not sent back to the browser.
+      expect(joined.enrollment).not.toHaveProperty("answers");
+    });
+
+    it("the public join page shows the questions and the deadline, never answers", async () => {
+      const klass = await makeClass("summary", { joinQuestions: QUESTIONS });
+      await prisma.class.update({ where: { id: klass.id }, data: { registrationDeadline: new Date(Date.now() - 60_000) } });
+
+      const summary = await getPublicClassForJoin(klass.id);
+      expect(summary?.questions.map((q) => q.id)).toEqual(["phone", "englishLevel", "q1"]);
+      expect(summary?.registrationDeadline).not.toBeNull();
+    });
+
+    it("posting a class through the real create path saves its questions", async () => {
+      const { createClassFromBody, parseCreateClassBody } = await import("@/lib/platform/class-create");
+      const teacher = await prisma.user.create({
+        data: { name: `${TAG} t-post`, email: email("t-post"), role: "TEACHER", approvedAt: new Date() },
+        select: { id: true },
+      });
+      const parsed = parseCreateClassBody({
+        name: `${TAG} posted`,
+        subjectCategory: "English",
+        description: "fixture",
+        teacherId: teacher.id,
+        day: "Wed",
+        time: "18:00",
+        schedulingMode: "MANUAL",
+        joinQuestions: QUESTIONS,
+      });
+      if (!parsed.ok) throw new Error(parsed.body.message);
+
+      const created = await createClassFromBody(parsed.data);
+      if (!created.ok) throw new Error(created.message);
+      const row = await prisma.class.findUnique({
+        where: { id: created.result.class.id },
+        select: { joinQuestions: true },
+      });
+      expect((row?.joinQuestions as Array<{ id: string }>).map((q) => q.id)).toEqual(["phone", "englishLevel", "q1"]);
+    });
+
+    it("editing a class to no questions clears them", async () => {
+      const { updateClass } = await import("@/lib/platform/db-store");
+      const klass = await makeClass("clear", { joinQuestions: QUESTIONS });
+
+      await updateClass(klass.id, { joinQuestions: [] });
+      const after = await prisma.class.findUnique({ where: { id: klass.id }, select: { joinQuestions: true } });
+      expect(after?.joinQuestions).toBeNull();
+    });
   });
 });

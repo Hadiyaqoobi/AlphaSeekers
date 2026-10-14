@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 
@@ -13,12 +14,18 @@ type EnrollButtonProps = {
   initiallyEnrolled?: boolean;
   /** ISO cutoff for joining, or null/undefined when the class is open indefinitely. */
   registrationDeadline?: string | null;
+  /**
+   * Set when the class has its own sign-up questions: joining then happens on
+   * the join page, where they are asked (ADR-0009), not with one click here.
+   */
+  joinHref?: string;
 };
 
 export function EnrollButton({
   classId,
   initiallyEnrolled = false,
   registrationDeadline = null,
+  joinHref,
 }: EnrollButtonProps) {
   const router = useRouter();
   const t = useTranslations("enroll");
@@ -137,6 +144,10 @@ export function EnrollButton({
             {loading ? "..." : t("enrolledTapToUnenroll")}
           </button>
         </>
+      ) : joinHref ? (
+        <Link className="btn-primary inline-block" href={joinHref}>
+          {t("requestToJoin")}
+        </Link>
       ) : (
         <button
           className="btn-primary"

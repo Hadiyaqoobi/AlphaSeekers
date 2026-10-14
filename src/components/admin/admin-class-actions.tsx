@@ -5,6 +5,8 @@ import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 
+import { JoinQuestionsEditor, toDraft, toPayload, type DraftQuestion } from "@/components/classes/join-questions-editor";
+import type { JoinQuestion } from "@/lib/platform/join-questions";
 import { DAY_ABBREVIATIONS, parseStoredWeeklySlot } from "@/lib/scheduling/weekly-slot";
 
 type Teacher = { id: string; name: string; email: string };
@@ -20,6 +22,7 @@ export type EditableClass = {
   registrationDeadline: string | null;
   whatsappGroupUrl: string | null;
   registrationFormUrl: string | null;
+  joinQuestions: JoinQuestion[];
 };
 
 type AdminClassActionsProps = {
@@ -28,6 +31,7 @@ type AdminClassActionsProps = {
   teachers: Teacher[];
   /** Editing needs classes.edit; without it only the CSV export is offered. */
   canEdit?: boolean;
+  locale: string;
 };
 
 type EditState = {
@@ -41,6 +45,7 @@ type EditState = {
   registrationDeadline: string;
   whatsappGroupUrl: string;
   registrationFormUrl: string;
+  joinQuestions: DraftQuestion[];
 };
 
 const DAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
@@ -70,11 +75,13 @@ function toEditState(initial: EditableClass): EditState {
     registrationDeadline: deadlineToKabulDate(initial.registrationDeadline),
     whatsappGroupUrl: initial.whatsappGroupUrl ?? "",
     registrationFormUrl: initial.registrationFormUrl ?? "",
+    joinQuestions: toDraft(initial.joinQuestions),
   };
 }
 
-export function AdminClassActions({ classId, initial, teachers, canEdit = true }: AdminClassActionsProps) {
+export function AdminClassActions({ classId, initial, teachers, canEdit = true, locale }: AdminClassActionsProps) {
   const t = useTranslations("adminClassDetail");
+  const tq = useTranslations("joinQuestions");
   const tl = useTranslations("classLifecycle");
   const ts = useTranslations("staffForms");
   const router = useRouter();
@@ -120,6 +127,10 @@ export function AdminClassActions({ classId, initial, teachers, canEdit = true }
     if (form.registrationFormUrl.trim() !== original.registrationFormUrl) {
       body.registrationFormUrl = form.registrationFormUrl.trim();
     }
+    const questions = toPayload(form.joinQuestions);
+    if (JSON.stringify(questions) !== JSON.stringify(toPayload(original.joinQuestions))) {
+      body.joinQuestions = questions;
+    }
 
     if (Object.keys(body).length === 0) {
       setMessage({ kind: "error", text: tl("nothingChanged") });
@@ -153,29 +164,6 @@ export function AdminClassActions({ classId, initial, teachers, canEdit = true }
     }
   }
 
-  function handleExportCSV() {
-    const table = document.querySelector("table");
-    if (!table) return;
-
-    const rows: string[][] = [];
-    table.querySelectorAll("tr").forEach((row) => {
-      const cells: string[] = [];
-      row.querySelectorAll("th, td").forEach((cell) => {
-        cells.push(`"${(cell.textContent ?? "").replace(/"/g, '""')}"`);
-      });
-      rows.push(cells);
-    });
-
-    const csv = rows.map((r) => r.join(",")).join("\n");
-    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `class-${classId}-students.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
-  }
-
   const messageNode = message ? (
     <p className={`text-sm ${message.kind === "ok" ? "text-neon-400" : "text-red-300"}`} role="status">
       {message.text}
@@ -189,9 +177,11 @@ export function AdminClassActions({ classId, initial, teachers, canEdit = true }
           {editing ? t("cancelEdit") : t("editClass")}
         </button>
       ) : null}
-      <button className="btn-secondary" onClick={handleExportCSV} type="button">
+      {/* Built on the server so it carries the sign-up answers and opens in
+          Google Sheets with Dari intact (ADR-0009). */}
+      <a className="btn-secondary" download href={`/api/classes/${classId}/responses?locale=${locale}`}>
         {t("exportCSV")}
-      </button>
+      </a>
 
       {editing ? (
         <form className="mt-2 w-full space-y-3 rounded-lg border border-line bg-dark-100 p-4" onSubmit={handleEdit}>
@@ -326,6 +316,18 @@ export function AdminClassActions({ classId, initial, teachers, canEdit = true }
               value={form.registrationFormUrl}
             />
           </div>
+
+          <details className="rounded-lg border border-line p-3" open={form.joinQuestions.length > 0}>
+            <summary className="cursor-pointer text-sm font-semibold text-ink-main">{tq("editor.title")}</summary>
+            <div className="mt-3 space-y-2">
+              <p className="text-xs text-ink-faint">{tq("editor.editHint")}</p>
+              <JoinQuestionsEditor
+                idPrefix="edit-class-q"
+                onChange={(next) => update("joinQuestions", next)}
+                value={form.joinQuestions}
+              />
+            </div>
+          </details>
 
           <button className="btn-primary" disabled={saving} type="submit">
             {saving ? "…" : t("saveChanges")}

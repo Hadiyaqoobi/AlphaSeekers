@@ -25,13 +25,15 @@ import { EnrollmentStatus, ClassStatus } from "@prisma/client";
 
 import { emit } from "@/lib/events/bus";
 import { prisma } from "@/lib/prisma";
+import { sealAnswers } from "@/lib/platform/join-answers";
+import { checkAnswers, readJoinQuestions, type JoinQuestion } from "@/lib/platform/join-questions";
 import { isRegistrationClosed } from "@/lib/platform/registration-deadline";
 import { hashPassword, verifyPassword } from "@/lib/security/passwords";
 import { encryptPhone } from "@/lib/security/phone-crypto";
 
 export type JoinOutcome =
   | { ok: true; userId: string; created: boolean; alreadyEnrolled: boolean }
-  | { ok: false; code: JoinFailure };
+  | { ok: false; code: JoinFailure; questionId?: string };
 
 export type JoinFailure =
   | "CLASS_NOT_FOUND"
@@ -46,7 +48,10 @@ export type JoinFailure =
   | "USE_SIGN_IN"
   // A teacher removed this student; only staff can let them back in.
   | "NOT_ALLOWED"
-  | "ENROLLMENT_LIMIT";
+  | "ENROLLMENT_LIMIT"
+  // A required sign-up question was left empty, or an answer is not valid
+  // (ADR-0009). Comes with the question's id so the form can point at it.
+  | "INVALID_ANSWERS";
 
 /**
  * How many classes a student may be ACTIVE in at once. Shared with the in-app
@@ -65,6 +70,8 @@ export type JoinInput = {
   password: string;
   phone?: string;
   language?: "FA" | "EN";
+  /** Answers to the class's own sign-up questions, keyed by question id. */
+  answers?: unknown;
 };
 
 /**
@@ -88,6 +95,7 @@ export async function joinClassWithNewAccount(input: JoinInput): Promise<JoinOut
       published: true,
       maxStudents: true,
       registrationDeadline: true,
+      joinQuestions: true,
     },
   });
 
@@ -104,6 +112,15 @@ export async function joinClassWithNewAccount(input: JoinInput): Promise<JoinOut
   if (isRegistrationClosed(klass.registrationDeadline)) {
     return { ok: false, code: "REGISTRATION_CLOSED" };
   }
+
+  // The class's own questions, checked before any account is created or
+  // looked up: a missing answer must not leave behind an account with no class.
+  // Says nothing about the account, so it is safe to answer before the password.
+  const answerCheck = checkAnswers(readJoinQuestions(klass.joinQuestions), input.answers);
+  if (!answerCheck.ok) {
+    return { ok: false, code: "INVALID_ANSWERS", questionId: answerCheck.questionId };
+  }
+  const answers = sealAnswers(answerCheck.answers);
 
   const existing = await prisma.user.findUnique({
     where: { email },
@@ -208,11 +225,11 @@ export async function joinClassWithNewAccount(input: JoinInput): Promise<JoinOut
       const enrollment = current
         ? await tx.enrollment.update({
           where: { studentId_classId: { studentId: userId, classId: klass.id } },
-          data: { status: EnrollmentStatus.ACTIVE, enrolledAt: new Date() },
+          data: { status: EnrollmentStatus.ACTIVE, enrolledAt: new Date(), ...(answers ? { answers } : {}) },
           select: { id: true },
         })
         : await tx.enrollment.create({
-          data: { studentId: userId, classId: klass.id, status: EnrollmentStatus.ACTIVE },
+          data: { studentId: userId, classId: klass.id, status: EnrollmentStatus.ACTIVE, ...(answers ? { answers } : {}) },
           select: { id: true },
         });
 
@@ -262,6 +279,14 @@ export type PublicClassSummary = {
   teacherName: string | null;
   seatsLeft: number;
   isFull: boolean;
+  /**
+   * ISO cutoff, or null when open indefinitely. Carried (not a "closed" flag)
+   * because this summary is cached for hours: the page compares it to the
+   * clock on every render, so a deadline passing mid-cache still closes the form.
+   */
+  registrationDeadline: string | null;
+  /** The class's own sign-up questions (ADR-0009). Questions only, never answers. */
+  questions: JoinQuestion[];
 };
 
 /**
@@ -281,6 +306,8 @@ export async function getPublicClassForJoin(classId: string): Promise<PublicClas
       schedulePreference: true,
       durationMinutes: true,
       maxStudents: true,
+      registrationDeadline: true,
+      joinQuestions: true,
       teacher: { select: { name: true } },
       _count: { select: { enrollments: { where: { status: EnrollmentStatus.ACTIVE } } } },
     },
@@ -301,5 +328,7 @@ export async function getPublicClassForJoin(classId: string): Promise<PublicClas
     teacherName: klass.teacher?.name ?? null,
     seatsLeft,
     isFull: seatsLeft === 0,
+    registrationDeadline: klass.registrationDeadline?.toISOString() ?? null,
+    questions: readJoinQuestions(klass.joinQuestions),
   };
 }

@@ -13,32 +13,42 @@
  * this page from the landing page and WhatsApp's link previewer fetches it,
  * and neither should wake the database. A signed-out visit does no database
  * work when the entry is cached (the session check below reads only the cookie).
+ *
+ * A signed-in student who is not in the class yet (typically just back from
+ * "Join with Google") sees the class's questions and one Join button instead
+ * of the account form. Everyone else who is signed in goes to the class page.
  */
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
 import { ClassJoinForm } from "@/components/classes/class-join-form";
 import { getPublicJoinClass } from "@/lib/platform/public-data";
+import { isRegistrationClosed } from "@/lib/platform/registration-deadline";
+import { isStudentEnrolledInClass } from "@/lib/platform/store";
 import { getSessionUser } from "@/lib/security/session";
-import { redirect } from "next/navigation";
 
 type JoinPageProps = {
   params: { locale: string; classId: string };
+  searchParams?: { via?: string };
 };
 
-export default async function JoinClassPage({ params }: JoinPageProps) {
+export default async function JoinClassPage({ params, searchParams }: JoinPageProps) {
   const { locale, classId } = params;
   const t = await getTranslations({ locale, namespace: "classJoin" });
 
   const klass = await getPublicJoinClass(classId);
   if (!klass) notFound();
 
-  // Already signed in? They do not need an account — send them to the class
-  // itself, where the normal join control lives.
   const user = await getSessionUser();
-  if (user) {
-    redirect(`/${locale}/classes/${classId}`);
+  const classPage = `/${locale}/classes/${classId}`;
+  if (user && (user.role !== "STUDENT" || (await isStudentEnrolledInClass(user.id, classId)))) {
+    redirect(classPage);
   }
+
+  // Said up front, instead of letting a student fill in everything and only
+  // then hear that registration closed. Compared to the clock on every render,
+  // so it holds even while the class summary is cached.
+  const closed = isRegistrationClosed(klass.registrationDeadline);
 
   return (
     <main className="mx-auto w-full max-w-lg px-5 py-10 sm:py-14">
@@ -80,10 +90,30 @@ export default async function JoinClassPage({ params }: JoinPageProps) {
       </section>
 
       <section className="mt-6 rounded-2xl border border-line-soft bg-dark-50/40 p-5 sm:p-6">
-        <h2 className="text-lg font-bold text-ink-main" dir="auto">{t("formTitle")}</h2>
-        <p className="mb-5 mt-1 text-sm text-ink-soft" dir="auto">{t("formSubtitle")}</p>
+        {closed ? (
+          <p className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-200" dir="auto">
+            {t("errors.registrationClosed")}
+          </p>
+        ) : (
+          <>
+            <h2 className="text-lg font-bold text-ink-main" dir="auto">
+              {user ? t("memberFormTitle") : t("formTitle")}
+            </h2>
+            <p className="mb-5 mt-1 text-sm text-ink-soft" dir="auto">
+              {user ? t("memberFormSubtitle") : t("formSubtitle")}
+            </p>
 
-        <ClassJoinForm classId={klass.id} isFull={klass.isFull} locale={locale} />
+            <ClassJoinForm
+              autoSubmit={searchParams?.via === "google"}
+              classId={klass.id}
+              isFull={klass.isFull}
+              locale={locale}
+              memberName={user?.name ?? null}
+              mode={user ? "member" : "guest"}
+              questions={klass.questions}
+            />
+          </>
+        )}
       </section>
     </main>
   );

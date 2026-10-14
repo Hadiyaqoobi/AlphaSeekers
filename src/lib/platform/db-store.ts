@@ -1,5 +1,5 @@
 import type { UserRole } from "@prisma/client";
-import { ClassStatus, EnrollmentStatus, MeetLinkStatus, NotificationChannel, NotificationStatus, SchedulerJobStatus } from "@prisma/client";
+import { Prisma, ClassStatus, EnrollmentStatus, MeetLinkStatus, NotificationChannel, NotificationStatus, SchedulerJobStatus } from "@prisma/client";
 
 import { DEMO_USERS } from "@/lib/constants";
 import { cancelMeetEvent, generateMeetLink, type MeetGenerationResult } from "@/lib/integrations/meet";
@@ -12,6 +12,8 @@ import {
 } from "@/lib/integrations/notifications";
 import { classCatalog } from "@/lib/mock-data";
 import { notifyTeacherOfNewClass } from "@/lib/platform/class-notify";
+import { openAnswers, sealAnswers } from "@/lib/platform/join-answers";
+import { checkAnswers, readJoinQuestions, type JoinQuestion } from "@/lib/platform/join-questions";
 import { prisma } from "@/lib/prisma";
 import { runtime, warnIfInsecureProductionConfig } from "@/lib/runtime";
 import { classSpanMinutes, planAutoSlot, type SlotProblem } from "@/lib/scheduling/weekly-slot";
@@ -41,9 +43,17 @@ type CreateClassInput = {
   // MANUAL = the instructor sets/confirms exact session times; class creation
   // does NOT auto-create a session and the auto-scheduler skips this class.
   schedulingMode?: "AUTO" | "MANUAL";
+  /** The class's own sign-up questions (ADR-0009). Empty or null = none. */
+  joinQuestions?: JoinQuestion[] | null;
 };
 
 type UpdateClassInput = Partial<CreateClassInput>;
+
+/** Json? column value: an empty list is stored as "no questions", not []. */
+function joinQuestionsColumn(questions: JoinQuestion[] | null | undefined) {
+  if (questions === undefined) return undefined;
+  return questions && questions.length > 0 ? (questions as Prisma.InputJsonValue) : Prisma.DbNull;
+}
 
 type CreateOpportunityInput = {
   title: string;
@@ -1032,6 +1042,9 @@ export async function listClassEnrollments(classId: string) {
     name: e.student.name,
     email: e.student.email,
     enrolledAt: e.enrolledAt.toISOString(),
+    // Sign-up answers (ADR-0009). Callers are staff pages and the class's own
+    // teacher only; never returned to students.
+    answers: openAnswers(e.answers),
   }));
 }
 
@@ -1429,6 +1442,7 @@ export async function createClass(input: CreateClassInput) {
       ...(input.registrationFormUrl ? { registrationFormUrl: input.registrationFormUrl } : {}),
       ...(input.whatsappGroupUrl ? { whatsappGroupUrl: input.whatsappGroupUrl } : {}),
       ...(input.registrationDeadline ? { registrationDeadline: input.registrationDeadline } : {}),
+      ...(input.joinQuestions?.length ? { joinQuestions: joinQuestionsColumn(input.joinQuestions) } : {}),
       ...(({ published: true }) as Record<string, unknown>),
     } as Parameters<typeof prisma.class.create>[0]["data"],
   });
@@ -1478,6 +1492,7 @@ export async function createClassWithSession(input: CreateClassInput) {
       ...(input.registrationFormUrl ? { registrationFormUrl: input.registrationFormUrl } : {}),
       ...(input.whatsappGroupUrl ? { whatsappGroupUrl: input.whatsappGroupUrl } : {}),
       ...(input.registrationDeadline ? { registrationDeadline: input.registrationDeadline } : {}),
+      ...(input.joinQuestions?.length ? { joinQuestions: joinQuestionsColumn(input.joinQuestions) } : {}),
       ...(({ published: true }) as Record<string, unknown>),
     } as Parameters<typeof prisma.class.create>[0]["data"],
   });
@@ -1612,10 +1627,12 @@ export async function updateClass(classId: string, input: UpdateClassInput) {
     return null;
   }
 
+  const { joinQuestions, ...fields } = input;
   return prisma.class.update({
     where: { id: classId },
     data: {
-      ...input,
+      ...fields,
+      ...(joinQuestions !== undefined ? { joinQuestions: joinQuestionsColumn(joinQuestions) } : {}),
       ...(input.durationMinutes !== undefined
         ? {
           durationMinutes: normalizeDurationMinutes(input.durationMinutes),
@@ -1720,7 +1737,21 @@ export async function deleteClassPermanently(classId: string) {
   return { id: classId };
 }
 
-export async function enrollStudentInClass(studentId: string, classId: string) {
+/** A required sign-up question was left empty, or an answer is not valid (ADR-0009). */
+export class InvalidAnswersError extends Error {
+  constructor(readonly questionId: string) {
+    super("Invalid answers");
+  }
+}
+
+/** An enrolment row minus its stored sign-up answers, for responses sent to the browser. */
+function withoutAnswers<T extends { answers: unknown }>(row: T): Omit<T, "answers"> {
+  const copy = { ...row };
+  delete (copy as { answers?: unknown }).answers;
+  return copy;
+}
+
+export async function enrollStudentInClass(studentId: string, classId: string, rawAnswers?: unknown) {
   await ensureSeededData();
 
   const student = await prisma.user.findUnique({ where: { id: studentId } });
@@ -1736,6 +1767,14 @@ export async function enrollStudentInClass(studentId: string, classId: string) {
   if (!klass || klass.status !== ClassStatus.ACTIVE || !klass.published) {
     throw new Error("Class not found");
   }
+
+  // The class's own sign-up questions apply here exactly as on the public join
+  // page; otherwise a signed-in student could skip them with one click.
+  const answerCheck = checkAnswers(readJoinQuestions(klass.joinQuestions), rawAnswers);
+  if (!answerCheck.ok) {
+    throw new InvalidAnswersError(answerCheck.questionId);
+  }
+  const answers = sealAnswers(answerCheck.answers);
 
   // Capacity guard MUST be atomic. The old check-then-insert (count, compare,
   // insert) races under concurrency: N simultaneous requests each read
@@ -1813,26 +1852,28 @@ export async function enrollStudentInClass(studentId: string, classId: string) {
     const enrollment = current
       ? await tx.enrollment.update({
         where: { studentId_classId: { studentId, classId } },
-        data: { status: EnrollmentStatus.ACTIVE, enrolledAt: new Date() },
+        data: { status: EnrollmentStatus.ACTIVE, enrolledAt: new Date(), ...(answers ? { answers } : {}) },
       })
       : await tx.enrollment.create({
-        data: { studentId, classId, status: EnrollmentStatus.ACTIVE },
+        data: { studentId, classId, status: EnrollmentStatus.ACTIVE, ...(answers ? { answers } : {}) },
       });
 
     return { enrollment, state: "JOINED" as const, activeCount };
   });
 
+  // The stored answers (phone encrypted) stay out of the response.
   if (result.state === "ALREADY_ENROLLED") {
+    const current = withoutAnswers(result.enrollment);
     return {
       enrollment: {
-        ...result.enrollment,
-        enrolledAt: result.enrollment.enrolledAt.toISOString(),
+        ...current,
+        enrolledAt: current.enrolledAt.toISOString(),
       },
       state: result.state,
     };
   }
 
-  const enrollment = result.enrollment;
+  const enrollment = withoutAnswers(result.enrollment);
 
   // The enrollment is committed. Enrollment notifications (the student welcome and
   // the teacher "new student enrolled" message) are NOT sent here anymore: the
@@ -2819,6 +2860,7 @@ export async function getClassLifecycleExtras(classId: string) {
       registrationFormUrl: true,
       registrationDeadline: true,
       teacherId: true,
+      joinQuestions: true,
     },
   });
 }
