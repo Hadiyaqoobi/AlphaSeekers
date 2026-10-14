@@ -49,6 +49,9 @@ const joinSchema = z.object({
     }),
   phone: z.string().trim().min(6).max(32).optional(),
   language: z.enum(["FA", "EN"]).optional(),
+  // Answers to the class's own sign-up questions (ADR-0009). Only the shape is
+  // checked here; class-join.ts checks them against the class's questions.
+  answers: z.record(z.string().max(40), z.string().max(3000)).optional(),
 });
 
 // Per-address before per-network, for the reason documented in the register
@@ -95,6 +98,7 @@ const FAILURES: Record<string, { status: number; message: string }> = {
     status: 409,
     message: `You can join up to ${MAX_ACTIVE_ENROLLMENTS} classes at a time. Leave one to join another.`,
   },
+  INVALID_ANSWERS: { status: 400, message: "Please answer the class's questions." },
 };
 
 export async function POST(request: NextRequest, { params }: Params) {
@@ -123,7 +127,10 @@ export async function POST(request: NextRequest, { params }: Params) {
 
     if (!result.ok) {
       const failure = FAILURES[result.code] ?? { status: 400, message: "Could not join this class." };
-      return NextResponse.json({ message: failure.message, code: result.code }, { status: failure.status });
+      return NextResponse.json(
+        { message: failure.message, code: result.code, ...(result.questionId ? { questionId: result.questionId } : {}) },
+        { status: failure.status },
+      );
     }
 
     // The client signs in with the SAME credentials immediately after this.

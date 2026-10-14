@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { emit } from "@/lib/events/bus";
 import { prisma } from "@/lib/prisma";
 import { MAX_ACTIVE_ENROLLMENTS } from "@/lib/platform/class-join";
+import { InvalidAnswersError } from "@/lib/platform/db-store";
 import { dropStudentFromClass, enrollStudentInClass } from "@/lib/platform/store";
 import { getSessionUser, isApproved, pendingApproval, roleAllowed, unauthorized } from "@/lib/security/session";
 
@@ -14,7 +15,7 @@ type Params = {
 // with the public join form so both doors agree). Admins are exempt so they
 // can help with QA / impersonate test flows.
 
-export async function POST(_: Request, { params }: Params) {
+export async function POST(request: Request, { params }: Params) {
   const user = await getSessionUser();
 
   if (!user) {
@@ -50,8 +51,12 @@ export async function POST(_: Request, { params }: Params) {
     }
   }
 
+  // Optional body: answers to the class's own sign-up questions (ADR-0009). An
+  // empty or missing body is fine for a class that asks none.
+  const body = (await request.json().catch(() => null)) as { answers?: unknown } | null;
+
   try {
-    const result = await enrollStudentInClass(user.id, params.id);
+    const result = await enrollStudentInClass(user.id, params.id, body?.answers);
 
     // The student is in the class straight away now, so this is the welcome
     // moment: `student.enrolled` fans out to welcome_student and welcome_teacher.
@@ -77,6 +82,13 @@ export async function POST(_: Request, { params }: Params) {
   } catch (error) {
     // Map known business errors to clean statuses; never leak internal
     // messages/stack details to the client — log them server-side instead.
+    if (error instanceof InvalidAnswersError) {
+      return NextResponse.json(
+        { message: "Please answer the class's questions.", code: "INVALID_ANSWERS", questionId: error.questionId },
+        { status: 400 },
+      );
+    }
+
     const reason = error instanceof Error ? error.message : "";
 
     if (reason === "Class is full") {

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
 import { notifyTeacherOfNewClass } from "@/lib/platform/class-notify";
+import { joinQuestionsSchema } from "@/lib/platform/join-questions";
 import { parseRegistrationDeadline } from "@/lib/platform/registration-deadline";
 import { archiveClass, deleteClassPermanently, updateClass } from "@/lib/platform/store";
 import { prisma } from "@/lib/prisma";
@@ -52,6 +53,9 @@ const updateClassSchema = z
     registrationFormUrl: z.string().trim().max(300).regex(/^(https?:\/\/.+)?$/, "must be a URL or blank").optional(),
     whatsappGroupUrl: z.string().trim().max(300).regex(/^(https?:\/\/.+)?$/, "must be a URL or blank").optional(),
     schedulingMode: z.enum(["AUTO", "MANUAL"]).optional(),
+    // The class's own sign-up questions (ADR-0009); [] or null removes them all.
+    // Answers already given stay with each enrolment.
+    joinQuestions: joinQuestionsSchema.nullable().optional(),
     /**
      * Registration cutoff. A date-only "YYYY-MM-DD" keeps the whole named day
      * open (see parseRegistrationDeadline). Omitted = leave unchanged; null or

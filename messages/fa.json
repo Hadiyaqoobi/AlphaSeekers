@@ -1627,7 +1627,12 @@
       "wrongPassword": "An account already uses this email. Enter that account's password to join, or sign in first.",
       "deactivated": "This account has been turned off. Please ask your teacher or the AlphaSeekers team.",
       "notAStudent": "This email belongs to a teacher or admin account. Please sign in instead."
-    }
+    },
+    "joinWithGoogle": "Join with Google",
+    "orFillIn": "or fill in the form",
+    "signedInAs": "You are signed in as {name}.",
+    "memberFormTitle": "Join this class",
+    "memberFormSubtitle": "Answer the questions below and press Join. You are already signed in, so there is no password to choose."
   },
   "liveSession": {
     "metaTitle": "{className} live session",
@@ -1738,5 +1743,55 @@
   },
   "learn": {
     "chatNoAnswer": "I could not answer that — try asking a different way."
+  },
+  "joinQuestions": {
+    "labels": {
+      "phone": "Phone or WhatsApp number",
+      "age": "Your age",
+      "province": "Province where you live",
+      "englishLevel": "Your English level",
+      "reason": "Why do you want to join this class?"
+    },
+    "options": {
+      "englishLevel": {
+        "beginner": "Beginner",
+        "intermediate": "Intermediate",
+        "advanced": "Advanced"
+      }
+    },
+    "optional": "(optional)",
+    "errors": {
+      "required": "Please answer this question.",
+      "invalid": {
+        "phone": "Please enter a phone number with at least 6 digits.",
+        "age": "Please enter your age as a number.",
+        "other": "Please check this answer."
+      }
+    },
+    "download": "Download for Google Sheets",
+    "csv": {
+      "name": "Name",
+      "email": "Email",
+      "joined": "Joined (Kabul time)"
+    },
+    "editor": {
+      "title": "Questions for students",
+      "hint": "Students answer these on the class's sign-up page, under their name and email. You see the answers in the class's student list and can download them for Google Sheets. You do not need a separate Google Form.",
+      "editHint": "Changing the questions does not delete answers students already gave.",
+      "readyMade": "Ready-made questions",
+      "mustAnswer": "Must answer",
+      "yourOwn": "Your own questions",
+      "question": "Question {number}",
+      "questionPlaceholder": "Type the question as students should read it",
+      "answerType": "Answer type",
+      "typeShort": "Short answer",
+      "typeParagraph": "Paragraph",
+      "typeChoice": "Choose one",
+      "remove": "Remove",
+      "options": "Answers to choose from (one per line)",
+      "optionsPlaceholder": "Morning\nAfternoon\nEvening",
+      "addOwn": "Add your own question",
+      "maxReached": "You can add up to {max} questions of your own."
+    }
   }
 }

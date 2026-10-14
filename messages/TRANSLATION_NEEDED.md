@@ -1,6 +1,6 @@
 # Dari translation needed
 
-**475 strings** in the app are still showing **English** to Dari readers.
+**514 strings** in the app are still showing **English** to Dari readers.
 The keys exist in `messages/fa.json`, so nothing errors — the English text was left in place
 when these features shipped. The sections are ordered by who sees them: what students see first
 (the class join page, the live class page, sign-in), then teachers, then staff screens.
@@ -42,7 +42,7 @@ set `lang="fa" dir="rtl"` on that page at the same time).
 
 ---
 
-## `classJoin`  ·  32 strings
+## `classJoin`  ·  37 strings
 
 - **English:** "Join this class"
   **Dari:** 
@@ -171,6 +171,167 @@ set `lang="fa" dir="rtl"` on that page at the same time).
 - **English:** "This email belongs to a teacher or admin account. Please sign in instead."
   **Dari:** 
   <sub>`classJoin.errors.notAStudent`</sub>
+
+- **English:** "Join with Google"
+  **Dari:** 
+  <sub>`classJoin.joinWithGoogle`</sub>
+
+- **English:** "or fill in the form"
+  **Dari:** 
+  <sub>`classJoin.orFillIn`</sub>
+
+- **English:** "You are signed in as {name}."
+  **Dari:** 
+  <sub>`classJoin.signedInAs`</sub>
+
+- **English:** "Join this class"
+  **Dari:** 
+  <sub>`classJoin.memberFormTitle`</sub>
+
+- **English:** "Answer the questions below and press Join. You are already signed in, so there is no password to choose."
+  **Dari:** 
+  <sub>`classJoin.memberFormSubtitle`</sub>
+
+
+## `joinQuestions`  ·  34 strings
+
+- **English:** "Phone or WhatsApp number"
+  **Dari:** 
+  <sub>`joinQuestions.labels.phone`</sub>
+
+- **English:** "Your age"
+  **Dari:** 
+  <sub>`joinQuestions.labels.age`</sub>
+
+- **English:** "Province where you live"
+  **Dari:** 
+  <sub>`joinQuestions.labels.province`</sub>
+
+- **English:** "Your English level"
+  **Dari:** 
+  <sub>`joinQuestions.labels.englishLevel`</sub>
+
+- **English:** "Why do you want to join this class?"
+  **Dari:** 
+  <sub>`joinQuestions.labels.reason`</sub>
+
+- **English:** "Beginner"
+  **Dari:** 
+  <sub>`joinQuestions.options.englishLevel.beginner`</sub>
+
+- **English:** "Intermediate"
+  **Dari:** 
+  <sub>`joinQuestions.options.englishLevel.intermediate`</sub>
+
+- **English:** "Advanced"
+  **Dari:** 
+  <sub>`joinQuestions.options.englishLevel.advanced`</sub>
+
+- **English:** "(optional)"
+  **Dari:** 
+  <sub>`joinQuestions.optional`</sub>
+
+- **English:** "Please answer this question."
+  **Dari:** 
+  <sub>`joinQuestions.errors.required`</sub>
+
+- **English:** "Please enter a phone number with at least 6 digits."
+  **Dari:** 
+  <sub>`joinQuestions.errors.invalid.phone`</sub>
+
+- **English:** "Please enter your age as a number."
+  **Dari:** 
+  <sub>`joinQuestions.errors.invalid.age`</sub>
+
+- **English:** "Please check this answer."
+  **Dari:** 
+  <sub>`joinQuestions.errors.invalid.other`</sub>
+
+- **English:** "Download for Google Sheets"
+  **Dari:** 
+  <sub>`joinQuestions.download`</sub>
+
+- **English:** "Name"
+  **Dari:** 
+  <sub>`joinQuestions.csv.name`</sub>
+
+- **English:** "Email"
+  **Dari:** 
+  <sub>`joinQuestions.csv.email`</sub>
+
+- **English:** "Joined (Kabul time)"
+  **Dari:** 
+  <sub>`joinQuestions.csv.joined`</sub>
+
+- **English:** "Questions for students"
+  **Dari:** 
+  <sub>`joinQuestions.editor.title`</sub>
+
+- **English:** "Students answer these on the class's sign-up page, under their name and email. You see the answers in the class's student list and can download them for Google Sheets. You do not need a separate Google Form."
+  **Dari:** 
+  <sub>`joinQuestions.editor.hint`</sub>
+
+- **English:** "Changing the questions does not delete answers students already gave."
+  **Dari:** 
+  <sub>`joinQuestions.editor.editHint`</sub>
+
+- **English:** "Ready-made questions"
+  **Dari:** 
+  <sub>`joinQuestions.editor.readyMade`</sub>
+
+- **English:** "Must answer"
+  **Dari:** 
+  <sub>`joinQuestions.editor.mustAnswer`</sub>
+
+- **English:** "Your own questions"
+  **Dari:** 
+  <sub>`joinQuestions.editor.yourOwn`</sub>
+
+- **English:** "Question {number}"
+  **Dari:** 
+  <sub>`joinQuestions.editor.question`</sub>
+
+- **English:** "Type the question as students should read it"
+  **Dari:** 
+  <sub>`joinQuestions.editor.questionPlaceholder`</sub>
+
+- **English:** "Answer type"
+  **Dari:** 
+  <sub>`joinQuestions.editor.answerType`</sub>
+
+- **English:** "Short answer"
+  **Dari:** 
+  <sub>`joinQuestions.editor.typeShort`</sub>
+
+- **English:** "Paragraph"
+  **Dari:** 
+  <sub>`joinQuestions.editor.typeParagraph`</sub>
+
+- **English:** "Choose one"
+  **Dari:** 
+  <sub>`joinQuestions.editor.typeChoice`</sub>
+
+- **English:** "Remove"
+  **Dari:** 
+  <sub>`joinQuestions.editor.remove`</sub>
+
+- **English:** "Answers to choose from (one per line)"
+  **Dari:** 
+  <sub>`joinQuestions.editor.options`</sub>
+
+- **English:** "Morning
+Afternoon
+Evening"
+  **Dari:** 
+  <sub>`joinQuestions.editor.optionsPlaceholder`</sub>
+
+- **English:** "Add your own question"
+  **Dari:** 
+  <sub>`joinQuestions.editor.addOwn`</sub>
+
+- **English:** "You can add up to {max} questions of your own."
+  **Dari:** 
+  <sub>`joinQuestions.editor.maxReached`</sub>
 
 
 ## `enroll`  ·  5 strings

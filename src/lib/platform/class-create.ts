@@ -12,6 +12,7 @@
 import { z } from "zod";
 
 import { createClassWithSession } from "@/lib/platform/db-store";
+import { joinQuestionsSchema } from "@/lib/platform/join-questions";
 import { prisma } from "@/lib/prisma";
 import { parseRegistrationDeadline } from "@/lib/platform/registration-deadline";
 import { resolveTeacherId } from "@/lib/platform/teacher-invite";
@@ -58,6 +59,8 @@ export const createClassSchema = z
     // The teacher's OWN optional Google Form; students see it after they join.
     registrationFormUrl: optionalLink,
     schedulingMode: z.enum(["AUTO", "MANUAL"]).default("AUTO"),
+    // The class's own sign-up questions, shown on its join page (ADR-0009).
+    joinQuestions: joinQuestionsSchema.optional(),
     /**
      * Registration cutoff. A date-only "YYYY-MM-DD" keeps the whole named day
      * open (see parseRegistrationDeadline). Omitted, null or "" = open.
@@ -143,6 +146,7 @@ export async function createClassFromBody(data: CreateClassBody) {
     whatsappGroupUrl: data.whatsappGroupUrl,
     registrationDeadline: data.registrationDeadline,
     schedulingMode: data.schedulingMode,
+    joinQuestions: data.joinQuestions,
   });
 
   const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3005";

@@ -112,6 +112,12 @@ export async function DELETE() {
         },
         data: { status: EnrollmentStatus.DROPPED },
       });
+      // Sign-up answers (phone, age, reason...) are personal data: gone with
+      // the account, on every enrolment whatever its status (ADR-0009).
+      await tx.enrollment.updateMany({
+        where: { studentId: userId, answers: { not: Prisma.DbNull } },
+        data: { answers: Prisma.DbNull },
+      });
       // Anonymize the user: strip PII, disable login, revoke the session.
       await tx.user.update({
         where: { id: userId },
