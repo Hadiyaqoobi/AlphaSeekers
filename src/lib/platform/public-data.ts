@@ -7,6 +7,7 @@
  * exists and how it is kept correct.
  */
 import { prisma } from "@/lib/prisma";
+import { getPublicClassForJoin, type PublicClassSummary } from "@/lib/platform/class-join";
 import {
   EMPTY_HIGHLIGHTS,
   loadLandingHighlights,
@@ -68,12 +69,29 @@ export async function getPublicWebinars() {
 const OPPORTUNITY_TYPES = new Set(["SCHOLARSHIP", "JOB", "INTERNSHIP", "GRANT"]);
 
 /**
- * `type` comes from the URL. Only the known filters are cached; anything else is
- * passed through so a crawler cannot fill the cache with made-up keys.
+ * `type` comes from the URL. An unknown value is treated as no filter at all,
+ * so it is served from the "ALL" entry: a crawler cannot fill the cache with
+ * made-up keys, and a typo'd link shows the list instead of an error (passing
+ * an unknown value to the enum filter made Prisma throw).
+ *
+ * `expired` is worked out again on every read. The loader computes it at load
+ * time, and entries now live up to a day (26h TTL), so the cached flag alone
+ * could show a closed opportunity as open for most of that day.
  */
 export async function getPublicOpportunities(type?: string) {
-  if (type !== undefined && !OPPORTUNITY_TYPES.has(type)) return listOpportunities(type);
-  return readThroughPublicCache("opportunities", type ?? "ALL", () => listOpportunities(type));
+  const filter = type !== undefined && OPPORTUNITY_TYPES.has(type) ? type : undefined;
+  const cached = await readThroughPublicCache("opportunities", filter ?? "ALL", () =>
+    listOpportunities(filter),
+  );
+
+  const now = Date.now();
+  return cached
+    .map((item) => ({ ...item, expired: Date.parse(item.deadline) < now }))
+    .sort((a, b) => {
+      // Same order as the loader: open ones first, each group by deadline.
+      if (a.expired !== b.expired) return a.expired ? 1 : -1;
+      return Date.parse(a.deadline) - Date.parse(b.deadline);
+    });
 }
 
 const POST_CARD_SELECT = {
@@ -146,11 +164,35 @@ async function loadStory(slug: string) {
 /**
  * One published story plus the "more stories" strip under it, or null.
  *
- * A miss is never cached: slugs come from the URL, and a story that has just
- * been unpublished must stop being served rather than linger as a stale entry.
+ * A miss ("no such story") is cached too, or every request for an old or
+ * mistyped link would wake the database. That is safe because any write to
+ * `StudentPost` invalidates the whole "stories" scope (`src/lib/prisma.ts`):
+ * a story published a moment ago replaces its cached miss, and one just
+ * unpublished replaces its cached page with a miss. URL-derived keys are
+ * bounded by the cache's entry cap.
  */
 export async function getPublicStory(slug: string) {
-  return readThroughPublicCache("stories", `post:${slug}`, () => loadStory(slug), {
-    shouldCache: (story) => story !== null,
-  });
+  return readThroughPublicCache("stories", `post:${slug}`, () => loadStory(slug));
+}
+
+/** A class id as the app generates them (cuid) or the seed data names them. */
+const CLASS_ID_PATTERN = /^[A-Za-z0-9_-]{1,64}$/;
+
+/**
+ * The public join page's class summary, or null.
+ *
+ * The join page is linked from the landing page, so every crawler follows it,
+ * and its link is what gets pasted into WhatsApp (whose previewer ignores
+ * robots.txt). Each of those used to wake the database.
+ *
+ * Cached in the "landing" scope because writes to `Class` and `Enrollment`
+ * already invalidate that scope: a class that is edited, unpublished or gains a
+ * student is re-read, so `seatsLeft` stays right. A null ("no such public
+ * class") is cached as well; publishing the class is a `Class` write, which
+ * replaces it. An id that could not be a class id is answered without a query
+ * and without a cache entry.
+ */
+export async function getPublicJoinClass(classId: string): Promise<PublicClassSummary | null> {
+  if (!CLASS_ID_PATTERN.test(classId)) return null;
+  return readThroughPublicCache("landing", `join:${classId}`, () => getPublicClassForJoin(classId));
 }

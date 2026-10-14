@@ -76,32 +76,69 @@ be provided manually (they are `sync: false` in `render.yaml`).
 
 ## 4. Cron jobs on Render
 
-**One** scheduled job is declared in `render.yaml` as a `type: cron` service. It curls
-the app's endpoints in order with the `CRON_SECRET` bearer token. Set `APP_BASE_URL` and
-`CRON_SECRET` on it (CRON_SECRET must match the web service).
+**One** scheduled job is declared in `render.yaml` as a `type: cron` service. It makes
+**one** call, hourly, with the `CRON_SECRET` bearer token. `CRON_SECRET` is copied from
+the web service and `APP_BASE_URL` is set in the blueprint.
 
-| Job | Schedule | Endpoints, in order | Method |
-| --- | --- | --- | --- |
-| pulse | `0 * * * *` (hourly) | `/api/cron/reminders` → `scheduler` → `ai-prep` → *(03 UTC only)* `data-retention` → *(06 UTC only)* `kpi-digest` → `worker` | POST/GET |
+| Job | Schedule | Command |
+| --- | --- | --- |
+| `alphaseekers-pulse` | `0 * * * *` (hourly) | `curl -fsS --max-time 900 -X POST -H "Authorization: Bearer $CRON_SECRET" "$APP_BASE_URL/api/cron/tick"` |
 
-It is the only thing that wakes the database on a schedule, and that is the point: Neon
-bills the hours its compute is awake and suspends after five idle minutes, so every
-separate cron is a separate wake. The daily jobs ride the hourly pulse instead of having
-services of their own ([ADR-0007](./adr/0007-let-the-database-sleep.md)).
+`POST /api/cron/tick` decides **from memory** whether anything is due and, when nothing
+is, answers `{"skipped":true}` without a single database query, so Neon stays suspended
+for that hour ([ADR-0008](./adr/0008-only-wake-the-database-when-something-is-due.md)).
+It runs the full work only when:
 
-**Removing a service from `render.yaml` does not delete it on Render.** If
-`alphaseekers-data-retention` or `alphaseekers-kpi-digest` still exist in the dashboard
-from before 2026-10-13, delete them there. Left running they are harmless (both jobs are
-idempotent) but are still billed and still wake the database.
+- the web process restarted and has not loaded its agenda yet;
+- a session starts within 95 minutes → reminders + AI prep;
+- a queued job is due → worker drain;
+- it is 02 UTC (06:30 Kabul) or later and the daily work has not run today → scheduler,
+  data retention, KPI / pending-approvals / class-health digests, public-cache refresh.
 
-If your Render plan/region does not honor blueprint `cron` services, create them
-manually in the dashboard as **Cron Job** services using the schedules/commands above.
-The endpoints accept either `Authorization: Bearer $CRON_SECRET` or the
-`x-cron-secret: $CRON_SECRET` header.
+The response says what ran and why (`reasons`, `steps`). A run with `"reasons":["daily"]`
+once a day and a few `"session-soon"` runs around class times is normal; everything
+else should be `{"skipped":true}`.
+
+**Manual runs.** The individual routes are kept for "run it now" use. All are **POST**,
+and accept either the `CRON_SECRET` bearer or a signed-in **super admin** (checked
+against the live user row; scoped admins/employees are refused):
+
+| Route | Does |
+| --- | --- |
+| `/api/cron/tick` | the gated tick (does nothing if nothing is due) |
+| `/api/cron/reminders` | enqueue the reminder batch |
+| `/api/cron/scheduler` | enqueue the scheduler batch |
+| `/api/cron/ai-prep` | AI pre-class prep |
+| `/api/cron/data-retention` | retention policies + job pruning |
+| `/api/cron/kpi-digest` | enqueue the daily digests |
+| `/api/cron/worker` | drain the queue and renew the public cache |
+
+```bash
+curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" https://alphaseekers.onrender.com/api/cron/worker
+```
+
+**Removing a service from `render.yaml` does not delete it on Render.** Delete every cron
+service except `alphaseekers-pulse` in the dashboard (e.g. `alphaseekers-data-retention`,
+`alphaseekers-kpi-digest`, `neon-warm`). Left running they are billed and wake the
+database on their own schedule. The full dashboard checklist (Render and Neon) is in
+[ADR-0008](./adr/0008-only-wake-the-database-when-something-is-due.md#operational-checklist-by-hand-in-the-dashboards).
+
+If your Render plan/region does not honor blueprint `cron` services, create the one
+**Cron Job** service manually in the dashboard with the schedule and command above.
+
+**Development** must use a local Postgres (`DATABASE_URL=postgresql://…@127.0.0.1…`),
+never the production database: every query a dev server or test run sends to Neon is a
+production wake.
 
 ---
 
 ## 5. Paid-tier sizing (~$70-90/mo floor)
+
+> **Not the plan for this organisation.** AlphaSeekers runs on one always-on `starter`
+> web instance, one cron and Neon's free plan, deliberately (ADR-0007, ADR-0008). The
+> section below is the production-readiness audit's figure for a 10k-student target,
+> kept for reference. Revisit it only if real usage approaches the free allowance
+> (roughly 350 awake hours a month in Neon's Monitoring page).
 
 The audit's minimum recommended production footprint:
 
@@ -357,7 +394,7 @@ adapter — so nothing is lost even with no tracker installed. To activate Sentr
 - The super-admin **Jobs panel** at `/super/jobs` shows live queue health (per-status
   counts, oldest pending age) and supports **one-click requeue** of dead-lettered jobs
   (`requeueJob` flips `DEAD`/`FAILED` back to `PENDING`).
-- The **daily KPI digest** (enqueued by the 06:00 UTC pulse) surfaces the **DEAD job count** in its
+- The **daily KPI digest** (enqueued by the 02:00 UTC daily tick) surfaces the **DEAD job count** in its
   message (`src/lib/jobs/handlers/digest.ts`), so a stuck worker or dead-lettering job
   is noticed without opening the console.
 

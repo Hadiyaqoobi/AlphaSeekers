@@ -15,9 +15,14 @@
  *      standardized on the single scheme our cron services already send:
  *      `Authorization: Bearer <CRON_SECRET>` (see render.yaml).
  *
- * Admins may still trigger these endpoints manually from the dashboard
- * (they are already fully privileged), which keeps the admin "Run batch"
- * buttons working without shipping the cron secret to the browser.
+ * A SUPER admin may still trigger these endpoints manually from the dashboard,
+ * which keeps the "Run batch" buttons working without shipping the cron secret
+ * to the browser. It used to be any session with role ADMIN, which includes
+ * scoped employees who were never meant to run platform-wide jobs, and it was
+ * judged from the JWT, so a demoted or deactivated admin kept the power until
+ * the token refreshed. It is now a live database check (`requireSuperAdmin`).
+ * Every cron handler is POST-only, so a cross-site GET riding on an admin's
+ * cookies cannot start one either.
  */
 
 import { createHash, timingSafeEqual } from "crypto";
@@ -25,7 +30,7 @@ import { createHash, timingSafeEqual } from "crypto";
 import { NextResponse } from "next/server";
 
 import { runtime } from "@/lib/runtime";
-import { getSessionUser } from "@/lib/security/session";
+import { requireSuperAdmin } from "@/lib/security/permissions";
 
 /**
  * Constant-time comparison of two strings. Both sides are hashed to a
@@ -47,11 +52,15 @@ function timingSafeEqualStrings(a: string, b: string): boolean {
  * Authorization is granted when EITHER:
  *   - a valid `Authorization: Bearer <CRON_SECRET>` header is present
  *     (constant-time compared), OR
- *   - the caller is an authenticated ADMIN (dashboard "run now" buttons).
+ *   - the caller is signed in as a SUPER admin, checked against the live user
+ *     row (dashboard "run now" buttons).
  *
  * When CRON_SECRET is unset we allow the call ONLY outside production so
  * local development / cron testing keeps working; in production a missing
  * secret always denies (fail closed).
+ *
+ * The secret path is checked first and is a pure header compare: the hourly
+ * tick must be able to decide "nothing due" without a database query.
  */
 export async function assertCronAuthorized(
   request: Request,
@@ -65,15 +74,19 @@ export async function assertCronAuthorized(
     }
   }
 
-  // An authenticated admin may trigger cron endpoints manually.
-  const user = await getSessionUser();
-  if (user?.role === "ADMIN") {
-    return null;
-  }
-
   // No secret configured: permit only outside production (fail closed in prod).
   if (!configuredSecret && runtime.mode !== "production") {
     return null;
+  }
+
+  // A signed-in super admin may trigger cron endpoints manually. Live check:
+  // a deactivated, demoted or temporary-password account is refused at once.
+  // (No session cookie means no query.)
+  try {
+    await requireSuperAdmin();
+    return null;
+  } catch {
+    // Not signed in, not a super admin, or the check itself failed: deny.
   }
 
   return NextResponse.json(

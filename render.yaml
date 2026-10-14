@@ -1,27 +1,26 @@
 # Render blueprint for AlphaSeekers.
 #
-# SIZING NOTE (from production readiness audit):
-#   For the TARGET scale (50+ courses, 10k students) the recommended floor is a
-#   Render Standard web service + the automation crons below + a Neon paid plan
-#   with the pooler endpoint + a transactional email provider + SEPARATE dev/prod
-#   databases. See docs/DEPLOYMENT_RUNBOOK.md for the full breakdown.
+# Topology: ONE always-on `starter` web instance plus ONE hourly cron
+# (`alphaseekers-pulse`). The database is Neon on the FREE plan, which allows
+# 100 compute-unit hours a month and bills by the hours the compute is awake,
+# so the design goal is to wake it only when something is due
+# (docs/adr/0007-let-the-database-sleep.md,
+#  docs/adr/0008-only-wake-the-database-when-something-is-due.md).
 #
-#   CURRENT ROLLOUT: web service on the `starter` plan with the full AUTOMATION
-#   suite ENABLED, driven by the ONE cron at the bottom (consolidated from seven
-#   to three on 2026-08-19 and to one on 2026-10-13; see the note above it).
-#   Each cron is a separately-billed Render service. The cron is self-configuring
-#   — CRON_SECRET is copied from the web service via `fromService` and
-#   APP_BASE_URL points at the stable Render URL — so it works on deploy with no
-#   manual env setup. Upgrade the web service to `standard` when steady traffic
-#   warrants it.
+# The cron is self-configuring — CRON_SECRET is copied from the web service via
+# `fromService` and APP_BASE_URL points at the stable Render URL — so it works on
+# deploy with no manual env setup.
+#
+# The web service must stay a SINGLE instance: the public-page cache, the tick
+# agenda and the buffered story-view counts are all held in its memory.
 
 services:
   - type: web
     name: alphaseekers
     runtime: node
     region: oregon
-    # Cost-neutral for the initial rollout. Upgrade to `standard` for the target
-    # scale (steady traffic, more RAM, no idle sleep) — see SIZING NOTE above.
+    # Always on (starter does not idle-sleep), which the in-memory agenda in
+    # src/lib/platform/agenda.ts relies on. Keep ONE instance; see the header.
     plan: starter
     # Render gates rollouts and restarts unhealthy instances on this endpoint,
     # and calls it every few seconds for as long as the service runs.
@@ -52,8 +51,9 @@ services:
       - key: ALPHASEEKERS_MODE
         value: production
       # DATABASE_URL MUST be the Neon POOLED (-pooler) connection string, with
-      # ?sslmode=require. Optionally append ?connection_limit=5 (or set
-      # DATABASE_CONNECTION_LIMIT below). See src/lib/prisma.ts.
+      # ?sslmode=require. Optionally append &connection_limit=5 (or set
+      # DATABASE_CONNECTION_LIMIT below); the process holds exactly one Prisma
+      # client, so that is the cap for the whole service. See src/lib/prisma.ts.
       - key: DATABASE_URL
         sync: false
       # Optional: per-instance Prisma connection cap appended to DATABASE_URL.
@@ -131,8 +131,7 @@ services:
         sync: false
 
 # --- Scheduled jobs -----------------------------------------------------------
-# ONE cron, on an HOURLY pulse. It is the only thing that wakes the database on
-# a schedule.
+# ONE cron, hourly, calling ONE endpoint: POST /api/cron/tick.
 #
 # How it got here:
 #   - Originally seven separate crons, one of them (`neon-warm`) every 5 minutes
@@ -140,57 +139,50 @@ services:
 #     database never auto-suspended and the Neon free tier ran out mid-month:
 #     502s on every route.
 #   - 2026-08-19: collapsed to three — an hourly pulse plus two daily jobs.
-#   - 2026-10-13: the two daily jobs folded into the pulse (below), after the
-#     paid Neon plan was cancelled and every wake started to count again.
+#   - 2026-10-13: the two daily jobs folded into the pulse (ADR-0007).
+#   - 2026-10-14: the pulse stopped calling six endpoints that each queried the
+#     database. It calls the gated tick, which decides FROM MEMORY whether
+#     anything is due and returns `{"skipped":true}` without a single query when
+#     nothing is (ADR-0008).
 #
-# Neon bills the hours its compute is awake and suspends after five idle
-# minutes, so each wake costs about six minutes whatever it does. An hourly
-# pulse is ~24 wakes a day, roughly 18 of the 100 free compute-unit hours a
-# month at 0.25 CU. A separate daily cron costs a wake of its own; running the
-# same job inside the pulse costs nothing extra, and saves a billed Render
-# service too.
+# Neon suspends after five idle minutes and bills the time awake, so each wake
+# costs about 5-6 minutes whatever it does. Waking every hour was ~730 wakes and
+# ~61-73 awake hours a month, most of them in hours with nothing to send.
 #
-# Order matters, because each step feeds the next: enqueue reminders, run the
-# scheduler, prep AI sessions, run the once-a-day jobs if this is their hour,
-# then drain the queue — so a digest enqueued at 06:00 is emailed by the same
-# pulse instead of waiting an hour. The worker step also renews the public-page
-# cache while the database is awake (src/lib/platform/public-cache.ts).
-#
-# The daily jobs are keyed on the UTC hour of the pulse:
-#   03 — data retention / job prune   (was its own cron at 03:30)
-#   06 — KPI digest, pending-approval nudge, class health  (was its own at 06:00)
-# Both are safe to run twice: retention is a delete-older-than, and the digests
-# carry a per-day dedupe key.
+# The tick runs the full work only when:
+#   - the web process restarted and has not loaded its agenda yet;
+#   - a session starts within 95 minutes (reminders + AI prep);
+#   - a queued job is due (worker drain);
+#   - it is 02 UTC (06:30 Kabul) or later and the daily work has not run today:
+#     scheduler, data retention, the digests, public-page cache refresh.
+# See src/lib/platform/cron-tick.ts for the order of the steps.
 #
 # Trade-offs, accepted deliberately:
 #   - the first visitor after an idle spell waits 1-3s while Neon wakes;
 #   - session reminders land 25-95 min before class rather than exactly 60;
-#   - queued email (welcomes, announcements) can take up to an hour to send.
+#   - queued email (welcomes, announcements) is drained in-process right away,
+#     and otherwise by the next tick that runs.
 # Password resets and urgent-ticket alerts are UNAFFECTED — both send directly
 # over SMTP rather than through the queue.
 #
 # MANUAL STEP: removing a service from this file does NOT delete it on Render.
-# `alphaseekers-data-retention` and `alphaseekers-kpi-digest` must be deleted in
-# the Render dashboard, or they keep running, keep being billed, and keep waking
-# the database twice a day.
+# Any cron service other than `alphaseekers-pulse` (e.g.
+# `alphaseekers-data-retention`, `alphaseekers-kpi-digest`, `neon-warm`) must be
+# deleted in the Render dashboard, or it keeps running, keeps being billed, and
+# keeps waking the database.
 
   - type: cron
     name: alphaseekers-pulse
     runtime: node
     region: oregon
     plan: starter
-    schedule: "0 * * * *" # hourly — the only scheduled database wake
+    schedule: "0 * * * *" # hourly; most ticks answer from memory and wake nothing
     buildCommand: ""
-    # Sequential and fail-soft: one step erroring must not stop the queue from
-    # draining, so each call is allowed to fail without aborting the rest.
+    # One call. The individual /api/cron/* routes still exist for manual runs
+    # (all POST, all CRON_SECRET or a super-admin session). --max-time only
+    # bounds how long this billed cron job waits; the server finishes the tick.
     startCommand: >-
-      HOUR=$(date -u +%H);
-      curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" "$APP_BASE_URL/api/cron/reminders" || true;
-      curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" "$APP_BASE_URL/api/cron/scheduler" || true;
-      curl -fsS -H "Authorization: Bearer $CRON_SECRET" "$APP_BASE_URL/api/cron/ai-prep" || true;
-      if [ "$HOUR" = "03" ]; then curl -fsS -H "Authorization: Bearer $CRON_SECRET" "$APP_BASE_URL/api/cron/data-retention" || true; fi;
-      if [ "$HOUR" = "06" ]; then curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" "$APP_BASE_URL/api/cron/kpi-digest" || true; fi;
-      curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" "$APP_BASE_URL/api/cron/worker"
+      curl -fsS --max-time 900 -X POST -H "Authorization: Bearer $CRON_SECRET" "$APP_BASE_URL/api/cron/tick"
     envVars:
       - key: APP_BASE_URL
         value: https://alphaseekers.onrender.com
