@@ -153,7 +153,9 @@ d("one-step class join", () => {
       email: email("gone"),
       password: GOOD,
     });
-    expect(result).toEqual({ ok: false, code: "ACCOUNT_DEACTIVATED" });
+    // Same answer a staff account gets, and only after the password matched
+    // (see security-access.int.test.ts) — never a hint about the account.
+    expect(result).toEqual({ ok: false, code: "USE_SIGN_IN" });
   });
 
   it("refuses an unpublished or archived class", async () => {

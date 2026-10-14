@@ -57,6 +57,11 @@ export async function resolveTeacherId(input: {
         language: "FA",
         timezone: "Asia/Kabul",
         approvedAt: new Date(),
+        // The temporary password travels by email/Telegram in plain text. Until
+        // the teacher replaces it they see the change-password banner and the
+        // class-management guards refuse them (resolveManagementActor), the
+        // same onboarding rule employees created in the super console follow.
+        mustChangePassword: true,
       },
     });
 
@@ -87,7 +92,22 @@ export async function resolveTeacherId(input: {
   }
 
   if (input.teacherId?.trim()) {
-    return { ok: true, teacherId: input.teacherId.trim(), invited: false };
+    // The id comes from the request body, not only from the picker, so check
+    // what it is. The picker lists TEACHER accounts; an ADMIN is accepted too
+    // because some staff teach their own classes. A student (or a deactivated
+    // account) as "teacher" would hand them the class's roster and controls.
+    const teacher = await prisma.user.findUnique({
+      where: { id: input.teacherId.trim() },
+      select: { id: true, role: true, deactivatedAt: true },
+    });
+    if (!teacher || teacher.deactivatedAt || (teacher.role !== "TEACHER" && teacher.role !== "ADMIN")) {
+      return {
+        ok: false,
+        status: 400,
+        message: "The selected instructor is not an active teacher account.",
+      };
+    }
+    return { ok: true, teacherId: teacher.id, invited: false };
   }
 
   return {

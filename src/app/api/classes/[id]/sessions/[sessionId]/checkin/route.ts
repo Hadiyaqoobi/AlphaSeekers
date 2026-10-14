@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { isStudentEnrolledInClass } from "@/lib/platform/store";
 import { checkRateLimit } from "@/lib/security/rate-limit";
+import { normaliseDigits } from "@/lib/security/sanitize";
 import { getSessionUser, unauthorized } from "@/lib/security/session";
 
 type RouteContext = { params: { id: string; sessionId: string } };
@@ -41,7 +42,9 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
   }
 
   const body = await request.json().catch(() => null);
-  const submittedCode = typeof body?.code === "string" ? body.code.trim() : "";
+  // A phone set to Dari types Persian digits for the code the teacher read
+  // out; normalise them to 0-9 before checking the format.
+  const submittedCode = typeof body?.code === "string" ? normaliseDigits(body.code.trim()) : "";
 
   if (!/^\d{4}$/.test(submittedCode)) {
     return NextResponse.json(

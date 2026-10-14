@@ -729,8 +729,11 @@ export async function listClasses(params: ClassListParams = {}) {
   const limit = clampLimit(params.limit);
   const search = normalizeSearch(params.search);
 
+  // Unpublished classes are kept off every student-facing list (and refused by
+  // enrollStudentInClass). Staff see them through listAdminClasses instead.
   const where = {
     status: ClassStatus.ACTIVE,
+    published: true,
     ...(search
       ? {
         OR: [
@@ -785,6 +788,9 @@ export async function listClasses(params: ClassListParams = {}) {
         startTime: { gte: new Date() },
         cancelled: false,
       },
+      // Only what the card shows. The Meet link is deliberately NOT selected:
+      // this list is served to every signed-in account, and sign-up is instant.
+      select: { classId: true, startTime: true },
       orderBy: {
         startTime: "asc",
       },
@@ -817,7 +823,10 @@ export async function listClasses(params: ClassListParams = {}) {
         enrolledCount: countMap.get(item.id) ?? 0,
         registrationDeadline: item.registrationDeadline?.toISOString() ?? null,
         nextSessionStart: nextSession?.startTime.toISOString() ?? null,
-        meetLink: nextSession?.meetLink ?? null,
+        // No meetLink here, on purpose. It used to be the next session's link
+        // for EVERY class, served to anyone signed in — i.e. to any stranger
+        // after a ten-second sign-up. The class page hands the link only to
+        // enrolled students and staff.
       };
     }),
     pagination: {
@@ -829,12 +838,28 @@ export async function listClasses(params: ClassListParams = {}) {
   };
 }
 
+// A session that started this long ago still counts as "upcoming": a class in
+// progress (or just finished) must keep its Meet link on the page.
+const UPCOMING_GRACE_MS = 3 * 60 * 60 * 1000;
+const UPCOMING_SESSION_LIMIT = 50;
+
 // Archived classes are hidden from students and from every public surface, but the
 // admin detail page still needs to reach them -- otherwise archiving a class makes
 // its Danger Zone (and with it permanent deletion) unreachable forever.
+//
+// Unpublished classes are likewise hidden unless the caller opts in. A caller
+// that opts in (`includeUnpublished`) gets `published` back and must itself
+// limit an unpublished class to staff, its teacher and already-enrolled
+// students. `includeArchived` is the admin view and implies both.
+//
+// `sessions` are the UPCOMING ones only (from UPCOMING_GRACE_MS ago, soonest
+// first) with a fixed set of fields — never the check-in code or the Google
+// event ids. It used to be the 200 OLDEST sessions, so a class with more than a
+// handful of past sessions showed old dates under "Upcoming sessions" and
+// students lost today's Meet link. `sessionCount` is the all-time total.
 export async function getClassById(
   classId: string,
-  options: { includeArchived?: boolean } = {},
+  options: { includeArchived?: boolean; includeUnpublished?: boolean } = {},
 ) {
   await ensureSeededData();
 
@@ -853,14 +878,30 @@ export async function getClassById(
     return null;
   }
 
-  const [sessions, materials, enrollmentCount] = await Promise.all([
+  if (!klass.published && !options.includeUnpublished && !options.includeArchived) {
+    return null;
+  }
+
+  const [sessions, sessionCount, materials, enrollmentCount] = await Promise.all([
     // Bound eager loads: a long-running class accumulates hundreds of sessions and
     // materials, but the detail view renders only a handful. Cap both.
     prisma.session.findMany({
-      where: { classId },
+      where: { classId, startTime: { gte: new Date(Date.now() - UPCOMING_GRACE_MS) } },
       orderBy: { startTime: "asc" },
-      take: 200,
+      take: UPCOMING_SESSION_LIMIT,
+      select: {
+        id: true,
+        classId: true,
+        startTime: true,
+        endTime: true,
+        meetLink: true,
+        meetLinkStatus: true,
+        cancelled: true,
+        confirmedAt: true,
+        createdAt: true,
+      },
     }),
+    prisma.session.count({ where: { classId } }),
     prisma.material.findMany({
       where: { classId },
       orderBy: { createdAt: "desc" },
@@ -888,14 +929,17 @@ export async function getClassById(
     registrationDeadline:
       (klass as { registrationDeadline?: Date | null }).registrationDeadline?.toISOString() ?? null,
     status: klass.status,
+    published: klass.published,
     createdAt: klass.createdAt.toISOString(),
     updatedAt: klass.updatedAt.toISOString(),
     teacherName: klass.teacher.name,
     enrolledCount: enrollmentCount,
+    sessionCount,
     sessions: sessions.map((session) => ({
       ...session,
       startTime: session.startTime.toISOString(),
       endTime: session.endTime.toISOString(),
+      confirmedAt: session.confirmedAt?.toISOString() ?? null,
       createdAt: session.createdAt.toISOString(),
     })),
     materials: materials.map((item) => ({
@@ -1623,7 +1667,9 @@ export async function enrollStudentInClass(studentId: string, classId: string) {
 
   const klass = await prisma.class.findUnique({ where: { id: classId } });
 
-  if (!klass || klass.status !== ClassStatus.ACTIVE) {
+  // Only students reach this (checked above), so an unpublished class is
+  // treated as absent — exactly as the public join form and the class list do.
+  if (!klass || klass.status !== ClassStatus.ACTIVE || !klass.published) {
     throw new Error("Class not found");
   }
 
@@ -1742,31 +1788,46 @@ export async function enrollStudentInClass(studentId: string, classId: string) {
   };
 }
 
-export async function dropStudentFromClass(studentId: string, classId: string) {
+/**
+ * Take a student out of a class. Only an ACTIVE or PENDING enrolment is ever
+ * changed; anything else returns null ("not in this class").
+ *
+ *  - by "self": the student leaving. DROPPED — reversible, they may join again.
+ *  - by "staff": the teacher (or an admin) removing them. REJECTED — the one
+ *    status both the in-app enroll and the public join refuse. This used to be
+ *    DROPPED too, so a removed student could rejoin with one click, and a
+ *    REJECTED student could "leave" (turning REJECTED into DROPPED) and rejoin.
+ *
+ * No enum change: REJECTED already means "a person decided you are out".
+ */
+export async function dropStudentFromClass(
+  studentId: string,
+  classId: string,
+  options: { by: "self" | "staff" } = { by: "self" },
+) {
   await ensureSeededData();
 
-  const existing = await prisma.enrollment.findUnique({
+  const { count } = await prisma.enrollment.updateMany({
     where: {
-      studentId_classId: {
-        studentId,
-        classId,
-      },
+      studentId,
+      classId,
+      status: { in: [EnrollmentStatus.ACTIVE, EnrollmentStatus.PENDING] },
+    },
+    data: {
+      status: options.by === "staff" ? EnrollmentStatus.REJECTED : EnrollmentStatus.DROPPED,
     },
   });
 
-  if (!existing) {
+  if (count === 0) {
     return null;
   }
 
-  return prisma.enrollment.update({
+  return prisma.enrollment.findUnique({
     where: {
       studentId_classId: {
         studentId,
         classId,
       },
-    },
-    data: {
-      status: EnrollmentStatus.DROPPED,
     },
   });
 }

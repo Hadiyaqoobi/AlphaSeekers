@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 
 import { authOptions } from "@/lib/auth";
+import { requestCache } from "@/lib/security/request-cache";
 
 export type SessionUser = {
   id: string;
@@ -12,7 +13,7 @@ export type SessionUser = {
   approved: boolean;
 };
 
-export async function getSessionUser(): Promise<SessionUser | null> {
+export const getSessionUser = requestCache(async function getSessionUser(): Promise<SessionUser | null> {
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.id || !session.user.role) {
@@ -28,7 +29,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
     role: session.user.role,
     approved,
   };
-}
+});
 
 export function unauthorized(message = "Unauthorized") {
   return NextResponse.json({ message }, { status: 401 });

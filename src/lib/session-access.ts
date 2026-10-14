@@ -3,10 +3,14 @@
  *
  * - Students: must be enrolled (ACTIVE) and within the live window (15 min before to 2h after start)
  * - Teachers: can access their own class's sessions any time
- * - Admins: can access any session
+ * - Staff holding classes.edit: "admin", any session. Several callers let
+ *   "admin" WRITE (summary, homework, quiz, recording), so a view-only
+ *   employee does not get it. role=ADMIN by itself is not enough: every scoped
+ *   employee (moderator, finance, support...) has that role.
  */
 
 import { prisma } from "@/lib/prisma";
+import { can, getAccessControl } from "@/lib/security/permissions";
 import type { SessionUser } from "@/lib/security/session";
 
 const PRE_WINDOW_MS = 15 * 60 * 1000; // 15 min before
@@ -56,14 +60,15 @@ export async function checkSessionAccess(
     return { ok: false, status: 410, message: "Session was cancelled" };
   }
 
-  // Admin: full access
-  if (user.role === "ADMIN") {
-    return { ok: true, session, role: "admin" };
-  }
-
   // Teacher: only their own classes
   if (session.class.teacherId === user.id) {
     return { ok: true, session, role: "teacher" };
+  }
+
+  // Staff, by permission (see the header). Anyone else with role=ADMIN falls
+  // through to the enrolment check below, i.e. is refused.
+  if (user.role === "ADMIN" && can(await getAccessControl(), "classes.edit")) {
+    return { ok: true, session, role: "admin" };
   }
 
   // Student: must be enrolled

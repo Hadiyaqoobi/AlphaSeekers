@@ -96,6 +96,10 @@ model User {
   deactivatedAt      DateTime?
   // Force a password reset on next login (temp-password onboarding flow).
   mustChangePassword Boolean         @default(false)
+  // Stamped whenever the password is changed or reset. A session token issued
+  // before this moment is revoked at its next re-check (src/lib/auth.ts), so a
+  // reset actually locks out whoever had the old password. Null = never changed.
+  passwordChangedAt  DateTime?
   passwordResets     PasswordReset[]
   // Which super-admin created this employee account (audit trail).
   createdById        String?

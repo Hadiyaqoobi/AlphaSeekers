@@ -15,7 +15,9 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const locale = request.nextUrl.searchParams.get("locale") ?? "fa";
+    // Only a known locale goes into the OAuth state: the callback builds its
+    // redirect from it, and "/evil.com" there became a redirect off-site.
+    const locale = request.nextUrl.searchParams.get("locale") === "en" ? "en" : "fa";
     const url = createGoogleAuthUrl(user.id, locale);
     return NextResponse.redirect(url);
   } catch (error) {

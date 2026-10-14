@@ -9,6 +9,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getSessionUser, unauthorized, forbidden, badRequest } from "@/lib/security/session";
 import { getAccessControl, can } from "@/lib/security/permissions";
+import { isSafeHttpUrl } from "@/lib/security/safe-url";
 import { stripHtml } from "@/lib/security/sanitize";
 import { estimateReadTime, generateExcerpt, isValidPostType } from "@/lib/stories/utils";
 
@@ -20,8 +21,13 @@ const updateSchema = z.object({
   contentDari: z.string().max(50000).optional().nullable(),
   excerpt: z.string().max(300).transform(stripHtml).optional().nullable(),
   excerptDari: z.string().max(300).transform(stripHtml).optional().nullable(),
-  coverImageUrl: z.string().url().optional().nullable(),
-  galleryUrls: z.array(z.string().url()).max(10).optional(),
+  // http(s) only: z.string().url() alone accepts javascript: and data: URLs,
+  // and these end up in <img src> / links on a public story page.
+  coverImageUrl: z.string().url().refine(isSafeHttpUrl, "Image links must be http(s).").optional().nullable(),
+  galleryUrls: z
+    .array(z.string().url().refine(isSafeHttpUrl, "Image links must be http(s)."))
+    .max(10)
+    .optional(),
   language: z.enum(["en", "da", "both"]).optional(),
   category: z.string().max(50).transform(stripHtml).optional().nullable(),
   tags: z.array(z.string().max(30).transform(stripHtml)).max(10).optional(),
