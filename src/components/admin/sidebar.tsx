@@ -48,7 +48,10 @@ export function Sidebar({
   }, [mobileOpen, close]);
 
   const isAdmin = userRole === 'ADMIN';
-  const isTeacher = userRole === 'TEACHER' || isAdmin;
+  // Teacher pages (my classes, my hours, class setup) are for teachers only: an
+  // admin teaches no classes, so they opened empty. Staff manage teachers from
+  // the admin pages.
+  const isTeacher = userRole === 'TEACHER';
 
   // The raw enum (STUDENT/TEACHER/ADMIN) used to be printed under the name.
   const roleLabel =

@@ -1,6 +1,6 @@
 # Dari translation needed
 
-**521 strings** in the app are still showing **English** to Dari readers.
+**529 strings** in the app are still showing **English** to Dari readers.
 The keys exist in `messages/fa.json`, so nothing errors — the English text was left in place
 when these features shipped. The sections are ordered by who sees them: what students see first
 (the class join page, the live class page, sign-in), then teachers, then staff screens.
@@ -934,7 +934,7 @@ Evening"
   <sub>`classes.registrationClosed`</sub>
 
 
-## `dashboard`  ·  8 strings
+## `dashboard`  ·  11 strings
 
 - **English:** "Support requests"
   **Dari:** 
@@ -967,6 +967,18 @@ Evening"
 - **English:** "Review"
   **Dari:** 
   <sub>`dashboard.pendingEnrollments.review`</sub>
+
+- **English:** "My classes"
+  **Dari:** 
+  <sub>`dashboard.cards.myClasses`</sub>
+
+- **English:** "My students"
+  **Dari:** 
+  <sub>`dashboard.cards.myStudents`</sub>
+
+- **English:** "Sessions in the next 7 days"
+  **Dari:** 
+  <sub>`dashboard.cards.next7Days`</sub>
 
 
 ## `nav`  ·  9 strings
@@ -1259,7 +1271,7 @@ Evening"
   <sub>`attendance.verifyRate`</sub>
 
 
-## `classLifecycle`  ·  67 strings
+## `classLifecycle`  ·  72 strings
 
 - **English:** "Post a class"
   **Dari:** 
@@ -1528,6 +1540,26 @@ Evening"
 - **English:** "Not booked: the class time is unclear. Ask the team to set the class day and time."
   **Dari:** 
   <sub>`classLifecycle.problemUnparseable`</sub>
+
+- **English:** "{name}'s available hours (Kabul time). Tap one to use it:"
+  **Dari:** 
+  <sub>`classLifecycle.teacherHoursTitle`</sub>
+
+- **English:** "{name} has not saved available hours, so sessions are booked at exactly this time."
+  **Dari:** 
+  <sub>`classLifecycle.teacherHoursNone`</sub>
+
+- **English:** "Use this time"
+  **Dari:** 
+  <sub>`classLifecycle.teacherHoursUse`</sub>
+
+- **English:** "This time fits the teacher's hours, so sessions will be booked."
+  **Dari:** 
+  <sub>`classLifecycle.teacherHoursFits`</sub>
+
+- **English:** "This time is outside {name}'s available hours, so no session will be booked. Tap one of the hours above, or ask the teacher to add this time."
+  **Dari:** 
+  <sub>`classLifecycle.teacherHoursOutside`</sub>
 
 
 ## `teacherSetup`  ·  26 strings

@@ -522,6 +522,14 @@
     "enroll.leaveYes",
     "enroll.leaveCancel",
     "classJoin.seeOpenClasses",
-    "classDetail.registrationClosedNote"
+    "classDetail.registrationClosedNote",
+    "classLifecycle.teacherHoursTitle",
+    "classLifecycle.teacherHoursNone",
+    "classLifecycle.teacherHoursUse",
+    "classLifecycle.teacherHoursFits",
+    "classLifecycle.teacherHoursOutside",
+    "dashboard.cards.myClasses",
+    "dashboard.cards.myStudents",
+    "dashboard.cards.next7Days"
   ]
 }

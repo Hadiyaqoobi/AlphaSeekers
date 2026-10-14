@@ -197,6 +197,10 @@ export async function listTodaySessions() {
   return viaDatabase(() => dbStore.listTodaySessions());
 }
 
+export async function getTeacherDashboardStats(...args: Parameters<typeof dbStore.getTeacherDashboardStats>) {
+  return viaDatabase(() => dbStore.getTeacherDashboardStats(...args));
+}
+
 export async function getDashboardStats() {
   return viaDatabase(() => dbStore.getDashboardStats());
 }

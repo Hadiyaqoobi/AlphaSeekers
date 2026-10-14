@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
 import { ArchiveClassButton } from "@/components/admin/archive-class-button";
+import { loadAvailabilityByTeacher } from "@/lib/platform/db-store";
 import { ClassCreateForm } from "@/components/staff/staff-class-form";
 import { RunRemindersButton } from "@/components/forms/run-reminders-button";
 import { RunSchedulerButton } from "@/components/forms/run-scheduler-button";
@@ -31,7 +32,11 @@ export default async function AdminClassesPage({ params, searchParams }: AdminCl
 
   const t = await getTranslations({ locale: params.locale, namespace: "admin" });
   const tl = await getTranslations({ locale: params.locale, namespace: "classLifecycle" });
-  const teachers = await listUsersByRole("TEACHER");
+  const teacherRows = await listUsersByRole("TEACHER");
+  // Each teacher's saved hours, so the form can show them and warn before a
+  // time is chosen that would book nothing.
+  const hours = await loadAvailabilityByTeacher(teacherRows.map((teacher) => teacher.id));
+  const teachers = teacherRows.map((teacher) => ({ ...teacher, availability: hours[teacher.id] ?? [] }));
   // Paged, with an Active/Archived filter: this used to show only the 10 newest
   // classes with no way to reach the rest (or to find an archived one).
   const statusFilter: StatusFilter = STATUS_FILTERS.includes(searchParams?.status as StatusFilter)

@@ -2482,6 +2482,30 @@ export async function loadAvailabilityWindows(teacherId: string) {
 }
 
 /**
+ * Saved hours for several teachers in one query, keyed by teacher id, in the
+ * same Kabul-minute form the scheduler checks against (loadAvailabilityWindows).
+ * The class form shows them, so staff can pick a time that will actually book.
+ */
+export async function loadAvailabilityByTeacher(teacherIds: string[]) {
+  const rows = teacherIds.length
+    ? await prisma.teacherAvailability.findMany({
+      where: { teacherId: { in: teacherIds } },
+      select: { teacherId: true, dayOfWeek: true, startTimeUTC: true, endTimeUTC: true },
+      orderBy: [{ dayOfWeek: "asc" }, { startTimeUTC: "asc" }],
+    })
+    : [];
+  const byTeacher: Record<string, Array<{ dayOfWeek: number; startMinute: number; endMinute: number }>> = {};
+  for (const row of rows) {
+    (byTeacher[row.teacherId] ??= []).push({
+      dayOfWeek: row.dayOfWeek,
+      startMinute: utcDateToMinute(row.startTimeUTC),
+      endMinute: utcDateToMinute(row.endTimeUTC),
+    });
+  }
+  return byTeacher;
+}
+
+/**
  * Has this weekly occurrence already been dealt with? Any session -- cancelled or
  * not -- near the target slot counts: a cancelled session must STAY cancelled
  * (the old check ignored cancelled rows, so a teacher's cancellation was undone
@@ -3367,6 +3391,45 @@ export async function getDashboardStats() {
     teachers,
     sessionsToday: sessionsToday.length,
   };
+}
+
+/**
+ * A teacher's OWN numbers for their dashboard: their active classes, the students
+ * in them, and their sessions today and over the next seven days. The dashboard
+ * used to show every teacher the whole platform's totals ("16 classes, 154
+ * students"), which said nothing about their own week.
+ *
+ * "Today" is the Kabul calendar day, which is the day the teacher's students live in.
+ */
+export async function getTeacherDashboardStats(teacherId: string, now: Date = new Date()) {
+  const KABUL_OFFSET_MS = (4 * 60 + 30) * 60_000;
+  const kabulNow = new Date(now.getTime() + KABUL_OFFSET_MS);
+  const dayStart = new Date(
+    Date.UTC(kabulNow.getUTCFullYear(), kabulNow.getUTCMonth(), kabulNow.getUTCDate()) - KABUL_OFFSET_MS,
+  );
+  const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60_000);
+  const weekEnd = new Date(now.getTime() + 7 * 24 * 60 * 60_000);
+  const mine = { teacherId, status: ClassStatus.ACTIVE };
+
+  const [activeClasses, students, sessionsToday, sessionsThisWeek] = await Promise.all([
+    prisma.class.count({ where: mine }),
+    // Distinct people: a student in two of this teacher's classes counts once.
+    prisma.enrollment
+      .findMany({
+        where: { status: EnrollmentStatus.ACTIVE, class: mine },
+        distinct: ["studentId"],
+        select: { studentId: true },
+      })
+      .then((rows) => rows.length),
+    prisma.session.count({
+      where: { cancelled: false, class: mine, startTime: { gte: dayStart, lt: dayEnd } },
+    }),
+    prisma.session.count({
+      where: { cancelled: false, class: mine, startTime: { gte: now, lt: weekEnd } },
+    }),
+  ]);
+
+  return { activeClasses, students, sessionsToday, sessionsThisWeek };
 }
 
 export async function listWebinars() {
