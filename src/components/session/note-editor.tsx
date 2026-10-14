@@ -1,6 +1,9 @@
 "use client";
 
+import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState } from "react";
+
+import { formatKabulTime } from "@/lib/ui/kabul-time";
 
 interface NoteEditorProps {
   classId: string;
@@ -10,6 +13,8 @@ interface NoteEditorProps {
 }
 
 export function NoteEditor({ classId, sessionId, initialContent, initialUpdatedAt }: NoteEditorProps) {
+  const t = useTranslations("liveSession.notes");
+  const locale = useLocale();
   const [content, setContent] = useState(initialContent);
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<string | null>(initialUpdatedAt);
@@ -49,7 +54,7 @@ export function NoteEditor({ classId, sessionId, initialContent, initialUpdatedA
 
   const formatTime = (iso: string | null) => {
     if (!iso) return "";
-    return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    return formatKabulTime(iso, locale);
   };
 
   return (
@@ -57,13 +62,14 @@ export function NoteEditor({ classId, sessionId, initialContent, initialUpdatedA
       <textarea
         value={content}
         onChange={(e) => setContent(e.target.value)}
-        placeholder="Take notes during class. They auto-save and you can read them later..."
+        placeholder={t("placeholder")}
+        aria-label={t("label")}
         rows={8}
         className="w-full rounded-lg border border-line bg-dark-100 px-3 py-2 text-sm text-ink-main placeholder:text-ink-faint focus:outline-none focus:ring-2 focus:ring-neon-500/30 focus:border-neon-400 resize-none"
       />
       <div className="flex items-center justify-between mt-2 text-xs text-ink-faint">
         <span>
-          {saving ? "Saving..." : savedAt ? `Saved ${formatTime(savedAt)}` : "Not saved yet"}
+          {saving ? t("saving") : savedAt ? t("savedAt", { time: formatTime(savedAt) }) : t("notSaved")}
         </span>
         <button
           type="button"
@@ -71,7 +77,7 @@ export function NoteEditor({ classId, sessionId, initialContent, initialUpdatedA
           disabled={saving || content === lastSaved.current}
           className="text-neon-600 hover:text-neon-700 font-medium disabled:opacity-30 disabled:cursor-not-allowed"
         >
-          Save now
+          {t("saveNow")}
         </button>
       </div>
     </div>

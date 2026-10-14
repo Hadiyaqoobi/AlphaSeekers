@@ -71,7 +71,7 @@ export default async function PendingApprovalPage({ params }: PendingApprovalPag
                 strokeLinejoin="round"
               />
             </svg>
-            <p className="text-left text-sm leading-relaxed text-ink-soft">
+            <p className="text-start text-sm leading-relaxed text-ink-soft">
               {t("note")}
             </p>
           </div>

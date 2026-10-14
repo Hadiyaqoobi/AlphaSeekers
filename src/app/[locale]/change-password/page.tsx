@@ -1,8 +1,11 @@
+import { getTranslations } from "next-intl/server";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { PasswordChangeForm } from "@/components/profile/password-change-form";
+import { DirArrow } from "@/components/ui/dir-arrow";
 import { getSessionUser } from "@/lib/security/session";
+import { loginHref } from "@/lib/ui/safe-next";
 
 export const dynamic = "force-dynamic";
 
@@ -20,16 +23,17 @@ export default async function ChangePasswordPage({ params }: PageProps) {
   const { locale } = params;
   const user = await getSessionUser();
   if (!user) {
-    redirect(`/${locale}/login`);
+    redirect(loginHref(locale, `/${locale}/change-password`));
   }
+
+  const t = await getTranslations({ locale, namespace: "profile" });
 
   return (
     <div className="mx-auto w-full max-w-2xl px-6 py-10">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-ink-main">Set a new password</h1>
+        <h1 className="text-2xl font-bold text-ink-main">{t("changePassword.title")}</h1>
         <p className="mt-1 text-sm text-ink-soft">
-          Choose a strong password you have not used elsewhere. Once saved, the
-          temporary-password reminder disappears.
+          {t("changePassword.subtitle")}
         </p>
       </div>
 
@@ -40,7 +44,7 @@ export default async function ChangePasswordPage({ params }: PageProps) {
           href={`/${locale}/dashboard`}
           className="text-sm font-medium text-neon-600 transition-colors hover:text-neon-700"
         >
-          &larr; Back to dashboard
+          <DirArrow back /> {t("actions.backToDashboard")}
         </Link>
       </div>
     </div>

@@ -1,8 +1,11 @@
 "use client";
 
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
+
+import { DirArrow } from "@/components/ui/dir-arrow";
 
 type PostType = "article" | "creative_writing" | "poetry" | "art" | "spotlight";
 
@@ -45,6 +48,11 @@ const TYPE_OPTIONS: { value: PostType; label: string; icon: string }[] = [
 export function PostEditor({ locale, initialPost }: PostEditorProps) {
   const router = useRouter();
   const isDari = locale === "fa";
+  // Error text comes from translation keys (generic ones already have Dari);
+  // the server's English `message` is never shown to the student.
+  const tEditor = useTranslations("storyEditor");
+  const tError = useTranslations("error");
+  const tUpload = useTranslations("upload");
 
   const [postId, setPostId] = useState<string | null>(initialPost?.id ?? null);
   const [type, setType] = useState<PostType>((initialPost?.type as PostType) || "article");
@@ -120,7 +128,7 @@ export function PostEditor({ locale, initialPost }: PostEditorProps) {
   const saveDraft = useCallback(
     async (manual: boolean) => {
       if (saving || !title.trim() || title.length < 3) {
-        if (manual) setError("Title must be at least 3 characters");
+        if (manual) setError(tEditor("titleTooShort"));
         return null;
       }
 
@@ -152,8 +160,7 @@ export function PostEditor({ locale, initialPost }: PostEditorProps) {
         });
 
         if (!res.ok) {
-          const data = await res.json().catch(() => null);
-          throw new Error(data?.message || `Save failed (${res.status})`);
+          throw new Error(String(res.status));
         }
 
         const saved: SavedPost = await res.json();
@@ -167,14 +174,14 @@ export function PostEditor({ locale, initialPost }: PostEditorProps) {
         setTimeout(() => setSaveMessage(""), 3000);
 
         return saved;
-      } catch (err) {
-        setError((err as Error).message);
+      } catch {
+        setError(tError("body"));
         return null;
       } finally {
         setSaving(false);
       }
     },
-    [saving, title, type, titleDari, content, contentDari, coverImageUrl, galleryUrls, language, category, tags, anonymous, postId, alsoDari, isDari],
+    [saving, title, type, titleDari, content, contentDari, coverImageUrl, galleryUrls, language, category, tags, anonymous, postId, alsoDari, isDari, tEditor, tError],
   );
 
   const handleSubmitForReview = useCallback(async () => {
@@ -190,16 +197,15 @@ export function PostEditor({ locale, initialPost }: PostEditorProps) {
     try {
       const res = await fetch(`/api/me/posts/${saved.id}/submit`, { method: "POST" });
       if (!res.ok) {
-        const data = await res.json().catch(() => null);
-        throw new Error(data?.message || "Submission failed");
+        throw new Error(String(res.status));
       }
 
       router.push(`/${locale}/stories`);
-    } catch (err) {
-      setError((err as Error).message);
+    } catch {
+      setError(tError("body"));
       setSubmitting(false);
     }
-  }, [saveDraft, router, locale]);
+  }, [saveDraft, router, locale, tError]);
 
   const uploadImage = useCallback(
     async (file: File): Promise<string | null> => {
@@ -216,8 +222,7 @@ export function PostEditor({ locale, initialPost }: PostEditorProps) {
         });
 
         if (!presignRes.ok) {
-          const data = await presignRes.json().catch(() => null);
-          throw new Error(data?.message || "Upload unavailable");
+          throw new Error(String(presignRes.status));
         }
 
         const { uploadUrl, publicUrl } = await presignRes.json();
@@ -231,12 +236,12 @@ export function PostEditor({ locale, initialPost }: PostEditorProps) {
         if (!uploadRes.ok) throw new Error("Upload to storage failed");
 
         return publicUrl as string;
-      } catch (err) {
-        setError((err as Error).message);
+      } catch {
+        setError(tUpload("uploadFailed"));
         return null;
       }
     },
-    [],
+    [tUpload],
   );
 
   const handleCoverUpload = useCallback(
@@ -244,11 +249,11 @@ export function PostEditor({ locale, initialPost }: PostEditorProps) {
       const file = e.target.files?.[0];
       if (!file) return;
       if (!file.type.startsWith("image/")) {
-        setError("Please select an image file");
+        setError(tEditor("selectImage"));
         return;
       }
       if (file.size > 5 * 1024 * 1024) {
-        setError("Image must be under 5MB");
+        setError(tEditor("imageTooLarge"));
         return;
       }
 
@@ -257,7 +262,7 @@ export function PostEditor({ locale, initialPost }: PostEditorProps) {
       if (url) setCoverImageUrl(url);
       setUploadingCover(false);
     },
-    [uploadImage],
+    [uploadImage, tEditor],
   );
 
   const handleGalleryUpload = useCallback(
@@ -282,7 +287,7 @@ export function PostEditor({ locale, initialPost }: PostEditorProps) {
   const askAiForHelp = useCallback(
     async (mode: "grammar" | "improve") => {
       if (!content.trim()) {
-        setError("Write something first, then ask the AI for help");
+        setError(tEditor("writeFirst"));
         return;
       }
 
@@ -304,14 +309,14 @@ export function PostEditor({ locale, initialPost }: PostEditorProps) {
 
         if (!res.ok) throw new Error("AI request failed");
         const data = await res.json();
-        setAiResult(data.answer || "No suggestions returned.");
-      } catch (err) {
-        setError((err as Error).message);
+        setAiResult(data.answer || tEditor("noSuggestions"));
+      } catch {
+        setError(tEditor("aiFailed"));
       } finally {
         setAiLoading(null);
       }
     },
-    [content, locale],
+    [content, locale, tEditor],
   );
 
   if (!isEditable) {
@@ -401,7 +406,7 @@ export function PostEditor({ locale, initialPost }: PostEditorProps) {
               <button
                 type="button"
                 onClick={() => setCoverImageUrl("")}
-                className="absolute top-3 right-3 w-8 h-8 rounded-full bg-dark-100/90 flex items-center justify-center hover:bg-dark-100"
+                className="absolute top-3 end-3 w-10 h-10 rounded-full bg-dark-100/90 flex items-center justify-center hover:bg-dark-100"
               >
                 <svg className="w-4 h-4 text-ink-soft" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
@@ -440,7 +445,7 @@ export function PostEditor({ locale, initialPost }: PostEditorProps) {
                 <button
                   type="button"
                   onClick={() => setGalleryUrls((prev) => prev.filter((_, idx) => idx !== i))}
-                  className="absolute top-2 right-2 w-7 h-7 rounded-full bg-dark-100/90 flex items-center justify-center hover:bg-dark-100"
+                  className="absolute top-2 end-2 w-10 h-10 rounded-full bg-dark-100/90 flex items-center justify-center hover:bg-dark-100"
                 >
                   <svg className="w-3.5 h-3.5 text-ink-soft" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
@@ -631,7 +636,7 @@ export function PostEditor({ locale, initialPost }: PostEditorProps) {
           disabled={saving || submitting || !title.trim()}
           className="inline-flex items-center px-6 py-2.5 rounded-xl bg-neon-600 text-white font-bold hover:bg-neon-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
-          {submitting ? "..." : isDari ? "ارسال برای بررسی" : "Submit for review"} →
+          {submitting ? "..." : isDari ? "ارسال برای بررسی" : "Submit for review"} <DirArrow />
         </button>
       </div>
     </div>

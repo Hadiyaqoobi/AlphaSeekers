@@ -1,9 +1,11 @@
 "use client";
 
 import { useRouter, useParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 
 export function TopicSearch({ isDari }: { isDari: boolean }) {
+  const tError = useTranslations("error");
   const router = useRouter();
   const params = useParams<{ locale: string }>();
   const locale = params.locale || "en";
@@ -23,13 +25,13 @@ export function TopicSearch({ isDari }: { isDari: boolean }) {
         body: JSON.stringify({ topic: topic.trim() }),
       });
       if (!res.ok) {
-        const data = await res.json().catch(() => null);
-        throw new Error(data?.message || `Generation failed (${res.status})`);
+        throw new Error(String(res.status));
       }
       const data = await res.json();
       router.push(`/${locale}/learn/${data.id}`);
-    } catch (err) {
-      setError((err as Error).message);
+    } catch {
+      // Translated generic message; the server's English text is not shown.
+      setError(tError("body"));
       setLoading(false);
     }
   }
@@ -46,7 +48,7 @@ export function TopicSearch({ isDari }: { isDari: boolean }) {
             ? "چه می‌خواهید بیاموزید؟ (مثلاً: «اصول پایتون»)"
             : "What do you want to learn? (e.g., 'Python basics', 'How electricity works', 'Resume writing')"
         }
-        className="w-full px-5 py-4 pr-40 rounded-2xl text-sm transition-colors focus:outline-none"
+        className="w-full px-5 py-4 pe-40 rounded-2xl text-sm transition-colors focus:outline-none"
         style={{
           background: "#0D1419",
           border: "1px solid #1A2D3D",
@@ -64,7 +66,7 @@ export function TopicSearch({ isDari }: { isDari: boolean }) {
       <button
         type="submit"
         disabled={loading || !topic.trim()}
-        className="absolute right-3 top-1/2 -translate-y-1/2 px-4 py-2 rounded-xl text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        className="absolute end-3 top-1/2 -translate-y-1/2 px-4 py-2 rounded-xl text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         style={{ background: "#00E676", color: "#070B0E", boxShadow: "0 0 12px rgba(0,230,118,0.3)" }}
       >
         {loading

@@ -1,6 +1,10 @@
 "use client";
 
+import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useRef, useState } from "react";
+
+import { DirArrow } from "@/components/ui/dir-arrow";
+import { formatDate, formatDateTime } from "@/lib/format-date";
 
 type Submission = {
   id: string;
@@ -29,6 +33,8 @@ interface HomeworkSubmitProps {
 }
 
 export function HomeworkSubmit({ classId, sessionId, assignment, onSubmitted }: HomeworkSubmitProps) {
+  const t = useTranslations("liveSession.homework");
+  const locale = useLocale();
   const existing = assignment.submissions[0] || null;
   const [content, setContent] = useState(existing?.content || "");
   const [imageUrl, setImageUrl] = useState(existing?.imageUrl || "");
@@ -41,11 +47,11 @@ export function HomeworkSubmit({ classId, sessionId, assignment, onSubmitted }: 
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith("image/")) {
-      setError("Please select an image");
+      setError(t("selectImage"));
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      setError("Image must be under 5MB");
+      setError(t("imageTooLarge"));
       return;
     }
 
@@ -73,17 +79,17 @@ export function HomeworkSubmit({ classId, sessionId, assignment, onSubmitted }: 
       if (!uploadRes.ok) throw new Error("Upload failed");
 
       setImageUrl(publicUrl);
-    } catch (err) {
-      setError((err as Error).message);
+    } catch {
+      setError(t("uploadFailed"));
     } finally {
       setUploading(false);
     }
-  }, []);
+  }, [t]);
 
   const handleSubmit = useCallback(async () => {
     if (submitting) return;
     if (!content.trim() && !imageUrl) {
-      setError("Add some text or upload a photo");
+      setError(t("needContent"));
       return;
     }
 
@@ -101,17 +107,17 @@ export function HomeworkSubmit({ classId, sessionId, assignment, onSubmitted }: 
       });
 
       if (!res.ok) {
-        const data = await res.json().catch(() => null);
-        throw new Error(data?.message || `Submission failed (${res.status})`);
+        throw new Error(String(res.status));
       }
 
       onSubmitted?.();
-    } catch (err) {
-      setError((err as Error).message);
+    } catch {
+      // Translated message; the server's English text is never shown.
+      setError(t("submitFailed"));
     } finally {
       setSubmitting(false);
     }
-  }, [submitting, content, imageUrl, classId, sessionId, assignment.id, onSubmitted]);
+  }, [submitting, content, imageUrl, classId, sessionId, assignment.id, onSubmitted, t]);
 
   // Already submitted view
   if (existing && existing.aiReview) {
@@ -120,17 +126,17 @@ export function HomeworkSubmit({ classId, sessionId, assignment, onSubmitted }: 
         <div className="flex items-center justify-between mb-3">
           <h3 className="font-semibold text-ink-main">{assignment.title}</h3>
           <span className="text-xs px-2 py-0.5 rounded-full bg-neon-100 text-neon-700 font-semibold">
-            ✓ Submitted
+            ✓ {t("submitted")}
           </span>
         </div>
         <p className="text-xs text-ink-soft mb-4">
-          Submitted {new Date(existing.submittedAt).toLocaleString()}
+          {t("submittedAt", { time: formatDateTime(existing.submittedAt, locale) })}
         </p>
 
         {existing.aiReview && (
           <details open className="rounded-lg bg-dark-50 border border-line-soft p-3 mb-3">
             <summary className="cursor-pointer text-sm font-semibold text-ink-main">
-              ✨ AI Review
+              ✨ {t("aiReview")}
             </summary>
             <p className="mt-2 text-sm text-ink-soft whitespace-pre-wrap">{existing.aiReview}</p>
           </details>
@@ -139,12 +145,14 @@ export function HomeworkSubmit({ classId, sessionId, assignment, onSubmitted }: 
         {existing.teacherNotes ? (
           <div className="rounded-lg bg-neon-50 border border-neon-100 p-3">
             <p className="text-xs font-semibold text-neon-700 mb-1">
-              Teacher feedback {existing.teacherGrade && `(${existing.teacherGrade})`}
+              {existing.teacherGrade
+                ? t("teacherFeedbackWithGrade", { grade: existing.teacherGrade })
+                : t("teacherFeedback")}
             </p>
             <p className="text-sm text-neon-800 whitespace-pre-wrap">{existing.teacherNotes}</p>
           </div>
         ) : (
-          <p className="text-xs text-ink-faint italic">Teacher review pending</p>
+          <p className="text-xs text-ink-faint italic">{t("reviewPending")}</p>
         )}
       </div>
     );
@@ -156,14 +164,15 @@ export function HomeworkSubmit({ classId, sessionId, assignment, onSubmitted }: 
       <p className="text-sm text-ink-soft mb-4 whitespace-pre-wrap">{assignment.description}</p>
       {assignment.dueDate && (
         <p className="text-xs text-amber-700 mb-4">
-          Due: {new Date(assignment.dueDate).toLocaleDateString()}
+          {t("due", { date: formatDate(assignment.dueDate, locale) })}
         </p>
       )}
 
       <textarea
         value={content}
         onChange={(e) => setContent(e.target.value)}
-        placeholder="Type your answers here..."
+        placeholder={t("answerPlaceholder")}
+        aria-label={assignment.title}
         rows={5}
         className="w-full rounded-lg border border-line bg-dark-100 px-3 py-2 text-sm placeholder:text-ink-faint focus:outline-none focus:ring-2 focus:ring-neon-500/30 focus:border-neon-400 mb-3"
       />
@@ -171,11 +180,12 @@ export function HomeworkSubmit({ classId, sessionId, assignment, onSubmitted }: 
       {imageUrl ? (
         <div className="relative mb-3 rounded-lg overflow-hidden border border-line">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={imageUrl} alt="Homework" className="w-full max-h-48 object-contain bg-dark-50" />
+          <img src={imageUrl} alt={t("photoAlt")} className="w-full max-h-48 object-contain bg-dark-50" />
           <button
             type="button"
             onClick={() => setImageUrl("")}
-            className="absolute top-2 right-2 w-7 h-7 rounded-full bg-dark-100/90 flex items-center justify-center"
+            aria-label={t("removePhoto")}
+            className="absolute top-2 end-2 w-10 h-10 rounded-full bg-dark-100/90 flex items-center justify-center"
           >
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
@@ -189,7 +199,7 @@ export function HomeworkSubmit({ classId, sessionId, assignment, onSubmitted }: 
           disabled={uploading}
           className="w-full mb-3 px-4 py-3 rounded-lg border-2 border-dashed border-line text-sm text-ink-soft hover:border-neon-300 hover:text-neon-700 hover:bg-neon-50/30 transition-colors"
         >
-          {uploading ? "Uploading..." : "📷 Upload photo of your work"}
+          {uploading ? t("uploading") : `📷 ${t("uploadPhoto")}`}
         </button>
       )}
       <input ref={fileInputRef} type="file" accept="image/*" capture="environment" onChange={handlePhoto} className="hidden" />
@@ -202,7 +212,7 @@ export function HomeworkSubmit({ classId, sessionId, assignment, onSubmitted }: 
         disabled={submitting || (!content.trim() && !imageUrl)}
         className="w-full px-4 py-2.5 rounded-lg bg-neon-600 text-white font-semibold hover:bg-neon-700 disabled:opacity-40 disabled:cursor-not-allowed"
       >
-        {submitting ? "Submitting..." : "Submit homework →"}
+        {submitting ? t("submitting") : <>{t("submit")} <DirArrow /></>}
       </button>
     </div>
   );

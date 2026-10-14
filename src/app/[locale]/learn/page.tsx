@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { TopicCard } from "@/components/learn/topic-card";
 import { TopicSearch } from "@/components/learn/topic-search";
+import { DirArrow } from "@/components/ui/dir-arrow";
 import { SELF_LEARNING_TOPICS } from "@/lib/learn/topics";
 import { getSessionUser } from "@/lib/security/session";
 
@@ -138,7 +139,7 @@ export default async function LearnHomePage({ params }: PageProps) {
                       className="px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-1 flex-shrink-0 transition-colors group-hover:bg-[#00E676] group-hover:text-[#070B0E]"
                       style={{ color: "#00E676", border: "1px solid rgba(0,230,118,0.3)" }}
                     >
-                      {isDari ? "ادامه" : "Continue"} →
+                      {isDari ? "ادامه" : "Continue"} <DirArrow />
                     </div>
                   </div>
                 </Link>

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { formatDateTime } from "@/lib/format-date";
+import { DirArrow } from "@/components/ui/dir-arrow";
 import { GoogleConnectCard } from "@/components/dashboard/google-connect-card";
 import { getTicketCounts } from "@/lib/platform/tickets";
 import { JoinNowCard } from "@/components/dashboard/join-now-card";
@@ -17,7 +18,10 @@ import {
   listTodaySessions,
   listUserNotifications,
 } from "@/lib/platform/store";
+import { can, getAccessControl, isSuper } from "@/lib/security/permissions";
 import { getSessionUser } from "@/lib/security/session";
+import { formatKabulLongDate, kabulDayPart } from "@/lib/ui/kabul-time";
+import { loginHref } from "@/lib/ui/safe-next";
 
 type DashboardPageProps = {
   params: { locale: string };
@@ -26,17 +30,19 @@ type DashboardPageProps = {
 
 export const dynamic = "force-dynamic";
 
+// The hour is read in Kabul time. new Date().getHours() is the SERVER's hour,
+// and the server runs in UTC, so students were greeted "good morning" at 13:30.
 function getGreeting(): string {
-  const hour = new Date().getHours();
-  if (hour < 12) return "Good morning";
-  if (hour < 18) return "Good afternoon";
+  const part = kabulDayPart();
+  if (part === "morning") return "Good morning";
+  if (part === "afternoon") return "Good afternoon";
   return "Good evening";
 }
 
 function getGreetingDari(): string {
-  const hour = new Date().getHours();
-  if (hour < 12) return "صبح بخیر";
-  if (hour < 18) return "عصر بخیر";
+  const part = kabulDayPart();
+  if (part === "morning") return "صبح بخیر";
+  if (part === "afternoon") return "عصر بخیر";
   return "شب بخیر";
 }
 
@@ -47,7 +53,7 @@ export default async function DashboardPage({ params, searchParams }: DashboardP
   const user = await getSessionUser();
 
   if (!user) {
-    redirect(`/${locale}/login`);
+    redirect(loginHref(locale, `/${locale}/dashboard`));
   }
 
   const t = await getTranslations({ locale, namespace: "dashboard" });
@@ -55,6 +61,12 @@ export default async function DashboardPage({ params, searchParams }: DashboardP
   const isStudent = user.role === "STUDENT";
   const isTeacher = user.role === "TEACHER";
   const isAdmin = user.role === "ADMIN";
+
+  // Scoped staff (role ADMIN with explicit permissions) must only be offered
+  // links they can open — each admin page bounces anyone without its permission.
+  const access = isAdmin ? await getAccessControl() : null;
+  const canClasses = can(access, "classes.view");
+  const canSupport = can(access, "support.view");
 
   // Fetch every independent data source concurrently instead of awaiting them
   // one-by-one. Role-specific queries are skipped (resolved to empty) when the
@@ -80,12 +92,12 @@ export default async function DashboardPage({ params, searchParams }: DashboardP
       isAdmin ? listTodaySessions() : Promise.resolve([]),
       // The team files bugs and change requests here instead of emailing, so the
       // count belongs where an admin actually looks each day.
-      isAdmin ? getTicketCounts() : Promise.resolve({ open: 0, inProgress: 0, urgentOpen: 0 }),
+      isAdmin && canSupport ? getTicketCounts() : Promise.resolve({ open: 0, inProgress: 0, urgentOpen: 0 }),
       // Course access is a request an admin grants, but the approve/reject
       // controls live on each class's own page. Without this the only way to
       // discover someone is waiting is to open every class in turn, which is
       // how five requests sat unseen on the day they arrived.
-      isAdmin ? groupPendingEnrollmentsByClass() : Promise.resolve([]),
+      isAdmin && canClasses ? groupPendingEnrollmentsByClass() : Promise.resolve([]),
     ]);
 
   const pendingTotal = pendingByClass.reduce((sum, row) => sum + row.count, 0);
@@ -96,11 +108,7 @@ export default async function DashboardPage({ params, searchParams }: DashboardP
 
   const firstName = (user.name ?? "").split(" ")[0] || "User";
   const greeting = locale === "fa" ? getGreetingDari() : getGreeting();
-  const dateStr = new Date().toLocaleDateString(locale === "fa" ? "fa-AF" : "en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-  });
+  const dateStr = formatKabulLongDate(new Date(), locale);
 
   const statCards = [
     { value: stats.activeClasses, label: t("cards.classes"), iconBg: "rgba(0, 230, 118, 0.10)", iconColor: "#00E676", icon: "M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" },
@@ -184,8 +192,8 @@ export default async function DashboardPage({ params, searchParams }: DashboardP
                       })}
                     </span>
                   ) : null}
-                  <span className="ml-auto text-sm font-semibold text-neon-400">
-                    {t("pendingEnrollments.review")} &rarr;
+                  <span className="ms-auto text-sm font-semibold text-neon-400">
+                    {t("pendingEnrollments.review")} <DirArrow />
                   </span>
                 </Link>
               </li>
@@ -216,7 +224,7 @@ export default async function DashboardPage({ params, searchParams }: DashboardP
               {t("support.urgent", { count: ticketCounts.urgentOpen })}
             </span>
           ) : null}
-          <span className="ml-auto text-sm font-semibold text-neon-400">{t("support.review")} →</span>
+          <span className="ms-auto text-sm font-semibold text-neon-400">{t("support.review")} <DirArrow /></span>
         </Link>
       ) : null}
 
@@ -320,12 +328,13 @@ export default async function DashboardPage({ params, searchParams }: DashboardP
               <h3 className="text-base font-semibold text-ink-main mb-4">{t("quickActions.heading")}</h3>
               <div className="space-y-1">
                 {[
-                  { href: `/${locale}/admin/classes`, label: t("quickActions.createClass"), icon: "M12 4.5v15m7.5-7.5h-15" },
-                  { href: `/${locale}/admin/content`, label: t("quickActions.addOpportunity"), icon: "M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" },
-                  { href: `/${locale}/admin/users`, label: t("quickActions.viewPendingUsers"), icon: "M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128H9m6 0a5.97 5.97 0 00-.786-3.07M9 19.128v-.003c0-1.113.285-2.16.786-3.07M9 19.128H2.25a8.963 8.963 0 01-.727-3.071A3 3 0 014.5 10.365c.266-.068.54-.104.818-.104M9 19.128a5.97 5.97 0 01.786-3.07" },
-                  { href: `/${locale}/admin/ai`, label: t("quickActions.aiDashboard"), icon: "M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" },
-                  { href: `/${locale}/admin/support`, label: t("quickActions.support"), icon: "M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" },
-                ].map((action) => (
+                  { href: `/${locale}/admin/classes`, show: canClasses, label: t("quickActions.createClass"), icon: "M12 4.5v15m7.5-7.5h-15" },
+                  { href: `/${locale}/admin/content`, show: can(access, "content.view"), label: t("quickActions.addOpportunity"), icon: "M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" },
+                  { href: `/${locale}/admin/users`, show: can(access, "users.view"), label: t("quickActions.viewPendingUsers"), icon: "M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128H9m6 0a5.97 5.97 0 00-.786-3.07M9 19.128v-.003c0-1.113.285-2.16.786-3.07M9 19.128H2.25a8.963 8.963 0 01-.727-3.071A3 3 0 014.5 10.365c.266-.068.54-.104.818-.104M9 19.128a5.97 5.97 0 01.786-3.07" },
+                  // AI health is super-admin only (admin/ai redirects everyone else).
+                  { href: `/${locale}/admin/ai`, show: isSuper(access), label: t("quickActions.aiDashboard"), icon: "M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" },
+                  { href: `/${locale}/admin/support`, show: canSupport, label: t("quickActions.support"), icon: "M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" },
+                ].filter((action) => action.show).map((action) => (
                   <Link key={action.label} href={action.href} className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm text-ink-main hover:bg-white/5 transition-colors">
                     <svg className="w-4 h-4 text-ink-faint flex-shrink-0" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d={action.icon} /></svg>
                     {action.label}

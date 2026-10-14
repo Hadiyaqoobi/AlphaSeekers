@@ -7,18 +7,38 @@
 // Cache-name discipline: the material cache name is stable and shared with the
 // "Save offline" button (src/components/save-offline-button.tsx). It is NEVER
 // deleted on install/activate, so saved files survive updates. Only stale
-// *runtime* caches from older SW versions are pruned on activate.
+// caches from older SW versions are pruned on activate.
+//
+// WHAT IS (AND IS NOT) CACHED — and why.
+//
+//   Pages (HTML navigations) are NOT cached any more. Earlier versions stored
+//   every page a signed-in user opened and, after a 3 s timeout, served that
+//   copy BY URL. On a shared phone or a family/community-centre computer the
+//   next person to open /fa/dashboard could be shown the previous student's
+//   dashboard, and the only cleanup was the logout button (which also threw
+//   away the student's saved materials). Navigations are now network-first
+//   with no per-URL copy; when the network fails the only fallback is the
+//   offline page, which is fetched WITHOUT cookies, so it never contains
+//   anyone's data.
+//
+//   Saved materials (MATERIAL_CACHE) ARE kept, across updates AND across
+//   logout. They are class files stored under their public file URL — the
+//   same bytes for every student in the class, no account data inside — so
+//   keeping them cannot leak one user's data to another, and wiping them on
+//   logout only destroyed work a student did on purpose ("Save offline") to
+//   study without a connection.
 
-const RUNTIME_CACHE = "alphaseekers-runtime-v7";
+// There is no runtime page cache any more: "alphaseekers-runtime-v7" held
+// per-user HTML, and activate() deletes it because it is not in KEEP_CACHES.
+// Anonymous offline pages only (fetched with credentials: "omit").
+const OFFLINE_CACHE = "alphaseekers-offline-v1";
 // Must match MATERIAL_CACHE in src/components/save-offline-button.tsx.
 const MATERIAL_CACHE = "alphaseekers-materials-v1";
-const KEEP_CACHES = [RUNTIME_CACHE, MATERIAL_CACHE];
+const KEEP_CACHES = [OFFLINE_CACHE, MATERIAL_CACHE];
 
-// How long a navigation waits for the network before falling back to a cached
-// copy of that same page. Tuned for "slow", not "broken": long enough that a
-// merely sluggish connection still serves fresh content, short enough that a
-// student is not left looking at a blank screen wondering if it is working.
-const NAVIGATION_TIMEOUT_MS = 3000;
+const OFFLINE_LOCALES = ["fa", "en"];
+const DEFAULT_LOCALE = "fa";
+const offlinePath = (locale) => `/${locale}/offline`;
 
 /**
  * Last-resort offline page: nothing cached, and the network failed.
@@ -56,11 +76,43 @@ function offlineFallback() {
   );
 }
 
-self.addEventListener("install", () => {
+self.addEventListener("install", (event) => {
   // Activate this version as soon as it has installed. We do not pre-delete
   // caches here — offline data must persist across updates.
   self.skipWaiting();
+  // Pre-cache the translated offline page per locale, WITHOUT cookies so the
+  // stored copy is the signed-out rendering (no name, no sidebar, no data).
+  // Best effort: a failure here must never block installation.
+  event.waitUntil(
+    (async () => {
+      try {
+        const cache = await caches.open(OFFLINE_CACHE);
+        await Promise.all(
+          OFFLINE_LOCALES.map(async (locale) => {
+            const response = await fetch(offlinePath(locale), { credentials: "omit", cache: "reload" });
+            if (response && response.ok) await cache.put(offlinePath(locale), response);
+          }),
+        );
+      } catch {
+        // Offline at install time — the inline fallback below still works.
+      }
+    })(),
+  );
 });
+
+/** The anonymous offline page for the locale in `url`, or the inline fallback. */
+async function offlinePage(url) {
+  const first = url.pathname.split("/")[1];
+  const locale = OFFLINE_LOCALES.includes(first) ? first : DEFAULT_LOCALE;
+  try {
+    const cache = await caches.open(OFFLINE_CACHE);
+    const cached = await cache.match(offlinePath(locale));
+    if (cached) return cached;
+  } catch {
+    // fall through
+  }
+  return offlineFallback();
+}
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
@@ -119,51 +171,14 @@ self.addEventListener("fetch", (event) => {
         }
       }
 
-      // 3. Navigations: network-first, but with a DEADLINE.
-      //
-      // Plain network-first only helps when the network fails. On the
-      // connections this platform is actually used on, the common case is not
-      // "offline" — it is "so slow that fetch never settles". The request does
-      // not reject, so the old code sat on a blank screen indefinitely while a
-      // perfectly good cached copy of the page was sitting right there.
-      //
-      // So: race the network against a timer. If the network wins, serve and
-      // re-cache it. If the timer wins and we have a cached copy, serve that
-      // immediately — the student gets a usable page in about three seconds
-      // instead of staring at white. The network request is NOT aborted; it is
-      // left to finish and refresh the cache for next time.
+      // 3. Navigations: network-first, NO per-URL page cache (see the header
+      // comment: cached signed-in pages were served to whoever used the device
+      // next). If the network fails, show the anonymous offline page.
       if (request.mode === "navigate") {
-        const runtimeCache = await caches.open(RUNTIME_CACHE);
-
-        const network = fetch(request)
-          .then((response) => {
-            if (response && response.ok) {
-              // clone() before the body is consumed by whoever we hand it to.
-              runtimeCache.put(request, response.clone()).catch(() => {});
-            }
-            return response;
-          });
-
-        const cachedPage = await runtimeCache.match(request);
-
-        if (cachedPage) {
-          const timeout = new Promise((resolve) =>
-            setTimeout(() => resolve(null), NAVIGATION_TIMEOUT_MS),
-          );
-          try {
-            const winner = await Promise.race([network, timeout]);
-            if (winner) return winner;
-          } catch {
-            // Network rejected outright — fall through to the cached copy.
-          }
-          return cachedPage;
-        }
-
-        // Nothing cached: we have no choice but to wait for the network.
         try {
-          return await network;
+          return await fetch(request);
         } catch {
-          return offlineFallback();
+          return offlinePage(url);
         }
       }
 

@@ -25,6 +25,10 @@ import { useTranslations } from "next-intl";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
+import { messageForCode, readErrorBody } from "@/lib/ui/api-error";
+import { passwordProblem } from "@/lib/ui/password-policy";
+import { loginHref } from "@/lib/ui/safe-next";
+
 type ClassJoinFormProps = {
   classId: string;
   locale: string;
@@ -33,6 +37,7 @@ type ClassJoinFormProps = {
 
 export function ClassJoinForm({ classId, locale, isFull }: ClassJoinFormProps) {
   const t = useTranslations("classJoin");
+  const tRegister = useTranslations("register");
   const router = useRouter();
 
   const [name, setName] = useState("");
@@ -44,8 +49,15 @@ export function ClassJoinForm({ classId, locale, isFull }: ClassJoinFormProps) {
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setSubmitting(true);
     setError(null);
+
+    // Same rule the server enforces, checked here so a slow connection does
+    // not cost a round trip to learn the password is too weak.
+    if (passwordProblem(password)) {
+      setError(t("errors.password"));
+      return;
+    }
+    setSubmitting(true);
 
     let response: Response;
     try {
@@ -68,8 +80,34 @@ export function ClassJoinForm({ classId, locale, isFull }: ClassJoinFormProps) {
     }
 
     if (!response.ok) {
-      const body = (await response.json().catch(() => ({}))) as { message?: string };
-      setError(body.message ?? t("failed"));
+      // Translate by code; the server's English `message` is never shown.
+      const body = await readErrorBody(response);
+      const field = Array.isArray(body?.errors)
+        ? (body.errors as Array<{ field?: unknown }>)[0]?.field
+        : undefined;
+      const byField: Record<string, string> = {
+        name: t("errors.name"),
+        email: tRegister("emailInvalid"),
+        password: t("errors.password"),
+      };
+      setError(
+        typeof field === "string" && byField[field]
+          ? byField[field]
+          : messageForCode(
+              body as { code?: unknown },
+              {
+                RATE_LIMITED: t("errors.rateLimited"),
+                CLASS_NOT_FOUND: t("errors.notFound"),
+                CLASS_CLOSED: t("errors.closed"),
+                CLASS_FULL: t("classFull"),
+                REGISTRATION_CLOSED: t("errors.registrationClosed"),
+                WRONG_PASSWORD: t("errors.wrongPassword"),
+                ACCOUNT_DEACTIVATED: t("errors.deactivated"),
+                NOT_A_STUDENT: t("errors.notAStudent"),
+              },
+              t("failed"),
+            ),
+      );
       setSubmitting(false);
       return;
     }
@@ -87,7 +125,9 @@ export function ClassJoinForm({ classId, locale, isFull }: ClassJoinFormProps) {
 
     // Joined, but the sign-in did not take. They ARE in the class; send them to
     // sign in with that said, never to a page implying something went wrong.
-    router.push(`/${locale}/login?justRegistered=1`);
+    router.push(
+      `/${locale}/login?justRegistered=1&next=${encodeURIComponent(`/${locale}/classes/${classId}`)}`,
+    );
     router.refresh();
   }
 
@@ -194,7 +234,7 @@ export function ClassJoinForm({ classId, locale, isFull }: ClassJoinFormProps) {
 
       <p className="text-center text-xs text-ink-faint" dir="auto">
         {t("alreadyHaveAccount")}{" "}
-        <a className="font-semibold text-neon-400 underline-offset-2 hover:underline" href={`/${locale}/login`}>
+        <a className="font-semibold text-neon-400 underline-offset-2 hover:underline" href={loginHref(locale, `/${locale}/classes/${classId}`)}>
           {t("signInInstead")}
         </a>
       </p>

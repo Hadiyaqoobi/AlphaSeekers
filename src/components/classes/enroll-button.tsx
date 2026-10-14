@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 
 import { isRegistrationClosed } from "@/lib/platform/registration-deadline";
+import { messageForCode, readErrorBody } from "@/lib/ui/api-error";
 
 type EnrollButtonProps = {
   classId: string;
@@ -30,32 +31,49 @@ export function EnrollButton({
     setLoading(true);
     setError(null);
 
-    const response = await fetch(`/api/classes/${classId}/enroll`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
+    let response: Response;
+    try {
+      response = await fetch(`/api/classes/${classId}/enroll`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+    } catch {
+      setError(t("enrollFailed"));
+      setLoading(false);
+      return;
+    }
 
     if (!response.ok) {
-      const body = (await response.json().catch(() => ({ message: t("enrollFailed") }))) as {
-        message?: string;
-        code?: string;
-        limit?: number;
-      };
+      const body = await readErrorBody(response);
       // Server returns code "ENROLLMENT_LIMIT" with a numeric limit when the
       // student has reached MAX_ACTIVE_ENROLLMENTS — translate locally so the
-      // student sees Dari on /fa/* (UAT 2026-04-26 MED-A).
-      if (body.code === "ENROLLMENT_LIMIT" && typeof body.limit === "number") {
+      // student sees Dari on /fa/* (UAT 2026-04-26 MED-A). Every other failure
+      // is translated by code too; the server's English `message` is never shown.
+      if (body?.code === "ENROLLMENT_LIMIT" && typeof body.limit === "number") {
         setError(t("limitReached", { limit: body.limit }));
       } else {
-        setError(body.message ?? t("enrollFailed"));
+        setError(
+          messageForCode(
+            body,
+            {
+              CLASS_FULL: t("classFull"),
+              REGISTRATION_CLOSED: t("registrationClosed"),
+              ENROLLMENT_REJECTED: t("rejected"),
+            },
+            t("enrollFailed"),
+          ),
+        );
       }
       setLoading(false);
       return;
     }
 
-    // Joining is a request now, not an instant enrolment: an admin decides.
+    // The server enrols straight away (state "JOINED"), so flip to the enrolled
+    // state now: the student sees the confirmation AND the leave button without
+    // reloading the page.
+    setEnrolled(true);
     setRequested(true);
     setLoading(false);
     router.refresh();
@@ -65,20 +83,24 @@ export function EnrollButton({
     setLoading(true);
     setError(null);
 
-    const response = await fetch(`/api/classes/${classId}/enroll`, {
-      method: "DELETE",
-    });
+    let ok = false;
+    try {
+      const response = await fetch(`/api/classes/${classId}/enroll`, {
+        method: "DELETE",
+      });
+      ok = response.ok;
+    } catch {
+      ok = false;
+    }
 
-    if (!response.ok) {
-      const body = (await response.json().catch(() => ({ message: t("unenrollFailed") }))) as {
-        message?: string;
-      };
-      setError(body.message ?? t("unenrollFailed"));
+    if (!ok) {
+      setError(t("unenrollFailed"));
       setLoading(false);
       return;
     }
 
     setEnrolled(false);
+    setRequested(false);
     setLoading(false);
     router.refresh();
   }
@@ -100,18 +122,21 @@ export function EnrollButton({
   return (
     <div className="space-y-2">
       {enrolled ? (
-        <button
-          className="btn-muted"
-          disabled={loading}
-          onClick={drop}
-          type="button"
-        >
-          {loading ? "..." : t("enrolledTapToUnenroll")}
-        </button>
-      ) : requested ? (
-        <p className="rounded-lg border border-white/10 bg-dark-100 px-4 py-2.5 text-sm text-ink-soft">
-          {t("requestSent")}
-        </p>
+        <>
+          {requested ? (
+            <p className="rounded-lg border border-white/10 bg-dark-100 px-4 py-2.5 text-sm text-ink-soft" role="status">
+              {t("requestSent")}
+            </p>
+          ) : null}
+          <button
+            className="btn-muted"
+            disabled={loading}
+            onClick={drop}
+            type="button"
+          >
+            {loading ? "..." : t("enrolledTapToUnenroll")}
+          </button>
+        </>
       ) : (
         <button
           className="btn-primary"

@@ -1,7 +1,10 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
+
+import { digitsOnly } from "@/lib/ui/digits";
+import { formatKabulTime } from "@/lib/ui/kabul-time";
 
 interface CheckinEntryProps {
   classId: string;
@@ -17,6 +20,7 @@ export function CheckinEntry({
   initialVerifiedAt,
 }: CheckinEntryProps) {
   const t = useTranslations("checkin");
+  const locale = useLocale();
   const [code, setCode] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">(
     initiallyVerified ? "success" : "idle",
@@ -39,7 +43,7 @@ export function CheckinEntry({
           body: JSON.stringify({ code }),
         },
       );
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
 
       if (data.success) {
         setStatus("success");
@@ -56,7 +60,8 @@ export function CheckinEntry({
       };
       const translated = data.code && codeMap[data.code as string];
       setStatus("error");
-      setMessage(translated ?? data.message ?? t("incorrectCode"));
+      // Never the server's English `message`: translate by code or say "incorrect".
+      setMessage(translated || t("incorrectCode"));
     } catch {
       setStatus("error");
       setMessage(t("networkError"));
@@ -71,10 +76,7 @@ export function CheckinEntry({
         <p className="text-xs text-ink-soft mt-1">
           {t("markedPresent")}
           {verifiedAt
-            ? ` — ${new Date(verifiedAt).toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-              })}`
+            ? ` — ${formatKabulTime(verifiedAt, locale)}`
             : ""}
         </p>
       </div>
@@ -94,7 +96,9 @@ export function CheckinEntry({
           maxLength={4}
           value={code}
           onChange={(e) => {
-            const val = e.target.value.replace(/\D/g, "").slice(0, 4);
+            // A Dari keyboard types ۱۲۳۴ — convert to 1234 before filtering,
+            // otherwise every digit is stripped and Verify never enables.
+            const val = digitsOnly(e.target.value, 4);
             setCode(val);
             if (status === "error") setStatus("idle");
           }}

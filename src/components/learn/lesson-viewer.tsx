@@ -1,8 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+
+import { DirArrow } from "@/components/ui/dir-arrow";
 
 import { LessonChat } from "./lesson-chat";
 import { SectionRenderer, type LessonSection } from "./lesson-sections";
@@ -26,6 +29,7 @@ export function LessonViewer({ pathId, lessonNumber, locale, pathTitle }: Lesson
   const isDari = locale === "fa";
   const [data, setData] = useState<LessonData | null>(null);
   const [loading, setLoading] = useState(true);
+  const tError = useTranslations("error");
   const [error, setError] = useState<string | null>(null);
   const [quizScore, setQuizScore] = useState<number | null>(null);
   const completedRef = useRef(false);
@@ -41,8 +45,7 @@ export function LessonViewer({ pathId, lessonNumber, locale, pathTitle }: Lesson
     })
       .then(async (r) => {
         if (!r.ok) {
-          const body = await r.json().catch(() => null);
-          throw new Error(body?.message || `HTTP ${r.status}`);
+          throw new Error(String(r.status));
         }
         return r.json();
       })
@@ -50,11 +53,12 @@ export function LessonViewer({ pathId, lessonNumber, locale, pathTitle }: Lesson
         setData(d);
         setLoading(false);
       })
-      .catch((err) => {
-        setError(err.message);
+      .catch(() => {
+        // Translated generic message; the server's English text is not shown.
+        setError(tError("body"));
         setLoading(false);
       });
-  }, [pathId, lessonNumber]);
+  }, [pathId, lessonNumber, tError]);
 
   // Mark complete on summary "next" click
   async function handleSummaryNext() {
@@ -104,13 +108,13 @@ export function LessonViewer({ pathId, lessonNumber, locale, pathTitle }: Lesson
         <h1 className="text-xl font-bold mb-3" style={{ color: "#FFFFFF" }}>
           {isDari ? "نمی‌توان درس را بارگیری کرد" : "Couldn't load this lesson"}
         </h1>
-        <p className="text-sm mb-6" style={{ color: "#8AA4B8" }}>{error || "Unknown error"}</p>
+        <p className="text-sm mb-6" style={{ color: "#8AA4B8" }}>{error || tError("body")}</p>
         <Link
           href={`/${locale}/learn/${pathId}`}
           className="inline-block px-5 py-2.5 rounded-xl font-semibold"
           style={{ background: "#00E676", color: "#070B0E" }}
         >
-          ← {isDari ? "بازگشت" : "Back to path"}
+          <DirArrow back /> {isDari ? "بازگشت" : "Back to path"}
         </Link>
       </main>
     );
@@ -134,7 +138,7 @@ export function LessonViewer({ pathId, lessonNumber, locale, pathTitle }: Lesson
           className="text-xs font-medium flex items-center gap-1 transition-colors"
           style={{ color: "#8AA4B8" }}
         >
-          ← {isDari ? "مسیر" : "Path"}
+          <DirArrow back /> {isDari ? "مسیر" : "Path"}
         </Link>
         <div className="flex-1 mx-4 min-w-0">
           <p className="text-xs truncate text-center" style={{ color: "#8AA4B8" }}>

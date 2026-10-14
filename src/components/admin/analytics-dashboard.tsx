@@ -65,7 +65,12 @@ const MODE_LABELS: Record<string, string> = {
   quick: "Quick",
 };
 
-export function AnalyticsDashboard() {
+export function AnalyticsDashboard({
+  showInterviewSummary = false,
+}: {
+  /** Super admins only: the "copy metrics for interview" panel is not for staff. */
+  showInterviewSummary?: boolean;
+} = {}) {
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -310,7 +315,8 @@ export function AnalyticsDashboard() {
         />
       </div>
 
-      {/* ════════ Section 6: Copy metrics for interview ════════ */}
+      {/* ════════ Section 6: Copy metrics for interview (super admins only) ════════ */}
+      {showInterviewSummary ? (
       <div
         className="rounded-2xl p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
         style={{ background: "#0D1419", border: "1px solid #1A2D3D" }}
@@ -350,6 +356,7 @@ export function AnalyticsDashboard() {
           )}
         </button>
       </div>
+      ) : null}
 
       {/* Generated timestamp */}
       <p className="text-xs text-center" style={{ color: "#5A7A94" }}>

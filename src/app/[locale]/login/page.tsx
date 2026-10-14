@@ -7,6 +7,8 @@ import { useTranslations } from "next-intl";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { getProviders, signIn } from "next-auth/react";
 
+import { pickReturnPath } from "@/lib/ui/safe-next";
+
 const SOFT = "#93A9BC";
 const FAINT = "#5F7C93";
 const GREEN = "#00E676";
@@ -47,11 +49,12 @@ export default function LoginPage() {
   const params = useParams<{ locale: string }>();
   const searchParams = useSearchParams();
   const locale = params.locale || "fa";
-  const nextParam = searchParams.get("next");
-  const safeNext =
-    nextParam && (nextParam === `/${locale}` || nextParam.startsWith(`/${locale}/`))
-      ? nextParam
-      : null;
+  // Honour both `next` (ours) and `callbackUrl` (NextAuth's, still sent by a
+  // few pages); either is only followed when it is a same-site locale path.
+  const safeNext = pickReturnPath(
+    searchParams,
+    typeof window === "undefined" ? undefined : window.location.origin,
+  );
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -256,7 +259,7 @@ export default function LoginPage() {
           <form className={`${googleEnabled ? "" : "mt-7 "}flex flex-col gap-[18px]`} onSubmit={handleSubmit}>
             {/* Email */}
             <div>
-              <label className="mb-2 block text-[11px] font-bold uppercase tracking-[0.11em]" style={{ color: SOFT }}>
+              <label className="mb-2 block text-[11px] font-bold uppercase tracking-[0.11em]" htmlFor="login-email" style={{ color: SOFT }}>
                 {t("email")}
               </label>
               <div className="auth-field">
@@ -267,6 +270,7 @@ export default function LoginPage() {
                   </svg>
                 </span>
                 <input
+                  id="login-email"
                   autoComplete="email"
                   type="email"
                   required
@@ -280,7 +284,7 @@ export default function LoginPage() {
             {/* Password */}
             <div>
               <div className="mb-2 flex items-center justify-between">
-                <label className="block text-[11px] font-bold uppercase tracking-[0.11em]" style={{ color: SOFT }}>
+                <label className="block text-[11px] font-bold uppercase tracking-[0.11em]" htmlFor="login-password" style={{ color: SOFT }}>
                   {t("password")}
                 </label>
                 <Link href={`/${locale}/forgot-password`} className="text-xs" style={{ color: FAINT }}>
@@ -295,6 +299,7 @@ export default function LoginPage() {
                   </svg>
                 </span>
                 <input
+                  id="login-password"
                   autoComplete="current-password"
                   type={showPassword ? "text" : "password"}
                   required

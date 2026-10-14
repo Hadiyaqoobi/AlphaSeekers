@@ -31,7 +31,11 @@
     "siteSettings": "Site Settings",
     "contact": "Contact us",
     "support": "Support",
-    "setup": "Class setup"
+    "setup": "Class setup",
+    "storyModeration": "Story moderation",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "skipToContent": "Skip to content"
   },
   "siteSettings": {
     "title": "Site Settings",
@@ -711,7 +715,9 @@
     "limitReached": "شما می‌توانید همزمان در {limit} صنف اشتراک داشته باشید. برای ثبت‌نام در صنف جدید، یکی را لغو کنید.",
     "requestToJoin": "Join this class",
     "requestSent": "You have joined this class.",
-    "registrationClosed": "Registration for this class has closed."
+    "registrationClosed": "Registration for this class has closed.",
+    "classFull": "This class is full.",
+    "rejected": "Your request for this class was not approved."
   },
   "materials": {
     "title": "آپلود ماده",
@@ -903,7 +909,22 @@
     "myAttendance": "حاضری من",
     "classAttendanceRate": "نرخ حاضری",
     "overallRate": "حاضری کلی",
-    "noAttendanceData": "هنوز اطلاعات حاضری موجود نیست."
+    "noAttendanceData": "هنوز اطلاعات حاضری موجود نیست.",
+    "legend": {
+      "verified": "Verified (joined + code)",
+      "joinedOnly": "Joined only (no code)",
+      "absent": "Absent"
+    },
+    "saveFailed": "Could not save this attendance mark. It has been put back — please try again.",
+    "verifiedJoinedCount": "{verified} verified · {joined} / {total} joined",
+    "status": "Status",
+    "manual": "Manual",
+    "markAbsent": "Mark {name} as absent",
+    "markPresent": "Mark {name} as present",
+    "joinedColumn": "Joined",
+    "joinRate": "Join rate",
+    "verifiedColumn": "Verified",
+    "verifyRate": "Verify rate"
   },
   "profile": {
     "title": "پروفایل",
@@ -926,8 +947,11 @@
         "wrongCurrent": "Current password is incorrect.",
         "sameAsCurrent": "New password must be different from your current password.",
         "generic": "تغییر رمز ناموفق بود. لطفاً دوباره تلاش کنید.",
-        "network": "خطای شبکه. لطفاً اتصال خود را بررسی کنید."
-      }
+        "network": "خطای شبکه. لطفاً اتصال خود را بررسی کنید.",
+        "weak": "Your password needs at least 8 characters, with at least one letter and one number.",
+        "rateLimited": "Too many attempts. Please wait a few minutes and try again."
+      },
+      "rule": "At least 8 characters, with at least one letter and one number."
     },
     "actions": {
       "backToDashboard": "برگشت به داشبورد",
@@ -968,6 +992,11 @@
       "empty": "در حال حاضر فرصت باز موجود نیست.",
       "deadline": "آخرین مهلت",
       "viewOpportunity": "مشاهده فرصت"
+    },
+    "integrations": "Integrations",
+    "changePassword": {
+      "title": "Set a new password",
+      "subtitle": "Choose a strong password you have not used elsewhere. Once saved, the temporary-password reminder disappears."
     }
   },
   "adminForms": {
@@ -1057,7 +1086,8 @@
     "scholarship": "بورسیه",
     "job": "وظیفه",
     "internship": "انترنشیپ",
-    "grant": "گرنت"
+    "grant": "گرنت",
+    "applyLink": "Link to apply"
   },
   "teacherForms": {
     "scheduling": "زمان‌بندی",
@@ -1158,7 +1188,8 @@
     "delete": "حذف",
     "deleteConfirm": "تایید حذف؟",
     "manageUsersTitle": "Manage users",
-    "manageUsersSubtitle": "Approve new sign-ups, change someone's role, or remove an account."
+    "manageUsersSubtitle": "Approve new sign-ups, change someone's role, or remove an account.",
+    "deleteFailed": "Could not delete. Please try again."
   },
   "adminContent": {
     "kicker": "محتوا",
@@ -1387,7 +1418,9 @@
     "invalidToken": "This reset link is invalid or has expired. Please request a new one.",
     "requestNew": "Request a new link",
     "mismatch": "Passwords don't match.",
-    "weak": "Password must be at least 8 characters and include a letter and a number."
+    "weak": "Password must be at least 8 characters and include a letter and a number.",
+    "rateLimited": "Too many attempts. Please wait a few minutes and try again.",
+    "failed": "We could not reset your password. Check your internet connection and try again."
   },
   "contact": {
     "kicker": "Get in touch",
@@ -1505,6 +1538,119 @@
     "networkError": "We could not reach AlphaSeekers. Check your internet connection and try again.",
     "classFull": "This class is full. Please check the other classes that are open.",
     "alreadyHaveAccount": "Already have an account?",
-    "signInInstead": "Sign in"
+    "signInInstead": "Sign in",
+    "errors": {
+      "name": "Please enter your full name.",
+      "password": "Your password needs at least 8 characters, with at least one letter and one number.",
+      "rateLimited": "Too many attempts. Please wait a few minutes and try again.",
+      "notFound": "This class could not be found.",
+      "closed": "This class is not open for registration.",
+      "registrationClosed": "Registration for this class has closed.",
+      "wrongPassword": "An account already uses this email. Enter that account's password to join, or sign in first.",
+      "deactivated": "This account has been turned off. Please ask your teacher or the AlphaSeekers team.",
+      "notAStudent": "This email belongs to a teacher or admin account. Please sign in instead."
+    }
+  },
+  "liveSession": {
+    "metaTitle": "{className} live session",
+    "metaFallback": "Session",
+    "cancelledTitle": "Session cancelled",
+    "cannotOpenTitle": "Cannot open this session",
+    "reasons": {
+      "cancelled": "This session was cancelled.",
+      "notEnrolled": "You are not enrolled in this class.",
+      "notStarted": "This session has not started yet. Come back closer to the start time.",
+      "ended": "This live session has ended. You can still view the summary and recording.",
+      "generic": "You cannot open this session right now."
+    },
+    "languageClass": "Language class",
+    "liveSession": "Live session",
+    "withTeacher": "With {name}",
+    "startsIn": "Starts in {minutes} min",
+    "startedAgo": "Started {minutes} min ago",
+    "startingNow": "Starting now",
+    "ended": "Session ended",
+    "joinMeet": "Join Google Meet",
+    "connected": "Connected — Meet is open in another tab",
+    "switchBack": "Switch back to the Meet tab anytime. Your notes save here.",
+    "reopenMeet": "Re-open Meet",
+    "noMeetLink": "Meet link not available yet. Check back closer to start time.",
+    "materials": "Today's materials",
+    "teacherTools": "After class — teacher tools",
+    "generating": "Generating...",
+    "generateSummary": "Generate summary",
+    "regenerateSummary": "Regenerate summary",
+    "createQuiz": "Create quiz",
+    "regenerateQuiz": "Regenerate quiz",
+    "recordingSetup": "Recording & homework setup",
+    "summaryFailed": "Could not create the summary. Please try again.",
+    "quizFailed": "Could not create the quiz. Please try again.",
+    "attendance": "Attendance",
+    "rosterCounts": "{verified} verified · {joined} joined / {total}",
+    "summary": "Class summary",
+    "myNotes": "My notes",
+    "quickAi": "Quick AI",
+    "vocabulary": "Key vocabulary",
+    "attendanceMarkedAt": "Attendance marked at {time}",
+    "homework": {
+      "selectImage": "Please select an image.",
+      "imageTooLarge": "The image must be smaller than 5 MB.",
+      "uploadFailed": "Could not upload the photo. Please try again.",
+      "needContent": "Add some text or upload a photo.",
+      "submitFailed": "Could not submit your homework. Please try again.",
+      "submitted": "Submitted",
+      "submittedAt": "Submitted {time}",
+      "aiReview": "AI review",
+      "teacherFeedback": "Teacher feedback",
+      "teacherFeedbackWithGrade": "Teacher feedback ({grade})",
+      "reviewPending": "Teacher review pending",
+      "due": "Due: {date}",
+      "answerPlaceholder": "Type your answers here...",
+      "photoAlt": "Photo of your homework",
+      "removePhoto": "Remove photo",
+      "uploading": "Uploading...",
+      "uploadPhoto": "Upload a photo of your work",
+      "submitting": "Submitting...",
+      "submit": "Submit homework"
+    },
+    "quiz": {
+      "title": "Post-class quiz",
+      "intro": "{count} questions · Test your understanding of today's lesson.",
+      "start": "Start quiz",
+      "score": "{correct} / {total} correct",
+      "great": "Great work — you really understood today's lesson!",
+      "good": "Good progress. Review the topics you missed.",
+      "keepGoing": "Don't worry. Review the materials and try again.",
+      "progress": "Question {current} of {total}",
+      "answerPlaceholder": "Type your answer...",
+      "correctAnswerIs": "The correct answer is:",
+      "correct": "Correct!",
+      "check": "Check answer",
+      "next": "Next question",
+      "results": "See results"
+    },
+    "notes": {
+      "label": "My notes",
+      "placeholder": "Take notes during class. They save automatically and you can read them later...",
+      "saving": "Saving...",
+      "savedAt": "Saved {time}",
+      "notSaved": "Not saved yet",
+      "saveNow": "Save now"
+    }
+  },
+  "stories": {
+    "anonymous": "Anonymous",
+    "student": "Student"
+  },
+  "storyEditor": {
+    "titleTooShort": "The title must be at least 3 characters.",
+    "selectImage": "Please choose an image file.",
+    "imageTooLarge": "The image must be smaller than 5 MB.",
+    "writeFirst": "Write something first, then ask the AI for help.",
+    "aiFailed": "The AI could not answer right now. Please try again.",
+    "noSuggestions": "No suggestions this time."
+  },
+  "learn": {
+    "chatNoAnswer": "I could not answer that — try asking a different way."
   }
 }
