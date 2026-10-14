@@ -86,8 +86,9 @@ export default async function DashboardPage({ params, searchParams }: DashboardP
     teacherStats,
   ] =
     await Promise.all([
-      // Platform totals are not shown to teachers (they get their own below).
-      isTeacher ? Promise.resolve(null) : getDashboardStats(),
+      // Platform totals are for staff only: teachers get their own numbers
+      // below, and students see their classes and the Join now banner instead.
+      isAdmin ? getDashboardStats() : Promise.resolve(null),
       listUserNotifications(user.id),
       isStudent ? getJoinNowSession(user.id) : Promise.resolve(null),
       isStudent ? listStudentClasses(user.id) : Promise.resolve([]),
@@ -114,16 +115,19 @@ export default async function DashboardPage({ params, searchParams }: DashboardP
   const greeting = locale === "fa" ? getGreetingDari() : getGreeting();
   const dateStr = formatKabulLongDate(new Date(), locale);
 
-  // A teacher sees their own classes, students and sessions; everyone else sees
-  // the platform's totals.
+  // A teacher sees their own classes, students and sessions; staff see the
+  // platform's totals; students see no counters (the site-wide totals told them
+  // nothing about their own classes).
   const todayCount = teacherStats?.sessionsToday ?? stats?.sessionsToday ?? 0;
-  const statCards = teacherStats || !stats
+  const statCards = teacherStats
     ? [
         { value: teacherStats?.activeClasses ?? 0, label: t("cards.myClasses"), iconBg: "rgba(0, 230, 118, 0.10)", iconColor: "#00E676", icon: "M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" },
         { value: teacherStats?.students ?? 0, label: t("cards.myStudents"), iconBg: "rgba(0, 229, 255, 0.10)", iconColor: "#00E5FF", icon: "M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" },
         { value: teacherStats?.sessionsThisWeek ?? 0, label: t("cards.next7Days"), iconBg: "rgba(41, 121, 255, 0.10)", iconColor: "#2979FF", icon: "M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" },
         { value: todayCount, label: t("cards.today"), iconBg: "rgba(255, 179, 0, 0.10)", iconColor: "#FFB300", icon: "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" },
       ]
+    : !stats
+    ? []
     : [
         { value: stats.activeClasses, label: t("cards.classes"), iconBg: "rgba(0, 230, 118, 0.10)", iconColor: "#00E676", icon: "M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" },
         { value: stats.students, label: t("cards.students"), iconBg: "rgba(0, 229, 255, 0.10)", iconColor: "#00E5FF", icon: "M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" },
@@ -152,26 +156,28 @@ export default async function DashboardPage({ params, searchParams }: DashboardP
       </header>
 
       {/* Stat Cards */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        {statCards.map((card) => (
-          <article
-            key={card.label}
-            className="rounded-2xl p-5"
-            style={{ background: "#0D1419", border: "1px solid #1A2D3D" }}
-          >
-            <div
-              className="inline-flex items-center justify-center w-10 h-10 rounded-xl"
-              style={{ background: card.iconBg, color: card.iconColor }}
+      {statCards.length > 0 ? (
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          {statCards.map((card) => (
+            <article
+              key={card.label}
+              className="rounded-2xl p-5"
+              style={{ background: "#0D1419", border: "1px solid #1A2D3D" }}
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d={card.icon} />
-              </svg>
-            </div>
-            <p className="text-3xl font-bold mt-4" style={{ color: "#E8EEF2" }}>{card.value}</p>
-            <p className="text-sm mt-1" style={{ color: "#8AA4B8" }}>{card.label}</p>
-          </article>
-        ))}
-      </div>
+              <div
+                className="inline-flex items-center justify-center w-10 h-10 rounded-xl"
+                style={{ background: card.iconBg, color: card.iconColor }}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d={card.icon} />
+                </svg>
+              </div>
+              <p className="text-3xl font-bold mt-4" style={{ color: "#E8EEF2" }}>{card.value}</p>
+              <p className="text-sm mt-1" style={{ color: "#8AA4B8" }}>{card.label}</p>
+            </article>
+          ))}
+        </div>
+      ) : null}
 
       {/* Students waiting on a course decision.
           Deliberately rendered above the support queue: a person waiting to be
@@ -247,8 +253,10 @@ export default async function DashboardPage({ params, searchParams }: DashboardP
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Left column (spans 2) */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Google Calendar / Offline Schedule */}
-          {user.role === "TEACHER" || user.role === "ADMIN" ? (
+          {/* Google Calendar / Offline Schedule. Staff only: Meet links come from
+              the shared AlphaSeekers Google account, so a teacher has nothing to
+              connect (an optional own-calendar link stays on /teacher/setup). */}
+          {user.role === "ADMIN" ? (
             <GoogleConnectCard locale={locale} notice={searchParams.google} />
           ) : null}
           {user.role === "STUDENT" ? <OfflineSchedule /> : null}
