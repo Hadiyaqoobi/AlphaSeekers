@@ -220,6 +220,19 @@ export async function sendPasswordResetEmail(email: string, resetUrl: string): P
 }
 
 /**
+ * Send one plain email to an address that may not belong to any account (a
+ * certificate issued by hand to someone who is not signed up). Direct SMTP:
+ * there is no user, so no Telegram, push or in-site fallback exists.
+ */
+export async function sendDirectEmail(to: string, subject: string, text: string): Promise<void> {
+  const settings = resolveSmtpSettings();
+  if (!settings) {
+    throw new NonRetryableError("SMTP_USER or SMTP_PASS missing");
+  }
+  await getTransporter(settings).sendMail({ from: settings.from, to, subject, text });
+}
+
+/**
  * Alert the maintainers that an URGENT support ticket was filed. Deliberately
  * direct SMTP rather than deliverWithFallback: this must land in an inbox, not
  * a Telegram chat nobody watches. Normal-priority tickets send nothing at all

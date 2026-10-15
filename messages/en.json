@@ -1812,7 +1812,7 @@
     "title": "Certificates",
     "hint": "Issue certificates to the students who finished this class and to its teacher. Each certificate has a QR code that anyone can scan to check it is real.",
     "validCount": "{count, plural, =0 {None issued yet} one {# valid certificate} other {# valid certificates}}",
-    "nobody": "No teacher or enrolled students yet.",
+    "nobody": "No one is listed for this class. You can still type someone in below.",
     "selectAllStudents": "Select all students",
     "selectPerson": "Select {name}",
     "name": "Name",
@@ -1849,6 +1849,15 @@
     "cancelledList": "{count, plural, one {# cancelled certificate} other {# cancelled certificates}}",
     "myTitle": "My certificates",
     "myOpen": "Open",
-    "myIssued": "Issued {date}"
+    "myIssued": "Issued {date}",
+    "alreadyHas": "This person already has a valid certificate for this class. Cancel it first to issue a new one.",
+    "handIssuedTitle": "Typed in by hand",
+    "manualTitle": "Not in the list? Type them in",
+    "manualHint": "Use this when a student or teacher is missing from the list above, or the list does not show. The certificate uses this class and its teacher. With an email, they get the link; if that email has an account here, it also shows on their dashboard. Without one, use Copy link and send it yourself.",
+    "manualName": "Full name, as it should be printed",
+    "manualNamePlaceholder": "Fatima Ahmadi",
+    "manualEmail": "Email (optional)",
+    "manualKind": "Certificate",
+    "manualButton": "Issue certificate"
   }
 }

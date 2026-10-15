@@ -9,6 +9,7 @@ import { prisma } from "@/lib/prisma";
 import {
   findCertificateForVerify,
   issueCertificates,
+  issueManualCertificate,
   listClassCertificates,
   listUserCertificates,
   revokeCertificate,
@@ -166,6 +167,57 @@ d("certificates", () => {
       recipientName: a.name,
       className: klass.name,
     });
+  });
+
+  it("issues to someone typed in by hand who has no account, once per name", async () => {
+    const { staff, klass, teacher } = await setup("manual");
+    const input = {
+      classId: klass.id,
+      issuedById: staff.id,
+      name: "  Laila   Rahimi ",
+      email: "Laila.Nobody@Example.com",
+      kind: "STUDENT_COMPLETION" as const,
+      length: "6-week",
+    };
+
+    const first = await issueManualCertificate(input);
+    expect(first).toMatchObject({ ok: true, alreadyHad: 0 });
+    if (!first.ok) return;
+    expect(first.issued[0]).toMatchObject({ userId: null, email: "laila.nobody@example.com", recipientName: "Laila Rahimi" });
+
+    const found = await findCertificateForVerify(first.issued[0].code);
+    expect(found).toMatchObject({ recipientName: "Laila Rahimi", className: klass.name, teacherName: teacher.name, detail: "6-week" });
+
+    // A double click, or the same name typed again in other case: not a second one.
+    expect(await issueManualCertificate({ ...input, name: "laila rahimi" })).toMatchObject({ ok: true, alreadyHad: 1, issued: [] });
+  });
+
+  it("links a typed-in email to its account, so it shows on their dashboard and is not issued twice", async () => {
+    const { staff, a, klass } = await setup("manual-account");
+    const account = await prisma.user.findUniqueOrThrow({ where: { id: a.id }, select: { email: true } });
+
+    const typed = await issueManualCertificate({
+      classId: klass.id,
+      issuedById: staff.id,
+      name: "Amina (spelled by hand)",
+      email: account.email.toUpperCase(),
+      kind: "STUDENT_COMPLETION",
+    });
+    expect(typed).toMatchObject({ ok: true, alreadyHad: 0 });
+    expect(await listUserCertificates(a.id)).toHaveLength(1);
+
+    // Ticking the same student in the list afterwards does not issue a duplicate.
+    expect(
+      await issueCertificates({ classId: klass.id, issuedById: staff.id, studentIds: [a.id], includeTeacher: false }),
+    ).toMatchObject({ ok: true, alreadyHad: 1, issued: [] });
+  });
+
+  it("rejects a missing name or a broken email", async () => {
+    const { staff, klass } = await setup("manual-bad");
+    const base = { classId: klass.id, issuedById: staff.id, kind: "STUDENT_COMPLETION" as const };
+    expect(await issueManualCertificate({ ...base, name: " a " })).toEqual({ ok: false, reason: "name-missing" });
+    expect(await issueManualCertificate({ ...base, name: "Laila", email: "not-an-email" })).toEqual({ ok: false, reason: "bad-email" });
+    expect(await prisma.certificate.count({ where: { classId: klass.id } })).toBe(0);
   });
 
   it("suggests length, term and hours from the sessions actually held", async () => {
