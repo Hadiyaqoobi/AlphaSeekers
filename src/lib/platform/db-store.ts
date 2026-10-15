@@ -16,7 +16,7 @@ import { openAnswers, sealAnswers } from "@/lib/platform/join-answers";
 import { checkAnswers, readJoinQuestions, type JoinQuestion } from "@/lib/platform/join-questions";
 import { prisma } from "@/lib/prisma";
 import { runtime, warnIfInsecureProductionConfig } from "@/lib/runtime";
-import { classSpanMinutes, planAutoSlot, type SlotProblem } from "@/lib/scheduling/weekly-slot";
+import { planAutoSlot, type SlotProblem } from "@/lib/scheduling/weekly-slot";
 
 type Role = UserRole;
 
@@ -2581,11 +2581,7 @@ async function attachMeetLinks(className: string, teacherId: string, rows: Booke
 async function bookNextAutoOccurrence(klass: AutoBookingClass): Promise<AutoBookingOutcome> {
   const now = new Date();
   const durationMinutes = normalizeDurationMinutes(klass.durationMinutes);
-  const plan = planAutoSlot({
-    schedulePreference: klass.schedulePreference,
-    spanMinutes: classSpanMinutes(durationMinutes, FREE_MEET_SEGMENT_MINUTES, SEGMENT_BREAK_MINUTES),
-    availability: await loadAvailabilityWindows(klass.teacherId),
-  });
+  const plan = planAutoSlot({ schedulePreference: klass.schedulePreference });
 
   if (!plan.ok) {
     console.log(`[scheduler] not booking class ${klass.id} (${klass.name}): ${plan.reason}`);

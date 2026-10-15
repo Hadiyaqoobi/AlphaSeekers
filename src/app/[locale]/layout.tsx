@@ -51,7 +51,9 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
     { href: `/${locale}/library`, label: t("library") },
     { href: `/${locale}/opportunities`, label: t("opportunities") },
     { href: `/${locale}/contact`, label: t("contact") },
-    ...(user && (user.role === "TEACHER" || user.role === "ADMIN")
+    // Not for teachers: staff set every class time and teachers only receive the
+    // Meet link, so there is nothing for them to fill in.
+    ...(user && user.role === "ADMIN"
       ? [{ href: `/${locale}/teacher/availability`, label: t("teacher") }]
       : []),
     ...(user && user.role === "ADMIN"

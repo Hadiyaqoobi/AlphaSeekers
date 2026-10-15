@@ -27,9 +27,12 @@ describe("parseCreateClassBody", () => {
   });
 
   it("still accepts a readable schedulePreference string (scripts, older clients)", () => {
-    const parsed = parseCreateClassBody({ ...base, schedulePreference: "Tuesday 6:00 pm", schedulingMode: "MANUAL" });
+    const parsed = parseCreateClassBody({ ...base, schedulePreference: "Tuesday 6:00 pm" });
     expect(parsed.ok && parsed.data.schedulePreference).toBe("Tue 6:00 PM");
-    expect(parsed.ok && parsed.data.schedulingMode).toBe("MANUAL");
+  });
+
+  it("refuses to hand the dates to the teacher: staff schedule every class", () => {
+    expect(parseCreateClassBody({ ...base, day: "Tue", time: "18:00", schedulingMode: "MANUAL" }).ok).toBe(false);
   });
 
   it("rejects an unreadable or missing class time with a message naming the field", () => {

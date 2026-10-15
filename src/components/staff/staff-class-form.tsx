@@ -66,7 +66,6 @@ type FormState = {
     day: string;
     time: string;
     durationMinutes: string;
-    manualDates: boolean;
     maxStudents: string;
     registrationDeadline: string;
     whatsappGroupUrl: string;
@@ -124,7 +123,6 @@ const DEFAULT_FORM: FormState = {
     day: "Tue",
     time: "18:00",
     durationMinutes: "60",
-    manualDates: false,
     maxStudents: "50",
     registrationDeadline: "",
     whatsappGroupUrl: "",
@@ -195,7 +193,8 @@ export function ClassCreateForm({ teachers, autosaveKey = "class-create" }: Clas
             day: form.day,
             time: form.time,
             durationMinutes: Number(form.durationMinutes),
-            schedulingMode: form.manualDates ? "MANUAL" : "AUTO",
+            // Staff set every date; the teacher only receives the Meet link.
+            schedulingMode: "AUTO",
             maxStudents: Number(form.maxStudents),
             ...(form.registrationDeadline ? { registrationDeadline: form.registrationDeadline } : {}),
             ...(form.whatsappGroupUrl.trim() ? { whatsappGroupUrl: form.whatsappGroupUrl.trim() } : {}),
@@ -296,7 +295,6 @@ export function ClassCreateForm({ teachers, autosaveKey = "class-create" }: Clas
                         {t(issueKey)}
                     </p>
                 ) : null}
-                {!firstSession && !issueKey ? <p className="text-xs text-ink-soft">{t("manualCreated")}</p> : null}
 
                 <div className="flex flex-wrap gap-2">
                     <Link className="btn-secondary" href={`/${locale}/admin/classes/${result.class.id}`}>
@@ -489,7 +487,7 @@ export function ClassCreateForm({ teachers, autosaveKey = "class-create" }: Clas
 
                 {/* The chosen teacher's hours, right where the time is picked. Staff
                     used to find out only after posting ("no session booked"). */}
-                {selectedTeacher && !form.manualDates ? (
+                {selectedTeacher ? (
                     <div className="space-y-2 rounded-lg border border-line-soft p-3" id="class-teacher-hours">
                         {teacherHours.length === 0 ? (
                             <p className="text-xs text-ink-soft">{t("teacherHoursNone", { name: selectedTeacher.name })}</p>
@@ -525,18 +523,6 @@ export function ClassCreateForm({ teachers, autosaveKey = "class-create" }: Clas
                         )}
                     </div>
                 ) : null}
-
-                <label className="flex items-start gap-2 text-sm text-ink-main" htmlFor="class-manual-dates">
-                    <input
-                        checked={form.manualDates}
-                        className="mt-1"
-                        id="class-manual-dates"
-                        onChange={(event) => update("manualDates", event.target.checked)}
-                        type="checkbox"
-                    />
-                    <span>{t("manualLabel")}</span>
-                </label>
-                {form.manualDates ? <p className="text-xs text-ink-soft">{t("manualHint")}</p> : null}
             </fieldset>
 
             {/* ── Questions for students: what the team used a Google Form for.

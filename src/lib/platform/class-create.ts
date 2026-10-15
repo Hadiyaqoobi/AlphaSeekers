@@ -58,7 +58,9 @@ export const createClassSchema = z
     whatsappGroupUrl: optionalLink,
     // The teacher's OWN optional Google Form; students see it after they join.
     registrationFormUrl: optionalLink,
-    schedulingMode: z.enum(["AUTO", "MANUAL"]).default("AUTO"),
+    // Staff set every date and the teacher only receives the link (decided
+    // 2026-10-14), so a class can no longer be handed to the teacher to schedule.
+    schedulingMode: z.literal("AUTO").default("AUTO"),
     // The class's own sign-up questions, shown on its join page (ADR-0009).
     joinQuestions: joinQuestionsSchema.optional(),
     /**

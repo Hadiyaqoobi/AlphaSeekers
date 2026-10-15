@@ -714,9 +714,7 @@
     "dayLabel": "Day",
     "timeLabel": "Time (Kabul time)",
     "durationLabel": "Length (minutes)",
-    "whenHint": "The class runs every week on this day at this time, Kabul time. If the teacher has saved their available hours, the time must be inside them; if not, sessions are booked at exactly this time.",
-    "manualLabel": "The teacher will set each date themselves",
-    "manualHint": "Nothing is booked automatically. The teacher adds each date on their schedule page.",
+    "whenHint": "The class runs every week on this day at this time, Kabul time. Sessions are booked at exactly this time, and the teacher gets the Meet link by email.",
     "moreOptions": "More options",
     "maxStudentsLabel": "Maximum students",
     "whatsappLabel": "WhatsApp group link (optional)",
@@ -738,7 +736,6 @@
     "issueUnparseable": "No session booked yet: the class day and time could not be read.",
     "issueClash": "No session booked yet: this time overlaps another class of the same teacher.",
     "issueAlreadyHandled": "A session for this week already exists.",
-    "manualCreated": "The teacher sets the dates. Until they add one, students have nothing to join.",
     "openClass": "Open the class page",
     "createAnother": "Post another class",
     "liveSession": "Live session →",
@@ -768,10 +765,10 @@
     "problemOutsideAvailability": "Not booked: the class time is outside the hours you set. Add these hours, or ask the team to change the class time.",
     "problemUnparseable": "Not booked: the class time is unclear. Ask the team to set the class day and time.",
     "teacherHoursTitle": "{name}'s available hours (Kabul time). Tap one to use it:",
-    "teacherHoursNone": "{name} has not saved available hours, so sessions are booked at exactly this time.",
+    "teacherHoursNone": "{name} has not saved any usual hours.",
     "teacherHoursUse": "Use this time",
-    "teacherHoursFits": "This time fits the teacher's hours, so sessions will be booked.",
-    "teacherHoursOutside": "This time is outside {name}'s available hours, so no session will be booked. Tap one of the hours above, or ask the teacher to add this time."
+    "teacherHoursFits": "This time fits the teacher's usual hours.",
+    "teacherHoursOutside": "This time is outside {name}'s usual hours. Sessions are still booked at this time, so check it with the teacher, or tap one of the hours above."
   },
   "sessionActions": {
     "cancel": "لغو جلسه",
