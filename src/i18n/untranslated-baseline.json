@@ -570,6 +570,15 @@
     "certificates.myIssued",
     "certificates.lengthPlaceholder",
     "certificates.termPlaceholder",
-    "certificates.hoursPlaceholder"
+    "certificates.hoursPlaceholder",
+    "certificates.alreadyHas",
+    "certificates.handIssuedTitle",
+    "certificates.manualTitle",
+    "certificates.manualHint",
+    "certificates.manualName",
+    "certificates.manualNamePlaceholder",
+    "certificates.manualEmail",
+    "certificates.manualKind",
+    "certificates.manualButton"
   ]
 }

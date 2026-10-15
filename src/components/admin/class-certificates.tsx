@@ -53,11 +53,13 @@ export function ClassCertificates({ classId, canEdit, people, certificates, sugg
   const [message, setMessage] = useState<{ tone: "ok" | "error"; text: string } | null>(null);
   const [confirming, setConfirming] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
+  const [manualName, setManualName] = useState("");
+  const [manualEmail, setManualEmail] = useState("");
+  const [manualKind, setManualKind] = useState<IssuedRow["kind"]>("STUDENT_COMPLETION");
 
   const selectable = people.filter((person) => !holderOf(person));
   const students = selectable.filter((person) => !person.teacher);
   const teacherSelected = people.some((person) => person.teacher && selected.has(person.userId));
-  const studentsSelected = people.some((person) => !person.teacher && selected.has(person.userId));
   const verifyPath = (code: string) => `/en/verify/${code}`;
 
   function toggle(userId: string) {
@@ -81,21 +83,15 @@ export function ClassCertificates({ classId, canEdit, people, certificates, sugg
     });
   }
 
-  async function issue() {
+  async function issue(recipients: Record<string, unknown>) {
+    const manual = "manual" in recipients;
     setBusy(true);
     setMessage(null);
     try {
       const response = await fetch(`/api/admin/classes/${classId}/certificates`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          studentIds: people.filter((p) => !p.teacher && selected.has(p.userId)).map((p) => p.userId),
-          includeTeacher: teacherSelected,
-          length,
-          term,
-          hours,
-          sendEmail,
-        }),
+        body: JSON.stringify({ ...recipients, length, term, hours, sendEmail }),
       });
       const body = (await response.json().catch(() => ({}))) as {
         message?: string;
@@ -107,13 +103,22 @@ export function ClassCertificates({ classId, canEdit, people, certificates, sugg
         setMessage({ tone: "error", text: body.message ?? t("issueFailed") });
         return;
       }
-      setSelected(new Set());
-      setMessage({
-        tone: "ok",
-        text: sendEmail
-          ? t("issuedEmailed", { issued: body.issued ?? 0, emailed: body.emailed ?? 0 })
-          : t("issued", { issued: body.issued ?? 0 }),
-      });
+      if (manual) {
+        setManualName("");
+        setManualEmail("");
+      } else {
+        setSelected(new Set());
+      }
+      setMessage(
+        (body.issued ?? 0) === 0 && (body.alreadyHad ?? 0) > 0
+          ? { tone: "error", text: t("alreadyHas") }
+          : {
+              tone: "ok",
+              text: sendEmail
+                ? t("issuedEmailed", { issued: body.issued ?? 0, emailed: body.emailed ?? 0 })
+                : t("issued", { issued: body.issued ?? 0 }),
+            },
+      );
       router.refresh();
     } catch {
       setMessage({ tone: "error", text: t("issueFailed") });
@@ -156,14 +161,64 @@ export function ClassCertificates({ classId, canEdit, people, certificates, sugg
     }
   }
 
+  function issueSelected() {
+    return issue({
+      studentIds: people.filter((p) => !p.teacher && selected.has(p.userId)).map((p) => p.userId),
+      includeTeacher: teacherSelected,
+    });
+  }
+
+  function issueManual() {
+    return issue({ manual: { name: manualName, email: manualEmail || null, kind: manualKind } });
+  }
+
+  // View / Copy link / Cancel, for any valid certificate.
+  function holderActions(holder: IssuedRow) {
+    return (
+      <div className="space-y-1">
+        <p className="font-mono text-xs text-neon-400">{holder.code}</p>
+        <div className="flex flex-wrap gap-3 text-xs font-semibold">
+          <a className="text-neon-400 hover:underline" href={verifyPath(holder.code)} rel="noreferrer" target="_blank">
+            {t("view")}
+          </a>
+          <button className="text-neon-400 hover:underline" onClick={() => copyLink(holder.code)} type="button">
+            {copied === holder.code ? t("copied") : t("copyLink")}
+          </button>
+          {canEdit ? (
+            confirming === holder.code ? (
+              <>
+                <button className="text-red-300 hover:underline" disabled={busy} onClick={() => revoke(holder.code)} type="button">
+                  {t("confirmRevoke")}
+                </button>
+                <button className="text-ink-soft hover:underline" onClick={() => setConfirming(null)} type="button">
+                  {t("keep")}
+                </button>
+              </>
+            ) : (
+              <button className="text-red-300 hover:underline" onClick={() => setConfirming(holder.code)} type="button">
+                {t("revoke")}
+              </button>
+            )
+          ) : null}
+        </div>
+      </div>
+    );
+  }
+
   const cancelled = certificates.filter((row) => row.revokedAt);
+  const validTotal = certificates.length - cancelled.length;
+  // Valid certificates that belong to nobody in the list above: typed in by hand.
+  const handIssued = certificates.filter(
+    (row) => !row.revokedAt && !people.some((person) => person.userId === row.userId && kindOf(person) === row.kind),
+  );
   const count = selected.size;
+  const manualReady = manualName.trim().length >= 2;
 
   return (
     <section className="panel panel-strong p-4 sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-lg font-black text-ink-main">{t("title")}</h2>
-        <span className="text-sm text-ink-soft">{t("validCount", { count: validFor.size })}</span>
+        <span className="text-sm text-ink-soft">{t("validCount", { count: validTotal })}</span>
       </div>
       <p className="mt-1 text-xs text-ink-soft">{t("hint")}</p>
 
@@ -215,38 +270,7 @@ export function ClassCertificates({ classId, canEdit, people, certificates, sugg
                     <td className="py-2">{person.attendance ?? <span className="text-ink-faint">-</span>}</td>
                     <td className="py-2">
                       {holder ? (
-                        <div className="space-y-1">
-                          <p className="font-mono text-xs text-neon-400">{holder.code}</p>
-                          <div className="flex flex-wrap gap-3 text-xs font-semibold">
-                            <a className="text-neon-400 hover:underline" href={verifyPath(holder.code)} rel="noreferrer" target="_blank">
-                              {t("view")}
-                            </a>
-                            <button className="text-neon-400 hover:underline" onClick={() => copyLink(holder.code)} type="button">
-                              {copied === holder.code ? t("copied") : t("copyLink")}
-                            </button>
-                            {canEdit ? (
-                              confirming === holder.code ? (
-                                <>
-                                  <button
-                                    className="text-red-300 hover:underline"
-                                    disabled={busy}
-                                    onClick={() => revoke(holder.code)}
-                                    type="button"
-                                  >
-                                    {t("confirmRevoke")}
-                                  </button>
-                                  <button className="text-ink-soft hover:underline" onClick={() => setConfirming(null)} type="button">
-                                    {t("keep")}
-                                  </button>
-                                </>
-                              ) : (
-                                <button className="text-red-300 hover:underline" onClick={() => setConfirming(holder.code)} type="button">
-                                  {t("revoke")}
-                                </button>
-                              )
-                            ) : null}
-                          </div>
-                        </div>
+                        holderActions(holder)
                       ) : (
                         <span className="text-ink-soft">{t("notIssued")}</span>
                       )}
@@ -259,7 +283,26 @@ export function ClassCertificates({ classId, canEdit, people, certificates, sugg
         </div>
       )}
 
-      {canEdit && people.length > 0 ? (
+      {handIssued.length > 0 ? (
+        <div className="mt-4">
+          <p className="text-sm font-semibold text-ink-main">{t("handIssuedTitle")}</p>
+          <ul className="mt-2 divide-y divide-line-soft">
+            {handIssued.map((row) => (
+              <li className="flex flex-wrap items-start justify-between gap-3 py-2 text-sm" key={row.code}>
+                <div>
+                  <p className="font-semibold text-ink-main" dir="auto">{row.recipientName}</p>
+                  <p className="text-xs text-ink-soft">
+                    {row.kind === "TEACHER_RECOGNITION" ? t("kindTeacher") : t("kindStudent")}
+                  </p>
+                </div>
+                {holderActions(row)}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      {canEdit ? (
         <div className="mt-4 space-y-3 rounded-xl border border-line-soft p-3 sm:p-4">
           <p className="text-sm font-semibold text-ink-main">{t("wording")}</p>
           <div className="grid gap-3 sm:grid-cols-3">
@@ -267,7 +310,7 @@ export function ClassCertificates({ classId, canEdit, people, certificates, sugg
               {t("lengthLabel")}
               <input
                 className="field mt-1 w-full"
-                disabled={!studentsSelected || busy}
+                disabled={busy}
                 maxLength={40}
                 onChange={(event) => setLength(event.target.value)}
                 placeholder={t("lengthPlaceholder")}
@@ -278,7 +321,7 @@ export function ClassCertificates({ classId, canEdit, people, certificates, sugg
               {t("termLabel")}
               <input
                 className="field mt-1 w-full"
-                disabled={!teacherSelected || busy}
+                disabled={busy}
                 maxLength={60}
                 onChange={(event) => setTerm(event.target.value)}
                 placeholder={t("termPlaceholder")}
@@ -289,7 +332,7 @@ export function ClassCertificates({ classId, canEdit, people, certificates, sugg
               {t("hoursLabel")}
               <input
                 className="field mt-1 w-full"
-                disabled={!teacherSelected || busy}
+                disabled={busy}
                 maxLength={40}
                 onChange={(event) => setHours(event.target.value)}
                 placeholder={t("hoursPlaceholder")}
@@ -302,9 +345,58 @@ export function ClassCertificates({ classId, canEdit, people, certificates, sugg
             <input checked={sendEmail} disabled={busy} onChange={(event) => setSendEmail(event.target.checked)} type="checkbox" />
             {t("sendEmail")}
           </label>
-          <button className="btn-primary" disabled={count === 0 || busy} onClick={issue} type="button">
-            {busy ? t("issuing") : count === 0 ? t("chooseFirst") : t("issueButton", { count })}
-          </button>
+          {people.length > 0 ? (
+            <button className="btn-primary" disabled={count === 0 || busy} onClick={issueSelected} type="button">
+              {busy ? t("issuing") : count === 0 ? t("chooseFirst") : t("issueButton", { count })}
+            </button>
+          ) : null}
+
+          {/* For when the list is missing someone, or does not load at all. */}
+          <div className="space-y-3 border-t border-line-soft pt-3">
+            <p className="text-sm font-semibold text-ink-main">{t("manualTitle")}</p>
+            <p className="text-xs text-ink-soft">{t("manualHint")}</p>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <label className="block text-xs text-ink-soft">
+                {t("manualName")}
+                <input
+                  className="field mt-1 w-full"
+                  dir="auto"
+                  disabled={busy}
+                  maxLength={100}
+                  onChange={(event) => setManualName(event.target.value)}
+                  placeholder={t("manualNamePlaceholder")}
+                  value={manualName}
+                />
+              </label>
+              <label className="block text-xs text-ink-soft">
+                {t("manualEmail")}
+                <input
+                  className="field mt-1 w-full"
+                  disabled={busy}
+                  maxLength={254}
+                  onChange={(event) => setManualEmail(event.target.value)}
+                  placeholder="name@example.com"
+                  type="email"
+                  value={manualEmail}
+                />
+              </label>
+              <label className="block text-xs text-ink-soft">
+                {t("manualKind")}
+                <select
+                  className="select-field mt-1 w-full"
+                  disabled={busy}
+                  onChange={(event) => setManualKind(event.target.value as IssuedRow["kind"])}
+                  value={manualKind}
+                >
+                  <option value="STUDENT_COMPLETION">{t("kindStudent")}</option>
+                  <option value="TEACHER_RECOGNITION">{t("kindTeacher")}</option>
+                </select>
+              </label>
+            </div>
+            <button className="btn-secondary" disabled={!manualReady || busy} onClick={issueManual} type="button">
+              {busy ? t("issuing") : t("manualButton")}
+            </button>
+          </div>
         </div>
       ) : null}
 

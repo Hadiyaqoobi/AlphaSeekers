@@ -16,7 +16,7 @@ import { randomInt } from "node:crypto";
 import { Prisma, type CertificateKind } from "@prisma/client";
 
 import type { CertificateContent } from "@/lib/certificates/layout";
-import { deliverWithFallback } from "@/lib/integrations/notifications";
+import { deliverWithFallback, sendDirectEmail } from "@/lib/integrations/notifications";
 import { prisma } from "@/lib/prisma";
 import { readThroughPublicCache } from "@/lib/platform/public-cache";
 
@@ -220,57 +220,55 @@ export type IssueInput = {
   hours?: string | null;
 };
 
-export type IssuedCertificate = { code: string; userId: string; kind: CertificateKind; recipientName: string };
+export type IssuedCertificate = {
+  code: string;
+  /** Null for someone typed in by hand who has no account. */
+  userId: string | null;
+  /** Where to send the link when there is no account. */
+  email: string | null;
+  kind: CertificateKind;
+  recipientName: string;
+};
 
 export type IssueResult =
   | { ok: true; issued: IssuedCertificate[]; alreadyHad: number }
-  | { ok: false; reason: "class-not-found" | "nobody-selected" | "not-in-class" };
+  | { ok: false; reason: "class-not-found" | "nobody-selected" | "not-in-class" | "name-missing" | "bad-email" };
 
 const clean = (value: string | null | undefined, max: number) => {
   const trimmed = (value ?? "").replace(/\s+/g, " ").trim().slice(0, max);
   return trimmed.length > 0 ? trimmed : null;
 };
 
-/**
- * Issue certificates for one class. Only the class's own teacher and its
- * enrolled students can receive one; anyone who already holds a valid
- * certificate for this class is skipped, not duplicated.
- */
-export async function issueCertificates(input: IssueInput): Promise<IssueResult> {
-  const klass = await prisma.class.findUnique({
-    where: { id: input.classId },
+type ClassForIssue = { id: string; name: string; teacherId: string; teacher: { name: string } };
+
+function loadClassForIssue(classId: string): Promise<ClassForIssue | null> {
+  return prisma.class.findUnique({
+    where: { id: classId },
     select: { id: true, name: true, teacherId: true, teacher: { select: { name: true } } },
   });
-  if (!klass) return { ok: false, reason: "class-not-found" };
+}
 
-  const studentIds = Array.from(new Set(input.studentIds)).filter((id) => id !== klass.teacherId);
-  if (studentIds.length === 0 && !input.includeTeacher) return { ok: false, reason: "nobody-selected" };
+type Recipient = { key: string; userId: string | null; email: string | null; name: string; kind: CertificateKind };
 
-  const students = studentIds.length
-    ? await prisma.enrollment.findMany({
-        where: { classId: klass.id, studentId: { in: studentIds }, status: "ACTIVE" },
-        select: { student: { select: { id: true, name: true } } },
-      })
-    : [];
-  if (students.length !== studentIds.length) return { ok: false, reason: "not-in-class" };
+/**
+ * Create one certificate per recipient, skipping anyone who already holds a
+ * valid one. The unique activeKey still catches a double click that slips
+ * between the read and the insert.
+ */
+async function createCertificates(
+  klass: ClassForIssue,
+  recipients: Recipient[],
+  wording: { length?: string | null; term?: string | null; hours?: string | null },
+  issuedById: string,
+): Promise<{ issued: IssuedCertificate[]; alreadyHad: number }> {
+  const length = clean(wording.length, 40);
+  const term = clean(wording.term, 60);
+  const hours = clean(wording.hours, 40);
 
-  const wanted: Array<{ userId: string; name: string; kind: CertificateKind }> = [
-    ...students.map((e) => ({ userId: e.student.id, name: e.student.name, kind: "STUDENT_COMPLETION" as const })),
-    ...(input.includeTeacher
-      ? [{ userId: klass.teacherId, name: klass.teacher.name, kind: "TEACHER_RECOGNITION" as const }]
-      : []),
-  ];
-
-  const length = clean(input.length, 40);
-  const term = clean(input.term, 60);
-  const hours = clean(input.hours, 40);
-
-  // Skip anyone who already holds a valid one. The unique activeKey below still
-  // catches a double click that slips between this read and the insert.
   const held = new Set(
     (
       await prisma.certificate.findMany({
-        where: { activeKey: { in: wanted.map((p) => activeKey(klass.id, p.userId, p.kind)) } },
+        where: { activeKey: { in: recipients.map((r) => r.key) } },
         select: { activeKey: true },
       })
     ).map((row) => row.activeKey),
@@ -278,9 +276,8 @@ export async function issueCertificates(input: IssueInput): Promise<IssueResult>
 
   const issued: IssuedCertificate[] = [];
   let alreadyHad = 0;
-  for (const person of wanted) {
-    const key = activeKey(klass.id, person.userId, person.kind);
-    if (held.has(key)) {
+  for (const person of recipients) {
+    if (held.has(person.key)) {
       alreadyHad += 1;
       continue;
     }
@@ -300,11 +297,11 @@ export async function issueCertificates(input: IssueInput): Promise<IssueResult>
             teacherName: klass.teacher.name.trim(),
             detail: person.kind === "STUDENT_COMPLETION" ? length : term,
             hours: person.kind === "TEACHER_RECOGNITION" ? hours : null,
-            issuedById: input.issuedById,
-            activeKey: key,
+            issuedById,
+            activeKey: person.key,
           },
         });
-        issued.push({ code, userId: person.userId, kind: person.kind, recipientName: person.name });
+        issued.push({ code, userId: person.userId, email: person.email, kind: person.kind, recipientName: person.name });
         break;
       } catch (error) {
         const target = error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002"
@@ -319,8 +316,99 @@ export async function issueCertificates(input: IssueInput): Promise<IssueResult>
       }
     }
   }
+  return { issued, alreadyHad };
+}
 
-  return { ok: true, issued, alreadyHad };
+/**
+ * Issue certificates for one class. Only the class's own teacher and its
+ * enrolled students can receive one; anyone who already holds a valid
+ * certificate for this class is skipped, not duplicated.
+ */
+export async function issueCertificates(input: IssueInput): Promise<IssueResult> {
+  const klass = await loadClassForIssue(input.classId);
+  if (!klass) return { ok: false, reason: "class-not-found" };
+
+  const studentIds = Array.from(new Set(input.studentIds)).filter((id) => id !== klass.teacherId);
+  if (studentIds.length === 0 && !input.includeTeacher) return { ok: false, reason: "nobody-selected" };
+
+  const students = studentIds.length
+    ? await prisma.enrollment.findMany({
+        where: { classId: klass.id, studentId: { in: studentIds }, status: "ACTIVE" },
+        select: { student: { select: { id: true, name: true } } },
+      })
+    : [];
+  if (students.length !== studentIds.length) return { ok: false, reason: "not-in-class" };
+
+  const recipients: Recipient[] = [
+    ...students.map((e) => ({
+      key: activeKey(klass.id, e.student.id, "STUDENT_COMPLETION"),
+      userId: e.student.id,
+      email: null,
+      name: e.student.name,
+      kind: "STUDENT_COMPLETION" as const,
+    })),
+    ...(input.includeTeacher
+      ? [{
+          key: activeKey(klass.id, klass.teacherId, "TEACHER_RECOGNITION"),
+          userId: klass.teacherId,
+          email: null,
+          name: klass.teacher.name,
+          kind: "TEACHER_RECOGNITION" as const,
+        }]
+      : []),
+  ];
+
+  return { ok: true, ...(await createCertificates(klass, recipients, input, input.issuedById)) };
+}
+
+export type ManualIssueInput = {
+  classId: string;
+  issuedById: string;
+  /** Exactly as it should be printed. */
+  name: string;
+  /** Optional. Matched to an account when one exists, so it shows on their dashboard. */
+  email?: string | null;
+  kind: CertificateKind;
+  length?: string | null;
+  term?: string | null;
+  hours?: string | null;
+};
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/**
+ * Issue one certificate to a person staff type in by hand: for when the class
+ * list does not show someone (or does not load at all), or for someone who
+ * took part without an account. The class still sets the class and teacher
+ * printed on it.
+ */
+export async function issueManualCertificate(input: ManualIssueInput): Promise<IssueResult> {
+  const klass = await loadClassForIssue(input.classId);
+  if (!klass) return { ok: false, reason: "class-not-found" };
+
+  const name = clean(input.name, 100);
+  if (!name || name.length < 2) return { ok: false, reason: "name-missing" };
+  const email = clean(input.email, 254)?.toLowerCase() ?? null;
+  if (email && !EMAIL_PATTERN.test(email)) return { ok: false, reason: "bad-email" };
+
+  const account = email
+    ? await prisma.user.findFirst({ where: { email: { equals: email, mode: "insensitive" } }, select: { id: true } })
+    : null;
+
+  // With an account, the same one-per-person rule as the list (so a typed-in
+  // person who also appears in the list is not issued twice). Without one,
+  // one per typed name, so a double click cannot issue two.
+  const key = account
+    ? activeKey(klass.id, account.id, input.kind)
+    : `${klass.id}:name:${name.toLowerCase()}:${input.kind}`;
+
+  const result = await createCertificates(
+    klass,
+    [{ key, userId: account?.id ?? null, email, name, kind: input.kind }],
+    input,
+    input.issuedById,
+  );
+  return { ok: true, ...result };
 }
 
 /** Cancel a certificate. Its page then says so; it can be issued again afterwards. */
@@ -338,44 +426,53 @@ export async function revokeCertificate(code: string, reason: string | null) {
   });
 }
 
+function certificateMessage(kind: CertificateKind, className: string, code: string): string {
+  const url = certificateVerifyUrl(code);
+  const opening =
+    kind === "TEACHER_RECOGNITION"
+      ? [`Thank you for teaching "${className}".`, "AlphaSeekers has issued you a Certificate of Recognition for your teaching service."]
+      : [`Congratulations on completing "${className}"!`, "AlphaSeekers has issued you a Certificate of Completion."];
+  return [
+    ...opening,
+    "",
+    `View, download or print it here: ${url}`,
+    "",
+    `Certificate ID: ${code}. Anyone can check it is genuine by scanning its QR code.`,
+  ].join("\n");
+}
+
+const SUBJECT = "Your AlphaSeekers certificate";
+
 /**
  * Email each new holder their link. English only (never machine-written Dari).
  * A few at a time: Gmail SMTP is the only mail route and it throttles bursts.
  */
 export async function emailCertificateLinks(issued: IssuedCertificate[], className: string): Promise<number> {
   if (issued.length === 0) return 0;
-  const users = await prisma.user.findMany({
-    where: { id: { in: issued.map((c) => c.userId) } },
-    select: { id: true, email: true, phone: true, telegramChatId: true, pushSubscription: true, notificationPrefs: true },
-  });
+  const userIds = issued.map((c) => c.userId).filter((id): id is string => Boolean(id));
+  const users = userIds.length
+    ? await prisma.user.findMany({
+        where: { id: { in: userIds } },
+        select: { id: true, email: true, phone: true, telegramChatId: true, pushSubscription: true, notificationPrefs: true },
+      })
+    : [];
   const byId = new Map(users.map((u) => [u.id, u]));
   let sent = 0;
 
   const queue = [...issued];
   const worker = async () => {
     for (let next = queue.shift(); next; next = queue.shift()) {
-      const user = byId.get(next.userId);
-      if (!user) continue;
-      const url = certificateVerifyUrl(next.code);
-      const content =
-        next.kind === "TEACHER_RECOGNITION"
-          ? [
-              `Thank you for teaching "${className}".`,
-              "AlphaSeekers has issued you a Certificate of Recognition for your teaching service.",
-              "",
-              `View, download or print it here: ${url}`,
-              "",
-              `Certificate ID: ${next.code}. Anyone can check it is genuine by scanning its QR code.`,
-            ].join("\n")
-          : [
-              `Congratulations on completing "${className}"!`,
-              "AlphaSeekers has issued you a Certificate of Completion.",
-              "",
-              `View, download or print it here: ${url}`,
-              "",
-              `Certificate ID: ${next.code}. Anyone can check it is genuine by scanning its QR code.`,
-            ].join("\n");
+      const content = certificateMessage(next.kind, className, next.code);
       try {
+        const user = next.userId ? byId.get(next.userId) : undefined;
+        if (!user) {
+          // Typed in by hand with no account: email only, nothing to record against.
+          if (next.email) {
+            await sendDirectEmail(next.email, SUBJECT, content);
+            sent += 1;
+          }
+          continue;
+        }
         const deliveries = await deliverWithFallback(
           {
             userId: user.id,
@@ -386,7 +483,7 @@ export async function emailCertificateLinks(issued: IssuedCertificate[], classNa
             notificationPrefs: user.notificationPrefs,
           },
           content,
-          { subject: "Your AlphaSeekers certificate" },
+          { subject: SUBJECT },
         );
         // The in-site notice always "succeeds"; only a real message counts as sent.
         if (deliveries.some((d) => d.status === "SENT" && d.channel !== "PLATFORM")) sent += 1;

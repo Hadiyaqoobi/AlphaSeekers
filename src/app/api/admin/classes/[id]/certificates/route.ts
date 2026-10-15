@@ -2,13 +2,14 @@
  * POST /api/admin/classes/[id]/certificates — issue certificates for a class.
  *
  * Staff pick who gets one (enrolled students and/or the class's teacher) and
- * can adjust the printed wording. Requires classes.edit. Anyone who already
+ * can adjust the printed wording. Or, with `manual`, type one person in by
+ * hand: for when the class list does not show them, or does not load. Requires classes.edit. Anyone who already
  * holds a valid certificate for this class is skipped, never duplicated.
  */
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
-import { emailCertificateLinks, issueCertificates } from "@/lib/platform/certificates";
+import { emailCertificateLinks, issueCertificates, issueManualCertificate } from "@/lib/platform/certificates";
 import { prisma } from "@/lib/prisma";
 import { recordAudit } from "@/lib/security/audit";
 import { AccessError, requirePermission } from "@/lib/security/permissions";
@@ -23,12 +24,21 @@ const issueSchema = z.object({
   term: z.string().max(60).nullish(),
   hours: z.string().max(40).nullish(),
   sendEmail: z.boolean().default(true),
+  manual: z
+    .object({
+      name: z.string().max(100),
+      email: z.string().max(254).nullish(),
+      kind: z.enum(["STUDENT_COMPLETION", "TEACHER_RECOGNITION"]),
+    })
+    .nullish(),
 });
 
 const REASON_MESSAGES = {
   "class-not-found": ["Class not found", 404],
   "nobody-selected": ["Choose at least one person", 400],
   "not-in-class": ["Someone you chose is not enrolled in this class", 400],
+  "name-missing": ["Type the person's full name", 400],
+  "bad-email": ["That email address does not look right", 400],
 } as const;
 
 export async function POST(request: NextRequest, { params }: Params) {
@@ -50,15 +60,23 @@ export async function POST(request: NextRequest, { params }: Params) {
   }
   const input = parsed.data;
 
-  const result = await issueCertificates({
-    classId: params.id,
-    issuedById: access.userId,
-    studentIds: input.studentIds,
-    includeTeacher: input.includeTeacher,
-    length: input.length,
-    term: input.term,
-    hours: input.hours,
-  });
+  const wording = { length: input.length, term: input.term, hours: input.hours };
+  const result = input.manual
+    ? await issueManualCertificate({
+        classId: params.id,
+        issuedById: access.userId,
+        name: input.manual.name,
+        email: input.manual.email,
+        kind: input.manual.kind,
+        ...wording,
+      })
+    : await issueCertificates({
+        classId: params.id,
+        issuedById: access.userId,
+        studentIds: input.studentIds,
+        includeTeacher: input.includeTeacher,
+        ...wording,
+      });
   if (!result.ok) {
     const [message, status] = REASON_MESSAGES[result.reason];
     return NextResponse.json({ message }, { status });
@@ -77,7 +95,7 @@ export async function POST(request: NextRequest, { params }: Params) {
       action: "certificate.issue",
       targetType: "Class",
       targetId: params.id,
-      details: JSON.stringify({ codes: result.issued.map((c) => c.code), emailed }),
+      details: JSON.stringify({ codes: result.issued.map((c) => c.code), manual: Boolean(input.manual), emailed }),
       ipAddress: getClientIp(request),
     });
   }
