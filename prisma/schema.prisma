@@ -128,6 +128,7 @@ model User {
   reportedTickets      Ticket[]              @relation("TicketReporter")
   ticketComments       TicketComment[]
   googleAccountLink    GoogleAccountLink?
+  certificates         Certificate[]
   telegramChatId       String?
   pushSubscription     String?
   notificationPrefs    String? // JSON: { telegram: bool, webPush: bool, email: bool }
@@ -173,6 +174,7 @@ model Class {
   materials      Material[]
   documentChunks DocumentChunk[]
   announcements  ClassAnnouncement[]
+  certificates   Certificate[]
 
   // The public landing query filters on registrationDeadline to hide classes
   // whose registration has closed; declared here so schema and migrations agree.
@@ -255,6 +257,46 @@ model Attendance {
   // composite unique above. Student-centric aggregates (attendance history) need
   // a studentId-first index.
   @@index([studentId])
+}
+
+enum CertificateKind {
+  STUDENT_COMPLETION
+  TEACHER_RECOGNITION
+}
+
+// A certificate staff issued from a class page. Anyone can check it by scanning
+// its QR code, which opens /verify/<code>. The printed wording is copied onto
+// the row when it is issued, so a certificate keeps verifying exactly as printed
+// after a rename, an archived or deleted class, or a deleted account.
+// No files are stored: the certificate is drawn from the row on demand.
+model Certificate {
+  id            String          @id @default(cuid())
+  /// The public ID printed on the certificate and encoded in its QR code.
+  code          String          @unique
+  kind          CertificateKind
+  userId        String?
+  classId       String?
+  recipientName String
+  className     String
+  teacherName   String
+  /// Student: the course length ("8-week"). Teacher: the term ("Fall 2026"). Optional.
+  detail        String?
+  /// Teacher only: total teaching hours, as printed ("24 hours"). Optional.
+  hours         String?
+  issuedAt      DateTime        @default(now())
+  issuedById    String?
+  /// "<classId>:<userId>:<kind>" while the certificate is valid, null once it is
+  /// cancelled. Unique, so a double click cannot issue two live certificates to
+  /// the same person for the same class, while a cancelled one can be re-issued.
+  activeKey     String?         @unique
+  revokedAt     DateTime?
+  revokedReason String?
+
+  user  User?  @relation(fields: [userId], references: [id], onDelete: SetNull)
+  class Class? @relation(fields: [classId], references: [id], onDelete: SetNull)
+
+  @@index([classId])
+  @@index([userId])
 }
 
 model TeacherAvailability {
@@ -546,7 +588,7 @@ model Ticket {
   // Nullable + SetNull: deleting a user must not destroy the tickets they
   // filed (Cascade did). The ticket stays; the UI shows "—" as the reporter.
   reporterId String?
-  reporter   User?  @relation("TicketReporter", fields: [reporterId], references: [id], onDelete: SetNull)
+  reporter   User?   @relation("TicketReporter", fields: [reporterId], references: [id], onDelete: SetNull)
 
   comments   TicketComment[]
   attachment TicketAttachment?
@@ -855,23 +897,23 @@ enum JobStatus {
 }
 
 model Job {
-  id          String    @id @default(cuid())
-  type        String
-  payload     Json      @default("{}")
-  status      JobStatus @default(PENDING)
-  priority    Int       @default(0) // higher runs first among due jobs
-  runAt       DateTime  @default(now()) // earliest time the job may run
-  attempts    Int       @default(0)
-  maxAttempts Int       @default(5)
-  dedupeKey   String?   @unique // idempotency: skip if a job already holds it
+  id                 String    @id @default(cuid())
+  type               String
+  payload            Json      @default("{}")
+  status             JobStatus @default(PENDING)
+  priority           Int       @default(0) // higher runs first among due jobs
+  runAt              DateTime  @default(now()) // earliest time the job may run
+  attempts           Int       @default(0)
+  maxAttempts        Int       @default(5)
+  dedupeKey          String?   @unique // idempotency: skip if a job already holds it
   // Give the key up when the job reaches COMPLETED/DEAD (event-bus jobs), so it
   // only dedupes while live. False keeps it until pruned (daily digest keys).
-  releaseKeyOnFinish Boolean @default(false)
-  lockedAt    DateTime?
-  lockedBy    String? // worker id holding the claim
-  lastError   String?   @db.Text
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  releaseKeyOnFinish Boolean   @default(false)
+  lockedAt           DateTime?
+  lockedBy           String? // worker id holding the claim
+  lastError          String?   @db.Text
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
   // Claim query orders due work by (priority desc, runAt asc) filtered on status.
   @@index([status, runAt, priority])

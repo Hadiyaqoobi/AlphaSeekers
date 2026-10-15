@@ -4,12 +4,14 @@ import { notFound, redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
 import { AdminClassActions } from "@/components/admin/admin-class-actions";
+import { ClassCertificates } from "@/components/admin/class-certificates";
 import { ClassDangerZone } from "@/components/admin/class-danger-zone";
 import { RestoreClassButton } from "@/components/admin/restore-class-button";
 import { SessionMeetLinkEditor } from "@/components/admin/session-meet-link-editor";
 import { formatDateTime } from "@/lib/format-date";
 import { displayAnswer } from "@/lib/platform/join-answers";
 import { optionLabel, questionLabel, readJoinQuestions } from "@/lib/platform/join-questions";
+import { listClassCertificates, suggestCertificateDetails } from "@/lib/platform/certificates";
 import { getClassLifecycleExtras, listUpcomingClassSessions } from "@/lib/platform/db-store";
 import { getClassById, listClassEnrollments, listPendingEnrollments, getClassAttendanceSummary, listUsersByRole } from "@/lib/platform/store";
 import { planAutoSlot } from "@/lib/scheduling/weekly-slot";
@@ -71,6 +73,10 @@ export default async function AdminClassDetailPage({ params }: AdminClassDetailP
   // Course access is decided per class, so requests wait here rather than
   // granting themselves the moment a student clicks Join.
   const enrollmentRequests = await listPendingEnrollments(record.id);
+  const [certificates, certificateSuggestion] = await Promise.all([
+    listClassCertificates(record.id),
+    canEdit ? suggestCertificateDetails(record.id) : Promise.resolve({ length: "", term: "", hours: "" }),
+  ]);
   const attendanceSummary = (await getClassAttendanceSummary(record.id)) as {
     totalSessions: number;
     totalStudents: number;
@@ -298,6 +304,39 @@ export default async function AdminClassDetailPage({ params }: AdminClassDetailP
           </div>
         </section>
       ) : null}
+
+      <ClassCertificates
+        canEdit={canEdit}
+        certificates={certificates.map((row) => ({
+          code: row.code,
+          userId: row.userId,
+          kind: row.kind,
+          recipientName: row.recipientName,
+          issuedAt: row.issuedAt,
+          revokedAt: row.revokedAt,
+        }))}
+        classId={record.id}
+        people={[
+          {
+            userId: record.teacherId,
+            name: record.teacherName,
+            email: "",
+            teacher: true,
+            attendance: null,
+          },
+          ...enrolledStudents.map((student) => {
+            const stats = attendanceSummary.students.find((s) => s.studentId === student.studentId);
+            return {
+              userId: student.studentId,
+              name: student.name,
+              email: student.email,
+              teacher: false,
+              attendance: stats ? `${stats.sessionsAttended}/${stats.totalSessions} (${stats.attendanceRate}%)` : null,
+            };
+          }),
+        ]}
+        suggested={certificateSuggestion}
+      />
 
       {can(access, "classes.delete") ? (
         <ClassDangerZone

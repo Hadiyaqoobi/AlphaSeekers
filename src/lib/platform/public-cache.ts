@@ -39,7 +39,8 @@ export type PublicScope =
   | "library"
   | "webinars"
   | "opportunities"
-  | "stories";
+  | "stories"
+  | "certificates";
 
 type Entry = {
   value: unknown;
