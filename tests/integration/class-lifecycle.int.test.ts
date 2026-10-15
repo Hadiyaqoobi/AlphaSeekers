@@ -135,24 +135,25 @@ d("class lifecycle (real Postgres)", () => {
     expect(sessions[0].googleCalendarId).toBe("owner@example.com");
   });
 
-  it("never moves a class to another day or past the end of the teacher's hours (C9)", async () => {
+  it("books the time staff posted even outside the teacher's saved hours, never moving it (C9)", async () => {
     const teacher = await makeTeacher("outside", [[3, "13:00", "17:00"]]);
     const otherDay = await makeClass(teacher.id, { schedulePreference: "Thu 2:00 PM" });
-    const runsOver = await makeClass(teacher.id, { schedulePreference: "Wed 4:30 PM" });
     const unreadable = await makeClass(teacher.id, { schedulePreference: "evenings" });
 
     await scheduleTeacherClasses(teacher.id);
 
-    for (const klass of [otherDay, runsOver, unreadable]) {
-      expect(await prisma.session.count({ where: { classId: klass.id } })).toBe(0);
-    }
+    // Staff set the date: Thursday is booked although the teacher saved only Wednesday.
+    const booked = await prisma.session.findMany({ where: { classId: otherDay.id } });
+    expect(booked).toHaveLength(1);
+    expect(kabulParts(booked[0].startTime)).toEqual({ day: 4, hour: 14, minute: 0 });
+    expect(await prisma.session.count({ where: { classId: unreadable.id } })).toBe(0);
 
-    // ...and the reason is surfaced, not silent.
+    // An unreadable time is surfaced, not silent.
     const issues = await collectClassIssues();
-    expect(issues.some((i) => i.classId === otherDay.id && i.kind === "schedule-outside-availability")).toBe(true);
     expect(issues.some((i) => i.classId === unreadable.id && i.kind === "schedule-unreadable")).toBe(true);
     const setup = await getTeacherSetupStatus(teacher.id);
-    expect(setup.classes.find((c) => c.id === runsOver.id)?.scheduleProblem).toBe("outside-availability");
+    expect(setup.classes.find((c) => c.id === otherDay.id)?.scheduleProblem).toBeNull();
+    expect(setup.classes.find((c) => c.id === unreadable.id)?.scheduleProblem).toBe("unparseable");
   });
 
   it("never books an overlap: a second class at the same time is not booked (C9)", async () => {

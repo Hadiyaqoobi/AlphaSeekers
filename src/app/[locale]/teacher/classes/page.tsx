@@ -62,12 +62,6 @@ export default async function TeacherClassesPage({ params }: TeacherClassesPageP
                 <div className="flex flex-wrap items-center gap-2">
                   <Link
                     className="btn-secondary"
-                    href={`/${locale}/teacher/classes/${klass.id}/schedule`}
-                  >
-                    Manage schedule
-                  </Link>
-                  <Link
-                    className="btn-secondary"
                     href={`/${locale}/teacher/classes/${klass.id}/attendance`}
                   >
                     {t("viewSummary")}

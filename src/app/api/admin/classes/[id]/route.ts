@@ -52,7 +52,8 @@ const updateClassSchema = z
     language: z.string().trim().min(1).max(50).optional(),
     registrationFormUrl: z.string().trim().max(300).regex(/^(https?:\/\/.+)?$/, "must be a URL or blank").optional(),
     whatsappGroupUrl: z.string().trim().max(300).regex(/^(https?:\/\/.+)?$/, "must be a URL or blank").optional(),
-    schedulingMode: z.enum(["AUTO", "MANUAL"]).optional(),
+    // Staff schedule every class; "MANUAL" (teacher sets the dates) is no longer offered.
+    schedulingMode: z.literal("AUTO").optional(),
     // The class's own sign-up questions (ADR-0009); [] or null removes them all.
     // Answers already given stay with each enrolment.
     joinQuestions: joinQuestionsSchema.nullable().optional(),

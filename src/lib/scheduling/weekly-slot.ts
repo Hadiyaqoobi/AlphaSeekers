@@ -7,18 +7,17 @@
  * digest all apply exactly the same logic.
  *
  * THE RULE (AUTO classes):
- *   1. The class runs at the day and time chosen when it was posted. That time is
- *      the time used. The scheduler never moves a class to another day or hour.
- *   2. If the teacher HAS saved availability, the class is booked only when the
- *      whole class (every 60-minute segment and the breaks between them) fits
- *      inside ONE of their availability windows on that day.
- *   3. If the teacher has saved NO availability, the class is booked at the
- *      posted time. Decided by the organisation on 2026-10-14: staff agree the
- *      time with the teacher when they post the class, and most volunteer
- *      teachers never fill in availability, so requiring it left their classes
- *      with no sessions and no Meet link. (This replaces the 2026-04-19 QA rule
- *      that refused to book without availability.)
- *   4. If the slot would overlap another of the teacher's sessions, nothing is
+ *   1. The class runs at the day and time staff chose when they posted it. That
+ *      time is the time used. The scheduler never moves a class to another day
+ *      or hour.
+ *   2. The teacher's saved hours never block booking. Decided by the
+ *      organisation on 2026-10-14: staff set the date and time of every class
+ *      and the teacher only receives the Meet link. The hours are shown to staff
+ *      in the class form as a hint (green fits, orange outside); they used to
+ *      refuse any time outside them, which silently left a class with no
+ *      sessions. (This replaces both the 2026-04-19 rule that refused to book
+ *      without availability and the rule that booked only inside it.)
+ *   3. If the slot would overlap another of the teacher's sessions, nothing is
  *      booked (the old code shifted the class by an hour up to eight times and
  *      then booked the overlap anyway).
  * When a class cannot be booked the reason is surfaced on the teacher setup page
@@ -127,18 +126,10 @@ export function slotFitsAvailability(
 }
 
 /** Apply THE RULE (see file header) to one class. */
-export function planAutoSlot(input: {
-  schedulePreference: string | null | undefined;
-  spanMinutes: number;
-  availability: AvailabilityWindow[];
-}): SlotPlan {
+export function planAutoSlot(input: { schedulePreference: string | null | undefined }): SlotPlan {
   const slot = parseStoredWeeklySlot(input.schedulePreference);
   if (!slot) return { ok: false, reason: "unparseable" };
-  // No saved availability: the posted time is the agreed time (rule 3).
-  if (input.availability.length === 0) return { ok: true, slot };
-  if (!slotFitsAvailability(slot, input.spanMinutes, input.availability)) {
-    return { ok: false, reason: "outside-availability" };
-  }
+  // Staff's time is the time (rules 1-2), whatever hours the teacher saved.
   return { ok: true, slot };
 }
 

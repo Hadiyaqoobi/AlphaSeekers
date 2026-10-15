@@ -1,7 +1,7 @@
 import { ClassStatus, EnrollmentStatus } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
-import { classSpanMinutes, planAutoSlot, type SlotProblem } from "@/lib/scheduling/weekly-slot";
+import { planAutoSlot, type SlotProblem } from "@/lib/scheduling/weekly-slot";
 
 /**
  * The two things a teacher must do before their class can run, plus what the
@@ -72,11 +72,6 @@ export async function getTeacherSetupStatus(teacherId: string): Promise<TeacherS
   ]);
 
   const availabilityDays = new Set(availability.map((a) => a.dayOfWeek)).size;
-  const windows = availability.map((a) => ({
-    dayOfWeek: a.dayOfWeek,
-    startMinute: a.startTimeUTC.getUTCHours() * 60 + a.startTimeUTC.getUTCMinutes(),
-    endMinute: a.endTimeUTC.getUTCHours() * 60 + a.endTimeUTC.getUTCMinutes(),
-  }));
 
   return {
     availabilitySet: availability.length > 0,
@@ -91,11 +86,7 @@ export async function getTeacherSetupStatus(teacherId: string): Promise<TeacherS
       scheduleProblem:
         c.schedulingMode === "AUTO"
           ? (() => {
-              const plan = planAutoSlot({
-                schedulePreference: c.schedulePreference,
-                spanMinutes: classSpanMinutes(c.durationMinutes),
-                availability: windows,
-              });
+              const plan = planAutoSlot({ schedulePreference: c.schedulePreference });
               return plan.ok ? null : plan.reason;
             })()
           : null,

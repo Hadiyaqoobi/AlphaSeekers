@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { classSpanMinutes, planAutoSlot } from "@/lib/scheduling/weekly-slot";
+import { planAutoSlot } from "@/lib/scheduling/weekly-slot";
 
 /**
  * Class health checks.
@@ -69,7 +69,7 @@ export async function collectClassIssues(): Promise<ClassIssue[]> {
   for (const klass of classes) {
     const name = klass.name.trim();
 
-    const [activeCount, pending, futureSessions, availability] = await Promise.all([
+    const [activeCount, pending, futureSessions] = await Promise.all([
       prisma.enrollment.count({ where: { classId: klass.id, status: "ACTIVE" } }),
       prisma.enrollment.findMany({
         where: { classId: klass.id, status: "PENDING" },
@@ -79,19 +79,7 @@ export async function collectClassIssues(): Promise<ClassIssue[]> {
       prisma.session.count({
         where: { classId: klass.id, startTime: { gte: new Date() }, cancelled: false },
       }),
-      klass.teacherId
-        ? prisma.teacherAvailability.findMany({
-            where: { teacherId: klass.teacherId },
-            select: { dayOfWeek: true, startTimeUTC: true, endTimeUTC: true },
-          })
-        : Promise.resolve([]),
     ]);
-    const availabilityWindows = availability.map((a) => ({
-      dayOfWeek: a.dayOfWeek,
-      startMinute: a.startTimeUTC.getUTCHours() * 60 + a.startTimeUTC.getUTCMinutes(),
-      endMinute: a.endTimeUTC.getUTCHours() * 60 + a.endTimeUTC.getUTCMinutes(),
-    }));
-
     // A class with no teacher cannot generate sessions and cannot be taught. It
     // is the loudest possible failure and the easiest one to leave unnoticed,
     // because the class still looks fine in the catalogue.
@@ -158,16 +146,11 @@ export async function collectClassIssues(): Promise<ClassIssue[]> {
       });
     }
 
-    // The scheduler books an AUTO class only at its posted day/time, and, when the
-    // teacher has saved availability, only inside it; it never moves the class.
-    // (No saved availability = the posted time is used, so that is not an issue.)
-    // When it cannot book, say exactly why instead of a bare "no upcoming sessions".
+    // The scheduler books an AUTO class at the day/time staff posted, whatever
+    // hours the teacher saved, and never moves it. When it cannot read that time,
+    // say so instead of a bare "no upcoming sessions".
     if (klass.schedulingMode === "AUTO") {
-      const plan = planAutoSlot({
-        schedulePreference: klass.schedulePreference,
-        spanMinutes: classSpanMinutes(klass.durationMinutes),
-        availability: availabilityWindows,
-      });
+      const plan = planAutoSlot({ schedulePreference: klass.schedulePreference });
       if (!plan.ok && plan.reason === "unparseable") {
         issues.push({
           severity: "urgent",
@@ -177,16 +160,6 @@ export async function collectClassIssues(): Promise<ClassIssue[]> {
           detail:
             `The class time "${klass.schedulePreference ?? ""}" is not a day and time the scheduler can read ` +
             `(e.g. "Tue 6:00 PM"), so no sessions are booked. Set the day and time on the admin class page.`,
-        });
-      } else if (!plan.ok && plan.reason === "outside-availability") {
-        issues.push({
-          severity: "urgent",
-          kind: "schedule-outside-availability",
-          classId: klass.id,
-          className: name,
-          detail:
-            `The class time (${klass.schedulePreference ?? ""}, Kabul) is outside ${klass.teacher?.name ?? "the teacher"}'s ` +
-            `available hours, so no sessions are booked. Change the class time or the teacher's hours.`,
         });
       }
     }

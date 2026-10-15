@@ -10,9 +10,9 @@ import { SessionMeetLinkEditor } from "@/components/admin/session-meet-link-edit
 import { formatDateTime } from "@/lib/format-date";
 import { displayAnswer } from "@/lib/platform/join-answers";
 import { optionLabel, questionLabel, readJoinQuestions } from "@/lib/platform/join-questions";
-import { getClassLifecycleExtras, listUpcomingClassSessions, loadAvailabilityWindows } from "@/lib/platform/db-store";
+import { getClassLifecycleExtras, listUpcomingClassSessions } from "@/lib/platform/db-store";
 import { getClassById, listClassEnrollments, listPendingEnrollments, getClassAttendanceSummary, listUsersByRole } from "@/lib/platform/store";
-import { classSpanMinutes, planAutoSlot } from "@/lib/scheduling/weekly-slot";
+import { planAutoSlot } from "@/lib/scheduling/weekly-slot";
 import { EnrollmentRequests } from "@/components/admin/enrollment-requests";
 import { getAccessControl, can, isSuper } from "@/lib/security/permissions";
 
@@ -57,11 +57,7 @@ export default async function AdminClassDetailPage({ params }: AdminClassDetailP
   // Why an AUTO class has no booked session, in the same words as the setup page.
   const schedulePlan =
     extras?.schedulingMode === "AUTO" && !archived
-      ? planAutoSlot({
-          schedulePreference: record.schedulePreference,
-          spanMinutes: classSpanMinutes(record.durationMinutes),
-          availability: await loadAvailabilityWindows(record.teacherId),
-        })
+      ? planAutoSlot({ schedulePreference: record.schedulePreference })
       : null;
   const scheduleIssueKey =
     schedulePlan && !schedulePlan.ok

@@ -68,7 +68,8 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                 <Link className="btn-secondary !min-h-[2.25rem] !px-4 !text-sm" href={`/${locale}/dashboard`}>
                   {t("actions.backToDashboard")}
                 </Link>
-                {user.role === "TEACHER" || user.role === "ADMIN" ? (
+                {/* Not for teachers: staff set every class time (2026-10-14). */}
+                {user.role === "ADMIN" ? (
                   <Link className="btn-secondary !min-h-[2.25rem] !px-4 !text-sm" href={`/${locale}/teacher/availability`}>
                     {t("actions.openAvailability")}
                   </Link>

@@ -354,7 +354,6 @@ d("legacy pending students", () => {
         teacherId: teacher.id,
         day: "Wed",
         time: "18:00",
-        schedulingMode: "MANUAL",
         joinQuestions: QUESTIONS,
       });
       if (!parsed.ok) throw new Error(parsed.body.message);

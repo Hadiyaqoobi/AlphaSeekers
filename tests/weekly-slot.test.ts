@@ -13,6 +13,7 @@ import {
   parseStoredWeeklySlot,
   parseWeeklySlotStrict,
   planAutoSlot,
+  slotFitsAvailability,
 } from "@/lib/scheduling/weekly-slot";
 
 const wed14to15 = [{ dayOfWeek: 3, startMinute: 14 * 60, endMinute: 15 * 60 }];
@@ -45,33 +46,25 @@ describe("parseStoredWeeklySlot (legacy free text)", () => {
 });
 
 describe("planAutoSlot", () => {
-  it("books the posted time when the whole class fits one availability window", () => {
-    expect(planAutoSlot({ schedulePreference: "Wed 2:00 PM", spanMinutes: 60, availability: wed14to15 })).toEqual({
+  it("books the time staff posted, whatever hours the teacher saved (staff set every date)", () => {
+    for (const schedulePreference of ["Wed 2:00 PM", "Thu 2:00 PM", "Wed 4:30 PM"]) {
+      expect(planAutoSlot({ schedulePreference }).ok).toBe(true);
+    }
+    expect(planAutoSlot({ schedulePreference: "Thu 2:00 PM" })).toEqual({
       ok: true,
-      slot: { dayOfWeek: 3, hour: 14, minute: 0 },
+      slot: { dayOfWeek: 4, hour: 14, minute: 0 },
     });
   });
 
-  it("never moves the class: another day, or running past the window, is not booked", () => {
-    expect(planAutoSlot({ schedulePreference: "Thu 2:00 PM", spanMinutes: 60, availability: wed14to15 })).toEqual({
-      ok: false,
-      reason: "outside-availability",
-    });
-    expect(planAutoSlot({ schedulePreference: "Wed 2:30 PM", spanMinutes: 60, availability: wed14to15 })).toEqual({
-      ok: false,
-      reason: "outside-availability",
-    });
+  it("the teacher's hours only colour the staff hint (green fits, orange outside)", () => {
+    expect(slotFitsAvailability({ dayOfWeek: 3, hour: 14, minute: 0 }, 60, wed14to15)).toBe(true);
+    expect(slotFitsAvailability({ dayOfWeek: 4, hour: 14, minute: 0 }, 60, wed14to15)).toBe(false);
+    expect(slotFitsAvailability({ dayOfWeek: 3, hour: 14, minute: 30 }, 60, wed14to15)).toBe(false);
   });
 
-  it("books the posted time when the teacher saved no availability, but needs a readable time", () => {
-    expect(planAutoSlot({ schedulePreference: "Wed 2:00 PM", spanMinutes: 60, availability: [] })).toEqual({
-      ok: true,
-      slot: { dayOfWeek: 3, hour: 14, minute: 0 },
-    });
-    expect(planAutoSlot({ schedulePreference: "evenings", spanMinutes: 60, availability: wed14to15 })).toEqual({
-      ok: false,
-      reason: "unparseable",
-    });
+  it("needs a readable time", () => {
+    expect(planAutoSlot({ schedulePreference: "evenings" })).toEqual({ ok: false, reason: "unparseable" });
+    expect(planAutoSlot({ schedulePreference: null })).toEqual({ ok: false, reason: "unparseable" });
   });
 
   it("counts the segment breaks of a long class", () => {
