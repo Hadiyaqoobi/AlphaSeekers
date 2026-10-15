@@ -20,18 +20,13 @@ Supersedes `../certificates-v2/` SVG drafts and `../certificates/` initial draft
 ## Status
 
 - ✅ Sahar approved 2026-05-23
-- ⚠️ **Not yet wired into the app.** Certificates are static templates only. To issue
-  them at scale, the app needs:
-  1. An API route (e.g. `/api/admin/classes/[id]/issue-certificates`) that for each
-     enrolled student with `Enrollment.status = COMPLETED` generates a personalized
-     copy by compositing student name + class + date + signed verify ID onto this
-     PNG, then emails / displays it.
-  2. A `Certificate` Prisma model (id, studentId, classId, type, issuedAt, verifyId,
-     fileUrl) so verify-by-QR works.
-  3. A public `/verify/[id]` route that looks up the verifyId and confirms validity.
-
-Until that ships, these PNGs are used as-is for hand-issued certificates
-(team prints / emails them manually).
+- ✅ **Wired into the app (2026-10-15).** Staff issue certificates from a class page
+  (Certificates section). Each one has its own ID and QR code; the QR opens
+  `/en/verify/<ID>`, which shows the drawn certificate with "Download image" and
+  "Print or save as PDF". Staff can cancel one; its page then says so.
+  - Blank copies of these designs (placeholder text removed) are in
+    `public/certificates/templates/`. Text positions: `src/lib/certificates/layout.ts`.
+  - Nothing is stored but a small database row; the certificate is drawn on demand.
 
 ## Superseded drafts (do not use)
 

@@ -63,6 +63,7 @@ const PUBLIC_SCOPES_BY_MODEL: Record<string, PublicScope[]> = {
   Opportunity: ["opportunities", "landing"],
   LibraryResource: ["library"],
   StudentPost: ["stories"],
+  Certificate: ["certificates"],
 };
 
 /**

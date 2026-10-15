@@ -3,9 +3,10 @@ import { cookies } from "next/headers";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { formatDateTime } from "@/lib/format-date";
+import { formatDate, formatDateTime } from "@/lib/format-date";
 import { DirArrow } from "@/components/ui/dir-arrow";
 import { GoogleConnectCard } from "@/components/dashboard/google-connect-card";
+import { listUserCertificates } from "@/lib/platform/certificates";
 import { getTicketCounts } from "@/lib/platform/tickets";
 import { JoinNowCard } from "@/components/dashboard/join-now-card";
 import { OfflineSchedule } from "@/components/dashboard/offline-schedule";
@@ -84,6 +85,7 @@ export default async function DashboardPage({ params, searchParams }: DashboardP
     ticketCounts,
     pendingByClass,
     teacherStats,
+    myCertificates,
   ] =
     await Promise.all([
       // Platform totals are for staff only: teachers get their own numbers
@@ -103,7 +105,10 @@ export default async function DashboardPage({ params, searchParams }: DashboardP
       // how five requests sat unseen on the day they arrived.
       isAdmin && canClasses ? groupPendingEnrollmentsByClass() : Promise.resolve([]),
       isTeacher ? getTeacherDashboardStats(user.id) : Promise.resolve(null),
+      // Certificates staff issued to this student or teacher (one indexed read).
+      isAdmin ? Promise.resolve([]) : listUserCertificates(user.id),
     ]);
+  const tc = await getTranslations({ locale, namespace: "certificates" });
 
   const pendingTotal = pendingByClass.reduce((sum, row) => sum + row.count, 0);
 
@@ -362,6 +367,26 @@ export default async function DashboardPage({ params, searchParams }: DashboardP
                     <svg className="w-4 h-4 text-ink-faint flex-shrink-0" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d={action.icon} /></svg>
                     {action.label}
                   </Link>
+                ))}
+              </div>
+            </section>
+          ) : null}
+
+          {/* Certificates staff issued to this person; each opens its verify page. */}
+          {myCertificates.length > 0 ? (
+            <section className="rounded-xl border border-white/5 bg-dark-100 p-5">
+              <h3 className="text-base font-semibold text-ink-main mb-4">{tc("myTitle")}</h3>
+              <div className="space-y-3">
+                {myCertificates.map((item) => (
+                  <div className="flex items-center justify-between gap-3" key={item.code}>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-ink-main" dir="auto">{item.className}</p>
+                      <p className="text-xs text-ink-faint">{tc("myIssued", { date: formatDate(item.issuedAt, locale) })}</p>
+                    </div>
+                    <a className="btn-secondary text-xs flex-shrink-0" href={`/en/verify/${item.code}`} rel="noreferrer" target="_blank">
+                      {tc("myOpen")}
+                    </a>
+                  </div>
                 ))}
               </div>
             </section>
