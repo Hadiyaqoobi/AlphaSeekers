@@ -1,6 +1,6 @@
 # Dari translation needed
 
-**530 strings** in the app are still showing **English** to Dari readers.
+**599 strings** in the app are still showing **English** to Dari readers.
 The keys exist in `messages/fa.json`, so nothing errors — the English text was left in place
 when these features shipped. The sections are ordered by who sees them: what students see first
 (the class join page, the live class page, sign-in), then teachers, then staff screens.
@@ -934,7 +934,7 @@ Evening"
   <sub>`classes.registrationClosed`</sub>
 
 
-## `dashboard`  ·  11 strings
+## `dashboard`  ·  13 strings
 
 - **English:** "Support requests"
   **Dari:** 
@@ -980,8 +980,16 @@ Evening"
   **Dari:** 
   <sub>`dashboard.cards.next7Days`</sub>
 
+- **English:** "{count, plural, one {# session today} other {# sessions today}}"
+  **Dari:** 
+  <sub>`dashboard.sessionsToday`</sub>
 
-## `nav`  ·  9 strings
+- **English:** "Issue a certificate"
+  **Dari:** 
+  <sub>`dashboard.quickActions.certificates`</sub>
+
+
+## `nav`  ·  10 strings
 
 - **English:** ""
   **Dari:** 
@@ -1018,6 +1026,10 @@ Evening"
 - **English:** "Skip to content"
   **Dari:** 
   <sub>`nav.skipToContent`</sub>
+
+- **English:** "Certificates"
+  **Dari:** 
+  <sub>`nav.certificates`</sub>
 
 
 ## `profile`  ·  8 strings
@@ -1271,7 +1283,7 @@ Evening"
   <sub>`attendance.verifyRate`</sub>
 
 
-## `classLifecycle`  ·  72 strings
+## `classLifecycle`  ·  69 strings
 
 - **English:** "Post a class"
   **Dari:** 
@@ -1329,17 +1341,9 @@ Evening"
   **Dari:** 
   <sub>`classLifecycle.durationLabel`</sub>
 
-- **English:** "The class runs every week on this day at this time, Kabul time. If the teacher has saved their available hours, the time must be inside them; if not, sessions are booked at exactly this time."
+- **English:** "The class runs every week on this day at this time, Kabul time. Sessions are booked at exactly this time, and the teacher gets the Meet link by email."
   **Dari:** 
   <sub>`classLifecycle.whenHint`</sub>
-
-- **English:** "The teacher will set each date themselves"
-  **Dari:** 
-  <sub>`classLifecycle.manualLabel`</sub>
-
-- **English:** "Nothing is booked automatically. The teacher adds each date on their schedule page."
-  **Dari:** 
-  <sub>`classLifecycle.manualHint`</sub>
 
 - **English:** "More options"
   **Dari:** 
@@ -1424,10 +1428,6 @@ Evening"
 - **English:** "A session for this week already exists."
   **Dari:** 
   <sub>`classLifecycle.issueAlreadyHandled`</sub>
-
-- **English:** "The teacher sets the dates. Until they add one, students have nothing to join."
-  **Dari:** 
-  <sub>`classLifecycle.manualCreated`</sub>
 
 - **English:** "Open the class page"
   **Dari:** 
@@ -1545,7 +1545,7 @@ Evening"
   **Dari:** 
   <sub>`classLifecycle.teacherHoursTitle`</sub>
 
-- **English:** "{name} has not saved available hours, so sessions are booked at exactly this time."
+- **English:** "{name} has not saved any usual hours."
   **Dari:** 
   <sub>`classLifecycle.teacherHoursNone`</sub>
 
@@ -1553,11 +1553,11 @@ Evening"
   **Dari:** 
   <sub>`classLifecycle.teacherHoursUse`</sub>
 
-- **English:** "This time fits the teacher's hours, so sessions will be booked."
+- **English:** "This time fits the teacher's usual hours."
   **Dari:** 
   <sub>`classLifecycle.teacherHoursFits`</sub>
 
-- **English:** "This time is outside {name}'s available hours, so no session will be booked. Tap one of the hours above, or ask the teacher to add this time."
+- **English:** "This time is outside {name}'s usual hours. Sessions are still booked at this time, so check it with the teacher, or tap one of the hours above."
   **Dari:** 
   <sub>`classLifecycle.teacherHoursOutside`</sub>
 
@@ -1667,6 +1667,285 @@ Evening"
 - **English:** "Optional"
   **Dari:** 
   <sub>`teacherSetup.optional`</sub>
+
+
+## `certificates`  ·  69 strings
+
+- **English:** "Certificates"
+  **Dari:** 
+  <sub>`certificates.title`</sub>
+
+- **English:** "Issue certificates to the students who finished this class and to its teacher. Each certificate has a QR code that anyone can scan to check it is real."
+  **Dari:** 
+  <sub>`certificates.hint`</sub>
+
+- **English:** "{count, plural, =0 {None issued yet} one {# valid certificate} other {# valid certificates}}"
+  **Dari:** 
+  <sub>`certificates.validCount`</sub>
+
+- **English:** "No one is listed for this class. You can still type someone in below."
+  **Dari:** 
+  <sub>`certificates.nobody`</sub>
+
+- **English:** "Select all students"
+  **Dari:** 
+  <sub>`certificates.selectAllStudents`</sub>
+
+- **English:** "Select {name}"
+  **Dari:** 
+  <sub>`certificates.selectPerson`</sub>
+
+- **English:** "Name"
+  **Dari:** 
+  <sub>`certificates.name`</sub>
+
+- **English:** "Certificate"
+  **Dari:** 
+  <sub>`certificates.certificate`</sub>
+
+- **English:** "Attendance"
+  **Dari:** 
+  <sub>`certificates.attendance`</sub>
+
+- **English:** "Status"
+  **Dari:** 
+  <sub>`certificates.status`</sub>
+
+- **English:** "Teacher: recognition"
+  **Dari:** 
+  <sub>`certificates.kindTeacher`</sub>
+
+- **English:** "Student: completion"
+  **Dari:** 
+  <sub>`certificates.kindStudent`</sub>
+
+- **English:** "Not issued"
+  **Dari:** 
+  <sub>`certificates.notIssued`</sub>
+
+- **English:** "View"
+  **Dari:** 
+  <sub>`certificates.view`</sub>
+
+- **English:** "Copy link"
+  **Dari:** 
+  <sub>`certificates.copyLink`</sub>
+
+- **English:** "Copied"
+  **Dari:** 
+  <sub>`certificates.copied`</sub>
+
+- **English:** "Could not copy the link. Open the certificate and copy the address instead."
+  **Dari:** 
+  <sub>`certificates.copyFailed`</sub>
+
+- **English:** "Cancel"
+  **Dari:** 
+  <sub>`certificates.revoke`</sub>
+
+- **English:** "Yes, cancel it"
+  **Dari:** 
+  <sub>`certificates.confirmRevoke`</sub>
+
+- **English:** "Keep"
+  **Dari:** 
+  <sub>`certificates.keep`</sub>
+
+- **English:** "What the certificates say"
+  **Dari:** 
+  <sub>`certificates.wording`</sub>
+
+- **English:** "Course length (students)"
+  **Dari:** 
+  <sub>`certificates.lengthLabel`</sub>
+
+- **English:** "Term (teacher)"
+  **Dari:** 
+  <sub>`certificates.termLabel`</sub>
+
+- **English:** "Teaching hours (teacher)"
+  **Dari:** 
+  <sub>`certificates.hoursLabel`</sub>
+
+- **English:** "Filled in from the sessions this class has held. Change anything before you issue; leave a box empty to leave it off the certificate."
+  **Dari:** 
+  <sub>`certificates.wordingHint`</sub>
+
+- **English:** "Email each person a link to their certificate"
+  **Dari:** 
+  <sub>`certificates.sendEmail`</sub>
+
+- **English:** "Choose people above"
+  **Dari:** 
+  <sub>`certificates.chooseFirst`</sub>
+
+- **English:** "{count, plural, one {Issue # certificate} other {Issue # certificates}}"
+  **Dari:** 
+  <sub>`certificates.issueButton`</sub>
+
+- **English:** "Issuing…"
+  **Dari:** 
+  <sub>`certificates.issuing`</sub>
+
+- **English:** "{issued, plural, one {# certificate issued.} other {# certificates issued.}}"
+  **Dari:** 
+  <sub>`certificates.issued`</sub>
+
+- **English:** "{issued, plural, one {# certificate issued} other {# certificates issued}}, {emailed} emailed."
+  **Dari:** 
+  <sub>`certificates.issuedEmailed`</sub>
+
+- **English:** "Certificates could not be issued. Try again."
+  **Dari:** 
+  <sub>`certificates.issueFailed`</sub>
+
+- **English:** "Certificate {code} is cancelled. Its page now says it is no longer valid."
+  **Dari:** 
+  <sub>`certificates.revoked`</sub>
+
+- **English:** "The certificate could not be cancelled. Try again."
+  **Dari:** 
+  <sub>`certificates.revokeFailed`</sub>
+
+- **English:** "{count, plural, one {# cancelled certificate} other {# cancelled certificates}}"
+  **Dari:** 
+  <sub>`certificates.cancelledList`</sub>
+
+- **English:** "My certificates"
+  **Dari:** 
+  <sub>`certificates.myTitle`</sub>
+
+- **English:** "Open"
+  **Dari:** 
+  <sub>`certificates.myOpen`</sub>
+
+- **English:** "Issued {date}"
+  **Dari:** 
+  <sub>`certificates.myIssued`</sub>
+
+- **English:** "8-week"
+  **Dari:** 
+  <sub>`certificates.lengthPlaceholder`</sub>
+
+- **English:** "Fall 2026"
+  **Dari:** 
+  <sub>`certificates.termPlaceholder`</sub>
+
+- **English:** "24 hours"
+  **Dari:** 
+  <sub>`certificates.hoursPlaceholder`</sub>
+
+- **English:** "This person already has a valid certificate for this class. Cancel it first to issue a new one."
+  **Dari:** 
+  <sub>`certificates.alreadyHas`</sub>
+
+- **English:** "Typed in by hand"
+  **Dari:** 
+  <sub>`certificates.handIssuedTitle`</sub>
+
+- **English:** "Not in the list? Type them in"
+  **Dari:** 
+  <sub>`certificates.manualTitle`</sub>
+
+- **English:** "Use this when a student or teacher is missing from the list above, or the list does not show. The certificate uses this class and its teacher. With an email, they get the link; if that email has an account here, it also shows on their dashboard. Without one, use Copy link and send it yourself."
+  **Dari:** 
+  <sub>`certificates.manualHint`</sub>
+
+- **English:** "Full name, as it should be printed"
+  **Dari:** 
+  <sub>`certificates.manualName`</sub>
+
+- **English:** "Fatima Ahmadi"
+  **Dari:** 
+  <sub>`certificates.manualNamePlaceholder`</sub>
+
+- **English:** "Email (optional)"
+  **Dari:** 
+  <sub>`certificates.manualEmail`</sub>
+
+- **English:** "Certificate"
+  **Dari:** 
+  <sub>`certificates.manualKind`</sub>
+
+- **English:** "Issue certificate"
+  **Dari:** 
+  <sub>`certificates.manualButton`</sub>
+
+- **English:** "Certificates"
+  **Dari:** 
+  <sub>`certificates.pageTitle`</sub>
+
+- **English:** "Issue certificates and find every certificate issued. Each one has a QR code that anyone can scan to check it is real."
+  **Dari:** 
+  <sub>`certificates.pageSubtitle`</sub>
+
+- **English:** "Issue a certificate"
+  **Dari:** 
+  <sub>`certificates.standaloneTitle`</sub>
+
+- **English:** "Is the class on the platform? Then open it instead: its page lists the students and fills in the class and teacher for you. Use this form for everything else, such as a class that ran only on WhatsApp or Meet."
+  **Dari:** 
+  <sub>`certificates.standaloneHint`</sub>
+
+- **English:** "Open classes"
+  **Dari:** 
+  <sub>`certificates.openClasses`</sub>
+
+- **English:** "Class, as it should be printed"
+  **Dari:** 
+  <sub>`certificates.classNameLabel`</sub>
+
+- **English:** "English for Beginners"
+  **Dari:** 
+  <sub>`certificates.classNamePlaceholder`</sub>
+
+- **English:** "Teacher's name, as it should be printed"
+  **Dari:** 
+  <sub>`certificates.teacherNameLabel`</sub>
+
+- **English:** "Zahra Karimi"
+  **Dari:** 
+  <sub>`certificates.teacherNamePlaceholder`</sub>
+
+- **English:** "Course length, term and hours are optional: leave a box empty to leave it off the certificate. With an email, the person gets the link; without one, use Copy link below and send it yourself."
+  **Dari:** 
+  <sub>`certificates.standaloneOptional`</sub>
+
+- **English:** "Certificate {code} issued."
+  **Dari:** 
+  <sub>`certificates.standaloneIssued`</sub>
+
+- **English:** "Certificate {code} issued and its link emailed."
+  **Dari:** 
+  <sub>`certificates.standaloneEmailed`</sub>
+
+- **English:** "All certificates"
+  **Dari:** 
+  <sub>`certificates.allTitle`</sub>
+
+- **English:** "Search by name, class or certificate ID"
+  **Dari:** 
+  <sub>`certificates.search`</sub>
+
+- **English:** "Class"
+  **Dari:** 
+  <sub>`certificates.colClass`</sub>
+
+- **English:** "Issued"
+  **Dari:** 
+  <sub>`certificates.colIssued`</sub>
+
+- **English:** "Cancelled"
+  **Dari:** 
+  <sub>`certificates.cancelledBadge`</sub>
+
+- **English:** "No certificate matches that search."
+  **Dari:** 
+  <sub>`certificates.noMatch`</sub>
+
+- **English:** "No certificates have been issued yet."
+  **Dari:** 
+  <sub>`certificates.noneYet`</sub>
 
 
 ## `support`  ·  46 strings

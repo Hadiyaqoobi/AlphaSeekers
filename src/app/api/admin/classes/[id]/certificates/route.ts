@@ -39,6 +39,8 @@ const REASON_MESSAGES = {
   "not-in-class": ["Someone you chose is not enrolled in this class", 400],
   "name-missing": ["Type the person's full name", 400],
   "bad-email": ["That email address does not look right", 400],
+  "class-name-missing": ["Type the class name", 400],
+  "teacher-name-missing": ["Type the teacher's name", 400],
 } as const;
 
 export async function POST(request: NextRequest, { params }: Params) {
