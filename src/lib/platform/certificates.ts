@@ -1,6 +1,8 @@
 /**
- * Verifiable certificates: staff issue them from a class page, anyone checks
- * one by scanning its QR code (/verify/<code>).
+ * Verifiable certificates: staff issue them from a class page, or from the
+ * Certificates page for a course that was never set up as a class here (the
+ * class and teacher are then typed in). Anyone checks one by scanning its QR
+ * code (/verify/<code>).
  *
  * Built for the free Neon plan:
  *   - Nothing runs on a timer. The database is touched only when staff issue or
@@ -160,6 +162,16 @@ export async function listClassCertificates(classId: string): Promise<ClassCerti
   return rows.map((row) => ({ ...toVerified(row), userId: row.userId, revokedReason: row.revokedReason }));
 }
 
+/** Every certificate issued, newest first (admin Certificates page). */
+export async function listAllCertificates(take = 300): Promise<ClassCertificateRow[]> {
+  const rows = await prisma.certificate.findMany({
+    select: { ...ROW_SELECT, userId: true, revokedReason: true },
+    orderBy: { issuedAt: "desc" },
+    take,
+  });
+  return rows.map((row) => ({ ...toVerified(row), userId: row.userId, revokedReason: row.revokedReason }));
+}
+
 /** A person's own valid certificates, newest first (dashboard). */
 export async function listUserCertificates(userId: string): Promise<VerifiedCertificate[]> {
   const rows = await prisma.certificate.findMany({
@@ -232,7 +244,17 @@ export type IssuedCertificate = {
 
 export type IssueResult =
   | { ok: true; issued: IssuedCertificate[]; alreadyHad: number }
-  | { ok: false; reason: "class-not-found" | "nobody-selected" | "not-in-class" | "name-missing" | "bad-email" };
+  | {
+      ok: false;
+      reason:
+        | "class-not-found"
+        | "nobody-selected"
+        | "not-in-class"
+        | "name-missing"
+        | "bad-email"
+        | "class-name-missing"
+        | "teacher-name-missing";
+    };
 
 const clean = (value: string | null | undefined, max: number) => {
   const trimmed = (value ?? "").replace(/\s+/g, " ").trim().slice(0, max);
@@ -248,6 +270,15 @@ function loadClassForIssue(classId: string): Promise<ClassForIssue | null> {
   });
 }
 
+/** What every certificate prints besides the person: the class and its teacher. */
+type PrintedCourse = { classId: string | null; className: string; teacherName: string };
+
+const courseOf = (klass: ClassForIssue): PrintedCourse => ({
+  classId: klass.id,
+  className: klass.name,
+  teacherName: klass.teacher.name,
+});
+
 type Recipient = { key: string; userId: string | null; email: string | null; name: string; kind: CertificateKind };
 
 /**
@@ -256,7 +287,7 @@ type Recipient = { key: string; userId: string | null; email: string | null; nam
  * between the read and the insert.
  */
 async function createCertificates(
-  klass: ClassForIssue,
+  course: PrintedCourse,
   recipients: Recipient[],
   wording: { length?: string | null; term?: string | null; hours?: string | null },
   issuedById: string,
@@ -291,10 +322,10 @@ async function createCertificates(
             code,
             kind: person.kind,
             userId: person.userId,
-            classId: klass.id,
+            classId: course.classId,
             recipientName: person.name.trim(),
-            className: klass.name.trim(),
-            teacherName: klass.teacher.name.trim(),
+            className: course.className.trim(),
+            teacherName: course.teacherName.trim(),
             detail: person.kind === "STUDENT_COMPLETION" ? length : term,
             hours: person.kind === "TEACHER_RECOGNITION" ? hours : null,
             issuedById,
@@ -358,7 +389,7 @@ export async function issueCertificates(input: IssueInput): Promise<IssueResult>
       : []),
   ];
 
-  return { ok: true, ...(await createCertificates(klass, recipients, input, input.issuedById)) };
+  return { ok: true, ...(await createCertificates(courseOf(klass), recipients, input, input.issuedById)) };
 }
 
 export type ManualIssueInput = {
@@ -376,6 +407,19 @@ export type ManualIssueInput = {
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+/** Checks a typed-in name and email, and finds the account that email belongs to, if any. */
+async function resolveTypedPerson(rawName: string, rawEmail: string | null | undefined) {
+  const name = clean(rawName, 100);
+  if (!name || name.length < 2) return { ok: false as const, reason: "name-missing" as const };
+  const email = clean(rawEmail, 254)?.toLowerCase() ?? null;
+  if (email && !EMAIL_PATTERN.test(email)) return { ok: false as const, reason: "bad-email" as const };
+
+  const account = email
+    ? await prisma.user.findFirst({ where: { email: { equals: email, mode: "insensitive" } }, select: { id: true } })
+    : null;
+  return { ok: true as const, name, email, account };
+}
+
 /**
  * Issue one certificate to a person staff type in by hand: for when the class
  * list does not show someone (or does not load at all), or for someone who
@@ -386,14 +430,9 @@ export async function issueManualCertificate(input: ManualIssueInput): Promise<I
   const klass = await loadClassForIssue(input.classId);
   if (!klass) return { ok: false, reason: "class-not-found" };
 
-  const name = clean(input.name, 100);
-  if (!name || name.length < 2) return { ok: false, reason: "name-missing" };
-  const email = clean(input.email, 254)?.toLowerCase() ?? null;
-  if (email && !EMAIL_PATTERN.test(email)) return { ok: false, reason: "bad-email" };
-
-  const account = email
-    ? await prisma.user.findFirst({ where: { email: { equals: email, mode: "insensitive" } }, select: { id: true } })
-    : null;
+  const person = await resolveTypedPerson(input.name, input.email);
+  if (!person.ok) return person;
+  const { name, email, account } = person;
 
   // With an account, the same one-per-person rule as the list (so a typed-in
   // person who also appears in the list is not issued twice). Without one,
@@ -403,7 +442,55 @@ export async function issueManualCertificate(input: ManualIssueInput): Promise<I
     : `${klass.id}:name:${name.toLowerCase()}:${input.kind}`;
 
   const result = await createCertificates(
-    klass,
+    courseOf(klass),
+    [{ key, userId: account?.id ?? null, email, name, kind: input.kind }],
+    input,
+    input.issuedById,
+  );
+  return { ok: true, ...result };
+}
+
+export type StandaloneIssueInput = {
+  issuedById: string;
+  /** Exactly as it should be printed. */
+  name: string;
+  /** Optional. Matched to an account when one exists, so it shows on their dashboard. */
+  email?: string | null;
+  kind: CertificateKind;
+  /** The course, as printed ("English for Beginners"). */
+  className: string;
+  /** Printed on student certificates ("taught by ..."). A teacher's own certificate defaults to their name. */
+  teacherName?: string | null;
+  length?: string | null;
+  term?: string | null;
+  hours?: string | null;
+};
+
+/**
+ * Issue one certificate for a course that has no class on the platform (it
+ * ran on WhatsApp or Meet only, or before the platform). Staff type the class
+ * and teacher as they should be printed. One valid certificate per person, per
+ * course name, per kind, so a double click cannot issue two.
+ */
+export async function issueStandaloneCertificate(input: StandaloneIssueInput): Promise<IssueResult> {
+  const person = await resolveTypedPerson(input.name, input.email);
+  if (!person.ok) return person;
+  const { name, email, account } = person;
+
+  const className = clean(input.className, 120);
+  if (!className || className.length < 2) return { ok: false, reason: "class-name-missing" };
+  const teacherName =
+    clean(input.teacherName, 100) ?? (input.kind === "TEACHER_RECOGNITION" ? name : null);
+  if (!teacherName || teacherName.length < 2) return { ok: false, reason: "teacher-name-missing" };
+
+  // Never collides with a class key ("<cuid>:..."): those never start with "course:".
+  const course = className.toLowerCase();
+  const key = account
+    ? `course:${course}:${account.id}:${input.kind}`
+    : `course:${course}:name:${name.toLowerCase()}:${input.kind}`;
+
+  const result = await createCertificates(
+    { classId: null, className, teacherName },
     [{ key, userId: account?.id ?? null, email, name, kind: input.kind }],
     input,
     input.issuedById,

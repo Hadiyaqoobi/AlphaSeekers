@@ -579,6 +579,27 @@
     "certificates.manualNamePlaceholder",
     "certificates.manualEmail",
     "certificates.manualKind",
-    "certificates.manualButton"
+    "certificates.manualButton",
+    "certificates.pageTitle",
+    "certificates.pageSubtitle",
+    "certificates.standaloneTitle",
+    "certificates.standaloneHint",
+    "certificates.openClasses",
+    "certificates.classNameLabel",
+    "certificates.classNamePlaceholder",
+    "certificates.teacherNameLabel",
+    "certificates.teacherNamePlaceholder",
+    "certificates.standaloneOptional",
+    "certificates.standaloneIssued",
+    "certificates.standaloneEmailed",
+    "certificates.allTitle",
+    "certificates.search",
+    "certificates.colClass",
+    "certificates.colIssued",
+    "certificates.cancelledBadge",
+    "certificates.noMatch",
+    "certificates.noneYet",
+    "nav.certificates",
+    "dashboard.quickActions.certificates"
   ]
 }

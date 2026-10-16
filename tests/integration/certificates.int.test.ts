@@ -10,6 +10,8 @@ import {
   findCertificateForVerify,
   issueCertificates,
   issueManualCertificate,
+  issueStandaloneCertificate,
+  listAllCertificates,
   listClassCertificates,
   listUserCertificates,
   revokeCertificate,
@@ -218,6 +220,81 @@ d("certificates", () => {
     expect(await issueManualCertificate({ ...base, name: " a " })).toEqual({ ok: false, reason: "name-missing" });
     expect(await issueManualCertificate({ ...base, name: "Laila", email: "not-an-email" })).toEqual({ ok: false, reason: "bad-email" });
     expect(await prisma.certificate.count({ where: { classId: klass.id } })).toBe(0);
+  });
+
+  it("issues without a class: the typed class and teacher are printed, and a repeat is not a second one", async () => {
+    const { staff } = await setup("standalone");
+    const input = {
+      issuedById: staff.id,
+      name: "Laila Rahimi",
+      kind: "STUDENT_COMPLETION" as const,
+      className: `${TAG} WhatsApp English`,
+      teacherName: "Zahra Karimi",
+      length: "6-week",
+    };
+
+    const first = await issueStandaloneCertificate(input);
+    expect(first).toMatchObject({ ok: true, alreadyHad: 0 });
+    if (!first.ok) throw new Error("not issued");
+    const code = first.issued[0].code;
+
+    const row = await prisma.certificate.findUniqueOrThrow({ where: { code }, select: { classId: true, userId: true } });
+    expect(row).toEqual({ classId: null, userId: null });
+    expect(await findCertificateForVerify(code)).toMatchObject({
+      recipientName: "Laila Rahimi",
+      className: `${TAG} WhatsApp English`,
+      teacherName: "Zahra Karimi",
+      detail: "6-week",
+    });
+    expect((await listAllCertificates()).some((c) => c.code === code)).toBe(true);
+
+    // Same person, same course, other case: skipped. A different course is a new one.
+    expect(
+      await issueStandaloneCertificate({ ...input, name: "LAILA RAHIMI", className: `${TAG} whatsapp english` }),
+    ).toMatchObject({ ok: true, alreadyHad: 1, issued: [] });
+    expect(await issueStandaloneCertificate({ ...input, className: `${TAG} Maths` })).toMatchObject({ ok: true, alreadyHad: 0 });
+
+    // Once cancelled, it can be issued again.
+    await revokeCertificate(code, null);
+    expect(await issueStandaloneCertificate(input)).toMatchObject({ ok: true, alreadyHad: 0 });
+  });
+
+  it("without a class: a teacher's own certificate prints their name as teacher, and an email links the account", async () => {
+    const { staff, teacher } = await setup("standalone-teacher");
+    const account = await prisma.user.findUniqueOrThrow({ where: { id: teacher.id }, select: { email: true } });
+
+    const result = await issueStandaloneCertificate({
+      issuedById: staff.id,
+      name: "Hadia N.",
+      email: account.email,
+      kind: "TEACHER_RECOGNITION",
+      className: `${TAG} Pre-intermediate English`,
+      term: "Fall 2026",
+      hours: "24 hours",
+    });
+    expect(result).toMatchObject({ ok: true, alreadyHad: 0 });
+    if (!result.ok) throw new Error("not issued");
+    expect(result.issued[0]).toMatchObject({ userId: teacher.id });
+    expect(await findCertificateForVerify(result.issued[0].code)).toMatchObject({
+      teacherName: "Hadia N.",
+      detail: "Fall 2026",
+      hours: "24 hours",
+    });
+    expect(await listUserCertificates(teacher.id)).toHaveLength(1);
+  });
+
+  it("without a class: rejects a missing class name, or a student certificate with no teacher", async () => {
+    const { staff } = await setup("standalone-bad");
+    const base = { issuedById: staff.id, name: "Laila Rahimi", kind: "STUDENT_COMPLETION" as const };
+    expect(await issueStandaloneCertificate({ ...base, className: " ", teacherName: "Zahra Karimi" })).toEqual({
+      ok: false,
+      reason: "class-name-missing",
+    });
+    expect(await issueStandaloneCertificate({ ...base, className: `${TAG} English` })).toEqual({
+      ok: false,
+      reason: "teacher-name-missing",
+    });
+    expect(await prisma.certificate.count({ where: { className: { startsWith: `${TAG} ` } } })).toBe(0);
   });
 
   it("suggests length, term and hours from the sessions actually held", async () => {

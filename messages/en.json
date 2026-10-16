@@ -35,7 +35,8 @@
     "storyModeration": "Story moderation",
     "openMenu": "Open menu",
     "closeMenu": "Close menu",
-    "skipToContent": "Skip to content"
+    "skipToContent": "Skip to content",
+    "certificates": "Certificates"
   },
   "siteSettings": {
     "title": "Site Settings",
@@ -629,7 +630,8 @@
       "addOpportunity": "+ Add opportunity",
       "viewPendingUsers": "View pending users",
       "aiDashboard": "AI dashboard",
-      "support": "Support requests"
+      "support": "Support requests",
+      "certificates": "Issue a certificate"
     },
     "support": {
       "waiting": "{count} support request(s) waiting",
@@ -1858,6 +1860,25 @@
     "manualNamePlaceholder": "Fatima Ahmadi",
     "manualEmail": "Email (optional)",
     "manualKind": "Certificate",
-    "manualButton": "Issue certificate"
+    "manualButton": "Issue certificate",
+    "pageTitle": "Certificates",
+    "pageSubtitle": "Issue certificates and find every certificate issued. Each one has a QR code that anyone can scan to check it is real.",
+    "standaloneTitle": "Issue a certificate",
+    "standaloneHint": "Is the class on the platform? Then open it instead: its page lists the students and fills in the class and teacher for you. Use this form for everything else, such as a class that ran only on WhatsApp or Meet.",
+    "openClasses": "Open classes",
+    "classNameLabel": "Class, as it should be printed",
+    "classNamePlaceholder": "English for Beginners",
+    "teacherNameLabel": "Teacher's name, as it should be printed",
+    "teacherNamePlaceholder": "Zahra Karimi",
+    "standaloneOptional": "Course length, term and hours are optional: leave a box empty to leave it off the certificate. With an email, the person gets the link; without one, use Copy link below and send it yourself.",
+    "standaloneIssued": "Certificate {code} issued.",
+    "standaloneEmailed": "Certificate {code} issued and its link emailed.",
+    "allTitle": "All certificates",
+    "search": "Search by name, class or certificate ID",
+    "colClass": "Class",
+    "colIssued": "Issued",
+    "cancelledBadge": "Cancelled",
+    "noMatch": "No certificate matches that search.",
+    "noneYet": "No certificates have been issued yet."
   }
 }
