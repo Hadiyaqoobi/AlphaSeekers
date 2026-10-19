@@ -16,7 +16,7 @@ import { openAnswers, sealAnswers } from "@/lib/platform/join-answers";
 import { checkAnswers, readJoinQuestions, type JoinQuestion } from "@/lib/platform/join-questions";
 import { prisma } from "@/lib/prisma";
 import { runtime, warnIfInsecureProductionConfig } from "@/lib/runtime";
-import { planAutoSlot, type SlotProblem } from "@/lib/scheduling/weekly-slot";
+import { occurrenceHalfWindowMs, planAutoSlot, type SlotProblem } from "@/lib/scheduling/weekly-slot";
 
 type Role = UserRole;
 
@@ -1610,7 +1610,7 @@ export async function createClassWithSession(input: CreateClassInput) {
       updatedAt: klass.updatedAt.toISOString(),
     },
     sessions: createdSessions,
-    scheduleIssue: booking.status === "booked" ? null : booking.reason,
+    scheduleIssue: booking.reason ?? null,
     registrationFormUrl: (klass as Record<string, unknown>).registrationFormUrl ?? null,
     whatsappGroupUrl: (klass as Record<string, unknown>).whatsappGroupUrl ?? null,
     registrationDeadline:
@@ -2440,9 +2440,9 @@ export async function hasTeacherConflict(
 // src/lib/scheduling/weekly-slot.ts.
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-// A session within this distance of the target slot belongs to the same weekly
-// occurrence (half a week either side, so neighbouring weeks never collide).
-const OCCURRENCE_HALF_WINDOW_MS = 3.5 * DAY_MS;
+// A session within occurrenceHalfWindowMs() of the target slot belongs to the
+// same weekly occurrence: half a week either side for a one-day class, less for a
+// class that meets on several days (see weekly-slot.ts).
 
 export type AutoScheduleSkipReason = SlotProblem | "already-handled" | "clash";
 
@@ -2456,9 +2456,14 @@ type AutoBookingClass = {
 
 type BookedSession = Awaited<ReturnType<typeof prisma.session.create>>;
 
+/**
+ * `occurrences` holds the rows of each booked day (one row per Meet segment),
+ * earliest first; `sessions` is the same rows flattened. A several-day class can
+ * be "booked" on some days and clash on another: `reason` is then "clash".
+ */
 type AutoBookingOutcome =
-  | { status: "booked"; sessions: BookedSession[] }
-  | { status: "skipped"; reason: AutoScheduleSkipReason; sessions: BookedSession[] };
+  | { status: "booked"; sessions: BookedSession[]; occurrences: BookedSession[][]; reason?: "clash" }
+  | { status: "skipped"; reason: AutoScheduleSkipReason; sessions: BookedSession[]; occurrences: BookedSession[][] };
 
 function toMeetLinkStatus(status: MeetGenerationResult["status"]) {
   return status === "FAILED"
@@ -2521,25 +2526,38 @@ async function isOccurrenceHandled(
   classId: string,
   target: Date,
   now: Date,
+  halfWindowMs: number,
+  oneDayClass: boolean,
 ) {
+  const window = {
+    gte: new Date(target.getTime() - halfWindowMs),
+    lt: new Date(target.getTime() + halfWindowMs),
+  };
+
+  // Booked for this slot already: wherever staff moved it, and even if cancelled.
+  const booked = await db.session.findFirst({
+    where: { classId, occurrenceAt: window },
+    select: { id: true },
+  });
+  if (booked) return true;
+
+  // Rows booked before sessions recorded their slot (occurrenceAt null), and
+  // sessions added by hand: the rule as it was before several-day classes.
   const addedByHand = (session: { createdAt: Date; confirmedAt: Date | null }) =>
     session.confirmedAt !== null && Math.abs(session.confirmedAt.getTime() - session.createdAt.getTime()) <= 60_000;
 
   const nearSlot = await db.session.findMany({
-    where: {
-      classId,
-      startTime: {
-        gte: new Date(target.getTime() - OCCURRENCE_HALF_WINDOW_MS),
-        lt: new Date(target.getTime() + OCCURRENCE_HALF_WINDOW_MS),
-      },
-    },
+    where: { classId, occurrenceAt: null, startTime: window },
     select: { createdAt: true, confirmedAt: true },
   });
   if (nearSlot.some((session) => !addedByHand(session))) return true;
 
+  // A moved old row cannot say which day it was booked for, so this last check
+  // only applies to a class that meets on one day.
+  if (!oneDayClass) return false;
   const cycleStart = new Date(target.getTime() - 7 * DAY_MS - 60 * 60 * 1000);
   const movedOut = await db.session.findMany({
-    where: { classId, cancelled: false, startTime: { gte: now }, createdAt: { gte: cycleStart } },
+    where: { classId, occurrenceAt: null, cancelled: false, startTime: { gte: now }, createdAt: { gte: cycleStart } },
     select: { createdAt: true, confirmedAt: true },
   });
   return movedOut.some((session) => session.confirmedAt !== null && !addedByHand(session));
@@ -2571,12 +2589,14 @@ async function attachMeetLinks(className: string, teacherId: string, rows: Booke
 }
 
 /**
- * Book the next weekly occurrence of an AUTO class, or say why not.
+ * Book the next weekly occurrence of each day an AUTO class meets, or say why not.
  *
- * The "already handled?" check, the overlap check and the row inserts run in one
- * transaction under a per-teacher advisory lock, so the scheduler, the
- * post-availability scheduling and class creation can never book the same slot
- * twice or overlap each other. The slow Meet-link calls run after commit.
+ * For each day, the "already handled?" check, the overlap check and the row
+ * inserts run in one transaction under a per-teacher advisory lock, so the
+ * scheduler, the post-availability scheduling and class creation can never book
+ * the same slot twice or overlap each other. Each day is booked on its own, so a
+ * clash on one day does not stop the others. The slow Meet-link calls run after
+ * commit.
  */
 async function bookNextAutoOccurrence(klass: AutoBookingClass): Promise<AutoBookingOutcome> {
   const now = new Date();
@@ -2585,64 +2605,81 @@ async function bookNextAutoOccurrence(klass: AutoBookingClass): Promise<AutoBook
 
   if (!plan.ok) {
     console.log(`[scheduler] not booking class ${klass.id} (${klass.name}): ${plan.reason}`);
-    return { status: "skipped", reason: plan.reason, sessions: [] };
+    return { status: "skipped", reason: plan.reason, sessions: [], occurrences: [] };
   }
 
-  const target = nextWeekdayDate(plan.slot.dayOfWeek, plan.slot.hour, plan.slot.minute);
-  const windows = buildSegmentWindows(target, durationMinutes);
+  const halfWindowMs = occurrenceHalfWindowMs(plan.slots);
+  const oneDayClass = plan.slots.length === 1;
+  const targets = plan.slots
+    .map((slot) => nextWeekdayDate(slot.dayOfWeek, slot.hour, slot.minute))
+    .sort((a, b) => a.getTime() - b.getTime());
 
-  const result = await prisma.$transaction(async (tx): Promise<
-    { kind: "skipped"; reason: "already-handled" | "clash" } | { kind: "rows"; rows: BookedSession[] }
-  > => {
-    await tx.$executeRawUnsafe(
-      `SELECT pg_advisory_xact_lock(${SCHEDULER_ADVISORY_LOCK_KEY}, hashtext($1))`,
-      klass.teacherId,
-    );
+  const occurrences: BookedSession[][] = [];
+  let clashed = false;
 
-    if (await isOccurrenceHandled(tx, klass.id, target, now)) {
-      return { kind: "skipped", reason: "already-handled" };
-    }
+  for (const target of targets) {
+    const windows = buildSegmentWindows(target, durationMinutes);
 
-    for (const window of windows) {
-      const clash = await tx.session.findFirst({
-        where: {
-          cancelled: false,
-          startTime: { lt: window.endTime },
-          endTime: { gt: window.startTime },
-          class: { teacherId: klass.teacherId },
-        },
-        select: { id: true },
-      });
-      if (clash) {
-        return { kind: "skipped", reason: "clash" };
+    const result = await prisma.$transaction(async (tx): Promise<
+      { kind: "skipped"; reason: "already-handled" | "clash" } | { kind: "rows"; rows: BookedSession[] }
+    > => {
+      await tx.$executeRawUnsafe(
+        `SELECT pg_advisory_xact_lock(${SCHEDULER_ADVISORY_LOCK_KEY}, hashtext($1))`,
+        klass.teacherId,
+      );
+
+      if (await isOccurrenceHandled(tx, klass.id, target, now, halfWindowMs, oneDayClass)) {
+        return { kind: "skipped", reason: "already-handled" };
       }
-    }
 
-    const rows: BookedSession[] = [];
-    for (const window of windows) {
-      rows.push(
-        await tx.session.create({
-          data: {
-            classId: klass.id,
-            startTime: window.startTime,
-            endTime: window.endTime,
-            meetLinkStatus: MeetLinkStatus.PENDING,
+      for (const window of windows) {
+        const clash = await tx.session.findFirst({
+          where: {
             cancelled: false,
+            startTime: { lt: window.endTime },
+            endTime: { gt: window.startTime },
+            class: { teacherId: klass.teacherId },
           },
-        }),
+          select: { id: true },
+        });
+        if (clash) {
+          return { kind: "skipped", reason: "clash" };
+        }
+      }
+
+      const rows: BookedSession[] = [];
+      for (const window of windows) {
+        rows.push(
+          await tx.session.create({
+            data: {
+              classId: klass.id,
+              startTime: window.startTime,
+              endTime: window.endTime,
+              occurrenceAt: target,
+              meetLinkStatus: MeetLinkStatus.PENDING,
+              cancelled: false,
+            },
+          }),
+        );
+      }
+      return { kind: "rows", rows };
+    });
+
+    if (result.kind === "rows") {
+      occurrences.push(await attachMeetLinks(klass.name, klass.teacherId, result.rows));
+    } else if (result.reason === "clash") {
+      clashed = true;
+      console.log(
+        `[scheduler] not booking class ${klass.id} (${klass.name}) on ${target.toISOString()}: overlaps another session of the teacher`,
       );
     }
-    return { kind: "rows", rows };
-  });
-
-  if (result.kind === "skipped") {
-    if (result.reason === "clash") {
-      console.log(`[scheduler] not booking class ${klass.id} (${klass.name}): overlaps another session of the teacher`);
-    }
-    return { status: "skipped", reason: result.reason, sessions: [] };
   }
 
-  return { status: "booked", sessions: await attachMeetLinks(klass.name, klass.teacherId, result.rows) };
+  const sessions = occurrences.flat();
+  if (occurrences.length > 0) {
+    return { status: "booked", sessions, occurrences, ...(clashed ? { reason: "clash" as const } : {}) };
+  }
+  return { status: "skipped", reason: clashed ? "clash" : "already-handled", sessions, occurrences };
 }
 
 /** Full delivery target (every channel + the user's channel preferences). */
@@ -2722,7 +2759,7 @@ export async function deliverAndRecord(
   return { recipients: recipients.length, sent };
 }
 
-/** Tell a class's students about newly booked session(s), in their own time zone. */
+/** Tell a class's students about one newly booked day (its Meet segment rows), in their own time zone. */
 async function notifyStudentsOfNewSessions(klass: { id: string; name: string }, sessions: BookedSession[]) {
   if (sessions.length === 0) return;
   const first = sessions[0];
@@ -2838,7 +2875,9 @@ export async function scheduleTeacherClasses(teacherId: string) {
   for (const klass of teacherClasses) {
     const booking = await bookNextAutoOccurrence(klass);
     sessionsCreated += booking.sessions.length;
-    await notifyStudentsOfNewSessions(klass, booking.sessions);
+    for (const occurrence of booking.occurrences) {
+      await notifyStudentsOfNewSessions(klass, occurrence);
+    }
   }
 
   return { classesChecked: teacherClasses.length, sessionsCreated };
@@ -2979,7 +3018,9 @@ export async function runSchedulerBatch() {
 
   for (const klass of batch) {
     const booking = await bookNextAutoOccurrence(klass);
-    await notifyStudentsOfNewSessions(klass, booking.sessions);
+    for (const occurrence of booking.occurrences) {
+      await notifyStudentsOfNewSessions(klass, occurrence);
+    }
   }
 
   // Every run, not just once per batch cycle: links that were missing at booking

@@ -134,4 +134,96 @@ d("scheduler batch claim", () => {
 
     expect(await prisma.session.count({ where: { classId: klass.id } })).toBe(1);
   });
+
+  // ── Several days a week (2026-10-19) ─────────────────────────────────────
+  const KABUL_MS = (4 * 60 + 30) * 60_000;
+  const kabulDay = (date: Date) => new Date(date.getTime() + KABUL_MS).getUTCDay();
+  const kabulHour = (date: Date) => new Date(date.getTime() + KABUL_MS).getUTCHours();
+
+  async function makeTeacher(slug: string) {
+    return prisma.user.create({
+      data: { name: `${TAG} ${slug}`, email: email(slug), role: "TEACHER", approvedAt: new Date() },
+      select: { id: true },
+    });
+  }
+
+  async function makeClassAt(teacherId: string, name: string, schedulePreference: string) {
+    return prisma.class.create({
+      data: {
+        name: `${TAG} ${name}`,
+        subjectCategory: "English",
+        description: "fixture",
+        teacherId,
+        maxStudents: 10,
+        durationMinutes: 60,
+        schedulePreference,
+        schedulingMode: "AUTO",
+      },
+      select: { id: true },
+    });
+  }
+
+  it("books each day of a several-day class as its own session, exactly once", async () => {
+    const teacher = await makeTeacher("multi");
+    const klass = await makeClassAt(teacher.id, "multi", "Tue, Thu, Fri 6:00 PM");
+
+    await runSchedulerBatch();
+    await runSchedulerBatch();
+
+    const sessions = await prisma.session.findMany({ where: { classId: klass.id }, orderBy: { startTime: "asc" } });
+    expect(sessions).toHaveLength(3);
+    expect(sessions.map((session) => kabulDay(session.startTime)).sort()).toEqual([2, 4, 5]);
+    for (const session of sessions) {
+      expect(kabulHour(session.startTime)).toBe(18);
+      expect(session.occurrenceAt?.getTime()).toBe(session.startTime.getTime());
+      expect(session.startTime.getTime()).toBeGreaterThan(Date.now());
+      expect(session.startTime.getTime()).toBeLessThanOrEqual(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    }
+  });
+
+  it("does not book a day again after staff move or cancel that day's session", async () => {
+    const teacher = await makeTeacher("moved");
+    const klass = await makeClassAt(teacher.id, "moved", "Tue, Thu 6:00 PM");
+    await runSchedulerBatch();
+    const [first, second] = await prisma.session.findMany({ where: { classId: klass.id }, orderBy: { startTime: "asc" } });
+
+    // Move the first a day later (as the reschedule screen does) and cancel the second.
+    await prisma.session.update({
+      where: { id: first.id },
+      data: {
+        startTime: new Date(first.startTime.getTime() + 24 * 60 * 60 * 1000),
+        endTime: new Date(first.endTime.getTime() + 24 * 60 * 60 * 1000),
+        confirmedAt: new Date(Date.now() + 5 * 60_000),
+      },
+    });
+    await prisma.session.update({ where: { id: second.id }, data: { cancelled: true } });
+
+    await runSchedulerBatch();
+
+    expect(await prisma.session.count({ where: { classId: klass.id } })).toBe(2);
+  });
+
+  it("still books the other days when one day overlaps another class of the teacher", async () => {
+    const teacher = await makeTeacher("clash");
+    const busy = await makeClassAt(teacher.id, "busy", "Thu 6:00 PM");
+    const klass = await makeClassAt(teacher.id, "clash", "Tue, Thu 6:00 PM");
+
+    await runSchedulerBatch();
+
+    expect(await prisma.session.count({ where: { classId: busy.id } })).toBe(1);
+    const sessions = await prisma.session.findMany({ where: { classId: klass.id } });
+    expect(sessions.map((session) => kabulDay(session.startTime))).toEqual([2]);
+  });
+
+  it("still sees a session booked before sessions recorded their day (no double booking)", async () => {
+    const teacher = await makeTeacher("legacy");
+    const klass = await makeClassAt(teacher.id, "legacy", "Wed 2:00 PM");
+    await runSchedulerBatch();
+    // Make the row look like one booked by the previous release.
+    await prisma.session.updateMany({ where: { classId: klass.id }, data: { occurrenceAt: null } });
+
+    await runSchedulerBatch();
+
+    expect(await prisma.session.count({ where: { classId: klass.id } })).toBe(1);
+  });
 });

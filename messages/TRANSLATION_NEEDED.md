@@ -1,6 +1,6 @@
 # Dari translation needed
 
-**599 strings** in the app are still showing **English** to Dari readers.
+**600 strings** in the app are still showing **English** to Dari readers.
 The keys exist in `messages/fa.json`, so nothing errors — the English text was left in place
 when these features shipped. The sections are ordered by who sees them: what students see first
 (the class join page, the live class page, sign-in), then teachers, then staff screens.
@@ -1283,7 +1283,7 @@ Evening"
   <sub>`attendance.verifyRate`</sub>
 
 
-## `classLifecycle`  ·  69 strings
+## `classLifecycle`  ·  70 strings
 
 - **English:** "Post a class"
   **Dari:** 
@@ -1329,7 +1329,7 @@ Evening"
   **Dari:** 
   <sub>`classLifecycle.noTeachers`</sub>
 
-- **English:** "Day"
+- **English:** "Days"
   **Dari:** 
   <sub>`classLifecycle.dayLabel`</sub>
 
@@ -1341,7 +1341,7 @@ Evening"
   **Dari:** 
   <sub>`classLifecycle.durationLabel`</sub>
 
-- **English:** "The class runs every week on this day at this time, Kabul time. Sessions are booked at exactly this time, and the teacher gets the Meet link by email."
+- **English:** "The class runs every week on each day you tick, at this time, Kabul time. Each day is its own session, booked at exactly this time, and the teacher gets the Meet link by email."
   **Dari:** 
   <sub>`classLifecycle.whenHint`</sub>
 
@@ -1553,13 +1553,17 @@ Evening"
   **Dari:** 
   <sub>`classLifecycle.teacherHoursUse`</sub>
 
-- **English:** "This time fits the teacher's usual hours."
+- **English:** "This time fits the teacher's usual hours on every day you ticked."
   **Dari:** 
   <sub>`classLifecycle.teacherHoursFits`</sub>
 
-- **English:** "This time is outside {name}'s usual hours. Sessions are still booked at this time, so check it with the teacher, or tap one of the hours above."
+- **English:** "On at least one of the days you ticked, this time is outside {name}'s usual hours. Sessions are still booked at this time, so check it with the teacher, or tap one of the hours above."
   **Dari:** 
   <sub>`classLifecycle.teacherHoursOutside`</sub>
+
+- **English:** "Tick at least one day."
+  **Dari:** 
+  <sub>`classLifecycle.pickADay`</sub>
 
 
 ## `teacherSetup`  ·  26 strings

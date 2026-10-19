@@ -6,7 +6,7 @@ import { joinQuestionsSchema } from "@/lib/platform/join-questions";
 import { parseRegistrationDeadline } from "@/lib/platform/registration-deadline";
 import { archiveClass, deleteClassPermanently, updateClass } from "@/lib/platform/store";
 import { prisma } from "@/lib/prisma";
-import { formatWeeklySlot, parseWeeklySlotStrict } from "@/lib/scheduling/weekly-slot";
+import { formatWeeklySlots, parseWeeklySlotsStrict } from "@/lib/scheduling/weekly-slot";
 import { recordAudit } from "@/lib/security/audit";
 import { AccessError, requirePermission, requireSuperAdmin } from "@/lib/security/permissions";
 import { getClientIp } from "@/lib/security/rate-limit";
@@ -29,7 +29,7 @@ const updateClassSchema = z
     maxStudents: z.number().int().min(1).max(1000).optional(),
     durationMinutes: z.number().int().min(30).max(600).optional(),
     // Same strict rule as class creation: an unreadable day/time is a 400, and the
-    // stored value is the canonical "Tue 6:00 PM" (Kabul) the scheduler reads.
+    // stored value is the canonical "Tue, Thu 6:00 PM" (Kabul) the scheduler reads.
     schedulePreference: z
       .string()
       .trim()
@@ -38,15 +38,15 @@ const updateClassSchema = z
       .optional()
       .transform((value, ctx) => {
         if (value === undefined) return undefined;
-        const slot = parseWeeklySlotStrict(value);
-        if (!slot) {
+        const slots = parseWeeklySlotsStrict(value);
+        if (!slots) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: 'Choose a day and a time (Kabul), e.g. "Tue 6:00 PM".',
+            message: 'Choose one or more days and a time (Kabul), e.g. "Tue, Thu 6:00 PM".',
           });
           return z.NEVER;
         }
-        return formatWeeklySlot(slot);
+        return formatWeeklySlots(slots);
       }),
     teacherId: z.string().trim().min(1).max(100).optional(),
     language: z.string().trim().min(1).max(50).optional(),

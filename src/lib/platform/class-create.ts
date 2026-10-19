@@ -16,10 +16,11 @@ import { joinQuestionsSchema } from "@/lib/platform/join-questions";
 import { prisma } from "@/lib/prisma";
 import { parseRegistrationDeadline } from "@/lib/platform/registration-deadline";
 import { resolveTeacherId } from "@/lib/platform/teacher-invite";
-import { formatWeeklySlot, parseWeeklySlotStrict, slotFromDayAndTime } from "@/lib/scheduling/weekly-slot";
+import { formatWeeklySlots, parseWeeklySlotsStrict, slotsFromDaysAndTime } from "@/lib/scheduling/weekly-slot";
 import { normaliseHttpUrl } from "@/lib/security/safe-url";
 
-const DAY_TIME_HINT = 'Choose a day and a time (Kabul), e.g. day "Tue" and time "18:00", or schedule "Tue 6:00 PM".';
+const DAY_TIME_HINT =
+  'Choose one or more days and a time (Kabul), e.g. days ["Tue", "Thu"] and time "18:00", or schedule "Tue, Thu 6:00 PM".';
 
 /** Optional http(s) link; blank = not set. Anything else is a 400, not silently dropped. */
 const optionalLink = z
@@ -49,8 +50,10 @@ export const createClassSchema = z
     newTeacherPhone: z.string().trim().max(40).optional(),
     maxStudents: z.coerce.number().int().min(1).max(1000).default(50),
     durationMinutes: z.coerce.number().int().min(30).max(600).default(60),
-    // The class time, Kabul wall clock: structured day + 24h time (the form), or
-    // one "Tue 6:00 PM" string (older clients / scripts). One of them is required.
+    // The class time, Kabul wall clock: the ticked days + one 24h time (the form),
+    // a single day + time (older clients), or one "Tue, Thu 6:00 PM" string
+    // (scripts). One of them is required. Each day is booked as its own session.
+    days: z.array(z.string().trim().max(20)).max(7).optional(),
     day: z.string().trim().max(20).optional(),
     time: z.string().trim().max(10).optional(),
     schedulePreference: z.string().trim().max(200).optional(),
@@ -84,14 +87,15 @@ export const createClassSchema = z
     path: ["teacherId"],
   })
   .transform((d, ctx) => {
-    const slot =
-      d.day || d.time ? slotFromDayAndTime(d.day ?? "", d.time ?? "") : parseWeeklySlotStrict(d.schedulePreference);
-    if (!slot) {
+    const days = d.days ?? (d.day ? [d.day] : []);
+    const slots =
+      d.days || d.day || d.time ? slotsFromDaysAndTime(days, d.time ?? "") : parseWeeklySlotsStrict(d.schedulePreference);
+    if (!slots) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: DAY_TIME_HINT, path: ["schedulePreference"] });
       return z.NEVER;
     }
     // Stored in ONE canonical form so the scheduler, pages and messages agree.
-    return { ...d, schedulePreference: formatWeeklySlot(slot) };
+    return { ...d, schedulePreference: formatWeeklySlots(slots) };
   });
 
 export type CreateClassBody = z.infer<typeof createClassSchema>;

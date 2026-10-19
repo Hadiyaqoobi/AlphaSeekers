@@ -5,10 +5,11 @@ import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 
+import { DayPicker } from "@/components/classes/day-picker";
 import { JoinQuestionsEditor, toDraft, toPayload, type DraftQuestion } from "@/components/classes/join-questions-editor";
 import type { JoinQuestion } from "@/lib/platform/join-questions";
 import { toDateInputValue } from "@/lib/platform/registration-deadline";
-import { DAY_ABBREVIATIONS, parseStoredWeeklySlot } from "@/lib/scheduling/weekly-slot";
+import { DAY_ABBREVIATIONS, parseStoredWeeklySlots } from "@/lib/scheduling/weekly-slot";
 
 type Teacher = { id: string; name: string; email: string };
 
@@ -41,7 +42,8 @@ type EditState = {
   teacherId: string;
   maxStudents: string;
   durationMinutes: string;
-  day: string;
+  /** Ticked days, "Sun" … "Sat". */
+  days: string[];
   time: string;
   registrationDeadline: string;
   whatsappGroupUrl: string;
@@ -49,7 +51,6 @@ type EditState = {
   joinQuestions: DraftQuestion[];
 };
 
-const DAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
 const LABEL = "text-xs font-semibold text-ink-soft";
 
 function pad(value: number) {
@@ -58,14 +59,15 @@ function pad(value: number) {
 
 
 function toEditState(initial: EditableClass): EditState {
-  const slot = parseStoredWeeklySlot(initial.schedulePreference);
+  const slots = parseStoredWeeklySlots(initial.schedulePreference);
+  const slot = slots?.[0] ?? null;
   return {
     name: initial.name,
     description: initial.description,
     teacherId: initial.teacherId,
     maxStudents: String(initial.maxStudents),
     durationMinutes: String(initial.durationMinutes),
-    day: slot ? DAY_ABBREVIATIONS[slot.dayOfWeek] : "",
+    days: slots ? slots.map((s) => DAY_ABBREVIATIONS[s.dayOfWeek]) : [],
     time: slot ? `${pad(slot.hour)}:${pad(slot.minute)}` : "",
     // The same conversion the server uses for a date-only deadline (end of that
     // day, UTC), so the form shows the date that was saved. Converting to Kabul
@@ -115,8 +117,13 @@ export function AdminClassActions({ classId, initial, teachers, canEdit = true, 
     if (form.teacherId !== original.teacherId) body.teacherId = form.teacherId;
     if (form.maxStudents !== original.maxStudents) body.maxStudents = Number(form.maxStudents);
     if (form.durationMinutes !== original.durationMinutes) body.durationMinutes = Number(form.durationMinutes);
-    if ((form.day !== original.day || form.time !== original.time) && form.day && form.time) {
-      body.schedulePreference = `${form.day} ${form.time}`;
+    const daysChanged = form.days.join(",") !== original.days.join(",");
+    if ((daysChanged || form.time !== original.time) && form.time) {
+      if (form.days.length === 0) {
+        setMessage({ kind: "error", text: tl("pickADay") });
+        return;
+      }
+      body.schedulePreference = `${form.days.join(", ")} ${form.time}`;
     }
     if (form.registrationDeadline !== original.registrationDeadline) {
       body.registrationDeadline = form.registrationDeadline || null;
@@ -223,23 +230,14 @@ export function AdminClassActions({ classId, initial, teachers, canEdit = true, 
             </select>
           </div>
 
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <div className="space-y-1">
-              <label className={LABEL} htmlFor="edit-class-day">{tl("dayLabel")}</label>
-              <select
-                className="select-field"
-                id="edit-class-day"
-                onChange={(e) => update("day", e.target.value)}
-                value={form.day}
-              >
-                {form.day === "" ? <option value="">—</option> : null}
-                {DAY_KEYS.map((key, index) => (
-                  <option key={key} value={DAY_ABBREVIATIONS[index]}>
-                    {ts(key)}
-                  </option>
-                ))}
-              </select>
-            </div>
+          <DayPicker
+            id="edit-class-days"
+            label={tl("dayLabel")}
+            onChange={(days) => update("days", days)}
+            value={form.days}
+          />
+
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-1">
               <label className={LABEL} htmlFor="edit-class-time">{tl("timeLabel")}</label>
               <input
