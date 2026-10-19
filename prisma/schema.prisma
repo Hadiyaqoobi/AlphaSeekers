@@ -204,6 +204,12 @@ model Session {
   checkinCode          String?
   checkinCodeExpiresAt DateTime?
 
+  /// The weekly slot the scheduler booked this session for (the class's day and
+  /// time that week), kept when staff later move or cancel the session, so that
+  /// day is not booked a second time. Null on sessions added by hand and on rows
+  /// booked before classes could meet on several days a week.
+  occurrenceAt DateTime?
+
   class               Class                @relation(fields: [classId], references: [id], onDelete: Cascade)
   attendance          Attendance[]
   materials           Material[]
@@ -216,6 +222,7 @@ model Session {
   @@index([classId])
   @@index([startTime])
   @@index([classId, startTime])
+  @@index([classId, occurrenceAt])
 }
 
 model Enrollment {

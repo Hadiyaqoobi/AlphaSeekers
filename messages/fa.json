@@ -713,10 +713,11 @@
     "languageLabel": "Language of teaching",
     "teacherLabel": "Teacher",
     "noTeachers": "No teachers yet. Invite one instead.",
-    "dayLabel": "Day",
+    "dayLabel": "Days",
+    "pickADay": "Tick at least one day.",
     "timeLabel": "Time (Kabul time)",
     "durationLabel": "Length (minutes)",
-    "whenHint": "The class runs every week on this day at this time, Kabul time. Sessions are booked at exactly this time, and the teacher gets the Meet link by email.",
+    "whenHint": "The class runs every week on each day you tick, at this time, Kabul time. Each day is its own session, booked at exactly this time, and the teacher gets the Meet link by email.",
     "moreOptions": "More options",
     "maxStudentsLabel": "Maximum students",
     "whatsappLabel": "WhatsApp group link (optional)",
@@ -769,8 +770,8 @@
     "teacherHoursTitle": "{name}'s available hours (Kabul time). Tap one to use it:",
     "teacherHoursNone": "{name} has not saved any usual hours.",
     "teacherHoursUse": "Use this time",
-    "teacherHoursFits": "This time fits the teacher's usual hours.",
-    "teacherHoursOutside": "This time is outside {name}'s usual hours. Sessions are still booked at this time, so check it with the teacher, or tap one of the hours above."
+    "teacherHoursFits": "This time fits the teacher's usual hours on every day you ticked.",
+    "teacherHoursOutside": "On at least one of the days you ticked, this time is outside {name}'s usual hours. Sessions are still booked at this time, so check it with the teacher, or tap one of the hours above."
   },
   "sessionActions": {
     "cancel": "لغو جلسه",

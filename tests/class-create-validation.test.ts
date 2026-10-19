@@ -26,6 +26,17 @@ describe("parseCreateClassBody", () => {
     expect(parsed.data.registrationDeadline).toBeNull();
   });
 
+  it("builds one schedule from several ticked days", () => {
+    const parsed = parseCreateClassBody({ ...base, days: ["Fri", "Tue", "Thu"], time: "18:00" });
+    expect(parsed.ok && parsed.data.schedulePreference).toBe("Tue, Thu, Fri 6:00 PM");
+    expect(parseCreateClassBody({ ...base, schedulePreference: "Tue, Thu 6:00 PM" }).ok).toBe(true);
+  });
+
+  it("rejects a form with no day ticked", () => {
+    expect(parseCreateClassBody({ ...base, days: [], time: "18:00" }).ok).toBe(false);
+    expect(parseCreateClassBody({ ...base, days: ["Tue", "someday"], time: "18:00" }).ok).toBe(false);
+  });
+
   it("still accepts a readable schedulePreference string (scripts, older clients)", () => {
     const parsed = parseCreateClassBody({ ...base, schedulePreference: "Tuesday 6:00 pm" });
     expect(parsed.ok && parsed.data.schedulePreference).toBe("Tue 6:00 PM");

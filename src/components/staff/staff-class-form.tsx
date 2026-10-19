@@ -6,13 +6,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 
+import { DayPicker } from "@/components/classes/day-picker";
 import { JoinQuestionsEditor, toPayload, type DraftQuestion } from "@/components/classes/join-questions-editor";
 import { useAutosaveForm } from "@/components/forms/use-autosave-form";
 import { formatDateTime } from "@/lib/format-date";
 import {
     classSpanMinutes,
     slotFitsAvailability,
-    slotFromDayAndTime,
+    slotsFromDaysAndTime,
     type AvailabilityWindow,
 } from "@/lib/scheduling/weekly-slot";
 
@@ -63,7 +64,8 @@ type FormState = {
     teacherId: string;
     newTeacherName: string;
     newTeacherEmail: string;
-    day: string;
+    /** Ticked days, "Sun" … "Sat"; each is booked as its own session. */
+    days: string[];
     time: string;
     durationMinutes: string;
     maxStudents: string;
@@ -120,7 +122,7 @@ const DEFAULT_FORM: FormState = {
     teacherId: "",
     newTeacherName: "",
     newTeacherEmail: "",
-    day: "Tue",
+    days: ["Tue"],
     time: "18:00",
     durationMinutes: "60",
     maxStudents: "50",
@@ -156,9 +158,17 @@ export function ClassCreateForm({ teachers, autosaveKey = "class-create" }: Clas
         // while the form still held the missing id, so the teacher's hours did not
         // appear and posting failed. Fall back to the first teacher in the list.
         const teacherKnown = teachers.some((teacher) => teacher.id === draft.teacherId);
+        // A draft saved before several days could be ticked holds one `day`.
+        const legacyDay = (payload as { day?: unknown }).day;
+        const days = Array.isArray(draft.days)
+            ? draft.days
+            : typeof legacyDay === "string" && legacyDay
+              ? [legacyDay]
+              : undefined;
         setForm((current) => ({
             ...current,
             ...draft,
+            days: days ?? current.days,
             teacherId: teacherKnown ? (draft.teacherId as string) : current.teacherId,
         }));
     });
@@ -168,10 +178,12 @@ export function ClassCreateForm({ teachers, autosaveKey = "class-create" }: Clas
     const selectedTeacher =
         form.teacherMode === "existing" ? teachers.find((teacher) => teacher.id === form.teacherId) ?? null : null;
     const teacherHours = selectedTeacher?.availability ?? [];
-    const chosenSlot = slotFromDayAndTime(form.day, form.time);
+    const chosenSlots = slotsFromDaysAndTime(form.days, form.time);
     const timeFits =
-        chosenSlot !== null &&
-        slotFitsAvailability(chosenSlot, classSpanMinutes(Number(form.durationMinutes) || 60), teacherHours);
+        chosenSlots !== null &&
+        chosenSlots.every((slot) =>
+            slotFitsAvailability(slot, classSpanMinutes(Number(form.durationMinutes) || 60), teacherHours),
+        );
 
     function update<K extends keyof FormState>(key: K, value: FormState[K]) {
         setForm((current) => ({ ...current, [key]: value }));
@@ -179,6 +191,10 @@ export function ClassCreateForm({ teachers, autosaveKey = "class-create" }: Clas
 
     async function submit(event: React.FormEvent) {
         event.preventDefault();
+        if (form.days.length === 0) {
+            setError(t("pickADay"));
+            return;
+        }
         setSaving(true);
         setError(null);
         setResult(null);
@@ -188,9 +204,9 @@ export function ClassCreateForm({ teachers, autosaveKey = "class-create" }: Clas
             subjectCategory: form.subjectCategory,
             description: form.description,
             language: form.language,
-            // Sent as separate fields; the server builds the stored "Tue 6:00 PM"
+            // Sent as separate fields; the server builds the stored "Tue, Thu 6:00 PM"
             // and rejects anything it cannot read instead of guessing.
-            day: form.day,
+            days: form.days,
             time: form.time,
             durationMinutes: Number(form.durationMinutes),
             // Staff set every date; the teacher only receives the Meet link.
@@ -441,22 +457,14 @@ export function ClassCreateForm({ teachers, autosaveKey = "class-create" }: Clas
             <fieldset className="space-y-3">
                 <legend className={LEGEND}>{t("sectionWhen")}</legend>
 
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                    <div className="space-y-1">
-                        <label className={LABEL} htmlFor="class-day">{t("dayLabel")}</label>
-                        <select
-                            className="select-field"
-                            id="class-day"
-                            onChange={(event) => update("day", event.target.value)}
-                            value={form.day}
-                        >
-                            {DAY_KEYS.map((key, index) => (
-                                <option key={key} value={DAY_VALUES[index]}>
-                                    {ts(key)}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
+                <DayPicker
+                    id="class-days"
+                    label={t("dayLabel")}
+                    onChange={(days) => update("days", days)}
+                    value={form.days}
+                />
+
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div className="space-y-1">
                         <label className={LABEL} htmlFor="class-time">{t("timeLabel")}</label>
                         <input
@@ -502,7 +510,11 @@ export function ClassCreateForm({ teachers, autosaveKey = "class-create" }: Clas
                                             className="rounded-full border border-line px-3 py-1 text-xs text-ink-main hover:border-neon-400"
                                             key={`${window.dayOfWeek}-${window.startMinute}`}
                                             onClick={() => {
-                                                update("day", DAY_VALUES[window.dayOfWeek]);
+                                                // Adds the day (keeping any already ticked) and uses its start time.
+                                                const day = DAY_VALUES[window.dayOfWeek];
+                                                if (!form.days.includes(day)) {
+                                                    update("days", DAY_VALUES.filter((d) => d === day || form.days.includes(d)));
+                                                }
                                                 update("time", minuteToInput(window.startMinute));
                                             }}
                                             title={t("teacherHoursUse")}

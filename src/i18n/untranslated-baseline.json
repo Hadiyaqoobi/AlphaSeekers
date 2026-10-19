@@ -600,6 +600,7 @@
     "certificates.noMatch",
     "certificates.noneYet",
     "nav.certificates",
-    "dashboard.quickActions.certificates"
+    "dashboard.quickActions.certificates",
+    "classLifecycle.pickADay"
   ]
 }

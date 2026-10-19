@@ -2,6 +2,11 @@
  * The weekly class slot ("Tue 6:00 PM", Kabul wall clock) and the single rule the
  * auto-scheduler uses to decide whether it may book it.
  *
+ * A class can meet on several days at the same time: "Tue, Thu, Fri 6:00 PM" is
+ * one slot per day, and each day is booked as its own session (2026-10-19). A
+ * single day is still stored as "Tue 6:00 PM", so classes posted before then read
+ * exactly as they did.
+ *
  * Pure functions only (no database), so the rule is unit-testable and the
  * scheduler, the class-create API, the teacher setup page and the class-health
  * digest all apply exactly the same logic.
@@ -46,7 +51,8 @@ export type AvailabilityWindow = {
 
 export type SlotProblem = "unparseable" | "no-availability" | "outside-availability";
 
-export type SlotPlan = { ok: true; slot: WeeklySlot } | { ok: false; reason: SlotProblem };
+/** `slots` is every day the class meets, Sunday first; `slot` is the first of them. */
+export type SlotPlan = { ok: true; slot: WeeklySlot; slots: WeeklySlot[] } | { ok: false; reason: SlotProblem };
 
 const DAY_INDEX: Record<string, number> = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
 
@@ -81,6 +87,29 @@ export function parseWeeklySlotStrict(text: string | null | undefined): WeeklySl
   return { dayOfWeek: DAY_INDEX[match[1].toLowerCase()], hour, minute };
 }
 
+const DAY_TOKEN = /^(sun|mon|tue|wed|thu|fri|sat)[a-z]*\.?$/i;
+
+/**
+ * STRICT parse of one or more days sharing one time: "Tue, Thu, Fri 6:00 PM",
+ * "Tue/Thu 18:00", "Tuesday and Thursday 6:00 pm", or a single "Tue 6:00 PM".
+ * Returns one slot per day, Sunday first, duplicates dropped; null if any part
+ * is not a day or the time is unreadable.
+ */
+export function parseWeeklySlotsStrict(text: string | null | undefined): WeeklySlot[] | null {
+  if (!text) return null;
+  const match = text.trim().match(/^(.+?)\s+(\d{1,2}):(\d{2})\s*(am|pm)?$/i);
+  if (!match) return null;
+  const tokens = match[1].split(/\s*(?:,|\/|&|\band\b|\s)\s*/i).filter(Boolean);
+  if (tokens.length === 0 || !tokens.every((token) => DAY_TOKEN.test(token))) return null;
+  const hour = toHour(match[2], match[4]);
+  const minute = Number(match[3]);
+  if (hour === null || minute > 59) return null;
+  const days = Array.from(new Set(tokens.map((token) => DAY_INDEX[token.slice(0, 3).toLowerCase()]))).sort(
+    (a, b) => a - b,
+  );
+  return days.map((dayOfWeek) => ({ dayOfWeek, hour, minute }));
+}
+
 /**
  * LENIENT parse, for schedule text already stored on older classes (e.g.
  * "7:00 AM to 8:00 AM, Saturdays to Thursdays"): the first day name and the first
@@ -100,6 +129,18 @@ export function parseStoredWeeklySlot(text: string | null | undefined): WeeklySl
   return { dayOfWeek: DAY_INDEX[day[1].toLowerCase()], hour, minute };
 }
 
+/**
+ * Every day a stored class time names: the strict multi-day form, else the
+ * lenient single-day reading of older free text (still one day: "Saturdays to
+ * Thursdays" was never booked as a range, and is not now).
+ */
+export function parseStoredWeeklySlots(text: string | null | undefined): WeeklySlot[] | null {
+  const many = parseWeeklySlotsStrict(text);
+  if (many) return many;
+  const one = parseStoredWeeklySlot(text);
+  return one ? [one] : null;
+}
+
 /** Canonical stored form, e.g. "Tue 6:00 PM" (what the scheduler and pages read). */
 export function formatWeeklySlot(slot: WeeklySlot): string {
   const period = slot.hour >= 12 ? "PM" : "AM";
@@ -107,9 +148,40 @@ export function formatWeeklySlot(slot: WeeklySlot): string {
   return `${DAY_ABBREVIATIONS[slot.dayOfWeek]} ${hour12}:${String(slot.minute).padStart(2, "0")} ${period}`;
 }
 
+/** Canonical stored form of several days at one time: "Tue, Thu, Fri 6:00 PM". */
+export function formatWeeklySlots(slots: WeeklySlot[]): string {
+  const days = Array.from(new Set(slots.map((slot) => slot.dayOfWeek))).sort((a, b) => a - b);
+  const time = formatWeeklySlot(slots[0]).split(" ").slice(1).join(" ");
+  return `${days.map((day) => DAY_ABBREVIATIONS[day]).join(", ")} ${time}`;
+}
+
 /** Build a slot from the form's separate day ("Tue") and 24h time ("18:00") fields. */
 export function slotFromDayAndTime(day: string, time: string): WeeklySlot | null {
   return parseWeeklySlotStrict(`${day} ${time}`);
+}
+
+/** The same for the form's ticked days (["Tue", "Thu"]) and one time; null if none is ticked. */
+export function slotsFromDaysAndTime(days: string[], time: string): WeeklySlot[] | null {
+  if (days.length === 0) return null;
+  return parseWeeklySlotsStrict(`${days.join(", ")} ${time}`);
+}
+
+/**
+ * How far either side of a weekly occurrence a session still counts as that
+ * occurrence: half a week for a one-day class (neighbouring weeks never collide),
+ * and half the shortest gap between its days for a several-day class, so
+ * Thursday's session is never mistaken for Tuesday's.
+ */
+export function occurrenceHalfWindowMs(slots: WeeklySlot[]): number {
+  const HALF_WEEK = 3.5 * 24 * 60 * 60 * 1000;
+  const days = Array.from(new Set(slots.map((slot) => slot.dayOfWeek))).sort((a, b) => a - b);
+  if (days.length < 2) return HALF_WEEK;
+  let shortestGapDays = 7;
+  days.forEach((day, index) => {
+    const next = index + 1 < days.length ? days[index + 1] : days[0] + 7;
+    shortestGapDays = Math.min(shortestGapDays, next - day);
+  });
+  return (shortestGapDays * 24 * 60 * 60 * 1000) / 2;
 }
 
 /** Does [start, start+span) fit entirely inside one availability window on that day? */
@@ -127,10 +199,10 @@ export function slotFitsAvailability(
 
 /** Apply THE RULE (see file header) to one class. */
 export function planAutoSlot(input: { schedulePreference: string | null | undefined }): SlotPlan {
-  const slot = parseStoredWeeklySlot(input.schedulePreference);
-  if (!slot) return { ok: false, reason: "unparseable" };
+  const slots = parseStoredWeeklySlots(input.schedulePreference);
+  if (!slots) return { ok: false, reason: "unparseable" };
   // Staff's time is the time (rules 1-2), whatever hours the teacher saved.
-  return { ok: true, slot };
+  return { ok: true, slot: slots[0], slots };
 }
 
 /**
