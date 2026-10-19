@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
 import { ArchiveClassButton } from "@/components/admin/archive-class-button";
+import { ArchivedClassActions } from "@/components/admin/archived-class-actions";
 import { loadAvailabilityByTeacher } from "@/lib/platform/db-store";
 import { ClassCreateForm } from "@/components/staff/staff-class-form";
 import { RunRemindersButton } from "@/components/forms/run-reminders-button";
@@ -206,7 +207,14 @@ export default async function AdminClassesPage({ params, searchParams }: AdminCl
                       >
                         {t("view")}
                       </Link>
-                      {item.status === "ARCHIVED" ? null : (
+                      {item.status === "ARCHIVED" ? (
+                        <ArchivedClassActions
+                          canHardDelete={isSuper(access)}
+                          canRestore={can(access, "classes.edit")}
+                          classId={item.id}
+                          className={item.name}
+                        />
+                      ) : (
                         <ArchiveClassButton classId={item.id} />
                       )}
                     </div>
