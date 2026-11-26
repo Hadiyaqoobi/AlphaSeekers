@@ -27,6 +27,7 @@ import en from "../messages/en.json";
 import fa from "../messages/fa.json";
 import identicalByDesign from "../src/i18n/identical-by-design.json";
 import baseline from "../src/i18n/untranslated-baseline.json";
+import { COURSE_CATEGORIES } from "@/lib/platform/course-categories";
 
 type Nested = { [key: string]: string | Nested };
 
@@ -94,4 +95,13 @@ describe("i18n parity between en.json and fa.json", () => {
       `Now translated — delete from src/i18n/untranslated-baseline.json:\n  ${stale.join("\n  ")}`,
     ).toEqual([]);
   });
+});
+
+
+it("provides the top-level course category namespace to both locales", () => {
+  for (const messages of [en, fa]) {
+    for (const key of ["label", "all", ...COURSE_CATEGORIES] as const) {
+      expect(messages.courseCategories[key].trim()).not.toBe("");
+    }
+  }
 });

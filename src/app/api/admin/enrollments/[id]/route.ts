@@ -50,6 +50,11 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
         { message: "That class is no longer active.", code: "CLASS_UNAVAILABLE" },
         { status: 409 },
       );
+    case "ENROLLMENT_LIMIT":
+      return NextResponse.json(
+        { message: "This student is already in another active class.", code: "ENROLLMENT_LIMIT" },
+        { status: 409 },
+      );
     case "CLASS_FULL":
       // Re-checked at approval time: the class can fill while requests queue.
       return NextResponse.json(

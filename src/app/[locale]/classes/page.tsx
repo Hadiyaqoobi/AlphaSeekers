@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 
 import { EnrollButton } from "@/components/classes/enroll-button";
 import { formatDate, formatDateTime } from "@/lib/format-date";
+import { COURSE_CATEGORIES, parseCourseCategory, type CourseCategory } from "@/lib/platform/course-categories";
 import { isRegistrationClosed } from "@/lib/platform/registration-deadline";
 import { listClasses, listStudentClasses } from "@/lib/platform/store";
 import { getSessionUser } from "@/lib/security/session";
@@ -11,7 +12,7 @@ import { loginHref } from "@/lib/ui/safe-next";
 
 type ClassesPageProps = {
   params: { locale: string };
-  searchParams: { page?: string; search?: string };
+  searchParams: { page?: string; search?: string; category?: string };
 };
 
 const PAGE_SIZE = 10;
@@ -33,9 +34,21 @@ const AVATAR_GRADIENTS = [
 export default async function ClassesPage({ params, searchParams }: ClassesPageProps) {
   const { locale } = params;
   const user = await getSessionUser();
+  const courseCategory = parseCourseCategory(searchParams.category);
+  const search = searchParams.search ?? "";
+  const requestedPage = Number(searchParams.page);
+  const page = Number.isSafeInteger(requestedPage) ? Math.max(1, requestedPage) : 1;
+
+  function catalogHref(targetPage: number, category?: CourseCategory) {
+    const query = new URLSearchParams();
+    if (targetPage > 1) query.set("page", String(targetPage));
+    if (search) query.set("search", search);
+    if (category) query.set("category", category);
+    return `/${locale}/classes${query.size ? `?${query}` : ""}`;
+  }
 
   if (!user) {
-    redirect(loginHref(locale, `/${locale}/classes`));
+    redirect(loginHref(locale, catalogHref(page, courseCategory)));
   }
 
   if (!user.approved && user.role !== "ADMIN") {
@@ -44,13 +57,13 @@ export default async function ClassesPage({ params, searchParams }: ClassesPageP
 
   const t = await getTranslations({ locale, namespace: "classes" });
 
-  const page = Math.max(1, Number(searchParams.page ?? "1") || 1);
-  const search = searchParams.search ?? "";
+  const tc = await getTranslations({ locale, namespace: "courseCategories" });
 
   const result = await listClasses({
     page,
     limit: PAGE_SIZE,
     search,
+    courseCategory,
   });
 
   // Resolve the student's enrolled classes in a single query and check
@@ -78,6 +91,7 @@ export default async function ClassesPage({ params, searchParams }: ClassesPageP
         </div>
 
         <form className="flex gap-2 sm:min-w-[320px]" method="GET">
+          {courseCategory ? <input type="hidden" name="category" value={courseCategory} /> : null}
           <div className="relative flex-1">
             {/* Search icon */}
             <svg
@@ -102,6 +116,19 @@ export default async function ClassesPage({ params, searchParams }: ClassesPageP
           </button>
         </form>
       </header>
+
+      <nav aria-label={tc("label")} className="flex flex-wrap gap-2">
+        {([undefined, ...COURSE_CATEGORIES] as const).map((category) => (
+          <Link
+            aria-current={courseCategory === category ? "page" : undefined}
+            className={courseCategory === category ? "btn-primary" : "btn-secondary"}
+            href={catalogHref(1, category)}
+            key={category ?? "all"}
+          >
+            {tc(category ?? "all")}
+          </Link>
+        ))}
+      </nav>
 
       {/* Class Cards */}
       {result.items.length === 0 ? (
@@ -204,6 +231,7 @@ export default async function ClassesPage({ params, searchParams }: ClassesPageP
                       </span>
 
                       {/* Category */}
+                      <span className="badge-pill">{tc(item.courseCategory)}</span>
                       <span className="badge-pill">{item.subjectCategory}</span>
                     </div>
                   </div>
@@ -278,7 +306,7 @@ export default async function ClassesPage({ params, searchParams }: ClassesPageP
           <Link
             aria-disabled={result.pagination.page <= 1}
             className="inline-flex h-10 items-center gap-1.5 rounded-full border border-line bg-dark-100 px-5 text-sm font-semibold text-ink-main shadow-sm transition-all hover:border-teal-300 hover:bg-teal-50 hover:text-teal-700 aria-disabled:pointer-events-none aria-disabled:opacity-40"
-            href={`/${locale}/classes?page=${Math.max(1, result.pagination.page - 1)}&search=${encodeURIComponent(search)}`}
+            href={catalogHref(Math.max(1, result.pagination.page - 1), courseCategory)}
           >
             <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
               <path d="M15 19l-7-7 7-7" strokeLinecap="round" strokeLinejoin="round" />
@@ -293,7 +321,7 @@ export default async function ClassesPage({ params, searchParams }: ClassesPageP
           <Link
             aria-disabled={result.pagination.page >= result.pagination.totalPages}
             className="inline-flex h-10 items-center gap-1.5 rounded-full border border-line bg-dark-100 px-5 text-sm font-semibold text-ink-main shadow-sm transition-all hover:border-teal-300 hover:bg-teal-50 hover:text-teal-700 aria-disabled:pointer-events-none aria-disabled:opacity-40"
-            href={`/${locale}/classes?page=${Math.min(result.pagination.totalPages, result.pagination.page + 1)}&search=${encodeURIComponent(search)}`}
+            href={catalogHref(Math.min(result.pagination.totalPages, result.pagination.page + 1), courseCategory)}
           >
             {t("next")}
             <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">

@@ -42,8 +42,8 @@ export function ArchivedClassActions({ classId, className, canRestore, canHardDe
           ? await fetch(`/api/admin/classes/${classId}/restore`, { method: "POST" })
           : await fetch(`/api/admin/classes/${classId}?mode=permanent`, { method: "DELETE" });
       if (!response.ok) {
-        const body = (await response.json().catch(() => ({}))) as { message?: string };
-        setError(body.message ?? (mode === "restore" ? tl("restoreFailed") : t("actionFailed")));
+        const body = (await response.json().catch(() => ({}))) as { message?: string; code?: string };
+        setError(body.code === "ENROLLMENT_LIMIT" ? tl("restoreEnrollmentConflict") : body.message ?? (mode === "restore" ? tl("restoreFailed") : t("actionFailed")));
         return;
       }
       setConfirmDelete(false);

@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { emit } from "@/lib/events/bus";
-import { prisma } from "@/lib/prisma";
-import { MAX_ACTIVE_ENROLLMENTS } from "@/lib/platform/class-join";
+import { ENROLLMENT_LIMIT_MESSAGE, EnrollmentLimitError, MAX_ACTIVE_ENROLLMENTS } from "@/lib/platform/enrollment-limit";
 import { InvalidAnswersError } from "@/lib/platform/db-store";
 import { dropStudentFromClass, enrollStudentInClass } from "@/lib/platform/store";
 import { getSessionUser, isApproved, pendingApproval, roleAllowed, unauthorized } from "@/lib/security/session";
@@ -10,10 +9,6 @@ import { getSessionUser, isApproved, pendingApproval, roleAllowed, unauthorized 
 type Params = {
   params: { id: string };
 };
-
-// Cap simultaneous enrollments per student (MAX_ACTIVE_ENROLLMENTS, shared
-// with the public join form so both doors agree). Admins are exempt so they
-// can help with QA / impersonate test flows.
 
 export async function POST(request: Request, { params }: Params) {
   const user = await getSessionUser();
@@ -28,27 +23,6 @@ export async function POST(request: Request, { params }: Params) {
 
   if (!roleAllowed(user.role, ["STUDENT", "ADMIN"])) {
     return NextResponse.json({ message: "Only students can enroll." }, { status: 403 });
-  }
-
-  if (user.role === "STUDENT") {
-    try {
-      const activeCount = await prisma.enrollment.count({
-        where: { studentId: user.id, status: "ACTIVE", classId: { not: params.id } },
-      });
-      if (activeCount >= MAX_ACTIVE_ENROLLMENTS) {
-        return NextResponse.json(
-          {
-            message: `You can join up to ${MAX_ACTIVE_ENROLLMENTS} classes at a time. Drop one to add another.`,
-            code: "ENROLLMENT_LIMIT",
-            limit: MAX_ACTIVE_ENROLLMENTS,
-          },
-          { status: 409 },
-        );
-      }
-    } catch {
-      // If the count query fails, fall through — the underlying enroll call
-      // will surface the real error rather than silently blocking.
-    }
   }
 
   // Optional body: answers to the class's own sign-up questions (ADR-0009). An
@@ -86,6 +60,13 @@ export async function POST(request: Request, { params }: Params) {
       return NextResponse.json(
         { message: "Please answer the class's questions.", code: "INVALID_ANSWERS", questionId: error.questionId },
         { status: 400 },
+      );
+    }
+
+    if (error instanceof EnrollmentLimitError) {
+      return NextResponse.json(
+        { message: ENROLLMENT_LIMIT_MESSAGE, code: "ENROLLMENT_LIMIT", limit: MAX_ACTIVE_ENROLLMENTS },
+        { status: 409 },
       );
     }
 

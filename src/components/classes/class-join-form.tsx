@@ -184,7 +184,7 @@ export function ClassJoinForm({
       if (!showServerQuestionError(body)) {
         setError(
           body?.code === "ENROLLMENT_LIMIT" && typeof body.limit === "number"
-            ? tEnroll("limitReached", { limit: body.limit })
+            ? tEnroll("oneClassLimit")
             : messageForCode(
                 body as { code?: unknown },
                 {
@@ -270,6 +270,7 @@ export function ClassJoinForm({
                 CLASS_NOT_FOUND: t("errors.notFound"),
                 CLASS_CLOSED: t("errors.closed"),
                 CLASS_FULL: t("classFull"),
+                ENROLLMENT_LIMIT: tEnroll("oneClassLimit"),
                 REGISTRATION_CLOSED: t("errors.registrationClosed"),
                 WRONG_PASSWORD: t("errors.wrongPassword"),
                 ACCOUNT_DEACTIVATED: t("errors.deactivated"),

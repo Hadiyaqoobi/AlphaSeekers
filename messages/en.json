@@ -646,6 +646,14 @@
     },
     "sessionsToday": "{count, plural, one {# session today} other {# sessions today}}"
   },
+  "courseCategories": {
+    "label": "Course category",
+    "all": "All courses",
+    "ENGLISH": "English Classes",
+    "TECHNOLOGY": "Technology",
+    "AI": "Artificial Intelligence",
+    "OTHER_SKILLS": "Other Skills"
+  },
   "classes": {
     "title": "Classes",
     "subtitle": "Browse and enroll in available classes",
@@ -754,6 +762,7 @@
     "archivedBanner": "This class is archived. Students cannot see it and no sessions run.",
     "restore": "Restore class",
     "restoring": "Restoring…",
+    "restoreEnrollmentConflict": "This class cannot be restored while any of its students are enrolled in another active class.",
     "restoreFailed": "Could not restore the class. Please try again.",
     "sessionsHint": "The next sessions, Kabul time. If a Meet link is missing, paste one here.",
     "meetLinkLabel": "Meet link",
@@ -791,6 +800,7 @@
     "enrolledTapToUnenroll": "Enrolled (tap to unenroll)",
     "enrollFailed": "Enrollment failed",
     "unenrollFailed": "Unable to drop class",
+    "oneClassLimit": "You can take only one active class at a time. Leave your current class before joining another.",
     "limitReached": "You can join up to {limit} classes at a time. Drop one to add another.",
     "requestToJoin": "Join this class",
     "requestSent": "You have joined this class.",
@@ -1313,6 +1323,7 @@
     "pending": "Pending"
   },
   "adminClassDetail": {
+    "enrollmentLimit": "This student is already enrolled in another active class.",
     "backToAdmin": "Back to admin",
     "teacher": "Teacher",
     "schedule": "Schedule",

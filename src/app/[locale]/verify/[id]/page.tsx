@@ -56,16 +56,17 @@ export default async function VerifyCertificatePage({
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-10 sm:px-6 sm:py-16">
+      {/* The global dark theme overrides bg-white; use an explicit light surface here. */}
       <div
-        className={`panel panel-strong rounded-2xl border p-6 sm:p-8 ${revoked ? "border-red-400/60" : "border-neon-500/40"}`}
+        className={`rounded-2xl border bg-[#ffffff] p-6 text-slate-950 shadow-sm sm:p-8 ${revoked ? "border-red-700" : "border-emerald-700"}`}
       >
-        <p className={`mb-3 text-sm font-semibold uppercase tracking-widest ${revoked ? "text-red-300" : "text-neon-400"}`}>
+        <p className={`mb-3 text-sm font-bold uppercase tracking-widest ${revoked ? "text-red-800" : "text-emerald-800"}`}>
           AlphaSeekers certificate verification
         </p>
-        <h1 className="mb-4 text-3xl font-bold text-ink-main">
+        <h1 className="mb-4 text-3xl font-extrabold text-slate-950">
           {revoked ? "This certificate was cancelled" : "Certificate verified"}
         </h1>
-        <p className="mb-8 text-ink-soft">
+        <p className="mb-8 font-semibold leading-relaxed text-slate-800">
           {revoked
             ? `AlphaSeekers cancelled this certificate on ${longDate(certificate.revokedAt as string)}. It is no longer valid.`
             : "This certificate was issued by AlphaSeekers. Match the details below with those printed on the certificate."}
@@ -73,8 +74,8 @@ export default async function VerifyCertificatePage({
         <dl className="grid gap-5 sm:grid-cols-2">
           {details.map(([label, value]) => (
             <div key={label}>
-              <dt className="text-sm text-ink-soft">{label}</dt>
-              <dd className="font-semibold text-ink-main" dir="auto">
+              <dt className="text-sm font-bold text-slate-700">{label}</dt>
+              <dd className="break-words font-bold text-slate-950" dir="auto">
                 {value}
               </dd>
             </div>
@@ -82,7 +83,7 @@ export default async function VerifyCertificatePage({
         </dl>
 
         {certificate.legacyPdf ? (
-          <a className="mt-10 inline-block text-neon-400 underline" href={certificate.legacyPdf}>
+          <a className="mt-10 inline-block font-bold text-emerald-800 underline" href={certificate.legacyPdf}>
             View certificate (PDF)
           </a>
         ) : null}

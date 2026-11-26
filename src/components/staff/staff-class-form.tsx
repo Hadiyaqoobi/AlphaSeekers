@@ -1,5 +1,7 @@
 "use client";
 
+import { COURSE_CATEGORIES, parseCourseCategory, type CourseCategory } from "@/lib/platform/course-categories";
+
 import { useState } from "react";
 
 import Link from "next/link";
@@ -58,6 +60,7 @@ type ClassCreateFormProps = {
 type FormState = {
     name: string;
     subjectCategory: string;
+    courseCategory: CourseCategory;
     description: string;
     language: string;
     teacherMode: "existing" | "invite";
@@ -116,6 +119,7 @@ const ISSUE_KEYS: Record<string, string> = {
 const DEFAULT_FORM: FormState = {
     name: "",
     subjectCategory: "Languages",
+    courseCategory: "OTHER_SKILLS",
     description: "",
     language: "Dari",
     teacherMode: "existing",
@@ -138,6 +142,7 @@ const LEGEND = "text-xs font-bold uppercase tracking-wide text-ink-faint";
 export function ClassCreateForm({ teachers, autosaveKey = "class-create" }: ClassCreateFormProps) {
     const t = useTranslations("classLifecycle");
     // Day names, subject names and the invite wording are already translated here.
+    const tc = useTranslations("courseCategories");
     const ts = useTranslations("staffForms");
     const tq = useTranslations("joinQuestions");
     const locale = useLocale();
@@ -202,6 +207,7 @@ export function ClassCreateForm({ teachers, autosaveKey = "class-create" }: Clas
         const payload: Record<string, unknown> = {
             name: form.name,
             subjectCategory: form.subjectCategory,
+            courseCategory: form.courseCategory,
             description: form.description,
             language: form.language,
             // Sent as separate fields; the server builds the stored "Tue, Thu 6:00 PM"
@@ -346,6 +352,20 @@ export function ClassCreateForm({ teachers, autosaveKey = "class-create" }: Clas
                         required
                         value={form.name}
                     />
+                </div>
+
+                <div className="space-y-1">
+                    <label className={LABEL} htmlFor="course-category">{tc("label")}</label>
+                    <select
+                        className="select-field"
+                        id="course-category"
+                        onChange={(event) => update("courseCategory", parseCourseCategory(event.target.value) ?? "OTHER_SKILLS")}
+                        value={form.courseCategory}
+                    >
+                        {COURSE_CATEGORIES.map((category) => (
+                            <option key={category} value={category}>{tc(category)}</option>
+                        ))}
+                    </select>
                 </div>
 
                 <div className="space-y-1">
