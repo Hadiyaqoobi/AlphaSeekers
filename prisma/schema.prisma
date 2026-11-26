@@ -141,10 +141,18 @@ model User {
   @@index([accessLevel])
 }
 
+enum CourseCategory {
+  ENGLISH
+  TECHNOLOGY
+  AI
+  OTHER_SKILLS
+}
+
 model Class {
   id                   String         @id @default(cuid())
   name                 String
   subjectCategory      String
+  courseCategory       CourseCategory @default(OTHER_SKILLS)
   description          String
   teacherId            String
   maxStudents          Int
@@ -179,6 +187,7 @@ model Class {
   // The public landing query filters on registrationDeadline to hide classes
   // whose registration has closed; declared here so schema and migrations agree.
   @@index([registrationDeadline])
+  @@index([courseCategory, status, published, createdAt])
 }
 
 model Session {

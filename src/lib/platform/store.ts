@@ -4,6 +4,7 @@
 // (dev/demo included). We still surface warnIfInsecureProductionConfig() and
 // report "database" via reportUsingDatabase() so the admin system-status route
 // keeps reporting the store mode honestly.
+import type { CourseCategory } from "@/lib/platform/course-categories";
 import * as dbStore from "@/lib/platform/db-store";
 import { runtime, warnIfInsecureProductionConfig } from "@/lib/runtime";
 import { reportUsingDatabase } from "@/lib/platform/fallback-state";
@@ -23,7 +24,7 @@ function viaDatabase<T>(operation: () => T): T {
   return operation();
 }
 
-export async function listClasses(params: { page?: number; limit?: number; search?: string } = {}) {
+export async function listClasses(params: { page?: number; limit?: number; search?: string; courseCategory?: CourseCategory } = {}) {
   return viaDatabase(() => dbStore.listClasses(params));
 }
 
@@ -91,6 +92,7 @@ export async function deleteUserAccount(
 export async function createClass(input: {
   name: string;
   subjectCategory: string;
+  courseCategory?: CourseCategory;
   description: string;
   teacherId: string;
   maxStudents: number;
@@ -109,6 +111,7 @@ export async function createClass(input: {
 export async function createClassWithSession(input: {
   name: string;
   subjectCategory: string;
+  courseCategory?: CourseCategory;
   description: string;
   teacherId: string;
   maxStudents: number;
@@ -129,6 +132,7 @@ export async function updateClass(
   input: Partial<{
     name: string;
     subjectCategory: string;
+  courseCategory?: CourseCategory;
     description: string;
     teacherId: string;
     maxStudents: number;

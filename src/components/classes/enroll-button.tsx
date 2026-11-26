@@ -61,7 +61,7 @@ export function EnrollButton({
       // student sees Dari on /fa/* (UAT 2026-04-26 MED-A). Every other failure
       // is translated by code too; the server's English `message` is never shown.
       if (body?.code === "ENROLLMENT_LIMIT" && typeof body.limit === "number") {
-        setError(t("limitReached", { limit: body.limit }));
+        setError(t("oneClassLimit"));
       } else {
         setError(
           messageForCode(

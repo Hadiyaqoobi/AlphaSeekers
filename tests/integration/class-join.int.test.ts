@@ -206,6 +206,36 @@ d("one-step class join", () => {
     expect(await prisma.user.count({ where: { email: email("twice") } })).toBe(1);
   });
 
+  it("creates one account and grants one class on simultaneous first-time submissions", async () => {
+    const first = await makeClass("new-race-first");
+    const second = await makeClass("new-race-second");
+    const input = { name: "One Account", email: email("new-race"), password: GOOD };
+    const results = await Promise.all([
+      joinClassWithNewAccount({ ...input, classId: first.id }),
+      joinClassWithNewAccount({ ...input, email: input.email.toUpperCase(), classId: second.id }),
+    ]);
+    expect(results.filter((result) => result.ok)).toHaveLength(1);
+    expect(results.find((result) => !result.ok)).toEqual({ ok: false, code: "ENROLLMENT_LIMIT" });
+    const users = await prisma.user.findMany({ where: { email: input.email }, include: { enrollments: true } });
+    expect(users).toHaveLength(1);
+    expect(users[0].enrollments).toHaveLength(1);
+  });
+
+  it("shares the enrollment limit with signed-in enrollment for the same normalized email", async () => {
+    const first = await makeClass("public-first");
+    const second = await makeClass("public-second");
+    const input = { classId: first.id, name: "One Class", email: email("one-class"), password: GOOD };
+    const joined = await joinClassWithNewAccount(input);
+    expect(joined.ok).toBe(true);
+    if (!joined.ok) throw new Error("Fixture did not join");
+    const { enrollStudentInClass } = await import("@/lib/platform/db-store");
+    await expect(enrollStudentInClass(joined.userId, second.id)).rejects.toThrow("ENROLLMENT_LIMIT");
+    expect(await joinClassWithNewAccount({
+      ...input, email: input.email.toUpperCase(), classId: second.id,
+    })).toEqual({ ok: false, code: "ENROLLMENT_LIMIT" });
+    expect(await prisma.enrollment.count({ where: { studentId: joined.userId, status: "ACTIVE" } })).toBe(1);
+  });
+
   it("hides unpublished classes from the public join page", async () => {
     const draft = await makeClass("hidden", { published: false });
     expect(await getPublicClassForJoin(draft.id)).toBeNull();

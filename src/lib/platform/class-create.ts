@@ -10,6 +10,7 @@
  * the time used, see src/lib/scheduling/weekly-slot.ts).
  */
 import { z } from "zod";
+import { COURSE_CATEGORIES } from "@/lib/platform/course-categories";
 
 import { createClassWithSession } from "@/lib/platform/db-store";
 import { joinQuestionsSchema } from "@/lib/platform/join-questions";
@@ -42,6 +43,7 @@ export const createClassSchema = z
   .object({
     name: z.string().trim().min(1).max(200),
     subjectCategory: z.string().trim().min(1).max(100),
+    courseCategory: z.enum(COURSE_CATEGORIES).optional(),
     description: z.string().trim().min(1).max(5000),
     // Either an existing teacherId OR a new teacher's name+email (invite). Enforced by .refine below.
     teacherId: z.string().trim().min(1).max(100).optional(),
@@ -142,6 +144,7 @@ export async function createClassFromBody(data: CreateClassBody) {
   const result = await createClassWithSession({
     name: data.name,
     subjectCategory: data.subjectCategory,
+    courseCategory: data.courseCategory,
     description: data.description,
     teacherId: resolved.teacherId,
     maxStudents: data.maxStudents,

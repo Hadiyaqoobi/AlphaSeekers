@@ -646,6 +646,14 @@
     },
     "sessionsToday": "{count, plural, one {# session today} other {# sessions today}}"
   },
+  "courseCategories": {
+    "label": "دسته‌بندی صنف",
+    "all": "همهٔ صنف‌ها",
+    "ENGLISH": "صنف‌های انگلیسی",
+    "TECHNOLOGY": "تکنالوژی",
+    "AI": "هوش مصنوعی",
+    "OTHER_SKILLS": "مهارت‌های دیگر"
+  },
   "classes": {
     "title": "صنف‌ها",
     "subtitle": "صنف‌های موجود را ببینید و ثبت‌نام کنید",
@@ -754,6 +762,7 @@
     "archivedBanner": "This class is archived. Students cannot see it and no sessions run.",
     "restore": "Restore class",
     "restoring": "Restoring…",
+    "restoreEnrollmentConflict": "تا زمانی که یکی از شاگردان این صنف در صنف فعال دیگری ثبت‌نام باشد، این صنف دوباره فعال نمی‌شود.",
     "restoreFailed": "Could not restore the class. Please try again.",
     "sessionsHint": "The next sessions, Kabul time. If a Meet link is missing, paste one here.",
     "meetLinkLabel": "Meet link",
@@ -791,6 +800,7 @@
     "enrolledTapToUnenroll": "ثبت‌نام شد (برای لغو لمس کنید)",
     "enrollFailed": "ثبت‌نام ناموفق بود",
     "unenrollFailed": "لغو ثبت‌نام ممکن نشد",
+    "oneClassLimit": "در هر زمان تنها می‌توانید در یک صنف فعال اشتراک کنید. پیش از ثبت‌نام در صنف دیگر، از صنف فعلی خارج شوید.",
     "limitReached": "شما می‌توانید همزمان در {limit} صنف اشتراک داشته باشید. برای ثبت‌نام در صنف جدید، یکی را لغو کنید.",
     "requestToJoin": "Join this class",
     "requestSent": "You have joined this class.",
@@ -1313,6 +1323,7 @@
     "pending": "در انتظار"
   },
   "adminClassDetail": {
+    "enrollmentLimit": "این شاگرد از قبل در یک صنف فعال دیگر ثبت‌نام کرده است.",
     "backToAdmin": "برگشت به مدیریت",
     "teacher": "استاد",
     "schedule": "زمان",

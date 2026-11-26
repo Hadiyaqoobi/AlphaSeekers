@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { COURSE_CATEGORIES } from "@/lib/platform/course-categories";
 
 import { notifyTeacherOfNewClass } from "@/lib/platform/class-notify";
 import { joinQuestionsSchema } from "@/lib/platform/join-questions";
@@ -25,6 +26,7 @@ const updateClassSchema = z
   .object({
     name: z.string().trim().min(1).max(200).optional(),
     subjectCategory: z.string().trim().min(1).max(100).optional(),
+    courseCategory: z.enum(COURSE_CATEGORIES).optional(),
     description: z.string().trim().min(1).max(5000).optional(),
     maxStudents: z.number().int().min(1).max(1000).optional(),
     durationMinutes: z.number().int().min(30).max(600).optional(),

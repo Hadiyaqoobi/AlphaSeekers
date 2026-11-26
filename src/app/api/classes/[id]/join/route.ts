@@ -12,7 +12,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
-import { joinClassWithNewAccount, MAX_ACTIVE_ENROLLMENTS } from "@/lib/platform/class-join";
+import { joinClassWithNewAccount } from "@/lib/platform/class-join";
+import { ENROLLMENT_LIMIT_MESSAGE } from "@/lib/platform/enrollment-limit";
 import { validateEmailStrict } from "@/lib/security/email";
 import { checkRateLimit, checkRateLimitDistributed, getClientIp } from "@/lib/security/rate-limit";
 import { stripHtml } from "@/lib/security/sanitize";
@@ -96,7 +97,7 @@ const FAILURES: Record<string, { status: number; message: string }> = {
   },
   ENROLLMENT_LIMIT: {
     status: 409,
-    message: `You can join up to ${MAX_ACTIVE_ENROLLMENTS} classes at a time. Leave one to join another.`,
+    message: ENROLLMENT_LIMIT_MESSAGE,
   },
   INVALID_ANSWERS: { status: 400, message: "Please answer the class's questions." },
 };

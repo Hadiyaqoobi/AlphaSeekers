@@ -1,3 +1,5 @@
+import type { CourseCategory } from "@/lib/platform/course-categories";
+import { assertEnrollmentSlot, EnrollmentLimitError, lockEnrollmentStudents } from "@/lib/platform/enrollment-limit";
 import type { UserRole } from "@prisma/client";
 import { Prisma, ClassStatus, EnrollmentStatus, MeetLinkStatus, NotificationChannel, NotificationStatus, SchedulerJobStatus } from "@prisma/client";
 
@@ -24,11 +26,13 @@ type ClassListParams = {
   page?: number;
   limit?: number;
   search?: string;
+  courseCategory?: CourseCategory;
 };
 
 type CreateClassInput = {
   name: string;
   subjectCategory: string;
+  courseCategory?: CourseCategory;
   description: string;
   teacherId: string;
   maxStudents: number;
@@ -776,6 +780,7 @@ export async function listClasses(params: ClassListParams = {}) {
   const where = {
     status: ClassStatus.ACTIVE,
     published: true,
+    ...(params.courseCategory ? { courseCategory: params.courseCategory } : {}),
     ...(search
       ? {
         OR: [
@@ -803,9 +808,7 @@ export async function listClasses(params: ClassListParams = {}) {
     },
     skip: (safePage - 1) * limit,
     take: limit,
-    orderBy: {
-      createdAt: "asc",
-    },
+    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
   });
 
   const classIds = classes.map((item) => item.id);
@@ -855,6 +858,7 @@ export async function listClasses(params: ClassListParams = {}) {
         id: item.id,
         name: item.name,
         subjectCategory: item.subjectCategory,
+        courseCategory: item.courseCategory,
         description: item.description,
         teacherId: item.teacherId,
         teacherName: item.teacher.name,
@@ -961,6 +965,7 @@ export async function getClassById(
     id: klass.id,
     name: klass.name,
     subjectCategory: klass.subjectCategory,
+    courseCategory: klass.courseCategory,
     description: klass.description,
     teacherId: klass.teacherId,
     maxStudents: klass.maxStudents,
@@ -1430,6 +1435,7 @@ export async function createClass(input: CreateClassInput) {
     data: {
       name: input.name,
       subjectCategory: input.subjectCategory,
+      courseCategory: input.courseCategory,
       description: input.description,
       teacherId: input.teacherId,
       maxStudents: input.maxStudents,
@@ -1480,6 +1486,7 @@ export async function createClassWithSession(input: CreateClassInput) {
     data: {
       name: input.name,
       subjectCategory: input.subjectCategory,
+      courseCategory: input.courseCategory,
       description: input.description,
       teacherId: input.teacherId,
       maxStudents: input.maxStudents,
@@ -1660,6 +1667,7 @@ export async function archiveClass(classId: string) {
 
   const now = new Date();
   const { archived, cancelledSessions } = await prisma.$transaction(async (tx) => {
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`enroll:${classId}`}))`;
     const future = await tx.session.findMany({
       where: { classId, cancelled: false, startTime: { gte: now } },
       select: { id: true, googleEventId: true, googleCalendarId: true },
@@ -1702,14 +1710,31 @@ export async function archiveClass(classId: string) {
 export async function restoreClass(classId: string) {
   await ensureSeededData();
 
-  const existing = await prisma.class.findUnique({ where: { id: classId }, select: { id: true } });
-  if (!existing) {
-    return null;
-  }
+  return prisma.$transaction(async (tx) => {
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`enroll:${classId}`}))`;
+    const klass = await tx.class.findUnique({ where: { id: classId } });
+    if (!klass || klass.status === ClassStatus.ACTIVE) return klass;
 
-  return prisma.class.update({
-    where: { id: classId },
-    data: { status: ClassStatus.ACTIVE },
+    // Restoring an archived course must not activate a student's second
+    // course. Lock the affected students in a consistent order, then check
+    // again under the same lock used by all enrollment paths.
+    const students = await tx.enrollment.findMany({
+      where: { classId, status: EnrollmentStatus.ACTIVE },
+      select: { studentId: true },
+    });
+    const studentIds = students.map(({ studentId }) => studentId);
+    await lockEnrollmentStudents(tx, studentIds);
+    const conflict = studentIds.length > 0 && await tx.enrollment.findFirst({
+      where: {
+        studentId: { in: studentIds },
+        classId: { not: classId },
+        status: EnrollmentStatus.ACTIVE,
+        class: { status: ClassStatus.ACTIVE },
+      },
+      select: { id: true },
+    });
+    if (conflict) throw new EnrollmentLimitError();
+    return tx.class.update({ where: { id: classId }, data: { status: ClassStatus.ACTIVE } });
   });
 }
 
@@ -1813,10 +1838,10 @@ export async function enrollStudentInClass(studentId: string, classId: string, r
     // (or archival) is honored.
     const klassInTx = await tx.class.findUnique({
       where: { id: classId },
-      select: { maxStudents: true, status: true, registrationDeadline: true },
+      select: { maxStudents: true, status: true, published: true, registrationDeadline: true },
     });
 
-    if (!klassInTx || klassInTx.status !== ClassStatus.ACTIVE) {
+    if (!klassInTx || klassInTx.status !== ClassStatus.ACTIVE || !klassInTx.published) {
       throw new Error("Class not found");
     }
 
@@ -1830,6 +1855,7 @@ export async function enrollStudentInClass(studentId: string, classId: string, r
       throw new Error("Registration closed");
     }
 
+    await assertEnrollmentSlot(tx, studentId, classId);
     const activeCount = await tx.enrollment.count({
       where: { classId, status: EnrollmentStatus.ACTIVE },
     });
@@ -1912,28 +1938,19 @@ export async function dropStudentFromClass(
 ) {
   await ensureSeededData();
 
-  const { count } = await prisma.enrollment.updateMany({
-    where: {
-      studentId,
-      classId,
-      status: { in: [EnrollmentStatus.ACTIVE, EnrollmentStatus.PENDING] },
-    },
-    data: {
-      status: options.by === "staff" ? EnrollmentStatus.REJECTED : EnrollmentStatus.DROPPED,
-    },
-  });
-
-  if (count === 0) {
-    return null;
-  }
-
-  return prisma.enrollment.findUnique({
-    where: {
-      studentId_classId: {
+  return prisma.$transaction(async (tx) => {
+    // Keep a staff approval or signup from reviving a row concurrently
+    // with a drop/removal.
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`enroll:${classId}`}))`;
+    const [updated] = await tx.enrollment.updateManyAndReturn({
+      where: {
         studentId,
         classId,
+        status: { in: [EnrollmentStatus.ACTIVE, EnrollmentStatus.PENDING] },
       },
-    },
+      data: { status: options.by === "staff" ? EnrollmentStatus.REJECTED : EnrollmentStatus.DROPPED },
+    });
+    return updated ?? null;
   });
 }
 
@@ -4186,17 +4203,32 @@ export async function decideEnrollment(
     return { status: "NOT_PENDING" as const, current: existing.status };
   }
 
-  if (decision === "REJECT") {
-    const updated = await prisma.enrollment.update({
-      where: { id: enrollmentId },
-      data: { status: EnrollmentStatus.REJECTED },
-      select: { id: true, status: true, studentId: true, classId: true },
-    });
-    return { status: "REJECTED" as const, enrollment: updated };
-  }
-
   return prisma.$transaction(async (tx) => {
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`enroll:${existing.classId}`}))`;
+    const latest = await tx.enrollment.findUnique({
+      where: { id: enrollmentId },
+      select: { status: true },
+    });
+    if (!latest) return { status: "NOT_FOUND" as const };
+    if (latest.status !== EnrollmentStatus.PENDING) {
+      return { status: "NOT_PENDING" as const, current: latest.status };
+    }
+
+    if (decision === "REJECT") {
+      const updated = await tx.enrollment.update({
+        where: { id: enrollmentId },
+        data: { status: EnrollmentStatus.REJECTED },
+        select: { id: true, status: true, studentId: true, classId: true },
+      });
+      return { status: "REJECTED" as const, enrollment: updated };
+    }
+
+    try {
+      await assertEnrollmentSlot(tx, existing.studentId, existing.classId);
+    } catch (error) {
+      if (error instanceof EnrollmentLimitError) return { status: "ENROLLMENT_LIMIT" as const };
+      throw error;
+    }
 
     const klass = await tx.class.findUnique({
       where: { id: existing.classId },

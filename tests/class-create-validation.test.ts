@@ -26,6 +26,15 @@ describe("parseCreateClassBody", () => {
     expect(parsed.data.registrationDeadline).toBeNull();
   });
 
+  it("accepts the four catalog categories and leaves legacy payloads valid", () => {
+    for (const category of ["ENGLISH", "TECHNOLOGY", "AI", "OTHER_SKILLS"]) {
+      const parsed = parseCreateClassBody({ ...base, day: "Tue", time: "18:00", courseCategory: category });
+      expect(parsed.ok && parsed.data.courseCategory).toBe(category);
+    }
+    expect(parseCreateClassBody({ ...base, day: "Tue", time: "18:00", courseCategory: "LANGUAGES" }).ok).toBe(false);
+    expect(parseCreateClassBody({ ...base, day: "Tue", time: "18:00" }).ok).toBe(true);
+  });
+
   it("builds one schedule from several ticked days", () => {
     const parsed = parseCreateClassBody({ ...base, days: ["Fri", "Tue", "Thu"], time: "18:00" });
     expect(parsed.ok && parsed.data.schedulePreference).toBe("Tue, Thu, Fri 6:00 PM");

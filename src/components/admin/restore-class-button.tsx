@@ -21,8 +21,8 @@ export function RestoreClassButton({ classId }: { classId: string }) {
     try {
       const response = await fetch(`/api/admin/classes/${classId}/restore`, { method: "POST" });
       if (!response.ok) {
-        const body = (await response.json().catch(() => ({}))) as { message?: string };
-        setError(body.message ?? t("restoreFailed"));
+        const body = (await response.json().catch(() => ({}))) as { message?: string; code?: string };
+        setError(body.code === "ENROLLMENT_LIMIT" ? t("restoreEnrollmentConflict") : body.message ?? t("restoreFailed"));
         return;
       }
       router.refresh();

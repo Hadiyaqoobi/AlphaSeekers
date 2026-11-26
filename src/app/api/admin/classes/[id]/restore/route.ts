@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { restoreClass } from "@/lib/platform/db-store";
+import { EnrollmentLimitError } from "@/lib/platform/enrollment-limit";
 import { recordAudit } from "@/lib/security/audit";
 import { AccessError, requirePermission } from "@/lib/security/permissions";
 import { getClientIp } from "@/lib/security/rate-limit";
@@ -31,7 +32,18 @@ export async function POST(request: NextRequest, { params }: Params) {
     return NextResponse.json({ message: "Admin access only" }, { status: 403 });
   }
 
-  const restored = await restoreClass(params.id);
+  let restored;
+  try {
+    restored = await restoreClass(params.id);
+  } catch (error) {
+    if (error instanceof EnrollmentLimitError) {
+      return NextResponse.json(
+        { code: "ENROLLMENT_LIMIT", message: "Some students are enrolled in another active class. Resolve those enrollments before restoring this class." },
+        { status: 409 },
+      );
+    }
+    throw error;
+  }
   if (!restored) {
     return NextResponse.json({ message: "Class not found" }, { status: 404 });
   }

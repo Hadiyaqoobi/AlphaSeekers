@@ -37,7 +37,9 @@ export function EnrollmentRequests({ requests }: { requests: Request[] }) {
         body: JSON.stringify({ decision }),
       });
       if (!res.ok) {
-        throw new Error(String(res.status));
+        const body = await res.json().catch(() => null);
+        setError(t(body?.code === "ENROLLMENT_LIMIT" ? "enrollmentLimit" : "actionFailed"));
+        return;
       }
       setHandled((prev) => ({
         ...prev,

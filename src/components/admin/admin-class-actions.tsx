@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 
+import { COURSE_CATEGORIES, parseCourseCategory, type CourseCategory } from "@/lib/platform/course-categories";
 import { DayPicker } from "@/components/classes/day-picker";
 import { JoinQuestionsEditor, toDraft, toPayload, type DraftQuestion } from "@/components/classes/join-questions-editor";
 import type { JoinQuestion } from "@/lib/platform/join-questions";
@@ -16,6 +17,7 @@ type Teacher = { id: string; name: string; email: string };
 /** The class as it is now, so the edit form opens filled in (it used to open empty). */
 export type EditableClass = {
   name: string;
+  courseCategory: CourseCategory;
   description: string;
   teacherId: string;
   maxStudents: number;
@@ -38,6 +40,7 @@ type AdminClassActionsProps = {
 
 type EditState = {
   name: string;
+  courseCategory: CourseCategory;
   description: string;
   teacherId: string;
   maxStudents: string;
@@ -63,6 +66,7 @@ function toEditState(initial: EditableClass): EditState {
   const slot = slots?.[0] ?? null;
   return {
     name: initial.name,
+    courseCategory: initial.courseCategory,
     description: initial.description,
     teacherId: initial.teacherId,
     maxStudents: String(initial.maxStudents),
@@ -80,6 +84,7 @@ function toEditState(initial: EditableClass): EditState {
 }
 
 export function AdminClassActions({ classId, initial, teachers, canEdit = true, locale }: AdminClassActionsProps) {
+  const tc = useTranslations("courseCategories");
   const t = useTranslations("adminClassDetail");
   const tq = useTranslations("joinQuestions");
   const tl = useTranslations("classLifecycle");
@@ -112,6 +117,7 @@ export function AdminClassActions({ classId, initial, teachers, canEdit = true, 
 
     // Send only what changed, so an untouched field is never rewritten.
     const body: Record<string, unknown> = {};
+    if (form.courseCategory !== original.courseCategory) body.courseCategory = form.courseCategory;
     if (form.name.trim() !== original.name) body.name = form.name.trim();
     if (form.description.trim() !== original.description) body.description = form.description.trim();
     if (form.teacherId !== original.teacherId) body.teacherId = form.teacherId;
@@ -201,6 +207,20 @@ export function AdminClassActions({ classId, initial, teachers, canEdit = true, 
               required
               value={form.name}
             />
+          </div>
+
+          <div className="space-y-1">
+            <label className={LABEL} htmlFor="edit-course-category">{tc("label")}</label>
+            <select
+              className="select-field"
+              id="edit-course-category"
+              onChange={(e) => update("courseCategory", parseCourseCategory(e.target.value) ?? original.courseCategory)}
+              value={form.courseCategory}
+            >
+              {COURSE_CATEGORIES.map((category) => (
+                <option key={category} value={category}>{tc(category)}</option>
+              ))}
+            </select>
           </div>
 
           <div className="space-y-1">

@@ -11,9 +11,14 @@ import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
 import { prisma } from "@/lib/prisma";
 import {
+  archiveClass,
   decideEnrollment,
+  dropStudentFromClass,
+  restoreClass,
   enrollStudentInClass,
+  listClasses,
   listClassEnrollments,
+  updateClass,
   listPendingEnrollments,
 } from "@/lib/platform/db-store";
 
@@ -80,6 +85,69 @@ d("per-course access", () => {
     expect(roster.map((r) => r.studentId)).toEqual([student.id]);
     // Nothing is left sitting in a queue waiting for a human.
     expect(await listPendingEnrollments(klass.id)).toHaveLength(0);
+  });
+
+  it("admits a student to only one class even if she joins two simultaneously", async () => {
+    const student = await makeStudent("racing");
+    const first = await makeClass("race-one");
+    const second = await makeClass("race-two");
+    const outcomes = await Promise.allSettled([
+      enrollStudentInClass(student.id, first.id),
+      enrollStudentInClass(student.id, second.id),
+    ]);
+    expect(outcomes.filter((outcome) => outcome.status === "fulfilled")).toHaveLength(1);
+    expect(outcomes.find((outcome) => outcome.status === "rejected")).toMatchObject({
+      reason: { message: "ENROLLMENT_LIMIT" },
+    });
+    const active = await prisma.enrollment.findMany({ where: { studentId: student.id, status: "ACTIVE" } });
+    expect(active).toHaveLength(1);
+    const [joined] = active;
+    const other = joined.classId === first.id ? second : first;
+    expect((await enrollStudentInClass(student.id, joined.classId)).state).toBe("ALREADY_ENROLLED");
+    await dropStudentFromClass(student.id, joined.classId, { by: "self" });
+    expect((await enrollStudentInClass(student.id, other.id)).state).toBe("JOINED");
+  });
+
+  it("does not allow approval or restore to create a second active class", async () => {
+    const student = await makeStudent("restore-limit");
+    const first = await makeClass("restore-original");
+    const second = await makeClass("restore-new");
+    await enrollStudentInClass(student.id, first.id);
+    const request = await prisma.enrollment.create({
+      data: { studentId: student.id, classId: second.id, status: "PENDING" },
+    });
+    expect(await decideEnrollment(request.id, "APPROVE")).toEqual({ status: "ENROLLMENT_LIMIT" });
+    expect(await prisma.enrollment.findUnique({ where: { id: request.id } })).toMatchObject({ status: "PENDING" });
+    await archiveClass(first.id);
+    expect(await decideEnrollment(request.id, "APPROVE")).toMatchObject({ status: "APPROVED" });
+    await expect(restoreClass(first.id)).rejects.toThrow("ENROLLMENT_LIMIT");
+    await dropStudentFromClass(student.id, second.id, { by: "self" });
+    expect(await restoreClass(first.id)).toMatchObject({ status: "ACTIVE" });
+  });
+
+  it("filters and paginates more than ten classes in the same category", async () => {
+    const first = await makeClass("catalog-first");
+    const { teacherId } = await prisma.class.findUniqueOrThrow({ where: { id: first.id } });
+    await updateClass(first.id, { courseCategory: "TECHNOLOGY" });
+    await prisma.class.createMany({
+      data: [
+        ...Array.from({ length: 11 }, (_, i) => ({
+          teacherId, name: `${TAG} catalog ${i}`, description: "fixture",
+          subjectCategory: "Computing", maxStudents: 10, courseCategory: "TECHNOLOGY" as const,
+        })),
+        { teacherId, name: `${TAG} catalog other`, description: "fixture", subjectCategory: "Computing", maxStudents: 10, courseCategory: "OTHER_SKILLS" },
+        { teacherId, name: `${TAG} catalog draft`, description: "fixture", subjectCategory: "Computing", maxStudents: 10, courseCategory: "TECHNOLOGY", published: false },
+      ],
+    });
+    const params = { limit: 10, search: `${TAG} catalog`, courseCategory: "TECHNOLOGY" as const };
+    const page1 = await listClasses(params);
+    const page2 = await listClasses({ ...params, page: 2 });
+    expect(page1.pagination).toMatchObject({ totalItems: 12, totalPages: 2 });
+    expect(page1.items).toHaveLength(10);
+    expect(page2.items).toHaveLength(2);
+    const all = [...page1.items, ...page2.items];
+    expect(new Set(all.map(({ id }) => id)).size).toBe(12);
+    expect(all.every((item) => item.courseCategory === "TECHNOLOGY")).toBe(true);
   });
 
   it("LEGACY: students already sitting in PENDING can still be approved or rejected", async () => {

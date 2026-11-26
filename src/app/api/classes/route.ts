@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { parseCourseCategory } from "@/lib/platform/course-categories";
 import { listClasses, parseInteger } from "@/lib/platform/store";
 import { withCors, corsPreflight } from "@/lib/security/cors";
 import { getSessionUser, isApproved, pendingApproval, unauthorized } from "@/lib/security/session";
@@ -22,7 +23,8 @@ export async function GET(request: NextRequest) {
   const page = parseInteger(request.nextUrl.searchParams.get("page"), 1);
   const limit = parseInteger(request.nextUrl.searchParams.get("limit"), 10);
   const search = request.nextUrl.searchParams.get("search") ?? "";
-  const result = await listClasses({ page, limit, search });
+  const courseCategory = parseCourseCategory(request.nextUrl.searchParams.get("category"));
+  const result = await listClasses({ page, limit, search, courseCategory });
 
   // private, no-store: this answers a SIGNED-IN request, so no shared cache
   // may keep a copy (it was `public, s-maxage=300`, and also carried every

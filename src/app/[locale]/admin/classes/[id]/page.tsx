@@ -137,6 +137,7 @@ export default async function AdminClassDetailPage({ params }: AdminClassDetailP
         classId={record.id}
         initial={{
           name: record.name,
+          courseCategory: record.courseCategory,
           description: record.description,
           teacherId: record.teacherId,
           maxStudents: record.maxStudents,
