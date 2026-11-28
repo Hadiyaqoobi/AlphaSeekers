@@ -9,7 +9,8 @@
  * browser needs it too.
  */
 
-export const CURRENT_CERTIFICATE_LAYOUT_VERSION = 2;
+export const CERTIFICATE_LAYOUT_V2 = 2;
+export const CURRENT_CERTIFICATE_LAYOUT_VERSION = CERTIFICATE_LAYOUT_V2;
 
 export type CertificateKindName = "STUDENT_COMPLETION" | "TEACHER_RECOGNITION";
 
@@ -109,7 +110,7 @@ export function teacherDetailLine(content: CertificateContent): string {
 
 export function certificateLayout(content: CertificateContent): CertificateLayout {
   const date = `Date: ${formatIssuedDate(content.issuedAt)}`;
-  const updated = content.layoutVersion === 2;
+  const updated = content.layoutVersion === CERTIFICATE_LAYOUT_V2;
 
   if (content.kind === "TEACHER_RECOGNITION") {
     const small = { family: "sans" as const, weight: 500, color: "#292929", align: "center" as const, x: 707, maxWidth: 300, base: 17 };
@@ -119,7 +120,7 @@ export function certificateLayout(content: CertificateContent): CertificateLayou
       background: updated
         ? "/certificates/templates/teacher-recognition-certificate-v2.jpg"
         : "/certificates/templates/teacher-recognition-certificate.jpg",
-      qr: { x: 625, y: 1609, size: 143 },
+      qr: { x: updated ? 635 : 625, y: 1609, size: 143 },
       lines: [
         line({ text: content.recipientName, x: 707, y: updated ? 1016 : 985, base: updated ? 112 : 120, family: "script", weight: 400, color: "#ab7c35", align: "center", maxWidth: 880 }),
         line({ text: teacherDetailLine(content), x: 707, y: 1199, base: 26, family: "serif", weight: 400, color: "#482f19", align: "center", maxWidth: 980, tracking: 0.08 }),
