@@ -290,6 +290,8 @@ model Certificate {
   /// The public ID printed on the certificate and encoded in its QR code.
   code          String          @unique
   kind          CertificateKind
+  /// Keeps already-issued certificates on the layout they were printed with.
+  layoutVersion Int             @default(1)
   userId        String?
   classId       String?
   recipientName String

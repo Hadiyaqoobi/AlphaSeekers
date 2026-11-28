@@ -9,6 +9,8 @@
  * browser needs it too.
  */
 
+export const CURRENT_CERTIFICATE_LAYOUT_VERSION = 2;
+
 export type CertificateKindName = "STUDENT_COMPLETION" | "TEACHER_RECOGNITION";
 
 /** What a certificate says. Built from a stored row, never from user input on the page. */
@@ -21,6 +23,8 @@ export type CertificateContent = {
   detail: string | null;
   hours: string | null;
   issuedAt: string;
+  /** Stored at issuance so past certificates keep their printed design. */
+  layoutVersion?: number;
 };
 
 export type TextLine = {
@@ -105,41 +109,46 @@ export function teacherDetailLine(content: CertificateContent): string {
 
 export function certificateLayout(content: CertificateContent): CertificateLayout {
   const date = `Date: ${formatIssuedDate(content.issuedAt)}`;
+  const updated = content.layoutVersion === 2;
 
   if (content.kind === "TEACHER_RECOGNITION") {
     const small = { family: "sans" as const, weight: 500, color: "#292929", align: "center" as const, x: 707, maxWidth: 300, base: 17 };
     return {
       width: 1414,
       height: 2000,
-      background: "/certificates/templates/teacher-recognition-certificate.jpg",
+      background: updated
+        ? "/certificates/templates/teacher-recognition-certificate-v2.jpg"
+        : "/certificates/templates/teacher-recognition-certificate.jpg",
       qr: { x: 625, y: 1609, size: 143 },
       lines: [
-        line({ text: content.recipientName, x: 707, y: 985, base: 120, family: "script", weight: 400, color: "#ab7c35", align: "center", maxWidth: 880 }),
+        line({ text: content.recipientName, x: 707, y: updated ? 1016 : 985, base: updated ? 112 : 120, family: "script", weight: 400, color: "#ab7c35", align: "center", maxWidth: 880 }),
         line({ text: teacherDetailLine(content), x: 707, y: 1199, base: 26, family: "serif", weight: 400, color: "#482f19", align: "center", maxWidth: 980, tracking: 0.08 }),
-        line({ ...small, text: "Verify this certificate", y: 1780 }),
-        line({ ...small, text: content.code, y: 1802 }),
-        line({ ...small, text: VERIFY_HOST, y: 1826 }),
-        line({ ...small, text: date, x: 218, y: 1818, align: "left", maxWidth: 250 }),
+        line({ ...small, text: "Verify this certificate", y: updated ? 1768 : 1780 }),
+        line({ ...small, text: content.code, y: updated ? 1790 : 1802 }),
+        line({ ...small, text: VERIFY_HOST, y: updated ? 1814 : 1826 }),
+        line({ ...small, text: date, x: 218, y: updated ? 1800 : 1818, align: "left", maxWidth: 250 }),
       ],
     };
   }
 
   const [first, second] = studentSentence(content);
   const body = { family: "sans" as const, weight: 500, color: "#09342a", align: "center" as const, x: 1000, maxWidth: 1180, base: 31 };
-  const small = { family: "sans" as const, weight: 500, color: "#29292a", align: "center" as const, x: 1016, maxWidth: 340, base: 19 };
+  const small = { family: "sans" as const, weight: 500, color: "#29292a", align: "center" as const, x: updated ? 1000 : 1016, maxWidth: 340, base: 19 };
   return {
     width: 2000,
     height: 1414,
-    background: "/certificates/templates/student-completion-certificate.jpg",
-    qr: { x: 933, y: 1072, size: 166 },
+    background: updated
+      ? "/certificates/templates/student-completion-certificate-v2.jpg"
+      : "/certificates/templates/student-completion-certificate.jpg",
+    qr: updated ? { x: 917, y: 1200, size: 166 } : { x: 933, y: 1072, size: 166 },
     lines: [
-      line({ text: content.recipientName, x: 1000, y: 692, base: 110, family: "script", weight: 400, color: "#006c53", align: "center", maxWidth: 1150 }),
-      line({ ...body, text: first, y: 836 }),
-      line({ ...body, text: second, y: 875 }),
-      line({ ...small, text: date, y: 1302 }),
-      line({ ...small, text: "Verify this certificate", y: 1329 }),
-      line({ ...small, text: content.code, y: 1355 }),
-      line({ ...small, text: VERIFY_HOST, y: 1382 }),
+      line({ text: content.recipientName, x: 1000, y: updated ? 744 : 692, base: 110, family: "script", weight: 400, color: "#006c53", align: "center", maxWidth: 1150 }),
+      line({ ...body, text: first, y: updated ? 863 : 836 }),
+      line({ ...body, text: second, y: updated ? 903 : 875 }),
+      line({ ...small, text: date, y: updated ? 1109 : 1302 }),
+      line({ ...small, text: "Verify this certificate", y: updated ? 1133 : 1329 }),
+      line({ ...small, text: content.code, y: updated ? 1157 : 1355 }),
+      line({ ...small, text: VERIFY_HOST, y: updated ? 1181 : 1382 }),
     ],
   };
 }

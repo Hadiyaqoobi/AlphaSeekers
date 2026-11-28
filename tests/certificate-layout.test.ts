@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   certificateLayout,
+  CURRENT_CERTIFICATE_LAYOUT_VERSION,
   fitSize,
   formatIssuedDate,
   studentSentence,
@@ -86,6 +87,25 @@ describe("certificate layout", () => {
     expect(name.size).toBeLessThan(110);
     expect(name.text.length * 0.42 * name.size).toBeLessThanOrEqual(name.maxWidth + 1);
     expect(fitSize("Ali", 110, 1150, "script")).toBe(110);
+  });
+
+  it("keeps historical layouts and selects the revised artwork for newly issued certificates", () => {
+    for (const kind of ["STUDENT_COMPLETION", "TEACHER_RECOGNITION"] as const) {
+      const old = certificateLayout({ ...student, kind, layoutVersion: 1 });
+      const updated = certificateLayout({ ...student, kind, layoutVersion: CURRENT_CERTIFICATE_LAYOUT_VERSION });
+      expect(certificateLayout({ ...student, kind })).toEqual(old);
+      expect(certificateLayout({ ...student, kind, layoutVersion: 99 })).toEqual(old);
+      expect(updated.background).toMatch(/-v2\.jpg$/);
+      expect(updated.lines[0].y).toBeGreaterThan(old.lines[0].y);
+      expect(updated.lines.map(({ text }) => text)).toEqual(old.lines.map(({ text }) => text));
+      const verify = updated.lines.find(({ text }) => text === student.code)!;
+      if (kind === "STUDENT_COMPLETION") {
+        expect(updated.qr.y).toBeGreaterThan(old.qr.y);
+        expect(verify.y + verify.size / 2).toBeLessThan(updated.qr.y);
+      } else {
+        expect(verify.y).toBeLessThan(old.lines.find(({ text }) => text === student.code)!.y);
+      }
+    }
   });
 
   it("keeps every line inside the template", () => {

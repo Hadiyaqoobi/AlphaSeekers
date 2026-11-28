@@ -93,6 +93,7 @@ d("certificates", () => {
     const rows = await listClassCertificates(klass.id);
     const forTeacher = rows.find((r) => r.userId === teacher.id);
     expect(forTeacher).toMatchObject({ kind: "TEACHER_RECOGNITION", detail: "Fall 2026", hours: "24 hours" });
+    expect(await findCertificateForVerify(forTeacher!.code)).toMatchObject({ layoutVersion: 2 });
     const forA = rows.find((r) => r.userId === a.id);
     expect(forA).toMatchObject({
       kind: "STUDENT_COMPLETION",
@@ -136,7 +137,7 @@ d("certificates", () => {
     const code = result.issued[0].code;
 
     const found = await findCertificateForVerify(code.toLowerCase());
-    expect(found).toMatchObject({ code, recipientName: a.name, revokedAt: null });
+    expect(found).toMatchObject({ code, recipientName: a.name, revokedAt: null, layoutVersion: 2 });
 
     await revokeCertificate(code, "Name was misspelled");
     // The write itself invalidates the public cache: no stale "verified".
@@ -148,6 +149,14 @@ d("certificates", () => {
     const reissued = await issueCertificates({ classId: klass.id, issuedById: staff.id, studentIds: [a.id], includeTeacher: false });
     expect(reissued).toMatchObject({ ok: true, alreadyHad: 0 });
     expect(await listUserCertificates(a.id)).toHaveLength(1);
+  });
+
+  it("keeps the original artwork for certificates written without an explicit layout", async () => {
+    const code = "AS-2026-D7W4-B1BD";
+    await prisma.certificate.create({
+      data: { code, kind: "STUDENT_COMPLETION", recipientName: "Sample Learner", className: "Sample Course", teacherName: "Sample Teacher" },
+    });
+    expect(await findCertificateForVerify(code)).toMatchObject({ code, layoutVersion: 1 });
   });
 
   it("returns nothing for an unknown or malformed code, and keeps the hand-made one", async () => {
