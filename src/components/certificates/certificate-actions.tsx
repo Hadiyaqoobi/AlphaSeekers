@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { FONT_STACKS, certificateLayout, type CertificateContent } from "@/lib/certificates/layout";
+import { CERTIFICATE_LAYOUT_V2, FONT_STACKS, certificateLayout, type CertificateContent } from "@/lib/certificates/layout";
 
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -57,6 +57,7 @@ export function CertificateActions({ content, qrSvg }: { content: CertificateCon
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const landscape = content.kind === "STUDENT_COMPLETION";
+  const revisedLayout = content.layoutVersion === CERTIFICATE_LAYOUT_V2;
 
   async function download() {
     setBusy(true);
@@ -89,6 +90,7 @@ export function CertificateActions({ content, qrSvg }: { content: CertificateCon
           .certificate-print-area, .certificate-print-area * { visibility: visible !important; }
           .certificate-print-area { position: fixed; inset: 0; margin: 0; padding: 0; }
           .certificate-print-area .certificate-sheet { box-shadow: none; width: 100%; }
+          ${revisedLayout ? ".certificate-print-area { margin: 0 !important; max-width: none !important; }" : ""}
           * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         }
       `}</style>

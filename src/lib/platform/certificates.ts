@@ -17,7 +17,7 @@ import { randomInt } from "node:crypto";
 
 import { Prisma, type CertificateKind } from "@prisma/client";
 
-import type { CertificateContent } from "@/lib/certificates/layout";
+import { CURRENT_CERTIFICATE_LAYOUT_VERSION, type CertificateContent } from "@/lib/certificates/layout";
 import { deliverWithFallback, sendDirectEmail } from "@/lib/integrations/notifications";
 import { prisma } from "@/lib/prisma";
 import { readThroughPublicCache } from "@/lib/platform/public-cache";
@@ -87,6 +87,7 @@ const LEGACY: Record<string, VerifiedCertificate> = {
 };
 
 type CertificateRow = {
+  layoutVersion: number;
   code: string;
   kind: CertificateKind;
   recipientName: string;
@@ -99,6 +100,7 @@ type CertificateRow = {
 };
 
 const ROW_SELECT = {
+  layoutVersion: true,
   code: true,
   kind: true,
   recipientName: true,
@@ -114,6 +116,7 @@ function toVerified(row: CertificateRow): VerifiedCertificate {
   return {
     kind: row.kind,
     code: row.code,
+    layoutVersion: row.layoutVersion,
     recipientName: row.recipientName,
     className: row.className,
     teacherName: row.teacherName,
@@ -321,6 +324,7 @@ async function createCertificates(
           data: {
             code,
             kind: person.kind,
+            layoutVersion: CURRENT_CERTIFICATE_LAYOUT_VERSION,
             userId: person.userId,
             classId: course.classId,
             recipientName: person.name.trim(),
